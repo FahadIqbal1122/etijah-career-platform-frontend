@@ -3,6 +3,8 @@
 import {useState} from 'react'
 import {questions, BEHAVIORAL_SCALE, Question} from '@/data/questions'
 import {supabase} from '@/lib/supabase'
+import PhoneInput from 'react-phone-input-2'
+import 'react-phone-input-2/lib/style.css'
 
 //Group questions by section
 const sections = questions.reduce((acc, question) =>{
@@ -65,6 +67,9 @@ export default function AssessmentForm() {
 
         try{
             const {error} = await supabase.from('assessment_responses').insert({
+                full_name: answers['QD1'],
+                email: answers['QD2'],
+                phone: answers['QD3'],
                 country: answers['QO1'],
                 nationality: answers['QO2'],
                 age_bracket: answers['QO3'],
@@ -138,6 +143,28 @@ export default function AssessmentForm() {
               <p className="text-gray-800 font-medium mb-4 leading-relaxed">
                 {question.text}
               </p>
+
+              {/* ── Text / Email / Phone Input ── */}
+              {(question.type === 'text_input' || question.type === 'email_input') && (
+                <input
+                  type={question.type === 'email_input' ? 'email' : 'text'}
+                  value={answers[question.id] || ''}
+                  onChange={e => handleSingleSelect(question.id, e.target.value)}
+                  placeholder="Your Answer"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-blue-500 focus:outline-none text-gray-800"
+                />
+              )}
+              {/* phone gets its own block with PhoneInput */}
+              {question.type === 'phone_input' && (
+                <PhoneInput
+                  country={'bh'}
+                  value={answers[question.id] || ''}
+                  onChange={val => handleSingleSelect(question.id, val)}
+                  containerClass="!w-full"
+                  inputClass="!w-full !h-12 !rounded-lg !border !border-gray-200 !text-gray-800 !text-base"
+                  buttonClass="!rounded-l-lg !border !border-gray-200 !bg-white"
+                />
+              )}
 
               {/* ── Behavioral Scale ── */}
               {question.type === 'behavioral_scale' && (

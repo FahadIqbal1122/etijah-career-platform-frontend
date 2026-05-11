@@ -24,3 +24,13 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.react-tel-input .country-list .country-name,
+.react-tel-input .country-list .dial-code {
+  color: #171717;
+}
+
+.react-tel-input .country-list .country:hover,
+.react-tel-input .country-list .country.highlight {
+  background-color: #eff6ff;
+}

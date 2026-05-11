@@ -1,8 +1,11 @@
-export type QuestionType = 
-  | 'single_select' 
-  | 'multi_select' 
-  | 'behavioral_scale' 
+export type QuestionType =
+  | 'single_select'
+  | 'multi_select'
+  | 'behavioral_scale'
   | 'forced_choice'
+  | 'text_input'
+  | 'email_input'
+  | 'phone_input'
 
 export interface Option {
   value: string
@@ -29,6 +32,29 @@ export const BEHAVIORAL_SCALE = [
 ]
 
 export const questions: Question[] = [
+  // ─── SECTION: YOUR DETAILS ───────────────────────────
+  {
+    id: 'QD1',
+    section: 'Your Details',
+    framework: 'Details',
+    text: 'What is your full name?',
+    type: 'text_input',
+  },
+  {
+    id: 'QD2',
+    section: 'Your Details',
+    framework: 'Details',
+    text: 'What is your email address?',
+    type: 'email_input',
+  },
+  {
+    id: 'QD3',
+    section: 'Your Details',
+    framework: 'Details',
+    text: 'What is your phone number?',
+    type: 'phone_input',
+  },
+
   // ─── SECTION 0: ONBOARDING ───────────────────────────
   {
     id: 'QO1',
