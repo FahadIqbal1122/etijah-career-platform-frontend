@@ -66,22 +66,24 @@ export default function AssessmentForm() {
         setError('')
 
         try{
-            const {error} = await supabase.from('assessment_responses').insert({
-                full_name: answers['QD1'],
-                email: answers['QD2'],
-                phone: answers['QD3'],
-                country: answers['QO1'],
-                nationality: answers['QO2'],
-                age_bracket: answers['QO3'],
-                current_stage: answers['QO4'],
-                education_field: answers['QO5'],
-                sectors_of_interest: answers['QO6'] || [],
-                career_structure: answers['QO7'],
-                languages: answers['QO8'] || [],
-                geographic_openness: answers['QO9'],
-                why_here: answers['QO10'],
-                answers: answers,
-                completed: true,
+            const {error} = await supabase.rpc('insert_assessment_response', {
+                payload: {
+                    full_name: answers['QD1'],
+                    email: answers['QD2'],
+                    phone: answers['QD3'],
+                    country: answers['QO1'],
+                    nationality: answers['QO2'],
+                    age_bracket: answers['QO3'],
+                    current_stage: answers['QO4'],
+                    education_field: answers['QO5'],
+                    sectors_of_interest: answers['QO6'] || [],
+                    career_structure: answers['QO7'],
+                    languages: answers['QO8'] || [],
+                    geographic_openness: answers['QO9'],
+                    why_here: answers['QO10'],
+                    answers: answers,
+                    completed: true,
+                }
             })
             if (error) throw error
             setSubmitted(true)
