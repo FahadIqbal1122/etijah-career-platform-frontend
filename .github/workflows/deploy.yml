@@ -11,6 +11,6 @@ jobs:
     steps:
       - name: trigger Coolify Deploy
         run: |
-          curl -X POST \
+          curl --fail -v -X POST \
           "http://194.163.149.226:8000/api/v1/deploy?uuid=t8wwc44oc8888cswc8kc4skk&force=false" \
-          -H "Authorization: Bearer ${{secrets.COOLIFY_API_KEY}}"
+          -H "Authorization: Bearer ${{secrets.COOLIFY_TOKEN}}"
