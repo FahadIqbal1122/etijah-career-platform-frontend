@@ -19,6 +19,15 @@ export interface Question {
   maxSelect?: number // for multi_select
 }
 
+export const BEHAVIORAL_SCALE = [
+  { value: 6, label: 'Sounds exactly like me' },
+  { value: 5, label: 'Sounds like me' },
+  { value: 4, label: 'Sounds a bit like me' },
+  { value: 3, label: "Doesn't quite sound like me" },
+  { value: 2, label: "Doesn't sound like me" },
+  { value: 1, label: 'Sounds nothing like me' },
+]
+
 export const questions: Question[] = [
   // ─── SECTION 0: ONBOARDING ───────────────────────────
   {
