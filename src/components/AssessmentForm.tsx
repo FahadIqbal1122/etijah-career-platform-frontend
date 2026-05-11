@@ -86,7 +86,8 @@ export default function AssessmentForm() {
             if (error) throw error
             setSubmitted(true)
         } catch (err: any) {
-            setError('Failed to submit assessment. Please try again.')
+            console.error('Submission error:', err)
+            setError(err?.message || 'Failed to submit assessment. Please try again.')
         } finally {
             setSubmitting(false)
         }
