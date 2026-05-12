@@ -123,7 +123,7 @@ export default function AssessmentForm() {
     <div className="min-h-screen bg-gray-50">
 
       {/* Progress bar */}
-      <div className="fixed top-0 left-0 right-0 z-10 bg-white shadow-sm">
+      <div className="fixed top-14 left-0 right-0 z-10 bg-white shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex justify-between text-sm text-gray-500 mb-1">
             <span>{tSections(currentSection)}</span>
@@ -139,7 +139,7 @@ export default function AssessmentForm() {
       </div>
 
       {/* Questions */}
-      <div className="max-w-2xl mx-auto px-4 pt-24 pb-32">
+      <div className="max-w-2xl mx-auto px-4 pt-36 pb-32">
         <h2 className="text-xl font-bold text-gray-800 mb-8">
           {tSections(currentSection)}
         </h2>
