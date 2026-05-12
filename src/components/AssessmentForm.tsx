@@ -139,7 +139,7 @@ export default function AssessmentForm() {
       </div>
 
       {/* Questions */}
-      <div className="max-w-2xl mx-auto px-4 pt-28 pb-32">
+      <div className="max-w-2xl mx-auto px-4 pt-36 pb-32">
         <div className="space-y-10">
           {currentQuestions.map((question) => (
             <div key={question.id} className="bg-white rounded-xl p-6 shadow-sm">
