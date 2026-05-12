@@ -1,13 +1,10 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
-import '../globals.css'
 import { NextIntlClientProvider, hasLocale } from 'next-intl'
 import { getMessages } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
-
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
-const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
   title: 'Etijah Career Compass',
@@ -28,19 +25,15 @@ export default async function LocaleLayout({
   const { locale } = await params
   if (!hasLocale(routing.locales, locale)) notFound()
 
-const messages = await getMessages()
+  const messages = await getMessages()
 
-return (
-  <html
-    lang={locale}
-    dir={locale === 'ar' ? 'rtl' : 'ltr'}
-    className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-    <body className="min-h-full flex flex-col">
-      <NextIntlClientProvider messages={messages}>
-        {children}
-        </NextIntlClientProvider>
-    </body>
-  </html>
+  return (
+    <NextIntlClientProvider messages={messages}>
+      <div dir={locale === 'ar' ? 'rtl' : 'ltr'} lang={locale} className="contents">
+        <Header />
+        <main className="flex-1">{children}</main>
+        <Footer />
+      </div>
+    </NextIntlClientProvider>
   )
 }
