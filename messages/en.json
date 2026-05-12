@@ -1,0 +1,433 @@
+{
+  "form": {
+    "next": "Next →",
+    "back": "← Back",
+    "submit": "Submit",
+    "submitting": "Submitting...",
+    "selectUpTo": "Select up to {max}",
+    "placeholder": "Your answer",
+    "thankYou": "Thank you!",
+    "thankYouMessage": "Your responses have been saved. We will be in touch soon.",
+    "ofTotal": "{current} of {total}",
+    "error": "Failed to submit assessment. Please try again."
+  },
+  "scale": {
+    "6": "Sounds exactly like me",
+    "5": "Sounds like me",
+    "4": "Sounds a bit like me",
+    "3": "Doesn't quite sound like me",
+    "2": "Doesn't sound like me",
+    "1": "Sounds nothing like me"
+  },
+  "sections": {
+    "Your Details": "Your Details",
+    "Onboarding": "Onboarding",
+    "Holland RIASEC": "Holland RIASEC",
+    "Big Five": "Big Five",
+    "Values": "Values",
+    "Strengths": "Strengths",
+    "Resilience": "Resilience",
+    "Work Style": "Work Style",
+    "Entrepreneurship": "Entrepreneurship"
+  },
+  "questions": {
+    "QD1": {
+      "text": "What is your full name?"
+    },
+    "QD2": {
+      "text": "What is your email address?"
+    },
+    "QD3": {
+      "text": "What is your phone number?"
+    },
+    "QO1": {
+      "text": "Where are you currently based?",
+      "options": {
+        "saudi_arabia": "Saudi Arabia",
+        "bahrain": "Bahrain",
+        "uae": "UAE",
+        "kuwait": "Kuwait",
+        "qatar": "Qatar",
+        "oman": "Oman",
+        "other_gcc": "Other GCC",
+        "other_middle_east": "Other Middle East",
+        "other": "Other"
+      }
+    },
+    "QO2": {
+      "text": "What is your nationality?",
+      "options": {
+        "saudi": "Saudi",
+        "bahraini": "Bahraini",
+        "emirati": "Emirati",
+        "kuwaiti": "Kuwaiti",
+        "qatari": "Qatari",
+        "omani": "Omani",
+        "other": "Other"
+      }
+    },
+    "QO3": {
+      "text": "Which age range describes you?",
+      "options": {
+        "under_16": "Under 16",
+        "16_18": "16–18",
+        "19_22": "19–22",
+        "23_26": "23–26",
+        "27_32": "27–32",
+        "33_40": "33–40",
+        "41_plus": "41+"
+      }
+    },
+    "QO4": {
+      "text": "Where are you right now in your education or career?",
+      "options": {
+        "high_school": "High school",
+        "university": "University student",
+        "recent_graduate": "Recent graduate (0–2 yrs)",
+        "working_exploring": "Working but exploring",
+        "career_changer": "Career changer",
+        "returning": "Returning to work",
+        "between_roles": "Between roles"
+      }
+    },
+    "QO5": {
+      "text": "If you are studying or have studied at university, what is your field?",
+      "options": {
+        "business": "Business",
+        "engineering": "Engineering",
+        "computer_science": "Computer Science",
+        "medicine": "Medicine",
+        "sciences": "Sciences",
+        "humanities": "Humanities",
+        "arts": "Arts",
+        "education": "Education",
+        "law": "Law",
+        "not_applicable": "Not applicable"
+      }
+    },
+    "QO6": {
+      "text": "Which sectors are you naturally drawn to? Pick up to 3.",
+      "options": {
+        "technology": "Technology",
+        "healthcare": "Healthcare",
+        "finance": "Finance & Banking",
+        "government": "Government & Public Sector",
+        "energy": "Energy",
+        "hospitality": "Hospitality & Tourism",
+        "education": "Education",
+        "creative": "Creative & Media",
+        "consulting": "Consulting",
+        "real_estate": "Real Estate",
+        "logistics": "Logistics",
+        "retail": "Retail",
+        "sports": "Sports",
+        "nonprofit": "Non-profit",
+        "not_sure": "Not sure yet"
+      }
+    },
+    "QO7": {
+      "text": "How do you see your ideal career structure?",
+      "options": {
+        "employee": "Working within an organization (employee, manager, eventually leader)",
+        "founder": "Building my own business or startup as my main work",
+        "blend": "A blend — having a stable role AND a side business or independent project",
+        "not_sure": "Not sure yet"
+      }
+    },
+    "QO8": {
+      "text": "What languages do you speak at home?",
+      "options": {
+        "arabic": "Arabic",
+        "english": "English",
+        "urdu": "Urdu",
+        "hindi": "Hindi",
+        "tagalog": "Tagalog",
+        "french": "French",
+        "other": "Other"
+      }
+    },
+    "QO9": {
+      "text": "Are you open to building your career outside your home country?",
+      "options": {
+        "yes_anywhere": "Yes, I want to",
+        "yes_gcc": "Yes, but ideally regional (GCC)",
+        "maybe": "Maybe, depends",
+        "no": "No, I want to stay local"
+      }
+    },
+    "QO10": {
+      "text": "What brought you to this assessment today?",
+      "options": {
+        "choosing_study": "Choosing what to study",
+        "first_job": "Choosing my first job",
+        "career_change": "Considering a career change",
+        "curious": "Just curious about myself",
+        "recommended": "Was recommended to me",
+        "other": "Other"
+      }
+    },
+    "Q1": {
+      "text": "I enjoy working with tools, machines, or technology to build, fix, or operate things."
+    },
+    "Q2": {
+      "text": "When facing a problem, I would rather try a hands-on solution than spend time analyzing or discussing it."
+    },
+    "Q3": {
+      "text": "I am naturally drawn to understanding how and why things work — surface-level explanations do not satisfy me."
+    },
+    "Q4": {
+      "text": "When I encounter a complex problem, my instinct is to research and analyze it before acting."
+    },
+    "Q5": {
+      "text": "I feel most energized when I am creating something original — writing, designing, building, or performing."
+    },
+    "Q6": {
+      "text": "Two work environments, one year each. Which would you choose?",
+      "options": {
+        "A": "A creative role with freedom to experiment and few rules.",
+        "B": "A structured role with clear processes, defined outputs, and predictable rhythm."
+      }
+    },
+    "Q7": {
+      "text": "I find it genuinely satisfying to help others solve their personal or professional challenges."
+    },
+    "Q8": {
+      "text": "I am at my best when working closely with people — teaching, supporting, or coaching them — rather than working independently."
+    },
+    "Q9": {
+      "text": "I enjoy persuading others to take action on my ideas or see things from my perspective."
+    },
+    "Q10": {
+      "text": "I am drawn to roles where I can lead, influence decisions, or drive a project toward a goal."
+    },
+    "Q11": {
+      "text": "I feel most productive when my work has clear structure, defined rules, and predictable processes."
+    },
+    "Q12": {
+      "text": "I enjoy managing data, organizing information, or maintaining accurate records."
+    },
+    "Q13": {
+      "text": "I regularly seek out new ideas, experiences, or perspectives — even when they challenge what I already believe."
+    },
+    "Q14": {
+      "text": "I tend to think about abstract possibilities and future concepts more than immediate, practical realities."
+    },
+    "Q15": {
+      "text": "I plan ahead naturally and rarely leave important tasks to the last minute."
+    },
+    "Q16": {
+      "text": "I hold myself to a high standard of work quality even when no one is checking."
+    },
+    "Q17": {
+      "text": "You have a free evening after a demanding week. Which feels more appealing?",
+      "options": {
+        "A": "Going to a social gathering with friends or colleagues.",
+        "B": "Spending the evening quietly at home alone or with close family."
+      }
+    },
+    "Q18": {
+      "text": "In a group meeting or discussion, I tend to speak up early and share my views rather than listen first."
+    },
+    "Q19": {
+      "text": "I tend to put other people's needs ahead of my own, even when I am already stretched."
+    },
+    "Q20": {
+      "text": "I find it genuinely difficult to say no — even when taking on more would not be good for me."
+    },
+    "Q21": {
+      "text": "I generally stay calm and composed when things go wrong or when I am under significant pressure."
+    },
+    "Q22": {
+      "text": "After a setback or failure, I tend to recover relatively quickly rather than dwelling on it."
+    },
+    "Q23": {
+      "text": "Predictable income and stable employment matter more to me than higher pay with risk or uncertainty."
+    },
+    "Q24": {
+      "text": "I would turn down an exciting career opportunity if it came with significant financial uncertainty or job insecurity."
+    },
+    "Q25": {
+      "text": "Setting my own schedule and working from wherever I choose is very important to my career satisfaction."
+    },
+    "Q26": {
+      "text": "I would accept meaningfully lower pay in exchange for more control over how and when I work."
+    },
+    "Q27": {
+      "text": "I want my work to contribute to something larger than my own career success or financial goals."
+    },
+    "Q28": {
+      "text": "Knowing my work makes a real, visible difference to others gives me deep meaning and motivation."
+    },
+    "Q29": {
+      "text": "The reputation and prestige of the organization I work for matters a great deal to me."
+    },
+    "Q30": {
+      "text": "Being publicly recognized as an expert, leader, or high achiever in my field is one of my key motivations."
+    },
+    "Q31": {
+      "text": "My family's opinion of my career choice plays an important role in the decisions I make."
+    },
+    "Q32": {
+      "text": "I feel a strong sense of responsibility to support my family financially or professionally through my career."
+    },
+    "Q33": {
+      "text": "I need my work to involve creating new things — new ideas, products, solutions, or experiences."
+    },
+    "Q34": {
+      "text": "I would feel restless and unfulfilled in a role where I had to follow standard procedures with little room to shape my own approach."
+    },
+    "Q35": {
+      "text": "Building significant personal wealth and financial security is one of my primary motivations."
+    },
+    "Q36": {
+      "text": "You enjoy your work but receive a much higher-paying offer in a less interesting field. Which is most like you?",
+      "options": {
+        "A": "I would take the higher pay — financial security and growth come first.",
+        "B": "I would stay where I am fulfilled — money matters but is not the deciding factor."
+      }
+    },
+    "Q37": {
+      "text": "I want my work to be part of building my country's future — not only advancing my own career."
+    },
+    "Q38": {
+      "text": "Two equally good job offers come your way. Which feels more like you?",
+      "options": {
+        "A": "A role with a local organization contributing directly to a major national project.",
+        "B": "A role with a global multinational that gives international exposure and faster external career growth."
+      }
+    },
+    "Q39": {
+      "text": "How my family, friends, and community see me professionally matters deeply — I want to be someone they can speak well of."
+    },
+    "Q40": {
+      "text": "Two roles with similar pay. Which would you choose?",
+      "options": {
+        "A": "A respected, well-known organization everyone in your community recognizes by name.",
+        "B": "A lesser-known but highly innovative organization where you would have more impact and growth, but less external recognition."
+      }
+    },
+    "Q41": {
+      "text": "When approaching a problem, I naturally think several steps ahead and consider how scenarios might play out."
+    },
+    "Q42": {
+      "text": "I am often the person in a group who notices patterns or connections others have overlooked."
+    },
+    "Q43": {
+      "text": "Others naturally turn to me for direction or guidance when a group needs to decide what to do next."
+    },
+    "Q44": {
+      "text": "I feel a genuine sense of responsibility for the performance and wellbeing of the people around me."
+    },
+    "Q45": {
+      "text": "I invest significant time and energy in building deep, long-term relationships with the people I work with."
+    },
+    "Q46": {
+      "text": "I am genuinely curious about the people I meet — their stories, motivations, what makes them who they are."
+    },
+    "Q47": {
+      "text": "I am not satisfied until a task is fully completed to a high standard — starting something is never enough."
+    },
+    "Q48": {
+      "text": "I follow through on what I commit to, even when circumstances make it difficult or inconvenient."
+    },
+    "Q49": {
+      "text": "I find it natural to explain complex ideas in a simple, engaging way that motivates or inspires others."
+    },
+    "Q50": {
+      "text": "I enjoy presenting, writing, or speaking — I like the process of turning ideas into compelling narratives."
+    },
+    "Q51": {
+      "text": "I am constantly seeking to develop new skills and knowledge, even outside my formal role or field of study."
+    },
+    "Q52": {
+      "text": "I find the process of learning something new genuinely enjoyable — even when the subject is difficult or unfamiliar."
+    },
+    "Q53": {
+      "text": "I have a clear sense of where I want to be in my career in 5–10 years, and I am actively working toward it."
+    },
+    "Q54": {
+      "text": "I have maintained focus on the same major interest, goal, or direction for several years — even when other things competed for my attention."
+    },
+    "Q55": {
+      "text": "When I encounter a significant setback or failure, I eventually find a way to push forward rather than giving up."
+    },
+    "Q56": {
+      "text": "I am willing to work very hard for a long time toward something I believe in, even without immediate reward or recognition."
+    },
+    "Q57": {
+      "text": "Finishing what I start — even when it becomes tedious, difficult, or takes longer than expected — is something I pride myself on."
+    },
+    "Q58": {
+      "text": "When I fail at something important, my instinct is to understand what went wrong and try a different approach rather than moving on."
+    },
+    "Q59": {
+      "text": "Three months into a job, your manager tells you firmly that a project you worked hard on needs to be redone. Which feels most like you?",
+      "options": {
+        "A": "Feel demotivated for days and start wondering if this job is right for me.",
+        "B": "Feel disappointed in the moment, then dig in to understand what specifically needs to change."
+      }
+    },
+    "Q60": {
+      "text": "You have had a hard week — long hours, your boss spoke to you sharply about a missed deadline, and you are tired. It is Friday evening and you are thinking about Monday. Which feels closest to your honest reaction?",
+      "options": {
+        "A": "Wondering if this job is worth it — life is short.",
+        "B": "Annoyed but planning to be back on Monday and keep going.",
+        "C": "Already thinking about how to have a calm conversation with my boss about it."
+      }
+    },
+    "Q61": {
+      "text": "Your first or next full-time job, six months in. The work has turned out to be harder and less interesting than you expected. Which is most like you?",
+      "options": {
+        "A": "Start looking for something new immediately.",
+        "B": "Give it 6–12 more months to build skills and network before deciding.",
+        "C": "Try to renegotiate my role with my manager first.",
+        "D": "Stick with it for at least 2 years for the experience value."
+      }
+    },
+    "Q64": {
+      "text": "Two friends are talking about their jobs. Which view feels closer to yours?",
+      "options": {
+        "A": "I would never let a job affect my mental health — I would quit tomorrow.",
+        "B": "You cannot quit every time something is hard — that is how you build resilience.",
+        "C": "Somewhere between — depends on how bad it really is."
+      }
+    },
+    "Q65": {
+      "text": "Two work environments. Which feels more like you?",
+      "options": {
+        "A": "Fast-changing, high-intensity environment where priorities shift weekly and you are often improvising.",
+        "B": "Steady, well-paced environment with clear priorities and predictable rhythms."
+      }
+    },
+    "Q66": {
+      "text": "Where would you most thrive professionally?",
+      "options": {
+        "A": "A large, established organization with clear structure, established processes, and a recognizable name.",
+        "B": "A small, scrappy organization where everyone wears many hats and you can shape how things work."
+      }
+    },
+    "Q67": {
+      "text": "If you had to pick the work setting that genuinely fits you best, which one?",
+      "options": {
+        "A": "A government or government-linked organization, with the stability and national-mission framing that comes with it.",
+        "B": "A private-sector company — corporate, startup, or family business — with more variability and direct market exposure."
+      }
+    },
+    "Q68": {
+      "text": "I would find it energizing to spend a meaningful chunk of my career working in different cities or countries."
+    },
+    "Q69": {
+      "text": "I have previously started, co-founded, or seriously developed a business idea, freelance venture, or independent project."
+    },
+    "Q71": {
+      "text": "Two career paths. Which feels more like you?",
+      "options": {
+        "A": "A path where you would build something of your own — possibly higher reward, definitely higher uncertainty.",
+        "B": "A path where you would grow within a strong organization — more predictable trajectory, more support, less personal risk."
+      }
+    },
+    "Q73": {
+      "text": "The idea of building something of my own — whether as my main career or alongside a stable job — energizes me, even if it means working harder."
+    }
+  }
+}

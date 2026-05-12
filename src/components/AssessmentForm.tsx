@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import {useState} from 'react'
 import {questions, BEHAVIORAL_SCALE, Question} from '@/data/questions'
 import {supabase} from '@/lib/supabase'
@@ -21,6 +22,11 @@ export default function AssessmentForm() {
     const [submitted, setSubmitted] = useState(false)
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState('')
+
+    const tForm = useTranslations('form')
+    const tSections = useTranslations('sections')
+    const tQ = useTranslations('questions')
+    const tScale = useTranslations('scale')
 
     const currentSection = sectionNames[currentSectionIndex]
     const currentQuestions = sections[currentSection]
@@ -89,7 +95,7 @@ export default function AssessmentForm() {
             setSubmitted(true)
         } catch (err: any) {
             console.error('Submission error:', err)
-            setError(err?.message || 'Failed to submit assessment. Please try again.')
+            setError(err?.message || tForm('error'))
         } finally {
             setSubmitting(false)
         }
@@ -102,10 +108,10 @@ export default function AssessmentForm() {
         <div className="text-center p-8 max-w-md">
           <div className="text-5xl mb-4">✅</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Thank you!
+            {tForm('thankYou')}
           </h2>
           <p className="text-gray-600">
-            Your responses have been saved. We will be in touch soon.
+            {tForm('thankYouMessage')}
           </p>
         </div>
       </div>
@@ -120,8 +126,8 @@ export default function AssessmentForm() {
       <div className="fixed top-0 left-0 right-0 z-10 bg-white shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex justify-between text-sm text-gray-500 mb-1">
-            <span>{currentSection}</span>
-            <span>{currentSectionIndex + 1} of {sectionNames.length}</span>
+            <span>{tSections(currentSection)}</span>
+            <span>{tForm('ofTotal', { current: currentSectionIndex + 1, total: sectionNames.length })}</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
@@ -135,7 +141,7 @@ export default function AssessmentForm() {
       {/* Questions */}
       <div className="max-w-2xl mx-auto px-4 pt-24 pb-32">
         <h2 className="text-xl font-bold text-gray-800 mb-8">
-          {currentSection}
+          {tSections(currentSection)}
         </h2>
 
         <div className="space-y-10">
@@ -144,7 +150,7 @@ export default function AssessmentForm() {
 
               {/* Question text */}
               <p className="text-gray-800 font-medium mb-4 leading-relaxed">
-                {question.text}
+                {tQ(`${question.id}.text`)}
               </p>
 
               {/* ── Text / Email / Phone Input ── */}
@@ -153,7 +159,7 @@ export default function AssessmentForm() {
                   type={question.type === 'email_input' ? 'email' : 'text'}
                   value={answers[question.id] || ''}
                   onChange={e => handleSingleSelect(question.id, e.target.value)}
-                  placeholder="Your Answer"
+                  placeholder={tForm('placeholder')}
                   className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-blue-500 focus:outline-none text-gray-800"
                 />
               )}
@@ -176,14 +182,14 @@ export default function AssessmentForm() {
                     <button
                       key={option.value}
                       onClick={() => handleScale(question.id, option.value)}
-                      className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
+                      className={`w-full text-start px-4 py-3 rounded-lg border transition-all ${
                         answers[question.id] === option.value
                           ? 'border-blue-600 bg-blue-50 text-blue-800 font-medium'
                           : 'border-gray-200 hover:border-gray-300 text-gray-700'
                       }`}
                     >
-                      <span className="text-gray-400 text-sm mr-2">{option.value}</span>
-                      {option.label}
+                      <span className="text-gray-400 text-sm me-2">{option.value}</span>
+                      {tScale(String(option.value))}
                     </button>
                   ))}
                 </div>
@@ -196,14 +202,14 @@ export default function AssessmentForm() {
                     <button
                       key={option.value}
                       onClick={() => handleSingleSelect(question.id, option.value)}
-                      className={`w-full text-left px-4 py-4 rounded-lg border transition-all ${
+                      className={`w-full text-start px-4 py-4 rounded-lg border transition-all ${
                         answers[question.id] === option.value
                           ? 'border-blue-600 bg-blue-50 text-blue-800 font-medium'
                           : 'border-gray-200 hover:border-gray-300 text-gray-700'
                       }`}
                     >
-                      <span className="font-bold mr-2">{option.value})</span>
-                      {option.label}
+                      <span className="font-bold me-2">{option.value})</span>
+                      {tQ(`${question.id}.options.${option.value}`)}
                     </button>
                   ))}
                 </div>
@@ -216,13 +222,13 @@ export default function AssessmentForm() {
                     <button
                       key={option.value}
                       onClick={() => handleSingleSelect(question.id, option.value)}
-                      className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
+                      className={`w-full text-start px-4 py-3 rounded-lg border transition-all ${
                         answers[question.id] === option.value
                           ? 'border-blue-600 bg-blue-50 text-blue-800 font-medium'
                           : 'border-gray-200 hover:border-gray-300 text-gray-700'
                       }`}
                     >
-                      {option.label}
+                      {tQ(`${question.id}.options.${option.value}`)}
                     </button>
                   ))}
                 </div>
@@ -233,7 +239,7 @@ export default function AssessmentForm() {
                 <div>
                   {question.maxSelect && (
                     <p className="text-sm text-gray-400 mb-3">
-                      Select up to {question.maxSelect}
+                      {tForm('selectUpTo', { max: question.maxSelect })}
                     </p>
                   )}
                   <div className="space-y-2">
@@ -244,14 +250,14 @@ export default function AssessmentForm() {
                         <button
                           key={option.value}
                           onClick={() => handleMultiSelect(question.id, option.value, question.maxSelect)}
-                          className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
+                          className={`w-full text-start px-4 py-3 rounded-lg border transition-all ${
                             isSelected
                               ? 'border-blue-600 bg-blue-50 text-blue-800 font-medium'
                               : 'border-gray-200 hover:border-gray-300 text-gray-700'
                           }`}
                         >
                           <span className="mr-2">{isSelected ? '☑' : '☐'}</span>
-                          {option.label}
+                          {tQ(`${question.id}.options.${option.value}`)}
                         </button>
                       )
                     })}
@@ -277,7 +283,7 @@ export default function AssessmentForm() {
               }}
               className="px-6 py-2 text-gray-600 hover:text-gray-800"
             >
-              ← Back
+              {tForm('back')}
             </button>
           )}
           <div />
@@ -293,7 +299,7 @@ export default function AssessmentForm() {
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >
-              {submitting ? 'Submitting...' : 'Submit'}
+              {submitting ? tForm('submitting') : tForm('submit')}
             </button>
           ) : (
             <button
@@ -305,7 +311,7 @@ export default function AssessmentForm() {
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >
-              Next →
+              {tForm('next')}
             </button>
           )}
 
