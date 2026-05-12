@@ -123,15 +123,15 @@ export default function AssessmentForm() {
     <div className="min-h-screen bg-gray-50">
 
       {/* Progress bar */}
-      <div className="fixed top-14 left-0 right-0 z-10 bg-white shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-3">
-          <div className="flex justify-between text-sm text-gray-500 mb-1">
+      <div className="fixed top-14 left-0 right-0 z-10 bg-gray-50 border-b border-gray-100">
+        <div className="max-w-2xl mx-auto px-4 py-2">
+          <div className="flex justify-between text-xs text-gray-400 mb-1.5">
             <span>{tSections(currentSection)}</span>
             <span>{tForm('ofTotal', { current: currentSectionIndex + 1, total: sectionNames.length })}</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-gray-200 rounded-full h-1">
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              className="bg-blue-500 h-1 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -139,11 +139,7 @@ export default function AssessmentForm() {
       </div>
 
       {/* Questions */}
-      <div className="max-w-2xl mx-auto px-4 pt-36 pb-32">
-        <h2 className="text-xl font-bold text-gray-800 mb-8">
-          {tSections(currentSection)}
-        </h2>
-
+      <div className="max-w-2xl mx-auto px-4 pt-28 pb-32">
         <div className="space-y-10">
           {currentQuestions.map((question) => (
             <div key={question.id} className="bg-white rounded-xl p-6 shadow-sm">
@@ -271,7 +267,7 @@ export default function AssessmentForm() {
       </div>
 
       {/* Bottom navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm shadow-[0_-2px_12px_rgba(0,0,0,0.06)] p-4">
         <div className="max-w-2xl mx-auto flex justify-between items-center">
 
           {/* Back button */}
