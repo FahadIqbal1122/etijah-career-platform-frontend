@@ -63,11 +63,6 @@ export default function ResultsPage() {
             {/* ── Content ── */}
             <div className="max-w-2xl mx-auto px-4 -mt-8 pb-16 space-y-4">
 
-                {/* Share row */}
-                <div className="flex justify-end">
-                    <CopyLinkButton />
-                </div>
-
                 {/* Career Types */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                     <div className="flex items-center gap-3 mb-4">
@@ -184,6 +179,12 @@ export default function ResultsPage() {
                             </div>
                         ))}
                     </div>
+                </div>
+
+                {/* Share */}
+                <div className="flex flex-col items-center gap-2 pt-2 pb-4">
+                    <p className="text-sm text-slate-400">Share your results</p>
+                    <CopyLinkButton />
                 </div>
 
             </div>
