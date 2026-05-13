@@ -29,6 +29,7 @@ export default function AdminPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
   const [adminKey, setAdminKey] = useState('')
 
@@ -68,15 +69,18 @@ export default function AdminPage() {
     if (authed && adminKey) fetchSubmissions(adminKey)
   }, [authed, adminKey, fetchSubmissions])
 
-  function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     if (username !== ADMIN_USERNAME) {
       setLoginError('Invalid credentials')
       return
     }
-    fetch('/api/admin/submissions', {
-      headers: { 'x-admin-key': password },
-    }).then(res => {
+    setLoggingIn(true)
+    setLoginError('')
+    try {
+      const res = await fetch('/api/admin/submissions', {
+        headers: { 'x-admin-key': password },
+      })
       if (res.ok) {
         sessionStorage.setItem('admin_key', password)
         setAdminKey(password)
@@ -84,7 +88,11 @@ export default function AdminPage() {
       } else {
         setLoginError('Invalid credentials')
       }
-    })
+    } catch {
+      setLoginError('Connection error, please try again')
+    } finally {
+      setLoggingIn(false)
+    }
   }
 
   function handleLogout() {
@@ -164,9 +172,13 @@ export default function AdminPage() {
             {loginError && <p className="text-red-500 text-sm">{loginError}</p>}
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg text-sm transition-colors"
+              disabled={loggingIn}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
             >
-              Sign in
+              {loggingIn && (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              )}
+              {loggingIn ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
         </div>
