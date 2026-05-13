@@ -1,4 +1,5 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '')
+const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://backend-career-compass.etijahcoaching.com').replace(/\/$/, '')
+console.log('BASE_URL:', BASE_URL)
 
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
     const res = await fetch(`${BASE_URL}${path}`, {
