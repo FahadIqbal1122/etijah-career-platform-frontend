@@ -72,10 +72,8 @@ export default function AssessmentForm() {
     async function handleSubmit(){
         setSubmitting(true)
         setError('')
-        console.log('handleSubmit called')
 
         try{
-            console.log('before rpc')
             const { data, error } = await supabase.rpc('insert_assessment_response', {
                 payload: {
                     full_name: answers['QD1'],
@@ -95,8 +93,6 @@ export default function AssessmentForm() {
                     completed: true,
                 }
             })
-            console.log('RPC data:', data)
-            console.log('RPC error:', error)
             if (error) throw error
             const result = await apiPost<any>(`/assessment/${data}/score`, {})
             setSummary(result.summary)
