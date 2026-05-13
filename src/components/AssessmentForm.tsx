@@ -25,6 +25,8 @@ export default function AssessmentForm() {
     const [submitting, setSubmitting] = useState(false)
     const [summary, setSummary] = useState<any>(null)
     const [error, setError] = useState('')
+    const [showExistingModal, setShowExistingModal] = useState(false)
+    const [existingResultId, setExistingResultId] = useState<string | null>(null)
     const router = useRouter()
 
     const tForm = useTranslations('form')
@@ -66,7 +68,26 @@ export default function AssessmentForm() {
         setAnswers(prev => ({...prev, [questionId]: value}))
     }
 
-    function handleNext(){
+    async function checkExistingUser(email: string, phone: string) {
+      const { data } = await supabase
+        .from('assessment_responses')
+        .select('id')
+        .or('email.eq.' + email + ',phone.eq.' + phone)
+        .order('created_at', {ascending: false})
+        .limit(1)
+        .maybeSingle()
+      return data
+    }
+
+    async function handleNext(){
+        if (currentSectionIndex === 0){
+          const existing = await checkExistingUser(answers['QD2'], answers['QD3'])
+          if (existing) {
+            setExistingResultId(existing.id)
+            setShowExistingModal(true)
+            return
+          }
+        }
         setCurrentSectionIndex(prev => prev + 1)
         window.scrollTo(0,0)
     }
@@ -355,6 +376,33 @@ export default function AssessmentForm() {
           <p className="text-center text-red-500 text-sm mt-2">{error}</p>
         )}
       </div>
+
+      {showExistingModal && existingResultId && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-xl space-y-4">
+              <h3 className="text-lg font-bold text-gray-800">Welcome back!</h3>
+              <p className="text-gray-500 text-sm">We found a previous assessment linked to your details. Would you like to view those results or retake the test?</p>
+              <div className="flex flex-col gap-3 pt-2">
+                  <button
+                      onClick={() => router.push(`/results/${existingResultId}`)}
+                      className="w-full py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-all"
+                  >
+                      View Previous Results
+                  </button>
+                  <button
+                      onClick={() => {
+                          setShowExistingModal(false)
+                          setCurrentSectionIndex(prev => prev + 1)
+                          window.scrollTo(0, 0)
+                      }}
+                      className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-all"
+                  >
+                      Retake the Assessment
+                  </button>
+              </div>
+          </div>
+      </div>
+      )}
 
     </div>
   )
