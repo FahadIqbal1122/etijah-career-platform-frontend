@@ -93,6 +93,7 @@ export default function AssessmentForm() {
                     completed: true,
                 }
             })
+            console.log('RPC data:', data)
             if (error) throw error
             const result = await apiPost<any>(`/assessment/${data}/score`, {})
             setSummary(result.summary)
