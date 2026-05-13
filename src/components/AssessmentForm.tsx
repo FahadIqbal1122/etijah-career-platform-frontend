@@ -6,6 +6,7 @@ import {questions, BEHAVIORAL_SCALE, Question} from '@/data/questions'
 import {supabase} from '@/lib/supabase'
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
+import { apiPost } from '@/lib/api'
 
 //Group questions by section
 const sections = questions.reduce((acc, question) =>{
@@ -21,6 +22,7 @@ export default function AssessmentForm() {
     const [answers, setAnswers] = useState<Record<string, any>>({})
     const [submitted, setSubmitted] = useState(false)
     const [submitting, setSubmitting] = useState(false)
+    const [summary, setSummary] = useState<any>(null)
     const [error, setError] = useState('')
 
     const tForm = useTranslations('form')
@@ -72,7 +74,7 @@ export default function AssessmentForm() {
         setError('')
 
         try{
-            const {error} = await supabase.rpc('insert_assessment_response', {
+            const { data, error } = await supabase.rpc('insert_assessment_response', {
                 payload: {
                     full_name: answers['QD1'],
                     email: answers['QD2'],
@@ -92,6 +94,8 @@ export default function AssessmentForm() {
                 }
             })
             if (error) throw error
+            const result = await apiPost<any>(`/assessment/${data}/score`, {})
+            setSummary(result.summary)
             setSubmitted(true)
         } catch (err: any) {
             console.error('Submission error:', err)
@@ -102,21 +106,52 @@ export default function AssessmentForm() {
     }
 
     // ─── SUBMITTED STATE ──────────────────────────────────
-    if (submitted){
+    if (submitted && summary) {
         return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center p-8 max-w-md">
-          <div className="text-5xl mb-4">✅</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            {tForm('thankYou')}
-          </h2>
-          <p className="text-gray-600">
-            {tForm('thankYouMessage')}
-          </p>
-        </div>
-      </div>
-    )
-  }
+            <div className="max-w-2xl mx-auto px-4 py-12 space-y-8">
+                <h2 className="text-2xl font-bold text-gray-800">Your Results</h2>
+
+                <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <h3 className="font-semibold text-gray-700 mb-3">Top Career Types</h3>
+                    <div className="flex gap-2 flex-wrap">
+                        {summary.riasec.top_types.map((t: string) => (
+                            <span key={t} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm capitalize">{t}</span>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <h3 className="font-semibold text-gray-700 mb-3">Top Values</h3>
+                    <div className="flex gap-2 flex-wrap">
+                        {summary.values.top_values.map((v: string) => (
+                            <span key={v} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm capitalize">{v}</span>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <h3 className="font-semibold text-gray-700 mb-3">Top Strengths</h3>
+                    <div className="flex gap-2 flex-wrap">
+                        {summary.strengths.top_strengths.map((s: string) => (
+                            <span key={s} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm capitalize">{s}</span>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <h3 className="font-semibold text-gray-700 mb-3">Personality</h3>
+                    <div className="space-y-2">
+                        {Object.entries(summary.big_five).map(([trait, level]: any) => (
+                            <div key={trait} className="flex justify-between text-sm">
+                                <span className="text-gray-600 capitalize">{trait.replace('_', ' ')}</span>
+                                <span className="font-medium text-gray-800 capitalize">{level}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
   // ─── MAIN FORM ────────────────────────────────────────
   return (
