@@ -69,14 +69,11 @@ export default function AssessmentForm() {
     }
 
     async function checkExistingUser(email: string, phone: string) {
-      const { data } = await supabase
-        .from('assessment_responses')
-        .select('id')
-        .or('email.eq.' + email + ',phone.eq.' + phone)
-        .order('created_at', {ascending: false})
-        .limit(1)
-        .maybeSingle()
-      return data
+      const { data } = await supabase.rpc('check_existing_response', {
+        p_email: email,
+        p_phone: phone,
+      })
+      return data ? { id: data } : null
     }
 
     async function handleNext(){
