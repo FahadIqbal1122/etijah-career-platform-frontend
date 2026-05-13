@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 const ADMIN_USERNAME = 'admin'
 
@@ -40,6 +40,8 @@ export default function AdminPage() {
   const [selected, setSelected] = useState<Submission | null>(null)
   const [results, setResults] = useState<any>(null)
   const [resultsLoading, setResultsLoading] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const key = sessionStorage.getItem('admin_key')
@@ -190,17 +192,49 @@ export default function AdminPage() {
   if (selected) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center gap-4">
-          <button
-            onClick={() => { setSelected(null); setResults(null) }}
-            className="text-sm text-blue-600 hover:underline flex items-center gap-1"
-          >
-            ← Back
-          </button>
-          <div>
-            <h2 className="font-semibold text-slate-800">{selected.full_name}</h2>
-            <p className="text-xs text-slate-400">{selected.email} · {selected.id}</p>
+        <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => { setSelected(null); setResults(null) }}
+              className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+            >
+              ← Back
+            </button>
+            <div>
+              <h2 className="font-semibold text-slate-800">{selected.full_name}</h2>
+              <p className="text-xs text-slate-400">{selected.email} · {selected.id}</p>
+            </div>
           </div>
+          <button
+            onClick={() => {
+              const url = `${window.location.origin}/en/results/${selected.id}`
+              navigator.clipboard.writeText(url)
+              setLinkCopied(true)
+              if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+              copyTimerRef.current = setTimeout(() => setLinkCopied(false), 2000)
+            }}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
+              linkCopied
+                ? 'border-green-300 bg-green-50 text-green-700'
+                : 'border-blue-200 bg-white text-blue-600 hover:bg-blue-50 hover:border-blue-300'
+            }`}
+          >
+            {linkCopied ? (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Copied!
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-4 10h6a2 2 0 002-2v-8a2 2 0 00-2-2h-6a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy Results Link
+              </>
+            )}
+          </button>
         </div>
 
         <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
