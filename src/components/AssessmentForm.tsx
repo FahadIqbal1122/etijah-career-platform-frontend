@@ -7,7 +7,7 @@ import {supabase} from '@/lib/supabase'
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { apiPost } from '@/lib/api'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 
 //Group questions by section
 const sections = questions.reduce((acc, question) =>{
