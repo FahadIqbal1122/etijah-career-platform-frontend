@@ -7,6 +7,7 @@ import {supabase} from '@/lib/supabase'
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { apiPost } from '@/lib/api'
+import { useRouter } from 'next/router'
 
 //Group questions by section
 const sections = questions.reduce((acc, question) =>{
@@ -24,6 +25,7 @@ export default function AssessmentForm() {
     const [submitting, setSubmitting] = useState(false)
     const [summary, setSummary] = useState<any>(null)
     const [error, setError] = useState('')
+    const router = useRouter()
 
     const tForm = useTranslations('form')
     const tSections = useTranslations('sections')
@@ -95,6 +97,7 @@ export default function AssessmentForm() {
             })
             if (error) throw error
             const result = await apiPost<any>(`/assessment/${data}/score`, {})
+            router.push(`/results/${data}`)
             setSummary(result.summary)
             setSubmitted(true)
         } catch (err: any) {
