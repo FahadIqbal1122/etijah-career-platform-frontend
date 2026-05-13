@@ -39,13 +39,18 @@ export default function AssessmentForm() {
     const isLastSection = currentSectionIndex === sectionNames.length - 1
     const progress = ((currentSectionIndex) / sectionNames.length) * 100
 
-    // Check all questions in current section are answered
-    const currentSectionComplete = currentQuestions.every(q =>{
+    function isAnswerValid(q: Question): boolean {
         const answer = answers[q.id]
         if (answer === undefined || answer === null || answer === '') return false
         if (Array.isArray(answer)) return answer.length > 0
+        if (q.type === 'phone_input') return String(answer).replace(/\D/g, '').length >= 7
+        if (q.type === 'email_input') return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(answer))
+        if (q.type === 'text_input') return String(answer).trim().length >= 2
         return true
-    })
+    }
+
+    // Check all questions in current section are answered
+    const currentSectionComplete = currentQuestions.every(isAnswerValid)
 
     function handleSingleSelect(questionId: string, value: string){
         setAnswers(prev => ({...prev, [questionId]: value}))
@@ -90,6 +95,12 @@ export default function AssessmentForm() {
     }
 
     async function handleSubmit(){
+        const unanswered = questions.filter(q => !isAnswerValid(q))
+        if (unanswered.length > 0) {
+            setError('Some questions are incomplete. Please go back and fill in all required fields.')
+            return
+        }
+
         setSubmitting(true)
         setError('')
 
