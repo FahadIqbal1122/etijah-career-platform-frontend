@@ -24,6 +24,15 @@ type Submission = {
   created_at: string
 }
 
+type OnetLink = {
+  id: string
+  email: string
+  onet_url: string
+  label: string | null
+  created_at: string
+  has_assessment: boolean
+}
+
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
   const [username, setUsername] = useState('')
@@ -32,6 +41,8 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
   const [adminKey, setAdminKey] = useState('')
+
+  const [activeTab, setActiveTab] = useState<'submissions' | 'onet'>('submissions')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -42,6 +53,15 @@ export default function AdminPage() {
   const [resultsLoading, setResultsLoading] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const [onetLinks, setOnetLinks] = useState<OnetLink[]>([])
+  const [onetLoading, setOnetLoading] = useState(false)
+  const [onetError, setOnetError] = useState('')
+  const [onetEmail, setOnetEmail] = useState('')
+  const [onetUrl, setOnetUrl] = useState('')
+  const [onetLabel, setOnetLabel] = useState('')
+  const [onetAdding, setOnetAdding] = useState(false)
+  const [selectedOnet, setSelectedOnet] = useState<OnetLink | null>(null)
 
   useEffect(() => {
     const key = sessionStorage.getItem('admin_key')
@@ -67,9 +87,28 @@ export default function AdminPage() {
     }
   }, [])
 
+  const fetchOnetLinks = useCallback(async (key: string) => {
+    setOnetLoading(true)
+    setOnetError('')
+    try {
+      const res = await fetch('/api/admin/onet', {
+        headers: { 'x-admin-key': key },
+      })
+      if (!res.ok) throw new Error('Failed to load O*NET links')
+      setOnetLinks(await res.json())
+    } catch (err: any) {
+      setOnetError(err.message)
+    } finally {
+      setOnetLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
-    if (authed && adminKey) fetchSubmissions(adminKey)
-  }, [authed, adminKey, fetchSubmissions])
+    if (authed && adminKey) {
+      fetchSubmissions(adminKey)
+      fetchOnetLinks(adminKey)
+    }
+  }, [authed, adminKey, fetchSubmissions, fetchOnetLinks])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -104,6 +143,8 @@ export default function AdminPage() {
     setSubmissions([])
     setSelected(null)
     setResults(null)
+    setOnetLinks([])
+    setSelectedOnet(null)
   }
 
   async function handleViewResults(sub: Submission) {
@@ -122,6 +163,43 @@ export default function AdminPage() {
       setResultsLoading(false)
     }
   }
+
+  async function handleAddOnet(e: React.FormEvent) {
+    e.preventDefault()
+    setOnetAdding(true)
+    try {
+      const res = await fetch('/api/admin/onet', {
+        method: 'POST',
+        headers: { 'x-admin-key': adminKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: onetEmail, onet_url: onetUrl, label: onetLabel || null }),
+      })
+      if (!res.ok) throw new Error('Failed to add')
+      setOnetEmail('')
+      setOnetUrl('')
+      setOnetLabel('')
+      await fetchOnetLinks(adminKey)
+    } catch (err: any) {
+      setOnetError(err.message)
+    } finally {
+      setOnetAdding(false)
+    }
+  }
+
+  async function handleDeleteOnet(id: string) {
+    try {
+      await fetch(`/api/admin/onet/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-admin-key': adminKey },
+      })
+      setOnetLinks(prev => prev.filter(l => l.id !== id))
+      if (selectedOnet?.id === id) setSelectedOnet(null)
+    } catch {
+      // silent
+    }
+  }
+
+  const onetLinkForEmail = (email: string) =>
+    onetLinks.find(l => l.email.toLowerCase() === email?.toLowerCase())
 
   // ── Login ──────────────────────────────────────────────
   if (!authed) {
@@ -190,6 +268,7 @@ export default function AdminPage() {
 
   // ── Results detail panel ──────────────────────────────
   if (selected) {
+    const onet = onetLinkForEmail(selected.email)
     return (
       <div className="min-h-screen bg-slate-50">
         <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between">
@@ -259,6 +338,24 @@ export default function AdminPage() {
             </dl>
           </div>
 
+          {onet && (
+            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 shadow-sm">
+              <h3 className="font-semibold text-orange-700 mb-2 text-sm uppercase tracking-wide">O*NET Assessment</h3>
+              {onet.label && <p className="text-xs text-orange-500 mb-2">{onet.label}</p>}
+              <a
+                href={onet.onet_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-orange-700 hover:underline break-all"
+              >
+                {onet.onet_url}
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            </div>
+          )}
+
           {resultsLoading && (
             <div className="flex justify-center py-8">
               <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -317,17 +414,105 @@ export default function AdminPage() {
     )
   }
 
-  // ── Submissions list ──────────────────────────────────
+  // ── O*NET detail panel ────────────────────────────────
+  if (selectedOnet) {
+    const matchedSubmission = submissions.find(
+      s => s.email?.toLowerCase() === selectedOnet.email.toLowerCase()
+    )
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center gap-4">
+          <button
+            onClick={() => setSelectedOnet(null)}
+            className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+          >
+            ← Back
+          </button>
+          <div>
+            <h2 className="font-semibold text-slate-800">{selectedOnet.email}</h2>
+            {selectedOnet.label && <p className="text-xs text-slate-400">{selectedOnet.label}</p>}
+          </div>
+        </div>
+
+        <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
+          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 shadow-sm">
+            <h3 className="font-semibold text-orange-700 mb-2 text-sm uppercase tracking-wide">O*NET Link</h3>
+            <a
+              href={selectedOnet.onet_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-orange-700 hover:underline break-all"
+            >
+              {selectedOnet.onet_url}
+              <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          </div>
+
+          {matchedSubmission ? (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+              <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Matched Assessment</h3>
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm mb-4">
+                {[
+                  ['Name', matchedSubmission.full_name],
+                  ['Email', matchedSubmission.email],
+                  ['Country', matchedSubmission.country],
+                  ['Stage', matchedSubmission.current_stage?.replace(/_/g, ' ')],
+                  ['Submitted', new Date(matchedSubmission.created_at).toLocaleString()],
+                  ['Completed', matchedSubmission.completed ? 'Yes' : 'No'],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="text-slate-400">{label}</dt>
+                    <dd className="text-slate-800 font-medium capitalize">{value || '—'}</dd>
+                  </div>
+                ))}
+              </dl>
+              <button
+                onClick={() => { setSelectedOnet(null); handleViewResults(matchedSubmission) }}
+                className="text-sm text-blue-600 hover:underline font-medium"
+              >
+                View full assessment results →
+              </button>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 text-center">
+              <p className="text-slate-400 text-sm">No assessment submitted yet for this email.</p>
+              <p className="text-slate-300 text-xs mt-1">Results will appear here once they complete the assessment.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Main panel ────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="font-bold text-slate-800">Admin Panel</h1>
-          <p className="text-xs text-slate-400">Assessment Submissions</p>
+        <div className="flex items-center gap-6">
+          <div>
+            <h1 className="font-bold text-slate-800">Admin Panel</h1>
+            <p className="text-xs text-slate-400">Etijah Career Compass</p>
+          </div>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setActiveTab('submissions')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'submissions' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Submissions
+            </button>
+            <button
+              onClick={() => setActiveTab('onet')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'onet' ? 'bg-orange-500 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              O*NET Links
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <button
-            onClick={() => fetchSubmissions(adminKey)}
+            onClick={() => { fetchSubmissions(adminKey); fetchOnetLinks(adminKey) }}
             className="text-sm text-blue-600 hover:underline"
           >
             Refresh
@@ -342,63 +527,189 @@ export default function AdminPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-8">
-        {loading && (
-          <div className="flex justify-center py-16">
-            <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        )}
 
-        {fetchError && (
-          <p className="text-red-500 text-sm text-center py-8">{fetchError}</p>
-        )}
-
-        {!loading && !fetchError && (
+        {/* ── Submissions Tab ── */}
+        {activeTab === 'submissions' && (
           <>
-            <p className="text-sm text-slate-400 mb-4">{submissions.length} submission{submissions.length !== 1 ? 's' : ''}</p>
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Stage</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {submissions.map((sub, i) => (
-                    <tr key={sub.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
-                      <td className="px-4 py-3 font-medium text-slate-800">{sub.full_name || '—'}</td>
-                      <td className="px-4 py-3 text-slate-500">{sub.email || '—'}</td>
-                      <td className="px-4 py-3 text-slate-500">{sub.country || '—'}</td>
-                      <td className="px-4 py-3 text-slate-500 capitalize">{sub.current_stage?.replace(/_/g, ' ') || '—'}</td>
-                      <td className="px-4 py-3 text-slate-400 text-xs">{new Date(sub.created_at).toLocaleDateString()}</td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sub.completed ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-600'}`}>
-                          {sub.completed ? 'Complete' : 'Incomplete'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => handleViewResults(sub)}
-                          className="text-xs text-blue-600 hover:underline font-medium"
-                        >
-                          View results →
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {submissions.length === 0 && (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No submissions yet</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            {loading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {fetchError && <p className="text-red-500 text-sm text-center py-8">{fetchError}</p>}
+            {!loading && !fetchError && (
+              <>
+                <p className="text-sm text-slate-400 mb-4">{submissions.length} submission{submissions.length !== 1 ? 's' : ''}</p>
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50">
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Stage</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+                        <th className="px-4 py-3" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {submissions.map((sub, i) => {
+                        const hasOnet = !!onetLinkForEmail(sub.email)
+                        return (
+                          <tr key={sub.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                            <td className="px-4 py-3 font-medium text-slate-800">
+                              <span>{sub.full_name || '—'}</span>
+                              {hasOnet && (
+                                <span className="ml-2 text-xs font-semibold bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">O*NET</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-slate-500">{sub.email || '—'}</td>
+                            <td className="px-4 py-3 text-slate-500">{sub.country || '—'}</td>
+                            <td className="px-4 py-3 text-slate-500 capitalize">{sub.current_stage?.replace(/_/g, ' ') || '—'}</td>
+                            <td className="px-4 py-3 text-slate-400 text-xs">{new Date(sub.created_at).toLocaleDateString()}</td>
+                            <td className="px-4 py-3">
+                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sub.completed ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-600'}`}>
+                                {sub.completed ? 'Complete' : 'Incomplete'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <button
+                                onClick={() => handleViewResults(sub)}
+                                className="text-xs text-blue-600 hover:underline font-medium"
+                              >
+                                View results →
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                      {submissions.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No submissions yet</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── O*NET Tab ── */}
+        {activeTab === 'onet' && (
+          <>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+              <h2 className="font-semibold text-slate-700 mb-4 text-sm uppercase tracking-wide">Add O*NET Link</h2>
+              <form onSubmit={handleAddOnet} className="flex flex-wrap gap-3 items-end">
+                <div className="flex-1 min-w-[180px]">
+                  <label className="block text-xs text-slate-500 mb-1">Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={onetEmail}
+                    onChange={e => setOnetEmail(e.target.value)}
+                    placeholder="user@email.com"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                </div>
+                <div className="flex-[2] min-w-[220px]">
+                  <label className="block text-xs text-slate-500 mb-1">O*NET URL</label>
+                  <input
+                    type="url"
+                    required
+                    value={onetUrl}
+                    onChange={e => setOnetUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                </div>
+                <div className="flex-1 min-w-[140px]">
+                  <label className="block text-xs text-slate-500 mb-1">Label (optional)</label>
+                  <input
+                    type="text"
+                    value={onetLabel}
+                    onChange={e => setOnetLabel(e.target.value)}
+                    placeholder="e.g. May 2026"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={onetAdding}
+                  className="bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
+                >
+                  {onetAdding && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                  Add
+                </button>
+              </form>
+              {onetError && <p className="text-red-500 text-xs mt-2">{onetError}</p>}
             </div>
+
+            {onetLoading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+
+            {!onetLoading && (
+              <>
+                <p className="text-sm text-slate-400 mb-4">{onetLinks.length} link{onetLinks.length !== 1 ? 's' : ''}</p>
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50">
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Label</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">O*NET URL</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Assessment</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Added</th>
+                        <th className="px-4 py-3" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {onetLinks.map((link, i) => (
+                        <tr key={link.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                          <td className="px-4 py-3 font-medium text-slate-800">{link.email}</td>
+                          <td className="px-4 py-3 text-slate-500">{link.label || '—'}</td>
+                          <td className="px-4 py-3 text-slate-500 max-w-xs truncate">
+                            <a href={link.onet_url} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">
+                              {link.onet_url}
+                            </a>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${link.has_assessment ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-400'}`}>
+                              {link.has_assessment ? 'Submitted' : 'Pending'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-400 text-xs">{new Date(link.created_at).toLocaleDateString()}</td>
+                          <td className="px-4 py-3 flex items-center gap-3">
+                            <button
+                              onClick={() => setSelectedOnet(link)}
+                              className="text-xs text-blue-600 hover:underline font-medium"
+                            >
+                              View →
+                            </button>
+                            <button
+                              onClick={() => handleDeleteOnet(link.id)}
+                              className="text-xs text-red-400 hover:text-red-600 hover:underline"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {onetLinks.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-12 text-center text-slate-400">No O*NET links added yet</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
