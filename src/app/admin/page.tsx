@@ -164,6 +164,15 @@ export default function AdminPage() {
     }
   }
 
+  async function handleDeleteSubmission(id: string) {
+    if (!confirm('Delete this submission and all its data?')) return
+    await fetch(`/api/admin/submissions/${id}`, {
+      method: 'DELETE',
+      headers: { 'x-admin-key': adminKey },
+    })
+    setSubmissions(prev => prev.filter(s => s.id !== id))
+  }
+
   async function handleAddOnet(e: React.FormEvent) {
     e.preventDefault()
     setOnetAdding(true)
@@ -573,12 +582,18 @@ export default function AdminPage() {
                                 {sub.completed ? 'Complete' : 'Incomplete'}
                               </span>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3 flex items-center gap-3">
                               <button
                                 onClick={() => handleViewResults(sub)}
                                 className="text-xs text-blue-600 hover:underline font-medium"
                               >
                                 View results →
+                              </button>
+                              <button
+                                onClick={() => handleDeleteSubmission(sub.id)}
+                                className="text-xs text-red-400 hover:text-red-600 hover:underline"
+                              >
+                                Delete
                               </button>
                             </td>
                           </tr>

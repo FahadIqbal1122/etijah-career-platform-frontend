@@ -1,60 +1,26 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-  
-function getSupabase() {
-    return createClient(
-      process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_KEY!
-    )
-}
+
+const BACKEND = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
 
 export async function GET(req: NextRequest) {
-    if (req.headers.get('x-admin-key') !== process.env.ADMIN_PASSWORD)
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (req.headers.get('x-admin-key') !== process.env.ADMIN_PASSWORD)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const supabase = getSupabase()
-
-    const { data: links, error } = await supabase
-      .from('onet_links')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-    const emails = links?.map(l => l.email) ?? []
-    let assessmentEmails: string[] = []
-
-    if (emails.length > 0) {
-      const { data } = await supabase
-        .from('assessment_responses')
-        .select('email')
-        .in('email', emails)
-        .eq('completed', true)
-      assessmentEmails = data?.map(r => r.email) ?? []
-    }
-
-    return NextResponse.json(
-      links?.map(link => ({ ...link, has_assessment: assessmentEmails.includes(link.email) }))
-    )
+  const res = await fetch(`${BACKEND}/onet`)
+  const data = await res.json()
+  return NextResponse.json(data, { status: res.status })
 }
 
 export async function POST(req: NextRequest) {
-    if (req.headers.get('x-admin-key') !== process.env.ADMIN_PASSWORD)
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (req.headers.get('x-admin-key') !== process.env.ADMIN_PASSWORD)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { email, onet_url, label } = await req.json()
-  
-    if (!email || !onet_url)
-      return NextResponse.json({ error: 'email and onet_url are required' }, { status: 400 })
-
-    const supabase = getSupabase()
-
-    const { data, error } = await supabase
-      .from('onet_links')
-      .insert({ email: email.toLowerCase().trim(), onet_url, label })
-      .select()
-      .single()
-
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json(data, { status: 201 })
+  const body = await req.json()
+  const res = await fetch(`${BACKEND}/onet`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json()
+  return NextResponse.json(data, { status: res.status })
 }
