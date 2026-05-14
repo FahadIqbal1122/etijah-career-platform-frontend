@@ -3,7 +3,6 @@
 import { useTranslations } from 'next-intl'
 import {useState} from 'react'
 import {questions, BEHAVIORAL_SCALE, Question} from '@/data/questions'
-import {supabase} from '@/lib/supabase'
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { apiPost } from '@/lib/api'
@@ -74,11 +73,11 @@ export default function AssessmentForm() {
     }
 
     async function checkExistingUser(email: string, phone: string) {
-      const { data } = await supabase.rpc('check_existing_response', {
-        p_email: email,
-        p_phone: phone,
+      const data = await apiPost<{id: string} | null>('/assessment/check-existing', {
+        email,
+        phone,
       })
-      return data ? { id: data } : null
+      return data 
     }
 
     async function handleNext(){
@@ -105,8 +104,7 @@ export default function AssessmentForm() {
         setError('')
 
         try{
-            const { data, error } = await supabase.rpc('insert_assessment_response', {
-                payload: {
+            const result = await apiPost<{response_id: string, summary: any}>('/assessment/submit', {
                     full_name: answers['QD1'],
                     email: answers['QD2'],
                     phone: answers['QD3'],
@@ -122,13 +120,10 @@ export default function AssessmentForm() {
                     why_here: answers['QO10'],
                     answers: answers,
                     completed: true,
-                }
-            })
-            if (error) throw error
-            const result = await apiPost<any>(`/assessment/${data}/score`, {})
-            router.push(`/results/${data}`)
+                })
+            router.push(`/results/${result.response_id}`)
             setSummary(result.summary)
-            setSubmitted(true)
+            setSubmitted(true) 
         } catch (err: any) {
             console.error('Submission error:', err)
             setError(err?.message || tForm('error'))
