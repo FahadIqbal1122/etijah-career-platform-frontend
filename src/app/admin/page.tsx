@@ -191,7 +191,7 @@ export default function AdminPage() {
       setOnetLinks(prev => prev.filter(l => l.id !== id))
       if (selectedOnet?.id === id) setSelectedOnet(null)
     } catch {
-       // silent
+      // silent
     }
   }
 
