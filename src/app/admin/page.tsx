@@ -65,6 +65,7 @@ export default function AdminPage() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.access_token) {
+        document.cookie = `sb-admin-token=${session.access_token}; path=/; SameSite=Strict; Secure`
         setAdminKey(session.access_token)
         setAuthed(true)
       }
@@ -75,9 +76,7 @@ export default function AdminPage() {
     setLoading(true)
     setFetchError('')
     try {
-      const res = await fetch('/api/admin/submissions', {
-        headers: { 'x-auth-token': key },
-      })
+      const res = await fetch('/api/admin/submissions')
       if (!res.ok) throw new Error('Failed to load submissions')
       setSubmissions(await res.json())
     } catch (err: any) {
@@ -91,9 +90,7 @@ export default function AdminPage() {
     setOnetLoading(true)
     setOnetError('')
     try {
-      const res = await fetch('/api/admin/onet', {
-        headers: { 'x-auth-token': key },
-      })
+      const res = await fetch('/api/admin/onet')
       if (!res.ok) throw new Error('Failed to load O*NET links')
       setOnetLinks(await res.json())
     } catch (err: any) {
@@ -125,6 +122,7 @@ export default function AdminPage() {
         setLoginError('Not authorized as admin')
         return
       }
+      document.cookie = `sb-admin-token=${data.session.access_token}; path=/; SameSite=Strict; Secure`
       setAdminKey(data.session.access_token)
       setAuthed(true)
     } catch {
@@ -136,6 +134,7 @@ export default function AdminPage() {
 
   async function handleLogout() {
     await supabase.auth.signOut()
+    document.cookie = 'sb-admin-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
     setAuthed(false)
     setAdminKey('')
     setSubmissions([])
@@ -150,9 +149,7 @@ export default function AdminPage() {
     setResults(null)
     setResultsLoading(true)
     try {
-      const res = await fetch(`/api/admin/submissions/${sub.id}/results`, {
-        headers: { 'x-auth-token': adminKey },
-      })
+      const res = await fetch(`/api/admin/submissions/${sub.id}/results`)
       const data = await res.json()
       setResults(data.summary)
     } catch {
@@ -164,10 +161,7 @@ export default function AdminPage() {
 
   async function handleDeleteSubmission(id: string) {
     if (!confirm('Delete this submission and all its data?')) return
-    await fetch(`/api/admin/submissions/${id}`, {
-      method: 'DELETE',
-      headers: { 'x-auth-token': adminKey },
-    })
+    await fetch(`/api/admin/submissions/${id}`, { method: 'DELETE' })
     setSubmissions(prev => prev.filter(s => s.id !== id))
   }
 
@@ -177,7 +171,7 @@ export default function AdminPage() {
     try {
       const res = await fetch('/api/admin/onet', {
         method: 'POST',
-        headers: { 'x-auth-token': adminKey, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: onetEmail, onet_url: onetUrl, label: onetLabel || null }),
       })
       if (!res.ok) throw new Error('Failed to add')
@@ -194,10 +188,7 @@ export default function AdminPage() {
 
   async function handleDeleteOnet(id: string) {
     try {
-      await fetch(`/api/admin/onet/${id}`, {
-        method: 'DELETE',
-        headers: { 'x-auth-token': adminKey },
-      })
+      await fetch(`/api/admin/onet/${id}`, { method: 'DELETE' })
       setOnetLinks(prev => prev.filter(l => l.id !== id))
       if (selectedOnet?.id === id) setSelectedOnet(null)
     } catch {

@@ -7,11 +7,8 @@ const supabaseAdmin = createClient(
 )
 
 export async function verifyAdmin(req: NextRequest): Promise<NextResponse | null> {
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader) return NextResponse.json({ error: 'No authorization header' }, { status: 401 })
-
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
-    if (!token) return NextResponse.json({ error: 'Malformed authorization header' }, { status: 401 })
+    const token = req.cookies.get('sb-admin-token')?.value
+    if (!token) return NextResponse.json({ error: 'No token' }, { status: 401 })
 
     try {
         const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
