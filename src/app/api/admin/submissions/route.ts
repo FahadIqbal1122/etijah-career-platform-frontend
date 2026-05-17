@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdmin } from '@/lib/supabase-server'
 
 const BACKEND = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
 
 export async function GET(req: NextRequest) {
-  const adminCheck = await verifyAdmin(req)
-  if (adminCheck) return adminCheck
+  const token = req.cookies.get('admin_session')?.value
+  if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
-  const res = await fetch(`${BACKEND}/admin/submissions`)
+  const res = await fetch(`${BACKEND}/admin/submissions`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
   const data = await res.json()
   return NextResponse.json(data, { status: res.status })
 }

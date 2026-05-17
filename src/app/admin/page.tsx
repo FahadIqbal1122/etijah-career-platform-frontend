@@ -39,7 +39,6 @@ export default function AdminPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
-  const [adminKey, setAdminKey] = useState('')
 
   const [activeTab, setActiveTab] = useState<'submissions' | 'onet'>('submissions')
 
@@ -63,16 +62,12 @@ export default function AdminPage() {
   const [selectedOnet, setSelectedOnet] = useState<OnetLink | null>(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.access_token) {
-        document.cookie = `sb-admin-token=${session.access_token}; path=/; SameSite=Strict; Secure`
-        setAdminKey(session.access_token)
-        setAuthed(true)
-      }
+    fetch('/api/admin/session').then(res => {
+      if (res.ok) setAuthed(true)
     })
   }, [])
 
-  const fetchSubmissions = useCallback(async (key: string) => {
+  const fetchSubmissions = useCallback(async () => {
     setLoading(true)
     setFetchError('')
     try {
@@ -86,7 +81,7 @@ export default function AdminPage() {
     }
   }, [])
 
-  const fetchOnetLinks = useCallback(async (key: string) => {
+  const fetchOnetLinks = useCallback(async () => {
     setOnetLoading(true)
     setOnetError('')
     try {
@@ -101,11 +96,11 @@ export default function AdminPage() {
   }, [])
 
   useEffect(() => {
-    if (authed && adminKey) {
-      fetchSubmissions(adminKey)
-      fetchOnetLinks(adminKey)
+    if (authed) {
+      fetchSubmissions()
+      fetchOnetLinks()
     }
-  }, [authed, adminKey, fetchSubmissions, fetchOnetLinks])
+  }, [authed, fetchSubmissions, fetchOnetLinks])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -117,13 +112,16 @@ export default function AdminPage() {
         setLoginError('Invalid credentials')
         return
       }
-      if (data.user.app_metadata?.role !== 'admin') {
+      const sessionRes = await fetch('/api/admin/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: data.session.access_token }),
+      })
+      if (!sessionRes.ok) {
         await supabase.auth.signOut()
         setLoginError('Not authorized as admin')
         return
       }
-      document.cookie = `sb-admin-token=${data.session.access_token}; path=/; SameSite=Strict; Secure`
-      setAdminKey(data.session.access_token)
       setAuthed(true)
     } catch {
       setLoginError('Connection error, please try again')
@@ -133,10 +131,11 @@ export default function AdminPage() {
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut()
-    document.cookie = 'sb-admin-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    await Promise.all([
+      supabase.auth.signOut(),
+      fetch('/api/admin/session', { method: 'DELETE' }),
+    ])
     setAuthed(false)
-    setAdminKey('')
     setSubmissions([])
     setSelected(null)
     setResults(null)
@@ -178,7 +177,7 @@ export default function AdminPage() {
       setOnetEmail('')
       setOnetUrl('')
       setOnetLabel('')
-      await fetchOnetLinks(adminKey)
+      await fetchOnetLinks()
     } catch (err: any) {
       setOnetError(err.message)
     } finally {
@@ -512,7 +511,7 @@ export default function AdminPage() {
         </div>
         <div className="flex items-center gap-4">
           <button
-            onClick={() => { fetchSubmissions(adminKey); fetchOnetLinks(adminKey) }}
+            onClick={() => { fetchSubmissions(); fetchOnetLinks() }}
             className="text-sm text-blue-600 hover:underline"
           >
             Refresh
