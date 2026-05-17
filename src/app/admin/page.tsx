@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-
-const ADMIN_USERNAME = 'admin'
+import { supabase } from '@/lib/supabase'
 
 const levelToWidth: Record<string, string> = {
   low: '20%',
@@ -35,7 +34,7 @@ type OnetLink = {
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loggingIn, setLoggingIn] = useState(false)
@@ -64,11 +63,12 @@ export default function AdminPage() {
   const [selectedOnet, setSelectedOnet] = useState<OnetLink | null>(null)
 
   useEffect(() => {
-    const key = sessionStorage.getItem('admin_key')
-    if (key) {
-      setAdminKey(key)
-      setAuthed(true)
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) {
+        setAdminKey(session.access_token)
+        setAuthed(true)
+      }
+    })
   }, [])
 
   const fetchSubmissions = useCallback(async (key: string) => {
@@ -76,7 +76,7 @@ export default function AdminPage() {
     setFetchError('')
     try {
       const res = await fetch('/api/admin/submissions', {
-        headers: { 'x-admin-key': key },
+        headers: { 'Authorization': `Bearer ${key}` },
       })
       if (!res.ok) throw new Error('Failed to load submissions')
       setSubmissions(await res.json())
@@ -92,7 +92,7 @@ export default function AdminPage() {
     setOnetError('')
     try {
       const res = await fetch('/api/admin/onet', {
-        headers: { 'x-admin-key': key },
+        headers: { 'Authorization': `Bearer ${key}` },
       })
       if (!res.ok) throw new Error('Failed to load O*NET links')
       setOnetLinks(await res.json())
@@ -112,23 +112,21 @@ export default function AdminPage() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    if (username !== ADMIN_USERNAME) {
-      setLoginError('Invalid credentials')
-      return
-    }
     setLoggingIn(true)
     setLoginError('')
     try {
-      const res = await fetch('/api/admin/submissions', {
-        headers: { 'x-admin-key': password },
-      })
-      if (res.ok) {
-        sessionStorage.setItem('admin_key', password)
-        setAdminKey(password)
-        setAuthed(true)
-      } else {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error || !data.session) {
         setLoginError('Invalid credentials')
+        return
       }
+      if (data.user.app_metadata?.role !== 'admin') {
+        await supabase.auth.signOut()
+        setLoginError('Not authorized as admin')
+        return
+      }
+      setAdminKey(data.session.access_token)
+      setAuthed(true)
     } catch {
       setLoginError('Connection error, please try again')
     } finally {
@@ -136,8 +134,8 @@ export default function AdminPage() {
     }
   }
 
-  function handleLogout() {
-    sessionStorage.removeItem('admin_key')
+  async function handleLogout() {
+    await supabase.auth.signOut()
     setAuthed(false)
     setAdminKey('')
     setSubmissions([])
@@ -153,7 +151,7 @@ export default function AdminPage() {
     setResultsLoading(true)
     try {
       const res = await fetch(`/api/admin/submissions/${sub.id}/results`, {
-        headers: { 'x-admin-key': adminKey },
+        headers: { 'Authorization': `Bearer ${adminKey}` },
       })
       const data = await res.json()
       setResults(data.summary)
@@ -168,7 +166,7 @@ export default function AdminPage() {
     if (!confirm('Delete this submission and all its data?')) return
     await fetch(`/api/admin/submissions/${id}`, {
       method: 'DELETE',
-      headers: { 'x-admin-key': adminKey },
+      headers: { 'Authorization': `Bearer ${adminKey}` },
     })
     setSubmissions(prev => prev.filter(s => s.id !== id))
   }
@@ -179,7 +177,7 @@ export default function AdminPage() {
     try {
       const res = await fetch('/api/admin/onet', {
         method: 'POST',
-        headers: { 'x-admin-key': adminKey, 'Content-Type': 'application/json' },
+        headers: { 'Authorization': `Bearer ${adminKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: onetEmail, onet_url: onetUrl, label: onetLabel || null }),
       })
       if (!res.ok) throw new Error('Failed to add')
@@ -198,7 +196,7 @@ export default function AdminPage() {
     try {
       await fetch(`/api/admin/onet/${id}`, {
         method: 'DELETE',
-        headers: { 'x-admin-key': adminKey },
+        headers: { 'Authorization': `Bearer ${adminKey}` },
       })
       setOnetLinks(prev => prev.filter(l => l.id !== id))
       if (selectedOnet?.id === id) setSelectedOnet(null)
@@ -219,14 +217,15 @@ export default function AdminPage() {
           <p className="text-sm text-slate-400 mb-6">Etijah Career Compass</p>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
               <input
-                type="text"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
+                type="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="admin"
-                autoComplete="username"
+                placeholder="you@example.com"
+                autoComplete="email"
               />
             </div>
             <div>
@@ -234,6 +233,7 @@ export default function AdminPage() {
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 pr-10 text-sm bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"

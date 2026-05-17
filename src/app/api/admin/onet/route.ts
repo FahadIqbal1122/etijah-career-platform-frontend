@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { verifyAdmin } from '@/lib/supabase-server'
 
 const BACKEND = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
 
 export async function GET(req: NextRequest) {
-  if (req.headers.get('x-admin-key') !== process.env.ADMIN_PASSWORD)
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const deny = await verifyAdmin(req)
+  if (deny) return deny
 
   const res = await fetch(`${BACKEND}/onet`)
   const data = await res.json()
@@ -12,8 +13,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (req.headers.get('x-admin-key') !== process.env.ADMIN_PASSWORD)
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const deny = await verifyAdmin(req)
+  if (deny) return deny
 
   const body = await req.json()
   const res = await fetch(`${BACKEND}/onet`, {
