@@ -76,7 +76,7 @@ export default function AdminPage() {
     setFetchError('')
     try {
       const res = await fetch('/api/admin/submissions', {
-        headers: { 'Authorization': `Bearer ${key}` },
+        headers: { 'x-auth-token': key },
       })
       if (!res.ok) throw new Error('Failed to load submissions')
       setSubmissions(await res.json())
@@ -92,7 +92,7 @@ export default function AdminPage() {
     setOnetError('')
     try {
       const res = await fetch('/api/admin/onet', {
-        headers: { 'Authorization': `Bearer ${key}` },
+        headers: { 'x-auth-token': key },
       })
       if (!res.ok) throw new Error('Failed to load O*NET links')
       setOnetLinks(await res.json())
@@ -151,7 +151,7 @@ export default function AdminPage() {
     setResultsLoading(true)
     try {
       const res = await fetch(`/api/admin/submissions/${sub.id}/results`, {
-        headers: { 'Authorization': `Bearer ${adminKey}` },
+        headers: { 'x-auth-token': adminKey },
       })
       const data = await res.json()
       setResults(data.summary)
@@ -166,7 +166,7 @@ export default function AdminPage() {
     if (!confirm('Delete this submission and all its data?')) return
     await fetch(`/api/admin/submissions/${id}`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${adminKey}` },
+      headers: { 'x-auth-token': adminKey },
     })
     setSubmissions(prev => prev.filter(s => s.id !== id))
   }
@@ -177,7 +177,7 @@ export default function AdminPage() {
     try {
       const res = await fetch('/api/admin/onet', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${adminKey}`, 'Content-Type': 'application/json' },
+        headers: { 'x-auth-token': adminKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: onetEmail, onet_url: onetUrl, label: onetLabel || null }),
       })
       if (!res.ok) throw new Error('Failed to add')
@@ -196,7 +196,7 @@ export default function AdminPage() {
     try {
       await fetch(`/api/admin/onet/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${adminKey}` },
+        headers: { 'x-auth-token': adminKey },
       })
       setOnetLinks(prev => prev.filter(l => l.id !== id))
       if (selectedOnet?.id === id) setSelectedOnet(null)
