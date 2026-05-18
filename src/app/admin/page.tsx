@@ -565,7 +565,7 @@ export default function AdminPage() {
                             </td>
                             <td className="px-4 py-3">
     <div className="text-slate-500">{sub.email || '—'}</div>
-    {sub.phone && <div className="text-slate-400 text-xs">{sub.phone}</div>}                                                                                                                               </td>
+    {sub.phone && <div className="text-slate-400 text-xs">{sub.phone}</div>}</td>
                             <td className="px-4 py-3 text-slate-500">{sub.country || '—'}</td>
                             <td className="px-4 py-3 text-slate-500 capitalize">{sub.current_stage?.replace(/_/g, ' ') || '—'}</td>
                             <td className="px-4 py-3 text-slate-400 text-xs">{new Date(sub.created_at).toLocaleDateString()}</td>
