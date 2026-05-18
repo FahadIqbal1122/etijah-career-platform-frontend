@@ -544,7 +544,7 @@ export default function AdminPage() {
                     <thead>
                       <tr className="border-b border-slate-100 bg-slate-50">
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Contact</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Stage</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
@@ -563,7 +563,9 @@ export default function AdminPage() {
                                 <span className="ml-2 text-xs font-semibold bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">O*NET</span>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-slate-500">{sub.email || '—'}</td>
+                            <td className="px-4 py-3">
+    <div className="text-slate-500">{sub.email || '—'}</div>
+    {sub.phone && <div className="text-slate-400 text-xs">{sub.phone}</div>}                                                                                                                               </td>
                             <td className="px-4 py-3 text-slate-500">{sub.country || '—'}</td>
                             <td className="px-4 py-3 text-slate-500 capitalize">{sub.current_stage?.replace(/_/g, ' ') || '—'}</td>
                             <td className="px-4 py-3 text-slate-400 text-xs">{new Date(sub.created_at).toLocaleDateString()}</td>
