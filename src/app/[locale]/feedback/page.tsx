@@ -191,7 +191,7 @@ export default function FeedbackPage() {
               onChange={setAccurate}
               error={errors.accurate}
             />
-            <ScaleCard label="How accurate were the career suggestions?" lowLabel="Not accurate" highLabel="Very accurate" value={scales['scale-careers']} onChange={v => setScales(p => ({ ...p, 'scale-careers': v }))} />
+            {/* <ScaleCard label="How accurate were the career suggestions?" lowLabel="Not accurate" highLabel="Very accurate" value={scales['scale-careers']} onChange={v => setScales(p => ({ ...p, 'scale-careers': v }))} /> */}
             <ScaleCard label="How well did the personality description match you?" lowLabel="Didn't match" highLabel="Matched perfectly" value={scales['scale-personality']} onChange={v => setScales(p => ({ ...p, 'scale-personality': v }))} />
           </section>
 
