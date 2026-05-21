@@ -3,8 +3,6 @@ import { NextIntlClientProvider, hasLocale } from 'next-intl'
 import { getMessages } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
-import Header from '@/components/Header'
-import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
   title: 'Etijah Career Compass',
@@ -30,9 +28,7 @@ export default async function LocaleLayout({
   return (
     <NextIntlClientProvider messages={messages}>
       <div dir={locale === 'ar' ? 'rtl' : 'ltr'} lang={locale} className="contents">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        {children}
       </div>
     </NextIntlClientProvider>
   )
