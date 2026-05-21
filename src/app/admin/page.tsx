@@ -23,6 +23,27 @@ type Submission = {
   created_at: string
 }
 
+type FeedbackEntry = {
+  id: string
+  fname: string
+  email: string
+  age: string
+  country: string | null
+  source: string | null
+  accurate: string | null
+  rating_careers: number | null
+  rating_personality: number | null
+  rating_clarity: number | null
+  rating_length: number | null
+  rating_overall: number | null
+  surprised: string | null
+  careers_relevant: string | null
+  ai_outlook: string | null
+  recommend: string | null
+  other: string | null
+  created_at: string
+}
+
 type OnetLink = {
   id: string
   email: string
@@ -40,7 +61,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'submissions' | 'onet'>('submissions')
+  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback'>('submissions')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -51,6 +72,11 @@ export default function AdminPage() {
   const [resultsLoading, setResultsLoading] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const [feedbackList, setFeedbackList] = useState<FeedbackEntry[]>([])
+  const [feedbackLoading, setFeedbackLoading] = useState(false)
+  const [feedbackError, setFeedbackError] = useState('')
+  const [selectedFeedback, setSelectedFeedback] = useState<FeedbackEntry | null>(null)
 
   const [onetLinks, setOnetLinks] = useState<OnetLink[]>([])
   const [onetLoading, setOnetLoading] = useState(false)
@@ -81,6 +107,20 @@ export default function AdminPage() {
     }
   }, [])
 
+  const fetchFeedback = useCallback(async () => {
+    setFeedbackLoading(true)
+    setFeedbackError('')
+    try {
+      const res = await fetch('/api/admin/feedback')
+      if (!res.ok) throw new Error('Failed to load feedback')
+      setFeedbackList(await res.json())
+    } catch (err: any) {
+      setFeedbackError(err.message)
+    } finally {
+      setFeedbackLoading(false)
+    }
+  }, [])
+
   const fetchOnetLinks = useCallback(async () => {
     setOnetLoading(true)
     setOnetError('')
@@ -99,8 +139,9 @@ export default function AdminPage() {
     if (authed) {
       fetchSubmissions()
       fetchOnetLinks()
+      fetchFeedback()
     }
-  }, [authed, fetchSubmissions, fetchOnetLinks])
+  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -141,6 +182,8 @@ export default function AdminPage() {
     setResults(null)
     setOnetLinks([])
     setSelectedOnet(null)
+    setFeedbackList([])
+    setSelectedFeedback(null)
   }
 
   async function handleViewResults(sub: Submission) {
@@ -413,6 +456,105 @@ export default function AdminPage() {
     )
   }
 
+  // ── Feedback detail panel ─────────────────────────────
+  if (selectedFeedback) {
+    const fb = selectedFeedback
+    const ratingLabel = (v: number | null) => v ? `${v} / 6` : '—'
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center gap-4">
+          <button
+            onClick={() => setSelectedFeedback(null)}
+            className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+          >
+            ← Back
+          </button>
+          <div>
+            <h2 className="font-semibold text-slate-800">{fb.fname}</h2>
+            <p className="text-xs text-slate-400">{fb.email}</p>
+          </div>
+        </div>
+
+        <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">About</h3>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              {[
+                ['Name', fb.fname],
+                ['Email', fb.email],
+                ['Age group', fb.age],
+                ['Country', fb.country],
+                ['Source', fb.source],
+                ['Submitted', new Date(fb.created_at).toLocaleString()],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-slate-400">{label}</dt>
+                  <dd className="text-slate-800 font-medium">{value || '—'}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Accuracy</h3>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              {[
+                ['Overall accuracy', fb.accurate],
+                ['Career suggestions', ratingLabel(fb.rating_careers)],
+                ['Personality match', ratingLabel(fb.rating_personality)],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-slate-400">{label}</dt>
+                  <dd className="text-slate-800 font-medium capitalize">{value || '—'}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Experience Ratings</h3>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              {[
+                ['Question clarity', ratingLabel(fb.rating_clarity)],
+                ['Length', ratingLabel(fb.rating_length)],
+                ['Overall', ratingLabel(fb.rating_overall)],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-slate-400">{label}</dt>
+                  <dd className="text-slate-800 font-medium">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Reflections</h3>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              {[
+                ['Surprised by results', fb.surprised],
+                ['Careers relevant', fb.careers_relevant],
+                ['AI outlook changed thinking', fb.ai_outlook],
+                ['Would recommend', fb.recommend],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-slate-400">{label}</dt>
+                  <dd className="text-slate-800 font-medium capitalize">{value?.replace(/_/g, ' ') || '—'}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          {fb.other && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+              <h3 className="font-semibold text-slate-700 mb-2 text-sm uppercase tracking-wide">Additional Comments</h3>
+              <p className="text-sm text-slate-700 leading-relaxed">{fb.other}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   // ── O*NET detail panel ────────────────────────────────
   if (selectedOnet) {
     const matchedSubmission = submissions.find(
@@ -507,11 +649,20 @@ export default function AdminPage() {
             >
               O*NET Links
             </button>
+            <button
+              onClick={() => setActiveTab('feedback')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'feedback' ? 'bg-teal-700 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Feedback
+              {feedbackList.length > 0 && (
+                <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{feedbackList.length}</span>
+              )}
+            </button>
           </div>
         </div>
         <div className="flex items-center gap-4">
           <button
-            onClick={() => { fetchSubmissions(); fetchOnetLinks() }}
+            onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback() }}
             className="text-sm text-blue-600 hover:underline"
           >
             Refresh
@@ -595,6 +746,77 @@ export default function AdminPage() {
                       {submissions.length === 0 && (
                         <tr>
                           <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No submissions yet</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── Feedback Tab ── */}
+        {activeTab === 'feedback' && (
+          <>
+            {feedbackLoading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {feedbackError && <p className="text-red-500 text-sm text-center py-8">{feedbackError}</p>}
+            {!feedbackLoading && !feedbackError && (
+              <>
+                <p className="text-sm text-slate-400 mb-4">{feedbackList.length} response{feedbackList.length !== 1 ? 's' : ''}</p>
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50">
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Age</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Accurate?</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Overall</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
+                        <th className="px-4 py-3" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {feedbackList.map((fb, i) => (
+                        <tr key={fb.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                          <td className="px-4 py-3 font-medium text-slate-800">{fb.fname}</td>
+                          <td className="px-4 py-3 text-slate-500">{fb.email}</td>
+                          <td className="px-4 py-3 text-slate-500">{fb.age}</td>
+                          <td className="px-4 py-3 text-slate-500">{fb.country || '—'}</td>
+                          <td className="px-4 py-3">
+                            {fb.accurate ? (
+                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${
+                                fb.accurate === 'yes' ? 'bg-green-50 text-green-700' :
+                                fb.accurate === 'partially' ? 'bg-amber-50 text-amber-600' :
+                                'bg-red-50 text-red-600'
+                              }`}>{fb.accurate}</span>
+                            ) : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-slate-500">
+                            {fb.rating_overall ? (
+                              <span className="font-semibold text-slate-700">{fb.rating_overall}<span className="text-slate-400 font-normal">/6</span></span>
+                            ) : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-slate-400 text-xs">{new Date(fb.created_at).toLocaleDateString()}</td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => setSelectedFeedback(fb)}
+                              className="text-xs text-blue-600 hover:underline font-medium"
+                            >
+                              View →
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {feedbackList.length === 0 && (
+                        <tr>
+                          <td colSpan={8} className="px-4 py-12 text-center text-slate-400">No feedback responses yet</td>
                         </tr>
                       )}
                     </tbody>
