@@ -19,15 +19,15 @@ export default function ResultsPage() {
 
     const [summary, setSummary] = useState<any>(null)
     const [error, setError] = useState('')
-    const [jobs, setJobs] = useState<any[]>([])
+    // const [jobs, setJobs] = useState<any[]>([])
 
     useEffect(() => {
         apiGet<any>(`/assessment/${id}/results`)
             .then(data => setSummary(data.summary))
             .catch(err => setError(err.message || 'Failed to load results'))
-        apiGet<any>(`/assessment/${id}/career-suggestions`)
-            .then(data => setJobs(data.suggestions))
-            .catch(() => {})
+        // apiGet<any>(`/assessment/${id}/career-suggestions`)
+        //     .then(data => setJobs(data.suggestions))
+        //     .catch(() => {})
     }, [id])
 
     if (error) {
@@ -186,7 +186,7 @@ export default function ResultsPage() {
                 </div>
 
                 {/* Suggested Careers */}
-                {jobs.length > 0 && (
+                {/* {jobs.length > 0 && (
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
@@ -210,7 +210,7 @@ export default function ResultsPage() {
                             ))}
                         </div>
                     </div>
-                )}
+                )} */}
 
                 {/* Share */}
                 <div className="flex flex-col items-center gap-2 pt-2 pb-4">

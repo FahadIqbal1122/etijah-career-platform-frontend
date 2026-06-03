@@ -16,8 +16,8 @@ export default function FeedbackPage() {
   const [source, setSource] = useState('')
   const [accurate, setAccurate] = useState('')
   const [surprised, setSurprised] = useState('')
-  const [careersRelevant, setCareersRelevant] = useState('')
-  const [aiOutlook, setAiOutlook] = useState('')
+  // const [careersRelevant, setCareersRelevant] = useState('')
+  // const [aiOutlook, setAiOutlook] = useState('')
   const [recommend, setRecommend] = useState('')
   const [other, setOther] = useState('')
   const [scales, setScales] = useState<ScaleValues>({})
@@ -28,12 +28,12 @@ export default function FeedbackPage() {
 
   const progress = useMemo(() => {
     const filled =
-      [accurate, surprised, careersRelevant, aiOutlook].filter(Boolean).length +
+      [accurate, surprised].filter(Boolean).length +
       (fname.trim() ? 1 : 0) +
       (email.trim() ? 1 : 0) +
       (age ? 1 : 0)
-    return Math.round((filled / 7) * 100)
-  }, [fname, email, age, accurate, surprised, careersRelevant, aiOutlook])
+    return Math.round((filled / 5) * 100)
+  }, [fname, email, age, accurate, surprised])
 
   function validate(): boolean {
     const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
@@ -43,8 +43,8 @@ export default function FeedbackPage() {
       age: !age,
       accurate: !accurate,
       surprised: !surprised,
-      'careers-relevant': !careersRelevant,
-      'ai-outlook': !aiOutlook,
+      // 'careers-relevant': !careersRelevant,
+      // 'ai-outlook': !aiOutlook,
     }
     setErrors(next)
     return !Object.values(next).some(Boolean)
@@ -72,8 +72,8 @@ export default function FeedbackPage() {
           rating_length: scales['scale-length'] ?? null,
           rating_overall: scales['scale-overall'] ?? null,
           surprised: surprised || null,
-          careers_relevant: careersRelevant || null,
-          ai_outlook: aiOutlook || null,
+          // careers_relevant: careersRelevant || null,
+          // ai_outlook: aiOutlook || null,
           recommend: recommend || null,
           other: other.trim() || null,
         }),
@@ -207,8 +207,8 @@ export default function FeedbackPage() {
           <section>
             <p className="text-[10px] font-bold tracking-widest uppercase text-slate-400 pb-2 border-b border-slate-200 mb-5">Quick reflections</p>
             <PillField label="Were you surprised by your results?" required options={[['yes', 'Yes'], ['a_little', 'A little'], ['no', 'No']]} value={surprised} onChange={setSurprised} error={errors.surprised} />
-            <PillField label="Did the career suggestions feel relevant to your life?" required options={[['yes', 'Yes'], ['some', 'Some of them'], ['no', 'Not really']]} value={careersRelevant} onChange={setCareersRelevant} error={errors['careers-relevant']} />
-            <PillField label="Did the AI Career Outlook section change how you think about your future?" required options={[['yes', 'Yes, it did'], ['a_little', 'A little'], ['no', 'Not really']]} value={aiOutlook} onChange={setAiOutlook} error={errors['ai-outlook']} />
+            {/* <PillField label="Did the career suggestions feel relevant to your life?" required options={[['yes', 'Yes'], ['some', 'Some of them'], ['no', 'Not really']]} value={careersRelevant} onChange={setCareersRelevant} error={errors['careers-relevant']} /> */}
+            {/* <PillField label="Did the AI Career Outlook section change how you think about your future?" required options={[['yes', 'Yes, it did'], ['a_little', 'A little'], ['no', 'Not really']]} value={aiOutlook} onChange={setAiOutlook} error={errors['ai-outlook']} /> */}
             <PillField label="Would you recommend this tool to a friend?" required={false} options={[['yes', 'Yes'], ['maybe', 'Maybe'], ['no', 'No']]} value={recommend} onChange={setRecommend} error={false} />
           </section>
 
