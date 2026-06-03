@@ -19,11 +19,15 @@ export default function ResultsPage() {
 
     const [summary, setSummary] = useState<any>(null)
     const [error, setError] = useState('')
+    const [jobs, setJobs] = useState<any[]>([])
 
     useEffect(() => {
         apiGet<any>(`/assessment/${id}/results`)
             .then(data => setSummary(data.summary))
             .catch(err => setError(err.message || 'Failed to load results'))
+        apiGet<any>(`/assessment/${id}/career-suggestions`)
+            .then(data => setJobs(data.suggestions))
+            .catch(() => {})
     }, [id])
 
     if (error) {
@@ -180,6 +184,33 @@ export default function ResultsPage() {
                         ))}
                     </div>
                 </div>
+
+                {/* Suggested Careers */}
+                {jobs.length > 0 && (
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
+                                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.07A2.25 2.25 0 0118 20.47H6a2.25 2.25 0 01-2.25-2.25v-4.07M15.75 9.75V6a3.75 3.75 0 00-7.5 0v3.75M3.75 9.75h16.5" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-slate-800 text-base">Suggested Careers</h3>
+                                <p className="text-xs text-slate-400">Matched across your full profile</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                            {jobs.map((job: any) => (
+                                <span
+                                    key={job.title}
+                                    className="px-4 py-1.5 rounded-full text-sm font-medium bg-green-50 text-green-700 border border-green-100 capitalize"
+                                >
+                                    {job.title}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Share */}
                 <div className="flex flex-col items-center gap-2 pt-2 pb-4">
