@@ -1147,37 +1147,37 @@ export default function AdminPage() {
             {!onetLoading && (
               <>
                 <p className="text-sm text-slate-400 mb-4">{onetLinks.length} link{onetLinks.length !== 1 ? 's' : ''}</p>
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                  <table className="w-full text-sm">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
+                  <table className="w-full text-sm min-w-[900px]">
                     <thead>
                       <tr className="border-b border-slate-100 bg-slate-50">
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Label</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">O*NET URL</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Assessment</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Added</th>
-                        <th className="px-4 py-3" />
+                        <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-40">Email</th>
+                        <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-32">Name</th>
+                        <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-24">Label</th>
+                        <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">O*NET URL</th>
+                        <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-24">Assessment</th>
+                        <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-20">Added</th>
+                        <th className="px-3 py-3 w-24" />
                       </tr>
                     </thead>
                     <tbody>
                       {onetLinks.map((link, i) => (
                         <tr key={link.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
-                          <td className="px-4 py-3 font-medium text-slate-800">{link.email}</td>
-                          <td className="px-4 py-3 text-slate-600">{link.name || '—'}</td>
-                          <td className="px-4 py-3 text-slate-500">{link.label || '—'}</td>
-                          <td className="px-4 py-3 text-slate-500 max-w-xs truncate">
+                          <td className="px-3 py-3 font-medium text-slate-800 truncate max-w-[160px]">{link.email}</td>
+                          <td className="px-3 py-3 text-slate-600 truncate max-w-[128px]">{link.name || '—'}</td>
+                          <td className="px-3 py-3 text-slate-500 truncate max-w-[96px]">{link.label || '—'}</td>
+                          <td className="px-3 py-3 text-slate-500 truncate max-w-[180px]">
                             <a href={link.onet_url} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">
                               {link.onet_url}
                             </a>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-3">
                             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${link.has_assessment ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-400'}`}>
                               {link.has_assessment ? 'Submitted' : 'Pending'}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-slate-400 text-xs">{new Date(link.created_at).toLocaleDateString()}</td>
-                          <td className="px-4 py-3 flex items-center gap-3">
+                          <td className="px-3 py-3 text-slate-400 text-xs">{new Date(link.created_at).toLocaleDateString()}</td>
+                          <td className="px-3 py-3 flex items-center gap-3">
                             <button
                               onClick={() => setSelectedOnet(link)}
                               className="text-xs text-blue-600 hover:underline font-medium"
