@@ -11,6 +11,48 @@ const levelToWidth: Record<string, string> = {
   high: '88%',
 }
 
+// O*NET Interest Profiler share-code decoder.
+// The 5-char code in /s/scores/<code> encodes all 6 RIASEC scores using a
+// base-41 alphabet. Each score is 0-20. Extracted from onetinterestprofiler.org
+// bundle — no network call needed.
+const ONET_IV = 'hCxDrnvJVB3StXLqg54Gpj7QkPzZ69scHRKTNbfFd'
+
+function decodeOnetUrl(url: string): Record<string, number> | null {
+  try {
+    const match = new URL(url).pathname.match(/\/s\/scores\/([A-Za-z0-9]{5})$/)
+    if (!match) return null
+    const idx = match[1].split('').map(c => ONET_IV.indexOf(c))
+    if (idx.includes(-1)) return null
+    const e = idx[0] * 2825761 + idx[1] * 68921 + idx[2] * 1681 + idx[3] * 41 + idx[4]
+    if (Math.floor(e / 4084101) > 20) return null
+    return {
+      realistic:     Math.floor(e / 4084101),
+      investigative: Math.floor(e / 194481) % 21,
+      artistic:      Math.floor(e / 9261)   % 21,
+      social:        Math.floor(e / 441)    % 21,
+      enterprising:  Math.floor(e / 21)     % 21,
+      conventional:  e % 21,
+    }
+  } catch { return null }
+}
+
+function topRiasecTypes(scores: Record<string, number>, n = 3): string[] {
+  return Object.entries(scores).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k]) => k)
+}
+
+function riasecAgreement(ours: string[], onet: string[]) {
+  const matching = ours.filter(t => onet.includes(t))
+  const onlyOurs = ours.filter(t => !onet.includes(t))
+  const onlyOnet = onet.filter(t => !ours.includes(t))
+  const score    = Math.round(matching.length / Math.max(ours.length, onet.length, 1) * 100)
+  const verdict  =
+    score >= 90 ? 'Both assessments strongly agree — high confidence in this career profile.' :
+    score >= 60 ? 'Good alignment between the two assessments — results are broadly consistent.' :
+    score >= 34 ? 'Partial agreement — the assessments highlight different facets of the profile.' :
+                  'Results diverge — worth discussing both with a career coach for deeper insight.'
+  return { matching, onlyOurs, onlyOnet, score, verdict }
+}
+
 type Submission = {
   id: string
   full_name: string
@@ -86,6 +128,10 @@ export default function AdminPage() {
   const [onetLabel, setOnetLabel] = useState('')
   const [onetAdding, setOnetAdding] = useState(false)
   const [selectedOnet, setSelectedOnet] = useState<OnetLink | null>(null)
+
+  const [showComparison, setShowComparison]       = useState(false)
+  const [comparisonResults, setComparisonResults] = useState<any>(null)
+  const [comparisonLoading, setComparisonLoading] = useState(false)
 
   useEffect(() => {
     fetch('/api/admin/session').then(res => {
@@ -236,6 +282,18 @@ export default function AdminPage() {
     } catch {
       // silent
     }
+  }
+
+  async function handleLoadComparison(sub: Submission) {
+    setShowComparison(true)
+    setComparisonLoading(true)
+    setComparisonResults(null)
+    try {
+      const res  = await fetch(`/api/admin/submissions/${sub.id}/results`)
+      const data = await res.json()
+      setComparisonResults(data.summary)
+    } catch { /* stay null */ }
+    finally { setComparisonLoading(false) }
   }
 
   const onetLinkForEmail = (email: string) =>
@@ -555,11 +613,191 @@ export default function AdminPage() {
     )
   }
 
-  // ── O*NET detail panel ────────────────────────────────
+  // ── O*NET detail panel + comparison view ─────────────
   if (selectedOnet) {
     const matchedSubmission = submissions.find(
       s => s.email?.toLowerCase() === selectedOnet.email.toLowerCase()
     )
+    const onetScores = decodeOnetUrl(selectedOnet.onet_url)
+    const onetTypes  = onetScores ? topRiasecTypes(onetScores) : []
+
+    // ── Comparison view ──────────────────────────────────
+    if (showComparison && matchedSubmission) {
+      const ourTypes = comparisonResults?.riasec?.top_types ?? []
+      const { matching, onlyOurs, onlyOnet, score, verdict } = riasecAgreement(ourTypes, onetTypes)
+      const scoreColor = score >= 67 ? 'text-green-700 bg-green-50' : score >= 34 ? 'text-amber-700 bg-amber-50' : 'text-red-700 bg-red-50'
+      const barColor   = score >= 67 ? 'bg-green-500' : score >= 34 ? 'bg-amber-400' : 'bg-red-400'
+
+      return (
+        <div className="min-h-screen bg-slate-50">
+          <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center gap-4">
+            <button onClick={() => setShowComparison(false)} className="text-sm text-blue-600 hover:underline flex items-center gap-1">← Back</button>
+            <div>
+              <h2 className="font-semibold text-slate-800">Assessment Comparison</h2>
+              <p className="text-xs text-slate-400">{selectedOnet.email} · {matchedSubmission.full_name}</p>
+            </div>
+          </div>
+
+          <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+            {comparisonLoading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+
+            {!comparisonLoading && (
+              <>
+                {/* Side-by-side columns */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                  {/* ── Our platform ── */}
+                  <div className="space-y-4">
+                    <div className="bg-blue-600 text-white rounded-2xl px-5 py-3 text-sm font-semibold">Our Platform Assessment</div>
+
+                    {comparisonResults ? (
+                      <>
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">RIASEC Career Types</p>
+                          <div className="flex gap-2 flex-wrap">
+                            {ourTypes.map((t: string, i: number) => (
+                              <span key={t} className={`px-3 py-1.5 rounded-full text-sm font-medium capitalize ${i === 0 ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700 border border-blue-100'}`}>{t}</span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Core Values</p>
+                          <div className="flex gap-2 flex-wrap">
+                            {comparisonResults.values.top_values.map((v: string, i: number) => (
+                              <span key={v} className={`px-3 py-1.5 rounded-full text-sm font-medium capitalize ${i === 0 ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-700 border border-amber-100'}`}>{v}</span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Top Strengths</p>
+                          <div className="flex gap-2 flex-wrap">
+                            {comparisonResults.strengths.top_strengths.map((s: string, i: number) => (
+                              <span key={s} className={`px-3 py-1.5 rounded-full text-sm font-medium capitalize ${i === 0 ? 'bg-purple-600 text-white' : 'bg-purple-50 text-purple-700 border border-purple-100'}`}>{s}</span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-4">Personality (Big Five)</p>
+                          <div className="space-y-3">
+                            {Object.entries(comparisonResults.big_five).map(([trait, level]: any) => (
+                              <div key={trait}>
+                                <div className="flex justify-between items-center mb-1.5">
+                                  <span className="text-sm font-medium text-slate-700 capitalize">{trait.replace(/_/g, ' ')}</span>
+                                  <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full capitalize">{level}</span>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                  <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: levelToWidth[level] ?? '50%' }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="bg-white rounded-2xl p-5 border border-slate-100 text-center text-slate-400 text-sm">No platform results found.</div>
+                    )}
+                  </div>
+
+                  {/* ── O*NET ── */}
+                  <div className="space-y-4">
+                    <div className="bg-orange-500 text-white rounded-2xl px-5 py-3 text-sm font-semibold flex items-center justify-between">
+                      <span>O*NET Interest Profiler</span>
+                      <a href={selectedOnet.onet_url} target="_blank" rel="noopener noreferrer" className="text-orange-100 hover:text-white">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </div>
+
+                    {onetScores ? (
+                      <>
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Top Career Types</p>
+                          <div className="flex gap-2 flex-wrap">
+                            {onetTypes.map((t, i) => (
+                              <span key={t} className={`px-3 py-1.5 rounded-full text-sm font-medium capitalize ${i === 0 ? 'bg-orange-500 text-white' : 'bg-orange-50 text-orange-700 border border-orange-100'}`}>{t}</span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-4">All RIASEC Scores <span className="normal-case font-normal">(out of 20)</span></p>
+                          <div className="space-y-3">
+                            {Object.entries(onetScores).map(([trait, sc]) => (
+                              <div key={trait}>
+                                <div className="flex justify-between items-center mb-1.5">
+                                  <span className="text-sm font-medium text-slate-700 capitalize">{trait}</span>
+                                  <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">{sc}/20</span>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                  <div className="bg-orange-400 h-1.5 rounded-full" style={{ width: `${(sc / 20) * 100}%` }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 text-center text-orange-700 text-sm">
+                        Could not decode scores from this URL.<br />
+                        <a href={selectedOnet.onet_url} target="_blank" rel="noopener noreferrer" className="underline mt-1 inline-block">Open O*NET results →</a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Agreement analysis ── */}
+                {onetScores && comparisonResults && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h3 className="font-semibold text-slate-700 mb-5 text-sm uppercase tracking-wide">Comparison Analysis</h3>
+
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className={`text-3xl font-bold px-5 py-3 rounded-2xl ${scoreColor}`}>{score}%</div>
+                      <div>
+                        <p className="font-semibold text-slate-800 text-sm">RIASEC Agreement</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{matching.length} of {Math.max(ourTypes.length, onetTypes.length)} top career types match across both assessments</p>
+                      </div>
+                    </div>
+
+                    <div className="w-full bg-slate-100 rounded-full h-2 mb-5">
+                      <div className={`h-2 rounded-full ${barColor}`} style={{ width: `${score}%` }} />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 mb-5">
+                      {[
+                        { label: 'Both agree',        items: matching,  bg: 'bg-green-50',  text: 'text-green-700',  muted: 'text-green-400' },
+                        { label: 'Only our platform', items: onlyOurs,  bg: 'bg-blue-50',   text: 'text-blue-700',   muted: 'text-blue-400' },
+                        { label: 'Only O*NET',        items: onlyOnet,  bg: 'bg-orange-50', text: 'text-orange-700', muted: 'text-orange-400' },
+                      ].map(({ label, items, bg, text, muted }) => (
+                        <div key={label} className={`${bg} rounded-xl p-4`}>
+                          <p className={`text-xs font-semibold ${text} uppercase tracking-wide mb-2`}>{label}</p>
+                          {items.length > 0
+                            ? items.map(t => <p key={t} className={`text-sm font-medium ${text} capitalize`}>{t}</p>)
+                            : <p className={`text-xs ${muted}`}>None</p>}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className={`rounded-xl p-4 ${score >= 67 ? 'bg-green-50 border border-green-100' : score >= 34 ? 'bg-amber-50 border border-amber-100' : 'bg-red-50 border border-red-100'}`}>
+                      <p className={`text-sm font-medium ${score >= 67 ? 'text-green-800' : score >= 34 ? 'text-amber-800' : 'text-red-800'}`}>{verdict}</p>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    // ── O*NET detail panel ───────────────────────────────
     return (
       <div className="min-h-screen bg-slate-50">
         <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center gap-4">
@@ -577,7 +815,16 @@ export default function AdminPage() {
 
         <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
           <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 shadow-sm">
-            <h3 className="font-semibold text-orange-700 mb-2 text-sm uppercase tracking-wide">O*NET Link</h3>
+            <div className="flex items-start justify-between mb-2">
+              <h3 className="font-semibold text-orange-700 text-sm uppercase tracking-wide">O*NET Link</h3>
+              {onetScores && (
+                <div className="flex gap-1 flex-wrap justify-end">
+                  {onetTypes.map((t, i) => (
+                    <span key={t} className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${i === 0 ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-700'}`}>{t}</span>
+                  ))}
+                </div>
+              )}
+            </div>
             <a
               href={selectedOnet.onet_url}
               target="_blank"
@@ -609,12 +856,25 @@ export default function AdminPage() {
                   </div>
                 ))}
               </dl>
-              <button
-                onClick={() => { setSelectedOnet(null); handleViewResults(matchedSubmission) }}
-                className="text-sm text-blue-600 hover:underline font-medium"
-              >
-                View full assessment results →
-              </button>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => { setSelectedOnet(null); handleViewResults(matchedSubmission) }}
+                  className="text-sm text-blue-600 hover:underline font-medium"
+                >
+                  View full assessment results →
+                </button>
+                {matchedSubmission.completed && (
+                  <button
+                    onClick={() => handleLoadComparison(matchedSubmission)}
+                    className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Compare Results
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 text-center">
