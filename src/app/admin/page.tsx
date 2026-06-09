@@ -89,6 +89,7 @@ type FeedbackEntry = {
 type OnetLink = {
   id: string
   email: string
+  name: string | null
   onet_url: string
   label: string | null
   created_at: string
@@ -1151,6 +1152,7 @@ export default function AdminPage() {
                     <thead>
                       <tr className="border-b border-slate-100 bg-slate-50">
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Label</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">O*NET URL</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Assessment</th>
@@ -1162,6 +1164,7 @@ export default function AdminPage() {
                       {onetLinks.map((link, i) => (
                         <tr key={link.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
                           <td className="px-4 py-3 font-medium text-slate-800">{link.email}</td>
+                          <td className="px-4 py-3 text-slate-600">{link.name || '—'}</td>
                           <td className="px-4 py-3 text-slate-500">{link.label || '—'}</td>
                           <td className="px-4 py-3 text-slate-500 max-w-xs truncate">
                             <a href={link.onet_url} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">
@@ -1192,7 +1195,7 @@ export default function AdminPage() {
                       ))}
                       {onetLinks.length === 0 && (
                         <tr>
-                          <td colSpan={6} className="px-4 py-12 text-center text-slate-400">No O*NET links added yet</td>
+                          <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No O*NET links added yet</td>
                         </tr>
                       )}
                     </tbody>
