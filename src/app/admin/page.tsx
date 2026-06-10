@@ -957,57 +957,57 @@ export default function AdminPage() {
   // ── Main panel ────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-6">
+      <div className="bg-white border-b border-slate-100 px-6 py-3">
+        <div className="flex items-center justify-between mb-2">
           <div>
             <h1 className="font-bold text-slate-800">Admin Panel</h1>
             <p className="text-xs text-slate-400">Etijah Career Compass</p>
           </div>
-          <div className="flex gap-1">
+          <div className="flex items-center gap-4">
             <button
-              onClick={() => setActiveTab('submissions')}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'submissions' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+              onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchCountryProfiles() }}
+              className="text-sm text-blue-600 hover:underline"
             >
-              Submissions
+              Refresh
             </button>
             <button
-              onClick={() => setActiveTab('onet')}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'onet' ? 'bg-orange-500 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+              onClick={handleLogout}
+              className="text-sm text-slate-400 hover:text-slate-600"
             >
-              O*NET Links
-            </button>
-            <button
-              onClick={() => setActiveTab('feedback')}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'feedback' ? 'bg-teal-700 text-white' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              Feedback
-              {feedbackList.length > 0 && (
-                <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{feedbackList.length}</span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('country')}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'country' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              Country Profiles
-              {countryProfiles.length > 0 && (
-                <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{countryProfiles.length}</span>
-              )}
+              Logout
             </button>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex gap-1 flex-wrap">
           <button
-            onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchCountryProfiles() }}
-            className="text-sm text-blue-600 hover:underline"
+            onClick={() => setActiveTab('submissions')}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'submissions' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
           >
-            Refresh
+            Submissions
           </button>
           <button
-            onClick={handleLogout}
-            className="text-sm text-slate-400 hover:text-slate-600"
+            onClick={() => setActiveTab('onet')}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'onet' ? 'bg-orange-500 text-white' : 'text-slate-500 hover:text-slate-700'}`}
           >
-            Logout
+            O*NET Links
+          </button>
+          <button
+            onClick={() => setActiveTab('feedback')}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'feedback' ? 'bg-teal-700 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Feedback
+            {feedbackList.length > 0 && (
+              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{feedbackList.length}</span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('country')}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'country' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Country Profiles
+            {countryProfiles.length > 0 && (
+              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{countryProfiles.length}</span>
+            )}
           </button>
         </div>
       </div>
