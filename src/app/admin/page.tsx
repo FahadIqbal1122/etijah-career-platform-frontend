@@ -1055,6 +1055,9 @@ export default function AdminPage() {
                               {hasOnet && (
                                 <span className="ml-2 text-xs font-semibold bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">O*NET</span>
                               )}
+                              {new Date(sub.created_at) >= new Date('2026-06-10') && (
+                                <span className="ml-2 text-xs font-semibold bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">v2</span>
+                              )}
                             </td>
                             <td className="px-4 py-3">
                               <div className="text-slate-500">{sub.email || '—'}</div>

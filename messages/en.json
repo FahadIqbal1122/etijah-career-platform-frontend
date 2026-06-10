@@ -206,6 +206,20 @@
     "Q12": {
       "text": "I enjoy managing data, organizing information, or maintaining accurate records."
     },
+    "QFC_RI": {
+      "text": "You notice something at work is broken or not working well. Which feels more natural to you?",
+      "options": {
+        "A": "Roll up my sleeves and try to fix or build it myself.",
+        "B": "Research what is causing it and understand the root problem."
+    }
+  },
+  "QFC_SE": {
+      "text": "You are leading a team toward a tight deadline. Which feels more like you?",
+      "options": {
+        "A": "I focus on keeping the team motivated, supported, and working well together.",
+        "B": "I focus on the goal — driving performance, making decisions, and winning."
+    }
+  },
     "Q13": {
       "text": "I regularly seek out new ideas, experiences, or perspectives — even when they challenge what I already believe."
     },

@@ -313,6 +313,28 @@ export const questions: Question[] = [
     text: 'I enjoy managing data, organizing information, or maintaining accurate records.',
     type: 'behavioral_scale',
   },
+  {
+    id: 'QFC_RI',
+    section: 'Holland RIASEC',
+    framework: 'Holland RIASEC',
+    text: 'You notice something at work is broken or not working well. Which feels more natural to you?',
+    type: 'forced_choice',
+    options: [
+      { value: 'A', label: 'Roll up my sleeves and try to fix or build it myself.' },
+      { value: 'B', label: 'Research what is causing it and understand the root problem' },
+    ],
+  },
+  {
+    id: 'QFC_SE',
+    section: 'Holland RIASEC',
+    framework: 'Holland RIASEC',
+    text: 'You are leading a team toward a tight deadline. Which feels more like you?',
+    type: 'forced_choice',
+    options: [
+      { value: 'A', label: 'I focus on keeping the team motivated, supported, and working well together.' },
+      { value: 'B', label: 'I focus on the goal - driving performance, making decisions, and winning.' },
+    ],
+  },
 
   // ─── FRAMEWORK 2: BIG FIVE ───────────────────────────
   {
