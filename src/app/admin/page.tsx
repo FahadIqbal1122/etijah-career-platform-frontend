@@ -96,6 +96,20 @@ type OnetLink = {
   has_assessment: boolean
 }
 
+type CountryProfile = {
+  country_code: string
+  country_name: string
+  country_name_ar: string | null
+  context_tier: string
+  labour_market_authority: string | null
+  nationalisation_programme: string | null
+  strategic_priorities: any
+  nationalisation_rates_by_sector: any
+  wage_support_tiers: any
+  job_boards: any
+  source_url_primary: string | null
+}
+
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
   const [email, setEmail] = useState('')
@@ -104,7 +118,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback'>('submissions')
+  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback' | 'country'>('submissions')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -133,6 +147,13 @@ export default function AdminPage() {
   const [showComparison, setShowComparison]       = useState(false)
   const [comparisonResults, setComparisonResults] = useState<any>(null)
   const [comparisonLoading, setComparisonLoading] = useState(false)
+
+  const [countryProfiles, setCountryProfiles] = useState<CountryProfile[]>([])
+  const [countryLoading, setCountryLoading] = useState(false)
+  const [countryError, setCountryError] = useState('')
+  const [editingCountry, setEditingCountry] = useState<CountryProfile | null>(null)
+  const [countryForm, setCountryForm] = useState<Partial<CountryProfile>>({})
+  const [showCountryForm, setShowCountryForm] = useState(false)
 
   useEffect(() => {
     fetch('/api/admin/session').then(res => {
@@ -182,13 +203,28 @@ export default function AdminPage() {
     }
   }, [])
 
+  const fetchCountryProfiles = useCallback(async () => {
+    setCountryLoading(true)
+    setCountryError('')
+    try {
+      const res = await fetch('/api/admin/country-profiles')
+      if (!res.ok) throw new Error('Failed to load')
+      setCountryProfiles(await res.json())
+    } catch (err: any) {
+      setCountryError(err.message)
+    } finally {
+      setCountryLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (authed) {
       fetchSubmissions()
       fetchOnetLinks()
       fetchFeedback()
+      fetchCountryProfiles()
     }
-  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback])
+  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchCountryProfiles])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -295,6 +331,36 @@ export default function AdminPage() {
       setComparisonResults(data.summary)
     } catch { /* stay null */ }
     finally { setComparisonLoading(false) }
+  }
+
+  async function handleSaveCountry(e: React.FormEvent) {
+    e.preventDefault()
+    // Parse JSON fields
+    const payload: any = { ...countryForm }
+    for (const key of ['strategic_priorities', 'nationalisation_rates_by_sector', 'wage_support_tiers', 'job_boards']) {
+      if (typeof payload[key] === 'string') {
+        try {payload[key] = JSON.parse(payload[key]) } catch { payload[key] = null }
+      }
+    }
+    if (editingCountry) {
+      await fetch(`/api/admin/country-profiles/${editingCountry.country_code}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      })
+    } else {
+      await fetch('/api/admin/country-profiles', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      })
+    }
+    setShowCountryForm(false)
+    setEditingCountry(null)
+    setCountryForm({})
+    fetchCountryProfiles()
+  }
+
+  async function handleDeleteCountry(code: string){
+    if (!confirm('Delete this country profile?')) return
+    await fetch(`/api/admin/country-profiles/${code}`, { method: 'DELETE' })
+    setCountryProfiles(prev => prev.filter(c => c.country_code !== code))
   }
 
   const onetLinkForEmail = (email: string) =>
@@ -919,11 +985,20 @@ export default function AdminPage() {
                 <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{feedbackList.length}</span>
               )}
             </button>
+            <button
+              onClick={() => setActiveTab('country')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'country' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Country Profiles
+              {countryProfiles.length > 0 && (
+                <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{countryProfiles.length}</span>
+              )}
+            </button>
           </div>
         </div>
         <div className="flex items-center gap-4">
           <button
-            onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback() }}
+            onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchCountryProfiles() }}
             className="text-sm text-blue-600 hover:underline"
           >
             Refresh
@@ -1202,6 +1277,150 @@ export default function AdminPage() {
                   </table>
                 </div>
               </>
+            )}
+          </>
+        )}
+
+        {/* ── Country Profiles Tab ── */}
+        {activeTab === 'country' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm text-slate-400">{countryProfiles.length} profile{countryProfiles.length !== 1 ? 's' : ''}</p>
+              <button
+                onClick={() => { setEditingCountry(null); setCountryForm({}); setShowCountryForm(true) }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                + Add Country
+              </button>
+            </div>
+
+            {showCountryForm && (
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
+                <h2 className="font-semibold text-slate-700 mb-4 text-sm uppercase tracking-wide">
+                  {editingCountry ? `Edit — ${editingCountry.country_name}` : 'New Country Profile'}
+                </h2>
+                <form onSubmit={handleSaveCountry} className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    {([
+                      ['country_code', 'Country Code (2-letter)', false],
+                      ['country_name', 'Country Name (EN)', false],
+                      ['country_name_ar', 'Country Name (AR)', true],
+                      ['labour_market_authority', 'Labour Market Authority', true],
+                      ['nationalisation_programme', 'Nationalisation Programme', true],
+                      ['source_url_primary', 'Source URL', true],
+                    ] as [string, string, boolean][]).map(([key, label, optional]) => (
+                      <div key={key}>
+                        <label className="block text-xs text-slate-500 mb-1">{label}</label>
+                        <input
+                          type="text"
+                          required={!optional}
+                          value={(countryForm as any)[key] ?? ''}
+                          onChange={e => setCountryForm(prev => ({ ...prev, [key]: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  {(['strategic_priorities', 'nationalisation_rates_by_sector', 'wage_support_tiers', 'job_boards'] as const).map(key => (
+                    <div key={key}>
+                      <label className="block text-xs text-slate-500 mb-1 capitalize">{key.replace(/_/g, ' ')}</label>
+                      <textarea
+                        rows={3}
+                        value={
+                          typeof (countryForm as any)[key] === 'object' && (countryForm as any)[key] !== null
+                            ? JSON.stringify((countryForm as any)[key], null, 2)
+                            : ((countryForm as any)[key] ?? '')
+                        }
+                        onChange={e => setCountryForm(prev => ({ ...prev, [key]: e.target.value }))}
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        placeholder='{"key": "value"}'
+                      />
+                    </div>
+                  ))}
+                  <div className="flex gap-3 pt-2">
+                    <button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors">
+                      {editingCountry ? 'Save Changes' : 'Create'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowCountryForm(false); setEditingCountry(null); setCountryForm({}) }}
+                      className="text-sm text-slate-400 hover:text-slate-600 px-3 py-2"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {countryLoading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {countryError && <p className="text-red-500 text-sm text-center py-8">{countryError}</p>}
+
+            {!countryLoading && !countryError && (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Code</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Tier</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Labour Authority</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Strategic Priorities</th>
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {countryProfiles.map((cp, i) => (
+                      <tr key={cp.country_code} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                        <td className="px-4 py-3 font-mono font-bold text-slate-700">{cp.country_code}</td>
+                        <td className="px-4 py-3 font-medium text-slate-800">{cp.country_name}</td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${cp.context_tier === 'complete' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-600'}`}>
+                            {cp.context_tier}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-500 text-xs">{cp.labour_market_authority || '—'}</td>
+                        <td className="px-4 py-3 text-slate-400 text-xs font-mono truncate max-w-xs">
+                          {cp.strategic_priorities ? JSON.stringify(cp.strategic_priorities).slice(0, 60) + '…' : '—'}
+                        </td>
+                        <td className="px-4 py-3 flex items-center gap-3">
+                          <button
+                            onClick={() => {
+                              setEditingCountry(cp)
+                              setCountryForm({
+                                ...cp,
+                                strategic_priorities: cp.strategic_priorities ? JSON.stringify(cp.strategic_priorities, null, 2) : '',
+                                nationalisation_rates_by_sector: cp.nationalisation_rates_by_sector ? JSON.stringify(cp.nationalisation_rates_by_sector, null, 2) : '',
+                                wage_support_tiers: cp.wage_support_tiers ? JSON.stringify(cp.wage_support_tiers, null, 2) : '',
+                                job_boards: cp.job_boards ? JSON.stringify(cp.job_boards, null, 2) : '',
+                              })
+                              setShowCountryForm(true)
+                            }}
+                            className="text-xs text-blue-600 hover:underline font-medium"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCountry(cp.country_code)}
+                            className="text-xs text-red-400 hover:text-red-600 hover:underline"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {countryProfiles.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-12 text-center text-slate-400">No country profiles yet</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             )}
           </>
         )}
