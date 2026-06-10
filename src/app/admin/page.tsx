@@ -984,12 +984,18 @@ export default function AdminPage() {
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'submissions' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
           >
             Submissions
+            {submissions.length > 0 && (
+              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{submissions.length}</span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab('onet')}
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'onet' ? 'bg-orange-500 text-white' : 'text-slate-500 hover:text-slate-700'}`}
           >
             O*NET Links
+            {onetLinks.length > 0 && (
+              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{onetLinks.length}</span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab('feedback')}
