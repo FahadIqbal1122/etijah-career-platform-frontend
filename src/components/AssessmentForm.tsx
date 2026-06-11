@@ -17,6 +17,26 @@ const sections = questions.reduce((acc, question) =>{
 
 const sectionNames = Object.keys(sections)
 
+const SKIP_RULES: {
+  condition: (a: Record<string, any>) => boolean;
+  ids: Record<string, any>;
+}[] = [
+  {
+    condition: (a: Record<string, any>) => a['QO4'] === 'high_school',
+    ids: { QO5: 'not_applicable' },
+  },
+  {
+    condition: (a: Record<string, any>) => a['QO7'] === 'employee',
+    ids: { Q69: 1, Q71: 'B', Q73: 1 },
+  },
+]
+
+function getAutoFills(answers: Record<string, any>): Record<string, any> {
+  return SKIP_RULES
+    .filter(r => r.condition(answers))
+    .reduce((acc, r) => ({ ...acc, ...r.ids }), {} as Record<string, any>)
+}
+
 export default function AssessmentForm() {
     const [currentSectionIndex, setCurrentSectionIndex] = useState(0)
     const [answers, setAnswers] = useState<Record<string, any>>({})
@@ -28,15 +48,22 @@ export default function AssessmentForm() {
     const [existingResultId, setExistingResultId] = useState<string | null>(null)
     const router = useRouter()
 
+    const autoFills = getAutoFills(answers)
+    const skippedIds = new Set(Object.keys(autoFills))
+
+    const visibleSectionNames = sectionNames.filter(name => 
+      sections[name].some(q => !skippedIds.has(q.id))
+    )
+
     const tForm = useTranslations('form')
     const tSections = useTranslations('sections')
     const tQ = useTranslations('questions')
     const tScale = useTranslations('scale')
 
-    const currentSection = sectionNames[currentSectionIndex]
-    const currentQuestions = sections[currentSection]
-    const isLastSection = currentSectionIndex === sectionNames.length - 1
-    const progress = ((currentSectionIndex) / sectionNames.length) * 100
+    const currentSection = visibleSectionNames[currentSectionIndex]
+    const currentQuestions = sections[currentSection].filter(q => !skippedIds.has(q.id))
+    const isLastSection = currentSectionIndex === visibleSectionNames.length - 1
+    const progress = ((currentSectionIndex) / visibleSectionNames.length) * 100
 
     function isAnswerValid(q: Question): boolean {
         const answer = answers[q.id]
@@ -94,7 +121,8 @@ export default function AssessmentForm() {
     }
 
     async function handleSubmit(){
-        const unanswered = questions.filter(q => !isAnswerValid(q))
+        const finalAnswers = { ...answers, ...autoFills }
+        const unanswered = questions.filter(q => !skippedIds.has(q.id) && !isAnswerValid(q) )
         if (unanswered.length > 0) {
             setError('Some questions are incomplete. Please go back and fill in all required fields.')
             return
@@ -112,13 +140,13 @@ export default function AssessmentForm() {
                     nationality: answers['QO2'],
                     age_bracket: answers['QO3'],
                     current_stage: answers['QO4'],
-                    education_field: answers['QO5'],
+                    education_field: finalAnswers['QO5'],
                     sectors_of_interest: answers['QO6'] || [],
                     career_structure: answers['QO7'],
                     languages: answers['QO8'] || [],
                     geographic_openness: answers['QO9'],
                     why_here: answers['QO10'],
-                    answers: answers,
+                    answers: finalAnswers,
                     completed: true,
                 })
             router.push(`/results/${result.response_id}`)
@@ -189,7 +217,7 @@ export default function AssessmentForm() {
         <div className="max-w-2xl mx-auto px-4 py-2">
           <div className="flex justify-between text-xs text-gray-400 mb-1.5">
             <span>{tSections(currentSection)}</span>
-            <span>{tForm('ofTotal', { current: currentSectionIndex + 1, total: sectionNames.length })}</span>
+            <span>{tForm('ofTotal', { current: currentSectionIndex + 1, total: visibleSectionNames.length })}</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-1">
             <div

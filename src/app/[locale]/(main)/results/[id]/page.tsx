@@ -19,15 +19,15 @@ export default function ResultsPage() {
 
     const [summary, setSummary] = useState<any>(null)
     const [error, setError] = useState('')
-    // const [jobs, setJobs] = useState<any[]>([])
+    const [jobs, setJobs] = useState<any[]>([])
 
     useEffect(() => {
         apiGet<any>(`/assessment/${id}/results`)
             .then(data => setSummary(data.summary))
             .catch(err => setError(err.message || 'Failed to load results'))
-        // apiGet<any>(`/assessment/${id}/career-suggestions`)
-        //     .then(data => setJobs(data.suggestions))
-        //     .catch(() => {})
+        apiGet<any>(`/assessment/${id}/career-suggestions`)
+            .then(data => setJobs(data.suggestions))
+            .catch(() => {})
     }, [id])
 
     if (error) {
@@ -185,8 +185,52 @@ export default function ResultsPage() {
                     </div>
                 </div>
 
+                {/* Work Style & Resilience */}
+                {summary.work_style && (
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                  </svg>
+              </div>
+              <div>
+                  <h3 className="font-semibold text-slate-800 text-base">Work Style & Resilience</h3>
+                  <p className="text-xs text-slate-400">How you work best and handle pressure</p>                                                                                                          
+              </div>
+          </div>
+          <div className="space-y-3">
+              {[
+                  { label: 'Pace', low: 'Steady & structured', high: 'Fast-paced', score: summary.work_style.pace },
+                  { label: 'Environment', low: 'Large organisation', high: 'Startup / small team', score: summary.work_style.environment },
+                  { label: 'Sector', low: 'Public sector', high: 'Private sector', score: summary.work_style.sector },
+                  { label: 'Mobility', low: 'Prefer to stay local', high: 'Open to relocation', score: summary.work_style.mobility },
+                  ...(summary.resilience ? [
+                      { label: 'Long-term focus', low: 'Short-term oriented', high: 'Long-term oriented', score: summary.resilience.long_term_focus },
+                      { label: 'Resilience', low: 'Needs support', high: 'Bounces back quickly', score: summary.resilience.workplace_resilience },
+                  ] : []),
+              ].map(({ label, low, high, score }) => (
+                  <div key={label}>
+                      <div className="flex justify-between items-center mb-1.5">                                                                                                                           
+                          <span className="text-xs font-medium text-slate-500">{label}</span>
+                          <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2.5 py-0.5 rounded-full">
+                              {score >= 50 ? high : low}
+                          </span>
+                      </div>
+                      <div className="w-full bg-slate-100 rounded-full h-1.5">
+                          <div
+                              className="bg-teal-500 h-1.5 rounded-full transition-all duration-700"
+                              style={{ width: `${score}%` }}
+                          />
+                      </div>
+                  </div>
+              ))}
+          </div>
+                </div>
+                )}
+
                 {/* Suggested Careers */}
-                {/* {jobs.length > 0 && (
+                {jobs.length > 0 && (
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
@@ -210,7 +254,7 @@ export default function ResultsPage() {
                             ))}
                         </div>
                     </div>
-                )} */}
+                )}
 
                 {/* Share */}
                 <div className="flex flex-col items-center gap-2 pt-2 pb-4">
