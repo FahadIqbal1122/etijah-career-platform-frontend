@@ -110,6 +110,23 @@ type CountryProfile = {
   source_url_primary: string | null
 }
 
+type CourseEntry = {
+  id: string
+  title: string
+  provider: string
+  url: string
+  description: string | null
+  skill_tags: string[]
+  career_tags: string[]
+  riasec_tags: string[]
+  is_free: boolean
+  level: string
+  duration_hours: number | null
+  language: string
+  country_code: string | null
+  created_at: string
+}
+
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
   const [email, setEmail] = useState('')
@@ -118,7 +135,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback' | 'country'>('submissions')
+  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback' | 'country' | 'courses'>('submissions')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -154,6 +171,18 @@ export default function AdminPage() {
   const [editingCountry, setEditingCountry] = useState<CountryProfile | null>(null)
   const [countryForm, setCountryForm] = useState<Partial<CountryProfile>>({})
   const [showCountryForm, setShowCountryForm] = useState(false)
+
+  const [courses, setCourses] = useState<CourseEntry[]>([])
+  const [coursesLoading, setCoursesLoading] = useState(false)
+  const [coursesError, setCoursesError] = useState('')
+  const [showCourseForm, setShowCourseForm] = useState(false)
+  const [courseAdding, setCourseAdding] = useState(false)
+  const [courseForm, setCourseForm] = useState({
+    title: '', provider: '', url: '', description: '',
+    skill_tags: '', career_tags: '', riasec_tags: '',
+    is_free: false, level: 'beginner', duration_hours: '', language: 'en',
+    country_code: '',
+  })
 
   useEffect(() => {
     fetch('/api/admin/session').then(res => {
@@ -217,14 +246,29 @@ export default function AdminPage() {
     }
   }, [])
 
+  const fetchCourses = useCallback(async () => {
+    setCoursesLoading(true)
+    setCoursesError('')
+    try {
+      const res = await fetch('/api/admin/courses')
+      if (!res.ok) throw new Error('Failed to load courses')
+      setCourses(await res.json())
+    } catch (err: any) {
+      setCoursesError(err.message)
+    } finally {
+      setCoursesLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (authed) {
       fetchSubmissions()
       fetchOnetLinks()
       fetchFeedback()
       fetchCountryProfiles()
+      fetchCourses()
     }
-  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchCountryProfiles])
+  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchCountryProfiles, fetchCourses])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -361,6 +405,41 @@ export default function AdminPage() {
     if (!confirm('Delete this country profile?')) return
     await fetch(`/api/admin/country-profiles/${code}`, { method: 'DELETE' })
     setCountryProfiles(prev => prev.filter(c => c.country_code !== code))
+  }
+
+  async function handleAddCourse(e: React.FormEvent) {
+    e.preventDefault()
+    setCourseAdding(true)
+    setCoursesError('')
+    try {
+      const payload = {
+        ...courseForm,
+        skill_tags:  courseForm.skill_tags.split(',').map(s => s.trim()).filter(Boolean),
+        career_tags: courseForm.career_tags.split(',').map(s => s.trim()).filter(Boolean),
+        riasec_tags: courseForm.riasec_tags.split(',').map(s => s.trim()).filter(Boolean),
+        duration_hours: courseForm.duration_hours ? parseInt(courseForm.duration_hours) : null,
+        country_code: courseForm.country_code.trim().toUpperCase() || null,
+      }
+      const res = await fetch('/api/admin/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) throw new Error('Failed to add course')
+      setCourseForm({ title: '', provider: '', url: '', description: '', skill_tags: '', career_tags: '', riasec_tags: '', is_free: false, level: 'beginner', duration_hours: '', language: 'en', country_code: '' })
+      setShowCourseForm(false)
+      fetchCourses()
+    } catch (err: any) {
+      setCoursesError(err.message)
+    } finally {
+      setCourseAdding(false)
+    }
+  }
+
+  async function handleDeleteCourse(id: string) {
+    if (!confirm('Delete this course?')) return
+    await fetch(`/api/admin/courses/${id}`, { method: 'DELETE' })
+    setCourses(prev => prev.filter(c => c.id !== id))
   }
 
   const onetLinkForEmail = (email: string) =>
@@ -965,7 +1044,7 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchCountryProfiles() }}
+              onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchCountryProfiles(); fetchCourses() }}
               className="text-sm text-blue-600 hover:underline"
             >
               Refresh
@@ -1013,6 +1092,15 @@ export default function AdminPage() {
             Country Profiles
             {countryProfiles.length > 0 && (
               <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{countryProfiles.length}</span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('courses')}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'courses' ? 'bg-violet-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Courses
+            {courses.length > 0 && (
+              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{courses.length}</span>
             )}
           </button>
         </div>
@@ -1286,6 +1374,190 @@ export default function AdminPage() {
                   </table>
                 </div>
               </>
+            )}
+          </>
+        )}
+
+        {/* ── Courses Tab ── */}
+        {activeTab === 'courses' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm text-slate-400">{courses.length} course{courses.length !== 1 ? 's' : ''}</p>
+              <button
+                onClick={() => setShowCourseForm(v => !v)}
+                className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+              >
+                {showCourseForm ? 'Cancel' : '+ Add Course'}
+              </button>
+            </div>
+
+            {showCourseForm && (
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
+                <h2 className="font-semibold text-slate-700 mb-4 text-sm uppercase tracking-wide">New Course</h2>
+                <form onSubmit={handleAddCourse} className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    {([
+                      ['title', 'Title', 'text', true],
+                      ['provider', 'Provider (e.g. Coursera)', 'text', true],
+                      ['url', 'URL', 'url', true],
+                      ['duration_hours', 'Duration (hours)', 'number', false],
+                      ['country_code', 'Country Code (e.g. SA, BH — blank = global)', 'text', false],
+                    ] as [string, string, string, boolean][]).map(([key, label, type, required]) => (
+                      <div key={key}>
+                        <label className="block text-xs text-slate-500 mb-1">{label}</label>
+                        <input
+                          type={type}
+                          required={required}
+                          value={(courseForm as any)[key]}
+                          onChange={e => setCourseForm(prev => ({ ...prev, [key]: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                        />
+                      </div>
+                    ))}
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">Level</label>
+                      <select
+                        value={courseForm.level}
+                        onChange={e => setCourseForm(prev => ({ ...prev, level: e.target.value }))}
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                      >
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">Language</label>
+                      <select
+                        value={courseForm.language}
+                        onChange={e => setCourseForm(prev => ({ ...prev, language: e.target.value }))}
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                      >
+                        <option value="en">English</option>
+                        <option value="ar">Arabic</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1">Description</label>
+                    <textarea
+                      rows={2}
+                      value={courseForm.description}
+                      onChange={e => setCourseForm(prev => ({ ...prev, description: e.target.value }))}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                    />
+                  </div>
+                  {([
+                    ['skill_tags', 'Skill Tags (comma-separated, e.g. leadership, communication)'],
+                    ['career_tags', 'Career Tags (comma-separated, e.g. Product Manager, Data Analyst)'],
+                    ['riasec_tags', 'RIASEC Tags (comma-separated, e.g. enterprising, investigative)'],
+                  ] as [string, string][]).map(([key, label]) => (
+                    <div key={key}>
+                      <label className="block text-xs text-slate-500 mb-1">{label}</label>
+                      <input
+                        type="text"
+                        value={(courseForm as any)[key]}
+                        onChange={e => setCourseForm(prev => ({ ...prev, [key]: e.target.value }))}
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                      />
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="is_free"
+                      checked={courseForm.is_free}
+                      onChange={e => setCourseForm(prev => ({ ...prev, is_free: e.target.checked }))}
+                      className="w-4 h-4 accent-violet-600"
+                    />
+                    <label htmlFor="is_free" className="text-sm text-slate-600">Free course</label>
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="submit"
+                      disabled={courseAdding}
+                      className="bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
+                    >
+                      {courseAdding && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                      Add Course
+                    </button>
+                  </div>
+                  {coursesError && <p className="text-red-500 text-xs mt-1">{coursesError}</p>}
+                </form>
+              </div>
+            )}
+
+            {coursesLoading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+
+            {!coursesLoading && (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
+                <table className="w-full text-sm min-w-[900px]">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50">
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Title</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Provider</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Level</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Skill Tags</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Free?</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Lang</th>
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {courses.map((c, i) => (
+                      <tr key={c.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                        <td className="px-4 py-3 font-medium text-slate-800">
+                          <a href={c.url} target="_blank" rel="noopener noreferrer" className="hover:text-violet-600 hover:underline">{c.title}</a>
+                        </td>
+                        <td className="px-4 py-3 text-slate-500">{c.provider}</td>
+                        <td className="px-4 py-3">
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 capitalize">{c.level}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            {c.skill_tags?.slice(0, 3).map(t => (
+                              <span key={t} className="text-xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{t}</span>
+                            ))}
+                            {(c.skill_tags?.length ?? 0) > 3 && (
+                              <span className="text-xs text-slate-400">+{c.skill_tags.length - 3}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {c.country_code
+                            ? <span className="text-xs font-mono font-bold text-slate-700">{c.country_code}</span>
+                            : <span className="text-xs text-slate-300">Global</span>
+                          }
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${c.is_free ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                            {c.is_free ? 'Free' : 'Paid'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-500 uppercase text-xs font-mono">{c.language}</td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => handleDeleteCourse(c.id)}
+                            className="text-xs text-red-400 hover:text-red-600 hover:underline"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {courses.length === 0 && (
+                      <tr>
+                        <td colSpan={8} className="px-4 py-12 text-center text-slate-400">No courses yet — add your first one above</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             )}
           </>
         )}
