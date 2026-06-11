@@ -20,6 +20,7 @@ export default function ResultsPage() {
     const [summary, setSummary] = useState<any>(null)
     const [error, setError] = useState('')
     const [jobs, setJobs] = useState<any[]>([])
+    const [aiImpact, setAiImpact] = useState<any>(null)
 
     useEffect(() => {
         apiGet<any>(`/assessment/${id}/results`)
@@ -27,6 +28,9 @@ export default function ResultsPage() {
             .catch(err => setError(err.message || 'Failed to load results'))
         apiGet<any>(`/assessment/${id}/career-suggestions`)
             .then(data => setJobs(data.suggestions))
+            .catch(() => {})
+        apiGet<any>(`/assessment/${id}/ai-impact`)
+            .then(data => setAiImpact(data))
             .catch(() => {})
     }, [id])
 
@@ -251,6 +255,54 @@ export default function ResultsPage() {
                                 >
                                     {job.title}
                                 </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* AI Impact */}
+                {aiImpact && (
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
+                                <svg className="w-5 h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 001.357 2.059l.096.04a2.25 2.25 0 002.635-.701L19.5 9m-9.75-5.896A24.27 24.27 0 0112 3c.607 0 1.207.026 1.8.078" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-slate-800 text-base">AI Impact on Your Careers</h3>
+                                <p className="text-xs text-slate-400">How automation affects your top matches</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-slate-600 mb-4 leading-relaxed">{aiImpact.overall_summary}</p>
+                        <div className="space-y-3">
+                            {aiImpact.careers?.map((c: any) => (
+                                <div key={c.title} className="border border-slate-100 rounded-xl p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-semibold text-slate-800">{c.title}</span>
+                                        <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                                            c.ai_risk_level === 'low'    ? 'bg-green-50 text-green-700' :
+                                            c.ai_risk_level === 'medium' ? 'bg-amber-50 text-amber-700' :
+                                                                           'bg-rose-50 text-rose-700'
+                                        }`}>
+                                            {c.ai_risk_level?.toUpperCase()} RISK
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 mb-2">{c.gcc_outlook}</p>
+                                    <div className="flex flex-wrap gap-1.5 mb-2">
+                                        {c.protected_skills?.map((s: string) => (
+                                            <span key={s} className="text-xs bg-green-50 text-green-700 border border-green-100 px-2 py-0.5 rounded-full">{s}</span>
+                                        ))}
+                                    </div>
+                                    <ul className="space-y-1">
+                                        {c.upskilling?.map((tip: string) => (
+                                            <li key={tip} className="text-xs text-slate-500 flex gap-1.5">
+                                                <span className="text-blue-400 mt-0.5">→</span>
+                                                {tip}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
                             ))}
                         </div>
                     </div>
