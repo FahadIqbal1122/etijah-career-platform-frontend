@@ -144,6 +144,9 @@ export default function AdminPage() {
   const [selected, setSelected] = useState<Submission | null>(null)
   const [results, setResults] = useState<any>(null)
   const [resultsLoading, setResultsLoading] = useState(false)
+  const [adminJobs, setAdminJobs] = useState<any[]>([])
+  const [adminAiImpact, setAdminAiImpact] = useState<any>(null)
+  const [adminAiLoading, setAdminAiLoading] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -316,7 +319,10 @@ export default function AdminPage() {
   async function handleViewResults(sub: Submission) {
     setSelected(sub)
     setResults(null)
+    setAdminJobs([])
+    setAdminAiImpact(null)
     setResultsLoading(true)
+    setAdminAiLoading(true)
     try {
       const res = await fetch(`/api/admin/submissions/${sub.id}/results`)
       const data = await res.json()
@@ -326,6 +332,10 @@ export default function AdminPage() {
     } finally {
       setResultsLoading(false)
     }
+    fetch(`/api/admin/submissions/${sub.id}/career-suggestions`)
+      .then(r => r.json()).then(d => setAdminJobs(d.suggestions || [])).catch(() => {})
+    fetch(`/api/admin/submissions/${sub.id}/ai-impact`)
+      .then(r => r.json()).then(d => setAdminAiImpact(d)).catch(() => {}).finally(() => setAdminAiLoading(false))
   }
 
   async function handleDeleteSubmission(id: string) {
@@ -653,7 +663,91 @@ export default function AdminPage() {
                   ))}
                 </div>
               </div>
+
+              {results.work_style && (
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                  <h3 className="font-semibold text-slate-700 mb-4 text-sm uppercase tracking-wide">Work Style & Resilience</h3>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                    {[
+                      { label: 'Pace', low: 'Steady', high: 'Fast-paced', score: results.work_style.pace },
+                      { label: 'Environment', low: 'Large org', high: 'Startup', score: results.work_style.environment },
+                      { label: 'Sector', low: 'Public', high: 'Private', score: results.work_style.sector },
+                      { label: 'Mobility', low: 'Local', high: 'Open to relocate', score: results.work_style.mobility },
+                      ...(results.resilience ? [
+                        { label: 'Long-term focus', low: 'Short-term', high: 'Long-term', score: results.resilience.long_term_focus },
+                        { label: 'Resilience', low: 'Needs support', high: 'Bounces back', score: results.resilience.workplace_resilience },
+                      ] : []),
+                    ].map(({ label, low, high, score }) => (
+                      <div key={label}>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs font-medium text-slate-500">{label}</span>
+                          <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full">{score >= 50 ? high : low}</span>
+                        </div>
+                        <div className="w-full bg-slate-100 rounded-full h-1.5">
+                          <div className="bg-teal-500 h-1.5 rounded-full" style={{ width: `${score}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
+          )}
+
+          {adminJobs.length > 0 && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+              <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Suggested Careers</h3>
+              <div className="flex gap-2 flex-wrap">
+                {adminJobs.map((job: any, i: number) => (
+                  <span key={job.title} className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize ${i === 0 ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 border border-green-100'}`}>
+                    {job.title}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {adminAiLoading && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 animate-pulse">
+              <div className="h-4 bg-slate-100 rounded w-1/3 mb-4" />
+              <div className="space-y-3">
+                {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl" />)}
+              </div>
+            </div>
+          )}
+
+          {!adminAiLoading && adminAiImpact && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+              <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">AI Impact on Careers</h3>
+              <p className="text-sm text-slate-600 mb-4 leading-relaxed">{adminAiImpact.overall_summary}</p>
+              <div className="space-y-3">
+                {adminAiImpact.careers?.map((c: any) => (
+                  <div key={c.title} className="border border-slate-100 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-slate-800">{c.title}</span>
+                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                        c.ai_risk_level === 'low' ? 'bg-green-50 text-green-700' :
+                        c.ai_risk_level === 'medium' ? 'bg-amber-50 text-amber-700' :
+                        'bg-rose-50 text-rose-700'
+                      }`}>{c.ai_risk_level?.toUpperCase()} RISK</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mb-2">{c.gcc_outlook}</p>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {c.protected_skills?.map((s: string) => (
+                        <span key={s} className="text-xs bg-green-50 text-green-700 border border-green-100 px-2 py-0.5 rounded-full">{s}</span>
+                      ))}
+                    </div>
+                    <ul className="space-y-1">
+                      {c.upskilling?.map((tip: string) => (
+                        <li key={tip} className="text-xs text-slate-500 flex gap-1.5">
+                          <span className="text-blue-400 mt-0.5">→</span>{tip}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </div>
