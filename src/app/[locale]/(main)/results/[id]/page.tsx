@@ -21,6 +21,7 @@ export default function ResultsPage() {
     const [error, setError] = useState('')
     const [jobs, setJobs] = useState<any[]>([])
     const [aiImpact, setAiImpact] = useState<any>(null)
+    const [jobListings, setJobListings] = useState<any[]>([])
 
     useEffect(() => {
         apiGet<any>(`/assessment/${id}/results`)
@@ -31,6 +32,9 @@ export default function ResultsPage() {
             .catch(() => {})
         apiGet<any>(`/assessment/${id}/ai-impact`)
             .then(data => setAiImpact(data))
+            .catch(() => {})
+        apiGet<any>(`/assessment/${id}/job-listings`)
+            .then(data => setJobListings(data.jobs || []))
             .catch(() => {})
     }, [id])
 
@@ -255,6 +259,41 @@ export default function ResultsPage() {
                                 >
                                     {job.title}
                                 </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Live Job Postings */}
+                {jobListings.length > 0 && (
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center shrink-0">
+                                <svg className="w-5 h-5 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-slate-800 text-base">Live Job Postings</h3>
+                                <p className="text-xs text-slate-400">Current openings matched to your career suggestions</p>
+                            </div>
+                        </div>
+                        <div className="space-y-3">
+                            {jobListings.map((job: any, i: number) => (
+                                <a
+                                    key={i}
+                                    href={job.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block border border-slate-100 rounded-xl p-4 hover:border-sky-200 hover:bg-sky-50/40 transition-colors group"
+                                >
+                                    <div className="flex items-start justify-between gap-2 mb-1">
+                                        <span className="text-sm font-semibold text-slate-800 group-hover:text-sky-700">{job.title}</span>
+                                        <span className="text-xs font-medium bg-sky-50 text-sky-600 border border-sky-100 px-2 py-0.5 rounded-full shrink-0">{job.source}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-500">{job.company} · {job.location}</p>
+                                    <p className="text-xs text-slate-400 mt-1">Matched for: <span className="capitalize">{job.matched_career}</span></p>
+                                </a>
                             ))}
                         </div>
                     </div>
