@@ -87,7 +87,7 @@ export default function ResultsPage() {
     <div className="min-h-screen bg-slate-50">
 
       {/* Hero */}
-      <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 px-4 pt-10 pb-24 text-center text-white relative overflow-hidden">
+      <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 px-4 pt-10 pb-16 text-center text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-4 left-8 w-32 h-32 rounded-full bg-white" />
           <div className="absolute bottom-0 right-4 w-48 h-48 rounded-full bg-indigo-300" />
@@ -107,24 +107,24 @@ export default function ResultsPage() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 -mt-10 pb-16 space-y-4">
+      <div className="max-w-5xl mx-auto px-6 mt-8 pb-16 space-y-4 relative z-10">
 
         {/* Top 3 quick cards */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-4">
           {[
             { label: 'Career Type', value: summary.riasec.top_types[0], color: 'blue' },
             { label: 'Top Value', value: summary.values.top_values[0], color: 'amber' },
             { label: 'Top Strength', value: summary.strengths.top_strengths[0], color: 'purple' },
           ].map(({ label, value, color }) => (
-            <div key={label} className={`bg-white rounded-2xl p-4 shadow-sm border border-slate-100 text-center`}>
-              <p className={`text-xs font-medium text-${color}-500 mb-1`}>{label}</p>
-              <p className="text-sm font-bold text-slate-800 capitalize">{value}</p>
+            <div key={label} className={`bg-white rounded-2xl p-5 shadow-sm border border-slate-100 text-center`}>
+              <p className={`text-xs font-medium text-${color}-500 mb-1.5`}>{label}</p>
+              <p className="text-base font-bold text-slate-800 capitalize">{value}</p>
             </div>
           ))}
         </div>
 
-        {/* Career Types + Values + Strengths — 2 col grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Career Types + Values + Strengths — responsive grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
 
           {/* Career Types */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
@@ -235,7 +235,7 @@ export default function ResultsPage() {
                 <p className="text-xs text-slate-400">How you work best</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3">
               {[
                 { label: 'Pace', low: 'Steady', high: 'Fast-paced', score: summary.work_style.pace },
                 { label: 'Environment', low: 'Large org', high: 'Startup', score: summary.work_style.environment },
