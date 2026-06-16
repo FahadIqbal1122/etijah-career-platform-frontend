@@ -3,11 +3,37 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { apiAuthGet, apiAuthPatch, apiAuthDelete } from '@/lib/api'
+
+type Application = {
+  id: string
+  job_title: string
+  company: string | null
+  location: string | null
+  source: string | null
+  url: string | null
+  matched_career: string | null
+  status: 'saved' | 'applied' | 'interview' | 'offer' | 'rejected'
+  notes: string | null
+  applied_at: string | null
+  created_at: string
+}
+
+const STAGES: { key: Application['status']; label: string }[] = [
+  { key: 'saved', label: 'Saved' },
+  { key: 'applied', label: 'Applied' },
+  { key: 'interview', label: 'Interview' },
+  { key: 'offer', label: 'Offer' },
+  { key: 'rejected', label: 'Rejected' },
+]
 
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [applications, setApplications] = useState<Application[]>([])
+  const [appsLoading, setAppsLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -20,9 +46,35 @@ export default function DashboardPage() {
     })
   }, [router])
 
+  useEffect(() => {
+    if (!user) return
+    apiAuthGet<Application[]>('/applications')
+      .then(setApplications)
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load applications'))
+      .finally(() => setAppsLoading(false))
+  }, [user])
+
   async function handleLogout() {
     await supabase.auth.signOut()
     router.push('/en/login')
+  }
+
+  async function moveStage(id: string, status: Application['status']) {
+    try {
+      const updated = await apiAuthPatch<Application>(`/applications/${id}`, { status })
+      setApplications(prev => prev.map(a => (a.id === id ? updated : a)))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update application')
+    }
+  }
+
+  async function removeApplication(id: string) {
+    try {
+      await apiAuthDelete(`/applications/${id}`)
+      setApplications(prev => prev.filter(a => a.id !== id))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to remove application')
+    }
   }
 
   if (loading) {
@@ -47,14 +99,73 @@ export default function DashboardPage() {
           Sign out
         </button>
       </div>
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-7 h-7 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-          </svg>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-800">Job Application Tracker</h2>
+            <p className="text-sm text-slate-400">Track jobs you&apos;ve saved from your results, through to offer.</p>
+          </div>
         </div>
-        <h2 className="text-lg font-semibold text-slate-700 mb-2">Welcome back!</h2>
-        <p className="text-slate-400 text-sm">Your career dashboard is coming soon.</p>
+
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+
+        {appsLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {STAGES.map(s => (
+              <div key={s.key} className="bg-white rounded-2xl p-4 border border-slate-100 animate-pulse h-40" />
+            ))}
+          </div>
+        ) : applications.length === 0 ? (
+          <div className="bg-white rounded-2xl p-10 text-center border border-slate-100">
+            <p className="text-slate-500 text-sm">No saved jobs yet. Jobs you save from your results page will show up here.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {STAGES.map(stage => {
+              const stageApps = applications.filter(a => a.status === stage.key)
+              return (
+                <div key={stage.key} className="bg-white rounded-2xl p-4 border border-slate-100 flex flex-col">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-slate-700 text-sm">{stage.label}</h3>
+                    <span className="text-xs font-medium bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{stageApps.length}</span>
+                  </div>
+                  <div className="space-y-2 flex-1">
+                    {stageApps.map(app => (
+                      <div key={app.id} className="border border-slate-100 rounded-xl p-3 hover:border-blue-200 transition-colors">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{app.job_title}</p>
+                        <p className="text-xs text-slate-500 truncate">{app.company}{app.location ? ` · ${app.location}` : ''}</p>
+                        {app.url && (
+                          <a href={app.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
+                            View posting
+                          </a>
+                        )}
+                        <div className="flex items-center gap-2 mt-2">
+                          <select
+                            value={app.status}
+                            onChange={e => moveStage(app.id, e.target.value as Application['status'])}
+                            className="text-xs border border-slate-200 rounded-lg px-1.5 py-1 flex-1"
+                          >
+                            {STAGES.map(s => (
+                              <option key={s.key} value={s.key}>{s.label}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => removeApplication(app.id)}
+                            className="text-xs text-slate-400 hover:text-red-500"
+                            title="Remove"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
