@@ -1,0 +1,25 @@
+import { NextRequest, NextResponse } from 'next/server';
+const BACKEND = (process.env.NEXT_PUBLIC_BACKEND_URL || '').replace(/\/$/, '');
+
+export async function GET(req: NextRequest) {
+    const token = req.cookies.get('admin_session')?.value
+    if (!token) return NextResponse.json({ error: 'Not Authenticated' }, { status: 401 })
+    const res = await fetch(`${BACKEND}/admin/coaching-sessions`, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        },
+    })
+    return NextResponse.json(await res.json(), { status: res.status })
+}
+
+export async function POST(req: NextRequest) {
+    const token = req.cookies.get('admin_session')?.value
+    if (!token) return NextResponse.json({ error: 'Not Authenticated' }, { status: 401 })
+    const body = await req.json()
+    const res = await fetch(`${BACKEND}/admin/coaching-sessions`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    })
+    return NextResponse.json(await res.json(), { status: res.status })
+}

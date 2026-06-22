@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { apiAuthGet, apiAuthPatch, apiAuthDelete } from '@/lib/api'
+import { apiAuthGet, apiAuthPatch, apiAuthDelete, BASE_URL } from '@/lib/api'
+import { Link } from '@/i18n/navigation'
 
 type Application = {
   id: string
@@ -17,6 +18,15 @@ type Application = {
   notes: string | null
   applied_at: string | null
   created_at: string
+}
+
+type AssessmentSummary = {
+  id: string
+  full_name: string
+  country: string
+  completed: boolean
+  created_at: string
+  top_type: string | null
 }
 
 const STAGES: { key: Application['status']; label: string }[] = [
@@ -34,6 +44,9 @@ export default function DashboardPage() {
   const [applications, setApplications] = useState<Application[]>([])
   const [appsLoading, setAppsLoading] = useState(true)
   const [error, setError] = useState('')
+  const [assessments, setAssessments] = useState<AssessmentSummary[]>([])
+  const [assessmentsLoading, setAssessmentsLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'assessments' | 'jobs'>('assessments')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -52,6 +65,10 @@ export default function DashboardPage() {
       .then(setApplications)
       .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load applications'))
       .finally(() => setAppsLoading(false))
+    apiAuthGet<AssessmentSummary[]>('/assessment/my-assessments')
+      .then(setAssessments)
+      .catch(() => {})
+      .finally(() => setAssessmentsLoading(false))
   }, [user])
 
   async function handleLogout() {
@@ -100,7 +117,84 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 flex gap-8">
+        {/* Sidebar */}
+        <div className="w-56 shrink-0 hidden sm:block">
+          <nav className="space-y-1">
+            <button
+              onClick={() => setActiveTab('assessments')}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'assessments' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-100'
+              }`}
+            >
+              Assessment Results
+            </button>
+            <button
+              onClick={() => setActiveTab('jobs')}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'jobs' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-100'
+              }`}
+            >
+              Job Tracker
+            </button>
+          </nav>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+        {activeTab === 'assessments' && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-slate-800 mb-1">My Assessment Results</h2>
+          <p className="text-sm text-slate-400 mb-4">View your full report or download a PDF copy.</p>
+
+          {assessmentsLoading ? (
+            <div className="bg-white rounded-2xl p-4 border border-slate-100 animate-pulse h-20" />
+          ) : assessments.length === 0 ? (
+            <div className="bg-white rounded-2xl p-6 text-center border border-slate-100">
+              <p className="text-slate-500 text-sm">No linked assessments yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {assessments.map(a => (
+                <div key={a.id} className="bg-white rounded-2xl p-4 border border-slate-100 flex items-center justify-between gap-4 flex-wrap">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-slate-800">{a.full_name}</p>
+                      {a.top_type && (
+                        <span className="text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full capitalize">
+                          {a.top_type} type
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {new Date(a.created_at).toLocaleDateString()} · {a.country}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link
+                      href={`/results/${a.id}`}
+                      className="text-xs font-medium bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1.5 rounded-lg hover:bg-blue-100"
+                    >
+                      View Results
+                    </Link>
+                    <a
+                      href={`${BASE_URL}/assessment/${a.id}/report`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-100"
+                    >
+                      Download Report
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        )}
+
+        {activeTab === 'jobs' && (
+        <>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-lg font-semibold text-slate-800">Job Application Tracker</h2>
@@ -166,6 +260,9 @@ export default function DashboardPage() {
             })}
           </div>
         )}
+        </>
+        )}
+        </div>
       </div>
     </div>
   )

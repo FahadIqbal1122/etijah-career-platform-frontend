@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 
-const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://backend-career-compass.etijahcoaching.com').replace(/\/$/, '')
+export const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://backend-career-compass.etijahcoaching.com').replace(/\/$/, '')
 
 async function authHeader(): Promise<Record<string, string>> {
     const { data: { session } } = await supabase.auth.getSession()

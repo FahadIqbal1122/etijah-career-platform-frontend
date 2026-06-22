@@ -110,6 +110,14 @@ type CountryProfile = {
   source_url_primary: string | null
 }
 
+type CoachingSessionEntry = {
+  id: string
+  client_label: string | null
+  topic: string | null
+  session_date: string | null
+  created_at: string
+}
+
 type CourseEntry = {
   id: string
   title: string
@@ -135,7 +143,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback' | 'country' | 'courses'>('submissions')
+  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback' | 'coaching' | 'country' | 'courses'>('submissions')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -174,6 +182,15 @@ export default function AdminPage() {
   const [editingCountry, setEditingCountry] = useState<CountryProfile | null>(null)
   const [countryForm, setCountryForm] = useState<Partial<CountryProfile>>({})
   const [showCountryForm, setShowCountryForm] = useState(false)
+
+  const [coachingSessions, setCoachingSessions] = useState<CoachingSessionEntry[]>([])
+  const [coachingLoading, setCoachingLoading] = useState(false)
+  const [coachingError, setCoachingError] = useState('')
+  const [coachingSubmitting, setCoachingSubmitting] = useState(false)
+  const [coachingSuccess, setCoachingSuccess] = useState('')
+  const [coachingForm, setCoachingForm] = useState({
+    client_label: '', topic: '', session_date: '', raw_transcript: '',
+  })
 
   const [courses, setCourses] = useState<CourseEntry[]>([])
   const [coursesLoading, setCoursesLoading] = useState(false)
@@ -249,6 +266,20 @@ export default function AdminPage() {
     }
   }, [])
 
+  const fetchCoachingSessions = useCallback(async () => {
+    setCoachingLoading(true)
+    setCoachingError('')
+    try {
+      const res = await fetch('/api/admin/coaching-sessions')
+      if (!res.ok) throw new Error('Failed to load coaching sessions')
+      setCoachingSessions(await res.json())
+    } catch (err: any) {
+      setCoachingError(err.message)
+    } finally {
+      setCoachingLoading(false)
+    }
+  }, [])
+
   const fetchCourses = useCallback(async () => {
     setCoursesLoading(true)
     setCoursesError('')
@@ -268,10 +299,11 @@ export default function AdminPage() {
       fetchSubmissions()
       fetchOnetLinks()
       fetchFeedback()
+      fetchCoachingSessions()
       fetchCountryProfiles()
       fetchCourses()
     }
-  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchCountryProfiles, fetchCourses])
+  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchCoachingSessions, fetchCountryProfiles, fetchCourses])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -314,6 +346,7 @@ export default function AdminPage() {
     setSelectedOnet(null)
     setFeedbackList([])
     setSelectedFeedback(null)
+    setCoachingSessions([])
   }
 
   async function handleViewResults(sub: Submission) {
@@ -415,6 +448,34 @@ export default function AdminPage() {
     if (!confirm('Delete this country profile?')) return
     await fetch(`/api/admin/country-profiles/${code}`, { method: 'DELETE' })
     setCountryProfiles(prev => prev.filter(c => c.country_code !== code))
+  }
+
+  async function handleAddCoachingSession(e: React.FormEvent) {
+    e.preventDefault()
+    setCoachingSubmitting(true)
+    setCoachingError('')
+    setCoachingSuccess('')
+    try {
+      const res = await fetch('/api/admin/coaching-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_label: coachingForm.client_label || null,
+          topic: coachingForm.topic || null,
+          session_date: coachingForm.session_date || null,
+          raw_transcript: coachingForm.raw_transcript,
+        }),
+      })
+      if (!res.ok) throw new Error('Failed to process transcript')
+      const data = await res.json()
+      setCoachingSuccess(`Processed — ${data.chunks_created} coaching beats extracted.`)
+      setCoachingForm({ client_label: '', topic: '', session_date: '', raw_transcript: '' })
+      fetchCoachingSessions()
+    } catch (err: any) {
+      setCoachingError(err.message)
+    } finally {
+      setCoachingSubmitting(false)
+    }
   }
 
   async function handleAddCourse(e: React.FormEvent) {
@@ -1138,7 +1199,7 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchCountryProfiles(); fetchCourses() }}
+              onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses() }}
               className="text-sm text-blue-600 hover:underline"
             >
               Refresh
@@ -1177,6 +1238,15 @@ export default function AdminPage() {
             Feedback
             {feedbackList.length > 0 && (
               <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{feedbackList.length}</span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('coaching')}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'coaching' ? 'bg-rose-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Coaching Sessions
+            {coachingSessions.length > 0 && (
+              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{coachingSessions.length}</span>
             )}
           </button>
           <button
@@ -1462,6 +1532,110 @@ export default function AdminPage() {
                       {onetLinks.length === 0 && (
                         <tr>
                           <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No O*NET links added yet</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── Coaching Sessions Tab ── */}
+        {activeTab === 'coaching' && (
+          <>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+              <h2 className="font-semibold text-slate-700 mb-4 text-sm uppercase tracking-wide">Upload Coaching Transcript</h2>
+              <form onSubmit={handleAddCoachingSession} className="space-y-3">
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1">Client Label (optional, anonymized)</label>
+                    <input
+                      type="text"
+                      value={coachingForm.client_label}
+                      onChange={e => setCoachingForm(prev => ({ ...prev, client_label: e.target.value }))}
+                      placeholder="e.g. Client A"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1">Topic (optional)</label>
+                    <input
+                      type="text"
+                      value={coachingForm.topic}
+                      onChange={e => setCoachingForm(prev => ({ ...prev, topic: e.target.value }))}
+                      placeholder="e.g. Career transition"
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1">Session Date (optional)</label>
+                    <input
+                      type="date"
+                      value={coachingForm.session_date}
+                      onChange={e => setCoachingForm(prev => ({ ...prev, session_date: e.target.value }))}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Speaker-Labeled Transcript ("Coach:" / "Client:")</label>
+                  <textarea
+                    required
+                    rows={10}
+                    value={coachingForm.raw_transcript}
+                    onChange={e => setCoachingForm(prev => ({ ...prev, raw_transcript: e.target.value }))}
+                    placeholder={'Coach: So tell me, what\'s been on your mind...\nClient: Honestly, I\'ve been stuck on...'}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  />
+                </div>
+                <div className="flex items-center gap-3 pt-1">
+                  <button
+                    type="submit"
+                    disabled={coachingSubmitting}
+                    className="bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
+                  >
+                    {coachingSubmitting && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                    {coachingSubmitting ? 'Processing…' : 'Upload & Process'}
+                  </button>
+                  {coachingSuccess && <p className="text-green-600 text-sm">{coachingSuccess}</p>}
+                  {coachingError && <p className="text-red-500 text-sm">{coachingError}</p>}
+                </div>
+              </form>
+            </div>
+
+            {coachingLoading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+
+            {!coachingLoading && (
+              <>
+                <p className="text-sm text-slate-400 mb-4">{coachingSessions.length} session{coachingSessions.length !== 1 ? 's' : ''}</p>
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50">
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Client</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Topic</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Session Date</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Uploaded</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {coachingSessions.map((s, i) => (
+                        <tr key={s.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                          <td className="px-4 py-3 font-medium text-slate-800">{s.client_label || '—'}</td>
+                          <td className="px-4 py-3 text-slate-500">{s.topic || '—'}</td>
+                          <td className="px-4 py-3 text-slate-500">{s.session_date || '—'}</td>
+                          <td className="px-4 py-3 text-slate-400 text-xs">{new Date(s.created_at).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                      {coachingSessions.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="px-4 py-12 text-center text-slate-400">No coaching sessions uploaded yet</td>
                         </tr>
                       )}
                     </tbody>

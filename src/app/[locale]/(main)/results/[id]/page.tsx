@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { apiGet } from '@/lib/api'
+import { apiGet, apiAuthPost } from '@/lib/api'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
+import { Link } from '@/i18n/navigation'
+import { supabase } from '@/lib/supabase'
 
 const levelToWidth: Record<string, string> = {
   low: '20%',
@@ -43,10 +45,27 @@ export default function ResultsPage() {
   const [jobListings, setJobListings] = useState<any[]>([])
   const [aiLoading, setAiLoading] = useState(true)
   const [jobsLoading, setJobsLoading] = useState(true)
+  const [companies, setCompanies] = useState<any[]>([])
+  const [companiesLoading, setCompaniesLoading] = useState(true)
+  const [courses, setCourses] = useState<any[]>([])
+  const [coursesLoading, setCoursesLoading] = useState(true)
+  const [savedJobs, setSavedJobs] = useState<Set<number>>(new Set())
+  const [saveError, setSaveError] = useState('')
+  const [email, setEmail] = useState('')
+  const [loggedIn, setLoggedIn] = useState(false)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setLoggedIn(!!session)
+    })
+  }, [])
 
   useEffect(() => {
     apiGet<any>(`/assessment/${id}/results`)
-      .then(data => setSummary(data.summary))
+      .then(data => {
+        setSummary(data.summary)
+        setEmail(data.email || '')
+      })
       .catch(err => setError(err.message || 'Failed to load results'))
     apiGet<any>(`/assessment/${id}/career-suggestions`)
       .then(data => setJobs(data.suggestions))
@@ -59,6 +78,14 @@ export default function ResultsPage() {
       .then(data => setJobListings(data.jobs || []))
       .catch(() => {})
       .finally(() => setJobsLoading(false))
+    apiGet<any[]>(`/assessment/${id}/companies`)
+      .then(data => setCompanies(data || []))
+      .catch(() => {})
+      .finally(() => setCompaniesLoading(false))
+    apiGet<any[]>(`/assessment/${id}/courses`)
+      .then(data => setCourses(data || []))
+      .catch(() => {})
+      .finally(() => setCoursesLoading(false))
   }, [id])
 
   if (error) {
@@ -78,6 +105,23 @@ export default function ResultsPage() {
         </div>
       </div>
     )
+  }
+
+  async function saveJob(job: any, index: number) {
+    try {
+      await apiAuthPost('/applications', {
+        response_id: id,
+        job_title: job.title,
+        company: job.company,
+        location: job.location,
+        source: job.source,
+        url: job.url,
+        matched_career: job.matched_career,
+      })
+      setSavedJobs(prev => new Set(prev).add(index))
+    } catch {
+      setSaveError('Sign in to save jobs to your tracker')
+    }
   }
 
   const topType = summary.riasec.top_types[0]
@@ -108,6 +152,22 @@ export default function ResultsPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-6 mt-8 pb-16 space-y-4 relative z-10">
+
+        {/* Signup CTA */}
+        {!loggedIn && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-5 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold text-slate-800">Save your results & track job applications</p>
+              <p className="text-xs text-slate-500 mt-0.5">Create a free account to keep this report and use the job tracker</p>
+            </div>
+            <Link
+              href={{ pathname: '/signup', query: email ? { email } : {} }}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shrink-0"
+            >
+              Create account
+            </Link>
+          </div>
+        )}
 
         {/* Top 3 quick cards */}
         <div className="grid grid-cols-3 gap-4">
@@ -301,22 +361,33 @@ export default function ResultsPage() {
                 <p className="text-xs text-slate-400">Current openings matched to your careers</p>
               </div>
             </div>
+            {saveError && <p className="text-xs text-red-500 mb-2">{saveError}</p>}
             <div className="space-y-2">
               {jobListings.map((job: any, i: number) => (
-                <a
+                <div
                   key={i}
-                  href={job.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-start justify-between gap-3 border border-slate-100 rounded-xl p-3.5 hover:border-sky-200 hover:bg-sky-50/40 transition-colors group"
+                  className="flex items-start justify-between gap-3 border border-slate-100 rounded-xl p-3.5 hover:border-sky-200 hover:bg-sky-50/40 transition-colors"
                 >
-                  <div className="min-w-0">
+                  <a href={job.url} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 group">
                     <p className="text-sm font-semibold text-slate-800 group-hover:text-sky-700 truncate">{job.title}</p>
                     <p className="text-xs text-slate-500 truncate">{job.company} · {job.location}</p>
                     <p className="text-xs text-slate-400 mt-0.5 capitalize">for: {job.matched_career}</p>
+                  </a>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <span className="text-xs font-medium bg-sky-50 text-sky-600 border border-sky-100 px-2 py-0.5 rounded-full mt-0.5">{job.source}</span>
+                    <button
+                      onClick={() => saveJob(job, i)}
+                      disabled={savedJobs.has(i)}
+                      className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
+                        savedJobs.has(i)
+                          ? 'bg-green-50 text-green-600 border-green-100'
+                          : 'bg-white text-slate-500 border-slate-200 hover:border-sky-300 hover:text-sky-600'
+                      }`}
+                    >
+                      {savedJobs.has(i) ? 'Saved ✓' : 'Save to tracker'}
+                    </button>
                   </div>
-                  <span className="text-xs font-medium bg-sky-50 text-sky-600 border border-sky-100 px-2 py-0.5 rounded-full shrink-0 mt-0.5">{job.source}</span>
-                </a>
+                </div>
               ))}
             </div>
           </div>
@@ -367,6 +438,82 @@ export default function ResultsPage() {
                     ))}
                   </ul>
                 </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {/* Course Recommendations */}
+        {coursesLoading ? (
+          <SkeletonCard rows={3} />
+        ) : courses.length > 0 ? (
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center shrink-0">
+                <svg className="w-4 h-4 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-800 text-sm">Recommended Courses</h3>
+                <p className="text-xs text-slate-400">Matched to your strengths and career paths</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {courses.map((course: any) => (
+                <a
+                  key={course.id}
+                  href={course.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start justify-between gap-3 border border-slate-100 rounded-xl p-3.5 hover:border-orange-200 hover:bg-orange-50/40 transition-colors group"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 group-hover:text-orange-700 truncate">{course.title}</p>
+                    <p className="text-xs text-slate-500 truncate">{course.provider} · {course.level}{course.duration_hours ? ` · ${course.duration_hours}h` : ''}</p>
+                  </div>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 mt-0.5 ${course.is_free ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-orange-50 text-orange-600 border border-orange-100'}`}>
+                    {course.is_free ? 'Free' : 'Paid'}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {/* Company Target List */}
+        {companiesLoading ? (
+          <SkeletonCard rows={3} />
+        ) : companies.length > 0 ? (
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-cyan-50 flex items-center justify-center shrink-0">
+                <svg className="w-4 h-4 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-800 text-sm">Companies to Target</h3>
+                <p className="text-xs text-slate-400">Hiring in your sector and country</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {companies.map((company: any) => (
+                <a
+                  key={company.id}
+                  href={company.career_page_url || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between gap-3 border border-slate-100 rounded-xl p-3 hover:border-cyan-200 hover:bg-cyan-50/40 transition-colors group"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 group-hover:text-cyan-700 truncate">{company.name_en}</p>
+                    <p className="text-xs text-slate-500 truncate capitalize">{company.sector}{company.is_government ? ' · Government' : ''}</p>
+                  </div>
+                  <span className="text-xs font-medium bg-cyan-50 text-cyan-600 border border-cyan-100 px-2 py-0.5 rounded-full shrink-0">
+                    View
+                  </span>
+                </a>
               ))}
             </div>
           </div>

@@ -1,33 +1,40 @@
 'use client'
 
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { apiPost } from '@/lib/api'
 
 export default function SignupPage() {
+  const searchParams = useSearchParams()
   const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(searchParams.get('email') || '')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
 
-  async function handleSignup(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    })
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
-    }
-    setDone(true)
+async function handleSignup(e: React.FormEvent) {
+  e.preventDefault()
+  setLoading(true)
+  setError('')
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: fullName },
+               emailRedirectTo: `${window.location.origin}/en/dashboard` }
+  })
+  if (error) {
+    setError(error.message)
+    setLoading(false)
+    return
   }
+  if (data.user) {
+    apiPost('/assessment/link-by-email', { user_id: data.user.id, email }).catch(() => {})
+  }
+  setDone(true)
+}
 
   if (done) {
     return (
