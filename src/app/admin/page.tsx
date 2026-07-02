@@ -2023,153 +2023,199 @@ export default function AdminPage() {
         )}
       {/* ── Market Analysis Tab ── */}
       {activeTab === 'market' && (
-        <div className="max-w-5xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-6">
+        <div className="max-w-6xl mx-auto px-4 py-8">
+
+          {/* Header */}
+          <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
             <div>
-              <h2 className="text-lg font-semibold text-slate-800">GCC Job Market Analysis</h2>
-              <p className="text-sm text-slate-400 mt-0.5">
-                Saudi Arabia &amp; Bahrain — weekly snapshots across 25 role categories
-                {marketTrends && <span className="ml-2">· {marketTrends.total_snapshots} total snapshots · {marketTrends.weeks?.length || 0} week{marketTrends.weeks?.length !== 1 ? 's' : ''} of data</span>}
-              </p>
+              <h2 className="text-xl font-bold text-slate-800">GCC Job Market Intelligence</h2>
+              <p className="text-sm text-slate-400 mt-1">Saudi Arabia &amp; Bahrain · 25 role categories · weekly snapshots</p>
             </div>
             <button
               onClick={triggerMarketFetch}
               disabled={marketFetching}
-              className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 transition-colors shadow-sm"
             >
-              {marketFetching ? (
-                <>
-                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Fetching…
-                </>
-              ) : 'Fetch This Week'}
+              {marketFetching ? (<><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />Fetching jobs…</>) : '↻ Fetch This Week'}
             </button>
           </div>
 
           {marketFetchResult && (
             <div className={`mb-5 px-4 py-3 rounded-xl text-sm ${marketFetchResult.error ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
-              {marketFetchResult.error
-                ? `Error: ${marketFetchResult.error}`
-                : `Week ${marketFetchResult.week}: ${marketFetchResult.inserted} new job snapshots inserted (${marketFetchResult.errors} errors)`}
+              {marketFetchResult.error ? `Error: ${marketFetchResult.error}` : `✓ Week ${marketFetchResult.week}: ${marketFetchResult.inserted} new jobs stored (${marketFetchResult.errors} errors)`}
             </div>
           )}
 
-          {marketLoading && (
-            <div className="flex justify-center py-16">
-              <div className="w-7 h-7 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
+          {marketLoading && <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>}
           {marketError && <p className="text-red-500 text-sm text-center py-8">{marketError}</p>}
 
           {!marketLoading && !marketError && marketTrends && marketTrends.weeks?.length === 0 && (
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-8 py-16 text-center">
-              <p className="text-slate-400 text-sm">No data yet. Click <strong>Fetch This Week</strong> to collect the first snapshot.</p>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-8 py-20 text-center">
+              <div className="text-4xl mb-3">📊</div>
+              <p className="text-slate-600 font-medium mb-1">No data yet</p>
+              <p className="text-slate-400 text-sm">Click <strong>Fetch This Week</strong> to collect the first snapshot.</p>
             </div>
           )}
 
           {!marketLoading && !marketError && marketTrends && marketTrends.weeks?.length > 0 && (() => {
-            const demand: Record<string, Record<string, Record<string, number>>> = {}
-            for (const d of (marketTrends.demand || [])) {
-              if (!demand[d.role]) demand[d.role] = {}
-              if (!demand[d.role][d.week]) demand[d.role][d.week] = {}
-              demand[d.role][d.week][d.country] = d.count
-            }
+            const cf = marketCountryFilter
+            const filteredDemand = (marketTrends.demand || []).filter((d: any) => cf === 'both' || d.country === cf)
+            const filteredSalary = (marketTrends.salary || []).filter((s: any) => cf === 'both' || s.country === cf)
+            const filteredJobs = (marketTrends.recent_jobs || []).filter((j: any) => cf === 'both' || j.country_code === cf)
+            const filteredCompanies = cf === 'both'
+              ? (marketTrends.top_companies || [])
+              : (marketTrends.top_companies || []).filter((c: any) => c[cf] > 0).map((c: any) => ({...c, total: c[cf]})).sort((a: any, b: any) => b.total - a.total)
 
-            const filteredDemand = (marketTrends.demand || []).filter((d: any) =>
-              marketCountryFilter === 'both' ? true : d.country === marketCountryFilter
-            )
-            const filteredRoles = marketRoleFilter === 'all'
-              ? marketTrends.roles
-              : [marketRoleFilter]
-
-            // Aggregate demand by role (latest week)
             const latestWeek = marketTrends.weeks[marketTrends.weeks.length - 1]
-            const roleLatestCount: Record<string, number> = {}
+            const roleCount: Record<string, number> = {}
             for (const d of filteredDemand) {
-              if (d.week === latestWeek) {
-                roleLatestCount[d.role] = (roleLatestCount[d.role] || 0) + d.count
-              }
+              if (d.week === latestWeek) roleCount[d.role] = (roleCount[d.role] || 0) + d.count
             }
-            const sortedRoles = [...marketTrends.roles].sort(
-              (a, b) => (roleLatestCount[b] || 0) - (roleLatestCount[a] || 0)
-            )
-            const maxCount = Math.max(...Object.values(roleLatestCount), 1)
+            const totalJobs = Object.values(roleCount).reduce((s: number, v) => s + (v as number), 0)
+            const sortedRoles = [...(marketTrends.roles || [])].sort((a, b) => (roleCount[b] || 0) - (roleCount[a] || 0))
+            const maxRoleCount = Math.max(...Object.values(roleCount).map(Number), 1)
 
-            // Salary data
-            const salaryMap: Record<string, number[]> = {}
-            for (const s of (marketTrends.salary || [])) {
-              if (marketCountryFilter !== 'both' && s.country !== marketCountryFilter) continue
-              if (!salaryMap[s.role]) salaryMap[s.role] = []
-              salaryMap[s.role].push(s.avg_salary)
+            const salaryByRole: Record<string, number[]> = {}
+            for (const s of filteredSalary) {
+              if (!salaryByRole[s.role]) salaryByRole[s.role] = []
+              salaryByRole[s.role].push(s.avg_salary)
             }
+
+            const maxCompanyCount = Math.max(...filteredCompanies.slice(0,10).map((c: any) => c.total), 1)
 
             return (
               <>
-                {/* Filters */}
-                <div className="flex gap-3 mb-6 flex-wrap">
-                  <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                {/* Country filter */}
+                <div className="flex gap-3 mb-6 flex-wrap items-center">
+                  <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
                     {(['both', 'SA', 'BH'] as const).map(c => (
-                      <button
-                        key={c}
-                        onClick={() => setMarketCountryFilter(c)}
-                        className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${marketCountryFilter === c ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                      >
+                      <button key={c} onClick={() => setMarketCountryFilter(c)}
+                        className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-colors ${marketCountryFilter === c ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
                         {c === 'both' ? 'Both Countries' : c === 'SA' ? '🇸🇦 Saudi Arabia' : '🇧🇭 Bahrain'}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Demand chart — current week */}
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
-                  <h3 className="text-sm font-semibold text-slate-700 mb-1">Job Demand by Role</h3>
-                  <p className="text-xs text-slate-400 mb-4">Postings collected this week · latest snapshot: {latestWeek}</p>
-                  <div className="space-y-2">
-                    {sortedRoles.map((role: string) => {
-                      const count = roleLatestCount[role] || 0
-                      const pct = Math.round((count / maxCount) * 100)
-                      return (
-                        <div key={role} className="flex items-center gap-3">
-                          <span className="text-xs text-slate-500 w-36 shrink-0 capitalize">{role}</span>
-                          <div className="flex-1 bg-slate-100 rounded-full h-4 overflow-hidden">
-                            <div
-                              className="h-4 rounded-full bg-amber-500 transition-all duration-500"
-                              style={{ width: `${pct}%` }}
-                            />
+                {/* KPI row */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  {[
+                    { label: 'Jobs Collected', value: marketTrends.total_snapshots?.toLocaleString(), sub: 'all time' },
+                    { label: 'This Week', value: totalJobs.toLocaleString(), sub: latestWeek },
+                    { label: 'Companies Hiring', value: (filteredCompanies.length || marketTrends.total_companies)?.toLocaleString(), sub: 'unique employers' },
+                    { label: 'Weeks of Data', value: marketTrends.weeks.length, sub: `since ${marketTrends.weeks[0]}` },
+                  ].map(kpi => (
+                    <div key={kpi.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                      <p className="text-xs text-slate-400 font-medium mb-1">{kpi.label}</p>
+                      <p className="text-2xl font-bold text-slate-800">{kpi.value}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{kpi.sub}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Top Companies + Demand side by side */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+                  {/* Top Hiring Companies */}
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+                    <h3 className="text-sm font-bold text-slate-700 mb-0.5">Top Hiring Companies</h3>
+                    <p className="text-xs text-slate-400 mb-4">By total job postings collected</p>
+                    <div className="space-y-2.5">
+                      {filteredCompanies.slice(0, 10).map((c: any, i: number) => {
+                        const pct = Math.round((c.total / maxCompanyCount) * 100)
+                        return (
+                          <div key={c.company} className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400 w-4 shrink-0 text-right">{i+1}</span>
+                            <span className="text-xs text-slate-700 w-32 shrink-0 truncate font-medium">{c.company}</span>
+                            <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
+                              <div className="h-3 rounded-full bg-blue-500 transition-all duration-500" style={{ width: `${pct}%` }} />
+                            </div>
+                            <span className="text-xs font-semibold text-slate-600 w-6 text-right">{c.total}</span>
                           </div>
-                          <span className="text-xs font-medium text-slate-600 w-8 text-right">{count}</span>
-                        </div>
-                      )
-                    })}
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Demand by Role */}
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+                    <h3 className="text-sm font-bold text-slate-700 mb-0.5">Job Demand by Role</h3>
+                    <p className="text-xs text-slate-400 mb-4">Latest week · {latestWeek}</p>
+                    <div className="space-y-2">
+                      {sortedRoles.map((role: string) => {
+                        const count = roleCount[role] || 0
+                        const pct = Math.round((count / maxRoleCount) * 100)
+                        const salaryAvg = salaryByRole[role] ? Math.round(salaryByRole[role].reduce((s, v) => s + v, 0) / salaryByRole[role].length) : null
+                        return (
+                          <div key={role} className="flex items-center gap-2">
+                            <span className="text-xs text-slate-500 w-32 shrink-0 capitalize">{role}</span>
+                            <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
+                              <div className="h-3 rounded-full bg-amber-500 transition-all duration-500" style={{ width: `${pct}%` }} />
+                            </div>
+                            <span className="text-xs font-semibold text-slate-600 w-5 text-right">{count}</span>
+                            {salaryAvg && <span className="text-[10px] text-slate-400 w-16 text-right hidden md:block">{salaryAvg.toLocaleString()}</span>}
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
 
-                {/* Trend over weeks (if multiple weeks) */}
+                {/* SA vs BH comparison */}
+                {cf === 'both' && (
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
+                    <h3 className="text-sm font-bold text-slate-700 mb-0.5">Saudi Arabia vs Bahrain</h3>
+                    <p className="text-xs text-slate-400 mb-4">Job postings per role this week</p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-100">
+                            <th className="text-left px-2 py-2 text-slate-400 font-medium">Role</th>
+                            <th className="text-center px-2 py-2 text-blue-600 font-semibold">🇸🇦 SA</th>
+                            <th className="text-center px-2 py-2 text-emerald-600 font-semibold">🇧🇭 BH</th>
+                            <th className="text-center px-2 py-2 text-slate-400 font-medium">Total</th>
+                            <th className="text-center px-2 py-2 text-slate-400 font-medium">Leader</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sortedRoles.map((role: string) => {
+                            const sa = (marketTrends.demand || []).find((d: any) => d.role === role && d.country === 'SA' && d.week === latestWeek)?.count || 0
+                            const bh = (marketTrends.demand || []).find((d: any) => d.role === role && d.country === 'BH' && d.week === latestWeek)?.count || 0
+                            const total = sa + bh
+                            if (total === 0) return null
+                            return (
+                              <tr key={role} className="border-b border-slate-50 hover:bg-slate-50">
+                                <td className="px-2 py-2 capitalize text-slate-700 font-medium">{role}</td>
+                                <td className="px-2 py-2 text-center font-semibold text-blue-700">{sa}</td>
+                                <td className="px-2 py-2 text-center font-semibold text-emerald-700">{bh}</td>
+                                <td className="px-2 py-2 text-center text-slate-600">{total}</td>
+                                <td className="px-2 py-2 text-center">{sa > bh ? '🇸🇦' : bh > sa ? '🇧🇭' : '='}</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Trend over time */}
                 {marketTrends.weeks.length > 1 && (
                   <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
-                    <h3 className="text-sm font-semibold text-slate-700 mb-1">Demand Trend Over Time</h3>
-                    <p className="text-xs text-slate-400 mb-4">Total postings per week across all roles</p>
-                    <div className="flex items-end gap-2 h-32">
+                    <h3 className="text-sm font-bold text-slate-700 mb-0.5">Weekly Volume Trend</h3>
+                    <p className="text-xs text-slate-400 mb-4">Total job postings collected per week</p>
+                    <div className="flex items-end gap-2" style={{ height: '100px' }}>
                       {marketTrends.weeks.map((week: string) => {
-                        const total = filteredDemand
-                          .filter((d: any) => d.week === week)
-                          .reduce((sum: number, d: any) => sum + d.count, 0)
-                        const maxTotal = Math.max(
-                          ...marketTrends.weeks.map((w: string) =>
-                            filteredDemand.filter((d: any) => d.week === w).reduce((s: number, d: any) => s + d.count, 0)
-                          ), 1
-                        )
+                        const total = filteredDemand.filter((d: any) => d.week === week).reduce((s: number, d: any) => s + d.count, 0)
+                        const maxTotal = Math.max(...marketTrends.weeks.map((w: string) => filteredDemand.filter((d: any) => d.week === w).reduce((s: number, d: any) => s + d.count, 0)), 1)
                         const pct = Math.round((total / maxTotal) * 100)
                         return (
                           <div key={week} className="flex-1 flex flex-col items-center gap-1">
-                            <span className="text-xs text-slate-500">{total}</span>
-                            <div className="w-full bg-slate-100 rounded-t-md overflow-hidden" style={{ height: '80px' }}>
-                              <div
-                                className="w-full bg-amber-400 rounded-t-md transition-all duration-500"
-                                style={{ height: `${pct}%`, marginTop: `${100 - pct}%` }}
-                              />
+                            <span className="text-[10px] text-slate-500">{total}</span>
+                            <div className="w-full bg-slate-100 rounded-t-lg flex items-end" style={{ height: '72px' }}>
+                              <div className="w-full bg-amber-400 rounded-t-lg transition-all duration-500" style={{ height: `${pct}%` }} />
                             </div>
-                            <span className="text-[10px] text-slate-400 text-center">{week.slice(5)}</span>
+                            <span className="text-[9px] text-slate-400">{week.slice(5)}</span>
                           </div>
                         )
                       })}
@@ -2177,42 +2223,72 @@ export default function AdminPage() {
                   </div>
                 )}
 
-                {/* Salary table */}
-                {Object.keys(salaryMap).length > 0 && (
-                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                    <h3 className="text-sm font-semibold text-slate-700 mb-1">Avg Salary by Role</h3>
-                    <p className="text-xs text-slate-400 mb-4">Where salary data is available from job listings</p>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-slate-100">
-                            <th className="text-left px-3 py-2 text-xs font-medium text-slate-400">Role</th>
-                            <th className="text-right px-3 py-2 text-xs font-medium text-slate-400">Avg Salary</th>
-                            <th className="text-right px-3 py-2 text-xs font-medium text-slate-400">Data Points</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {Object.entries(salaryMap)
-                            .sort(([, a], [, b]) => {
-                              const avgA = a.reduce((s, v) => s + v, 0) / a.length
-                              const avgB = b.reduce((s, v) => s + v, 0) / b.length
-                              return avgB - avgA
-                            })
-                            .map(([role, vals]) => {
-                              const avg = Math.round(vals.reduce((s, v) => s + v, 0) / vals.length)
-                              return (
-                                <tr key={role} className="border-b border-slate-50 hover:bg-slate-50">
-                                  <td className="px-3 py-2 capitalize text-slate-700">{role}</td>
-                                  <td className="px-3 py-2 text-right font-medium text-slate-800">{avg.toLocaleString()}</td>
-                                  <td className="px-3 py-2 text-right text-slate-400">{vals.length}</td>
-                                </tr>
-                              )
-                            })}
-                        </tbody>
-                      </table>
+                {/* Salary insights */}
+                {Object.keys(salaryByRole).length > 0 && (
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
+                    <h3 className="text-sm font-bold text-slate-700 mb-0.5">Salary Insights by Role</h3>
+                    <p className="text-xs text-slate-400 mb-4">Average across all collected listings where salary was disclosed</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {Object.entries(salaryByRole)
+                        .map(([role, vals]) => ({ role, avg: Math.round(vals.reduce((s, v) => s + v, 0) / vals.length), count: vals.length }))
+                        .sort((a, b) => b.avg - a.avg)
+                        .map(({ role, avg, count }) => (
+                          <div key={role} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                            <p className="text-xs text-slate-500 capitalize mb-1">{role}</p>
+                            <p className="text-lg font-bold text-slate-800">{avg.toLocaleString()}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{count} data point{count !== 1 ? 's' : ''}</p>
+                          </div>
+                        ))}
                     </div>
                   </div>
                 )}
+
+                {/* Recent job listings */}
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+                  <h3 className="text-sm font-bold text-slate-700 mb-0.5">Recent Job Listings</h3>
+                  <p className="text-xs text-slate-400 mb-4">Latest 50 jobs collected — click to view posting</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-100">
+                          <th className="text-left px-3 py-2 text-xs font-medium text-slate-400">Job Title</th>
+                          <th className="text-left px-3 py-2 text-xs font-medium text-slate-400">Company</th>
+                          <th className="text-left px-3 py-2 text-xs font-medium text-slate-400">Category</th>
+                          <th className="text-left px-3 py-2 text-xs font-medium text-slate-400">Location</th>
+                          <th className="text-left px-3 py-2 text-xs font-medium text-slate-400">Salary</th>
+                          <th className="text-left px-3 py-2 text-xs font-medium text-slate-400">Country</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredJobs.map((job: any, i: number) => (
+                          <tr key={i} className="border-b border-slate-50 hover:bg-slate-50 group">
+                            <td className="px-3 py-2 max-w-[200px]">
+                              {job.url ? (
+                                <a href={job.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium line-clamp-1">{job.job_title || '—'}</a>
+                              ) : (
+                                <span className="font-medium text-slate-700 line-clamp-1">{job.job_title || '—'}</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-slate-600 max-w-[140px] truncate">{job.company || '—'}</td>
+                            <td className="px-3 py-2">
+                              <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-md text-xs capitalize">{job.role_category}</span>
+                            </td>
+                            <td className="px-3 py-2 text-slate-500 text-xs">{job.location || '—'}</td>
+                            <td className="px-3 py-2 text-slate-600 text-xs">
+                              {job.salary_min || job.salary_max
+                                ? `${job.salary_min ? job.salary_min.toLocaleString() : '?'} – ${job.salary_max ? job.salary_max.toLocaleString() : '?'} ${job.salary_currency || ''}`
+                                : <span className="text-slate-300">—</span>}
+                            </td>
+                            <td className="px-3 py-2 text-sm">{job.country_code === 'SA' ? '🇸🇦' : '🇧🇭'}</td>
+                          </tr>
+                        ))}
+                        {filteredJobs.length === 0 && (
+                          <tr><td colSpan={6} className="px-3 py-8 text-center text-slate-400 text-sm">No jobs found</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </>
             )
           })()}
