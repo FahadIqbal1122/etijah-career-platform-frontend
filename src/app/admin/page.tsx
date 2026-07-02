@@ -143,7 +143,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback' | 'coaching' | 'country' | 'courses'>('submissions')
+  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback' | 'coaching' | 'country' | 'courses' | 'market'>('submissions')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -191,6 +191,14 @@ export default function AdminPage() {
   const [coachingForm, setCoachingForm] = useState({
     client_label: '', topic: '', session_date: '', raw_transcript: '',
   })
+
+  const [marketTrends, setMarketTrends] = useState<any>(null)
+  const [marketLoading, setMarketLoading] = useState(false)
+  const [marketError, setMarketError] = useState('')
+  const [marketFetching, setMarketFetching] = useState(false)
+  const [marketFetchResult, setMarketFetchResult] = useState<any>(null)
+  const [marketCountryFilter, setMarketCountryFilter] = useState<'SA' | 'BH' | 'both'>('both')
+  const [marketRoleFilter, setMarketRoleFilter] = useState<string>('all')
 
   const [courses, setCourses] = useState<CourseEntry[]>([])
   const [coursesLoading, setCoursesLoading] = useState(false)
@@ -294,6 +302,35 @@ export default function AdminPage() {
     }
   }, [])
 
+  const fetchMarketTrends = useCallback(async () => {
+    setMarketLoading(true)
+    setMarketError('')
+    try {
+      const res = await fetch('/api/admin/market-analysis/trends')
+      if (!res.ok) throw new Error('Failed to load market trends')
+      setMarketTrends(await res.json())
+    } catch (err: any) {
+      setMarketError(err.message)
+    } finally {
+      setMarketLoading(false)
+    }
+  }, [])
+
+  async function triggerMarketFetch() {
+    setMarketFetching(true)
+    setMarketFetchResult(null)
+    try {
+      const res = await fetch('/api/admin/market-analysis/fetch', { method: 'POST' })
+      const data = await res.json()
+      setMarketFetchResult(data)
+      fetchMarketTrends()
+    } catch (err: any) {
+      setMarketFetchResult({ error: err.message })
+    } finally {
+      setMarketFetching(false)
+    }
+  }
+
   useEffect(() => {
     if (authed) {
       fetchSubmissions()
@@ -302,8 +339,9 @@ export default function AdminPage() {
       fetchCoachingSessions()
       fetchCountryProfiles()
       fetchCourses()
+      fetchMarketTrends()
     }
-  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchCoachingSessions, fetchCountryProfiles, fetchCourses])
+  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -1199,7 +1237,7 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses() }}
+              onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends() }}
               className="text-sm text-blue-600 hover:underline"
             >
               Refresh
@@ -1266,6 +1304,12 @@ export default function AdminPage() {
             {courses.length > 0 && (
               <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{courses.length}</span>
             )}
+          </button>
+          <button
+            onClick={() => { setActiveTab('market'); fetchMarketTrends() }}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'market' ? 'bg-amber-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Market Analysis
           </button>
         </div>
       </div>
@@ -1973,6 +2017,204 @@ export default function AdminPage() {
             )}
           </>
         )}
+      {/* ── Market Analysis Tab ── */}
+      {activeTab === 'market' && (
+        <div className="max-w-5xl mx-auto px-4 py-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-800">GCC Job Market Analysis</h2>
+              <p className="text-sm text-slate-400 mt-0.5">
+                Saudi Arabia &amp; Bahrain — weekly snapshots across 25 role categories
+                {marketTrends && <span className="ml-2">· {marketTrends.total_snapshots} total snapshots · {marketTrends.weeks?.length || 0} week{marketTrends.weeks?.length !== 1 ? 's' : ''} of data</span>}
+              </p>
+            </div>
+            <button
+              onClick={triggerMarketFetch}
+              disabled={marketFetching}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50 transition-colors"
+            >
+              {marketFetching ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Fetching…
+                </>
+              ) : 'Fetch This Week'}
+            </button>
+          </div>
+
+          {marketFetchResult && (
+            <div className={`mb-5 px-4 py-3 rounded-xl text-sm ${marketFetchResult.error ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
+              {marketFetchResult.error
+                ? `Error: ${marketFetchResult.error}`
+                : `Week ${marketFetchResult.week}: ${marketFetchResult.inserted} new job snapshots inserted (${marketFetchResult.errors} errors)`}
+            </div>
+          )}
+
+          {marketLoading && (
+            <div className="flex justify-center py-16">
+              <div className="w-7 h-7 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+          {marketError && <p className="text-red-500 text-sm text-center py-8">{marketError}</p>}
+
+          {!marketLoading && !marketError && marketTrends && marketTrends.weeks?.length === 0 && (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-8 py-16 text-center">
+              <p className="text-slate-400 text-sm">No data yet. Click <strong>Fetch This Week</strong> to collect the first snapshot.</p>
+            </div>
+          )}
+
+          {!marketLoading && !marketError && marketTrends && marketTrends.weeks?.length > 0 && (() => {
+            const demand: Record<string, Record<string, Record<string, number>>> = {}
+            for (const d of (marketTrends.demand || [])) {
+              if (!demand[d.role]) demand[d.role] = {}
+              if (!demand[d.role][d.week]) demand[d.role][d.week] = {}
+              demand[d.role][d.week][d.country] = d.count
+            }
+
+            const filteredDemand = (marketTrends.demand || []).filter((d: any) =>
+              marketCountryFilter === 'both' ? true : d.country === marketCountryFilter
+            )
+            const filteredRoles = marketRoleFilter === 'all'
+              ? marketTrends.roles
+              : [marketRoleFilter]
+
+            // Aggregate demand by role (latest week)
+            const latestWeek = marketTrends.weeks[marketTrends.weeks.length - 1]
+            const roleLatestCount: Record<string, number> = {}
+            for (const d of filteredDemand) {
+              if (d.week === latestWeek) {
+                roleLatestCount[d.role] = (roleLatestCount[d.role] || 0) + d.count
+              }
+            }
+            const sortedRoles = [...marketTrends.roles].sort(
+              (a, b) => (roleLatestCount[b] || 0) - (roleLatestCount[a] || 0)
+            )
+            const maxCount = Math.max(...Object.values(roleLatestCount), 1)
+
+            // Salary data
+            const salaryMap: Record<string, number[]> = {}
+            for (const s of (marketTrends.salary || [])) {
+              if (marketCountryFilter !== 'both' && s.country !== marketCountryFilter) continue
+              if (!salaryMap[s.role]) salaryMap[s.role] = []
+              salaryMap[s.role].push(s.avg_salary)
+            }
+
+            return (
+              <>
+                {/* Filters */}
+                <div className="flex gap-3 mb-6 flex-wrap">
+                  <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                    {(['both', 'SA', 'BH'] as const).map(c => (
+                      <button
+                        key={c}
+                        onClick={() => setMarketCountryFilter(c)}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${marketCountryFilter === c ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                      >
+                        {c === 'both' ? 'Both Countries' : c === 'SA' ? '🇸🇦 Saudi Arabia' : '🇧🇭 Bahrain'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Demand chart — current week */}
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-1">Job Demand by Role</h3>
+                  <p className="text-xs text-slate-400 mb-4">Postings collected this week · latest snapshot: {latestWeek}</p>
+                  <div className="space-y-2">
+                    {sortedRoles.map((role: string) => {
+                      const count = roleLatestCount[role] || 0
+                      const pct = Math.round((count / maxCount) * 100)
+                      return (
+                        <div key={role} className="flex items-center gap-3">
+                          <span className="text-xs text-slate-500 w-36 shrink-0 capitalize">{role}</span>
+                          <div className="flex-1 bg-slate-100 rounded-full h-4 overflow-hidden">
+                            <div
+                              className="h-4 rounded-full bg-amber-500 transition-all duration-500"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium text-slate-600 w-8 text-right">{count}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Trend over weeks (if multiple weeks) */}
+                {marketTrends.weeks.length > 1 && (
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
+                    <h3 className="text-sm font-semibold text-slate-700 mb-1">Demand Trend Over Time</h3>
+                    <p className="text-xs text-slate-400 mb-4">Total postings per week across all roles</p>
+                    <div className="flex items-end gap-2 h-32">
+                      {marketTrends.weeks.map((week: string) => {
+                        const total = filteredDemand
+                          .filter((d: any) => d.week === week)
+                          .reduce((sum: number, d: any) => sum + d.count, 0)
+                        const maxTotal = Math.max(
+                          ...marketTrends.weeks.map((w: string) =>
+                            filteredDemand.filter((d: any) => d.week === w).reduce((s: number, d: any) => s + d.count, 0)
+                          ), 1
+                        )
+                        const pct = Math.round((total / maxTotal) * 100)
+                        return (
+                          <div key={week} className="flex-1 flex flex-col items-center gap-1">
+                            <span className="text-xs text-slate-500">{total}</span>
+                            <div className="w-full bg-slate-100 rounded-t-md overflow-hidden" style={{ height: '80px' }}>
+                              <div
+                                className="w-full bg-amber-400 rounded-t-md transition-all duration-500"
+                                style={{ height: `${pct}%`, marginTop: `${100 - pct}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] text-slate-400 text-center">{week.slice(5)}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Salary table */}
+                {Object.keys(salaryMap).length > 0 && (
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+                    <h3 className="text-sm font-semibold text-slate-700 mb-1">Avg Salary by Role</h3>
+                    <p className="text-xs text-slate-400 mb-4">Where salary data is available from job listings</p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-100">
+                            <th className="text-left px-3 py-2 text-xs font-medium text-slate-400">Role</th>
+                            <th className="text-right px-3 py-2 text-xs font-medium text-slate-400">Avg Salary</th>
+                            <th className="text-right px-3 py-2 text-xs font-medium text-slate-400">Data Points</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(salaryMap)
+                            .sort(([, a], [, b]) => {
+                              const avgA = a.reduce((s, v) => s + v, 0) / a.length
+                              const avgB = b.reduce((s, v) => s + v, 0) / b.length
+                              return avgB - avgA
+                            })
+                            .map(([role, vals]) => {
+                              const avg = Math.round(vals.reduce((s, v) => s + v, 0) / vals.length)
+                              return (
+                                <tr key={role} className="border-b border-slate-50 hover:bg-slate-50">
+                                  <td className="px-3 py-2 capitalize text-slate-700">{role}</td>
+                                  <td className="px-3 py-2 text-right font-medium text-slate-800">{avg.toLocaleString()}</td>
+                                  <td className="px-3 py-2 text-right text-slate-400">{vals.length}</td>
+                                </tr>
+                              )
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            )
+          })()}
+        </div>
+      )}
+
       </div>
     </div>
   )
