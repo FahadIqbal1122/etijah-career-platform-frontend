@@ -320,8 +320,12 @@ export default function AdminPage() {
     setMarketFetching(true)
     setMarketFetchResult(null)
     try {
-      const res = await fetch('/api/admin/market-analysis/fetch', { method: 'POST' })
-      const data = await res.json()
+      const res = await fetch('/api/admin/market-analysis/fetch', {
+        method: 'POST',
+        signal: AbortSignal.timeout(120_000),
+      })
+      const text = await res.text()
+      const data = text ? JSON.parse(text) : { error: 'Empty response from server' }
       setMarketFetchResult(data)
       fetchMarketTrends()
     } catch (err: any) {
