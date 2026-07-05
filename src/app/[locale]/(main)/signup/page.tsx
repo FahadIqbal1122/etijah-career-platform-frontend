@@ -4,6 +4,10 @@ import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { apiPost } from '@/lib/api'
+import Logomark from '@/components/brand/Logomark'
+
+const field =
+  'w-full border border-[var(--line-strong)] rounded-xl px-3.5 py-2.5 text-sm bg-lightblue text-charcoal placeholder-charcoal/40 focus:outline-none focus:border-accent focus:ring-2 focus:ring-teal/20 transition-colors'
 
 export default function SignupPage() {
   const searchParams = useSearchParams()
@@ -15,41 +19,40 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
 
-async function handleSignup(e: React.FormEvent) {
-  e.preventDefault()
-  setLoading(true)
-  setError('')
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { full_name: fullName },
-               emailRedirectTo: `${window.location.origin}/en/dashboard` }
-  })
-  if (error) {
-    setError(error.message)
-    setLoading(false)
-    return
+  async function handleSignup(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName }, emailRedirectTo: `${window.location.origin}/en/dashboard` },
+    })
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+      return
+    }
+    if (data.user) {
+      apiPost('/assessment/link-by-email', { user_id: data.user.id, email }).catch(() => {})
+    }
+    setDone(true)
   }
-  if (data.user) {
-    apiPost('/assessment/link-by-email', { user_id: data.user.id, email }).catch(() => {})
-  }
-  setDone(true)
-}
 
   if (done) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 w-full max-w-sm text-center">
-          <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <div className="min-h-screen brand-surface flex items-center justify-center px-4">
+        <div className="card p-8 w-full max-w-sm text-center">
+          <div className="w-12 h-12 bg-teal/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-slate-800 mb-2">Check your email</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-xl font-extrabold text-charcoal mb-2">Check your email</h1>
+          <p className="text-sm text-charcoal/60">
             We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.
           </p>
-          <a href="/en/login" className="inline-block mt-6 text-sm text-blue-600 hover:underline">
+          <a href="/en/login" className="inline-block mt-6 text-sm text-primary font-medium hover:underline">
             Back to sign in
           </a>
         </div>
@@ -58,35 +61,26 @@ async function handleSignup(e: React.FormEvent) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 w-full max-w-sm">
-        <h1 className="text-xl font-bold text-slate-800 mb-1">Create account</h1>
-        <p className="text-sm text-slate-400 mb-6">Etijah Career Compass</p>
+    <div className="min-h-screen brand-surface flex items-center justify-center px-4">
+      <div className="card p-8 w-full max-w-sm">
+        <div className="mb-6 flex items-center gap-3">
+          <Logomark size={34} />
+          <div>
+            <h1 className="text-xl font-extrabold text-charcoal leading-none">Create account</h1>
+            <p className="text-xs text-charcoal/40 mt-1">Etijahi · إتجاهي</p>
+          </div>
+        </div>
         <form onSubmit={handleSignup} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Full name</label>
-            <input
-              type="text"
-              required
-              value={fullName}
-              onChange={e => setFullName(e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              autoComplete="name"
-            />
+            <label className="block text-sm font-medium text-charcoal/70 mb-1">Full name</label>
+            <input type="text" required value={fullName} onChange={e => setFullName(e.target.value)} className={field} autoComplete="name" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              autoComplete="email"
-            />
+            <label className="block text-sm font-medium text-charcoal/70 mb-1">Email</label>
+            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className={field} autoComplete="email" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-charcoal/70 mb-1">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -94,13 +88,13 @@ async function handleSignup(e: React.FormEvent) {
                 minLength={8}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 pr-10 text-sm bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`${field} pe-10`}
                 autoComplete="new-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute end-3 top-1/2 -translate-y-1/2 text-charcoal/40 hover:text-primary"
                 tabIndex={-1}
               >
                 {showPassword ? (
@@ -115,20 +109,21 @@ async function handleSignup(e: React.FormEvent) {
                 )}
               </button>
             </div>
-            <p className="text-xs text-slate-400 mt-1">Minimum 8 characters</p>
+            <p className="text-xs text-charcoal/40 mt-1">Minimum 8 characters</p>
           </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-rose-500 text-sm">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+            className="cta w-full"
+            style={{ width: '100%', padding: '12px', fontSize: 14, borderRadius: 12 }}
           >
             {loading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
             {loading ? 'Creating account…' : 'Create account'}
           </button>
-          <p className="text-center text-sm text-slate-400">
+          <p className="text-center text-sm text-charcoal/40">
             Already have an account?{' '}
-            <a href="/en/login" className="text-blue-600 hover:underline">Sign in</a>
+            <a href="/en/login" className="text-primary font-medium hover:underline">Sign in</a>
           </p>
         </form>
       </div>

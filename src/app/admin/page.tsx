@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import Logomark from '@/components/brand/Logomark'
 
 const levelToWidth: Record<string, string> = {
   low: '20%',
@@ -555,10 +556,15 @@ export default function AdminPage() {
   // ── Login ──────────────────────────────────────────────
   if (!authed) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 w-full max-w-sm">
-          <h1 className="text-xl font-bold text-slate-800 mb-1">Admin Panel</h1>
-          <p className="text-sm text-slate-400 mb-6">Etijah Career Compass</p>
+      <div className="min-h-screen brand-surface flex items-center justify-center px-4">
+        <div className="card p-8 w-full max-w-sm">
+          <div className="mb-6 flex items-center gap-3">
+            <Logomark size={34} />
+            <div>
+              <h1 className="text-xl font-extrabold text-charcoal leading-none">Admin Panel</h1>
+              <p className="text-xs text-charcoal/40 mt-1">Etijahi · إتجاهي</p>
+            </div>
+          </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
@@ -567,7 +573,7 @@ export default function AdminPage() {
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-accent"
                 placeholder="you@example.com"
                 autoComplete="email"
               />
@@ -580,7 +586,7 @@ export default function AdminPage() {
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 pr-10 text-sm bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 pr-10 text-sm bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-accent"
                   autoComplete="current-password"
                 />
                 <button
@@ -606,7 +612,7 @@ export default function AdminPage() {
             <button
               type="submit"
               disabled={loggingIn}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-primary hover:bg-primary-deep disabled:opacity-60 text-white font-semibold py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
             >
               {loggingIn && (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -623,12 +629,12 @@ export default function AdminPage() {
   if (selected) {
     const onet = onetLinkForEmail(selected.email)
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen brand-surface">
         <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => { setSelected(null); setResults(null) }}
-              className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+              className="text-sm text-primary hover:underline flex items-center gap-1"
             >
               ← Back
             </button>
@@ -648,7 +654,7 @@ export default function AdminPage() {
             className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
               linkCopied
                 ? 'border-green-300 bg-green-50 text-green-700'
-                : 'border-blue-200 bg-white text-blue-600 hover:bg-blue-50 hover:border-blue-300'
+                : 'border-[var(--line-strong)] bg-white text-primary hover:bg-lightblue hover:border-primary'
             }`}
           >
             {linkCopied ? (
@@ -711,7 +717,7 @@ export default function AdminPage() {
 
           {resultsLoading && (
             <div className="flex justify-center py-8">
-              <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
           )}
 
@@ -721,7 +727,7 @@ export default function AdminPage() {
                 <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Career Types (RIASEC)</h3>
                 <div className="flex gap-2 flex-wrap">
                   {results.riasec.top_types.map((t: string, i: number) => (
-                    <span key={t} className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize ${i === 0 ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700 border border-blue-100'}`}>{t}</span>
+                    <span key={t} className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize ${i === 0 ? 'bg-primary text-white' : 'bg-lightblue text-primary border border-[var(--line)]'}`}>{t}</span>
                   ))}
                 </div>
               </div>
@@ -837,7 +843,7 @@ export default function AdminPage() {
                     <ul className="space-y-1">
                       {c.upskilling?.map((tip: string) => (
                         <li key={tip} className="text-xs text-slate-500 flex gap-1.5">
-                          <span className="text-blue-400 mt-0.5">→</span>{tip}
+                          <span className="text-primary/70 mt-0.5">→</span>{tip}
                         </li>
                       ))}
                     </ul>
@@ -856,11 +862,11 @@ export default function AdminPage() {
     const fb = selectedFeedback
     const ratingLabel = (v: number | null) => v ? `${v} / 6` : '—'
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen brand-surface">
         <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center gap-4">
           <button
             onClick={() => setSelectedFeedback(null)}
-            className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+            className="text-sm text-primary hover:underline flex items-center gap-1"
           >
             ← Back
           </button>
@@ -966,9 +972,9 @@ export default function AdminPage() {
       const barColor   = score >= 67 ? 'bg-green-500' : score >= 34 ? 'bg-amber-400' : 'bg-red-400'
 
       return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen brand-surface">
           <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center gap-4">
-            <button onClick={() => setShowComparison(false)} className="text-sm text-blue-600 hover:underline flex items-center gap-1">← Back</button>
+            <button onClick={() => setShowComparison(false)} className="text-sm text-primary hover:underline flex items-center gap-1">← Back</button>
             <div>
               <h2 className="font-semibold text-slate-800">Assessment Comparison</h2>
               <p className="text-xs text-slate-400">{selectedOnet.email} · {matchedSubmission.full_name}</p>
@@ -978,7 +984,7 @@ export default function AdminPage() {
           <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
             {comparisonLoading && (
               <div className="flex justify-center py-16">
-                <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             )}
 
@@ -989,7 +995,7 @@ export default function AdminPage() {
 
                   {/* ── Our platform ── */}
                   <div className="space-y-4">
-                    <div className="bg-blue-600 text-white rounded-2xl px-5 py-3 text-sm font-semibold">Our Platform Assessment</div>
+                    <div className="bg-primary text-white rounded-2xl px-5 py-3 text-sm font-semibold">Our Platform Assessment</div>
 
                     {comparisonResults ? (
                       <>
@@ -997,7 +1003,7 @@ export default function AdminPage() {
                           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">RIASEC Career Types</p>
                           <div className="flex gap-2 flex-wrap">
                             {ourTypes.map((t: string, i: number) => (
-                              <span key={t} className={`px-3 py-1.5 rounded-full text-sm font-medium capitalize ${i === 0 ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700 border border-blue-100'}`}>{t}</span>
+                              <span key={t} className={`px-3 py-1.5 rounded-full text-sm font-medium capitalize ${i === 0 ? 'bg-primary text-white' : 'bg-lightblue text-primary border border-[var(--line)]'}`}>{t}</span>
                             ))}
                           </div>
                         </div>
@@ -1110,7 +1116,7 @@ export default function AdminPage() {
                     <div className="grid grid-cols-3 gap-3 mb-5">
                       {[
                         { label: 'Both agree',        items: matching,  bg: 'bg-green-50',  text: 'text-green-700',  muted: 'text-green-400' },
-                        { label: 'Only our platform', items: onlyOurs,  bg: 'bg-blue-50',   text: 'text-blue-700',   muted: 'text-blue-400' },
+                        { label: 'Only our platform', items: onlyOurs,  bg: 'bg-lightblue',   text: 'text-primary',   muted: 'text-primary/70' },
                         { label: 'Only O*NET',        items: onlyOnet,  bg: 'bg-orange-50', text: 'text-orange-700', muted: 'text-orange-400' },
                       ].map(({ label, items, bg, text, muted }) => (
                         <div key={label} className={`${bg} rounded-xl p-4`}>
@@ -1136,11 +1142,11 @@ export default function AdminPage() {
 
     // ── O*NET detail panel ───────────────────────────────
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen brand-surface">
         <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center gap-4">
           <button
             onClick={() => setSelectedOnet(null)}
-            className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+            className="text-sm text-primary hover:underline flex items-center gap-1"
           >
             ← Back
           </button>
@@ -1196,7 +1202,7 @@ export default function AdminPage() {
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => { setSelectedOnet(null); handleViewResults(matchedSubmission) }}
-                  className="text-sm text-blue-600 hover:underline font-medium"
+                  className="text-sm text-primary hover:underline font-medium"
                 >
                   View full assessment results →
                 </button>
@@ -1226,17 +1232,20 @@ export default function AdminPage() {
 
   // ── Main panel ────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen brand-surface">
       <div className="bg-white border-b border-slate-100 px-6 py-3">
         <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="font-bold text-slate-800">Admin Panel</h1>
-            <p className="text-xs text-slate-400">Etijah Career Compass</p>
+          <div className="flex items-center gap-3">
+            <Logomark size={30} />
+            <div>
+              <h1 className="font-extrabold text-charcoal">Admin Panel</h1>
+              <p className="text-xs text-charcoal/40">Etijahi · إتجاهي</p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <button
               onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends() }}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-primary hover:underline"
             >
               Refresh
             </button>
@@ -1251,7 +1260,7 @@ export default function AdminPage() {
         <div className="flex gap-1 flex-wrap">
           <button
             onClick={() => setActiveTab('submissions')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'submissions' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'submissions' ? 'bg-primary text-white' : 'text-slate-500 hover:text-slate-700'}`}
           >
             Submissions
             {submissions.length > 0 && (
@@ -1319,7 +1328,7 @@ export default function AdminPage() {
           <>
             {loading && (
               <div className="flex justify-center py-16">
-                <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             )}
             {fetchError && <p className="text-red-500 text-sm text-center py-8">{fetchError}</p>}
@@ -1350,7 +1359,7 @@ export default function AdminPage() {
                                 <span className="ml-2 text-xs font-semibold bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">O*NET</span>
                               )}
                               {new Date(sub.created_at) >= new Date('2026-06-10') && (
-                                <span className="ml-2 text-xs font-semibold bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">v2</span>
+                                <span className="ml-2 text-xs font-semibold bg-lightblue text-primary px-1.5 py-0.5 rounded-full">v2</span>
                               )}
                             </td>
                             <td className="px-4 py-3">
@@ -1368,7 +1377,7 @@ export default function AdminPage() {
                             <td className="px-4 py-3 flex items-center gap-3">
                               <button
                                 onClick={() => handleViewResults(sub)}
-                                className="text-xs text-blue-600 hover:underline font-medium"
+                                className="text-xs text-primary hover:underline font-medium"
                               >
                                 View results →
                               </button>
@@ -1446,7 +1455,7 @@ export default function AdminPage() {
                           <td className="px-4 py-3">
                             <button
                               onClick={() => setSelectedFeedback(fb)}
-                              className="text-xs text-blue-600 hover:underline font-medium"
+                              className="text-xs text-primary hover:underline font-medium"
                             >
                               View →
                             </button>
@@ -1558,7 +1567,7 @@ export default function AdminPage() {
                           <td className="px-3 py-3 flex items-center gap-3">
                             <button
                               onClick={() => setSelectedOnet(link)}
-                              className="text-xs text-blue-600 hover:underline font-medium"
+                              className="text-xs text-primary hover:underline font-medium"
                             >
                               View →
                             </button>
@@ -1976,7 +1985,7 @@ export default function AdminPage() {
                               setCountryForm({ ...cp })
                               setShowCountryForm(true)
                             }}
-                            className="text-xs text-blue-600 hover:underline font-medium"
+                            className="text-xs text-primary hover:underline font-medium"
                           >
                             Edit
                           </button>
@@ -2107,7 +2116,7 @@ export default function AdminPage() {
                             <span className="text-xs text-slate-400 w-4 shrink-0 text-right">{i+1}</span>
                             <span className="text-xs text-slate-700 w-32 shrink-0 truncate font-medium">{c.company}</span>
                             <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
-                              <div className="h-3 rounded-full bg-blue-500 transition-all duration-500" style={{ width: `${pct}%` }} />
+                              <div className="h-3 rounded-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
                             </div>
                             <span className="text-xs font-semibold text-slate-600 w-6 text-right">{c.total}</span>
                           </div>
@@ -2150,7 +2159,7 @@ export default function AdminPage() {
                         <thead>
                           <tr className="border-b border-slate-100">
                             <th className="text-left px-2 py-2 text-slate-400 font-medium">Role</th>
-                            <th className="text-center px-2 py-2 text-blue-600 font-semibold">🇸🇦 SA</th>
+                            <th className="text-center px-2 py-2 text-primary font-semibold">🇸🇦 SA</th>
                             <th className="text-center px-2 py-2 text-emerald-600 font-semibold">🇧🇭 BH</th>
                             <th className="text-center px-2 py-2 text-slate-400 font-medium">Total</th>
                             <th className="text-center px-2 py-2 text-slate-400 font-medium">Leader</th>
@@ -2165,7 +2174,7 @@ export default function AdminPage() {
                             return (
                               <tr key={role} className="border-b border-slate-50 hover:bg-slate-50">
                                 <td className="px-2 py-2 capitalize text-slate-700 font-medium">{role}</td>
-                                <td className="px-2 py-2 text-center font-semibold text-blue-700">{sa}</td>
+                                <td className="px-2 py-2 text-center font-semibold text-primary">{sa}</td>
                                 <td className="px-2 py-2 text-center font-semibold text-emerald-700">{bh}</td>
                                 <td className="px-2 py-2 text-center text-slate-600">{total}</td>
                                 <td className="px-2 py-2 text-center">{sa > bh ? '🇸🇦' : bh > sa ? '🇧🇭' : '='}</td>
@@ -2243,7 +2252,7 @@ export default function AdminPage() {
                           <tr key={i} className="border-b border-slate-50 hover:bg-slate-50 group">
                             <td className="px-3 py-2 max-w-[200px]">
                               {job.url ? (
-                                <a href={job.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium line-clamp-1">{job.job_title || '—'}</a>
+                                <a href={job.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium line-clamp-1">{job.job_title || '—'}</a>
                               ) : (
                                 <span className="font-medium text-slate-700 line-clamp-1">{job.job_title || '—'}</span>
                               )}

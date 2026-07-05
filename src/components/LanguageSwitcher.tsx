@@ -17,7 +17,7 @@
         <button
           onClick={() => switchLocale('en')}
           className={`px-3 py-1 text-sm rounded transition-all ${
-            locale === 'en' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-800'
+            locale === 'en' ? 'bg-primary text-white' : 'text-charcoal/60 hover:text-primary'
           }`}
         >
           EN
@@ -25,7 +25,7 @@
         <button
           onClick={() => switchLocale('ar')}
           className={`px-3 py-1 text-sm rounded transition-all ${
-            locale === 'ar' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-800'
+            locale === 'ar' ? 'bg-primary text-white' : 'text-charcoal/60 hover:text-primary'
           }`}
         >
           عربي

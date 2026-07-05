@@ -1,0 +1,257 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+import { apiAuthGet, apiAuthPatch, apiAuthDelete, BASE_URL } from '@/lib/api'
+import { Link } from '@/i18n/navigation'
+
+type Application = {
+  id: string
+  job_title: string
+  company: string | null
+  location: string | null
+  source: string | null
+  url: string | null
+  matched_career: string | null
+  status: 'saved' | 'applied' | 'interview' | 'offer' | 'rejected'
+  notes: string | null
+  applied_at: string | null
+  created_at: string
+}
+
+type AssessmentSummary = {
+  id: string
+  full_name: string
+  country: string
+  completed: boolean
+  created_at: string
+  top_type: string | null
+}
+
+const STAGES: { key: Application['status']; label: string }[] = [
+  { key: 'saved', label: 'Saved' },
+  { key: 'applied', label: 'Applied' },
+  { key: 'interview', label: 'Interview' },
+  { key: 'offer', label: 'Offer' },
+  { key: 'rejected', label: 'Rejected' },
+]
+
+export default function DashboardPage() {
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [applications, setApplications] = useState<Application[]>([])
+  const [appsLoading, setAppsLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [assessments, setAssessments] = useState<AssessmentSummary[]>([])
+  const [assessmentsLoading, setAssessmentsLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'assessments' | 'jobs'>('assessments')
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        router.push('/en/login')
+        return
+      }
+      setUser(session.user)
+      setLoading(false)
+    })
+  }, [router])
+
+  useEffect(() => {
+    if (!user) return
+    apiAuthGet<Application[]>('/applications')
+      .then(setApplications)
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load applications'))
+      .finally(() => setAppsLoading(false))
+    apiAuthGet<AssessmentSummary[]>('/assessment/my-assessments')
+      .then(setAssessments)
+      .catch(() => {})
+      .finally(() => setAssessmentsLoading(false))
+  }, [user])
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    router.push('/en/login')
+  }
+
+  async function moveStage(id: string, status: Application['status']) {
+    try {
+      const updated = await apiAuthPatch<Application>(`/applications/${id}`, { status })
+      setApplications(prev => prev.map(a => (a.id === id ? updated : a)))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update application')
+    }
+  }
+
+  async function removeApplication(id: string) {
+    try {
+      await apiAuthDelete(`/applications/${id}`)
+      setApplications(prev => prev.filter(a => a.id !== id))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to remove application')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen brand-surface flex items-center justify-center">
+        <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  const tabClass = (active: boolean) =>
+    `w-full text-start px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+      active ? 'bg-lightblue text-primary' : 'text-charcoal/50 hover:bg-lightblue/60'
+    }`
+
+  return (
+    <div className="min-h-screen brand-surface">
+      <div className="bg-white border-b border-[var(--line)] px-6 py-4 flex items-center justify-between">
+        <div>
+          <h1 className="font-extrabold text-charcoal">My Dashboard</h1>
+          <p className="text-xs text-charcoal/40">{user?.email}</p>
+        </div>
+        <button onClick={handleLogout} className="text-sm text-charcoal/40 hover:text-primary">
+          Sign out
+        </button>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-8 flex gap-8">
+        {/* Sidebar */}
+        <div className="w-56 shrink-0 hidden sm:block">
+          <nav className="space-y-1">
+            <button onClick={() => setActiveTab('assessments')} className={tabClass(activeTab === 'assessments')}>
+              Assessment Results
+            </button>
+            <button onClick={() => setActiveTab('jobs')} className={tabClass(activeTab === 'jobs')}>
+              Job Tracker
+            </button>
+          </nav>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {activeTab === 'assessments' && (
+            <div className="mb-8">
+              <h2 className="text-lg font-bold text-charcoal mb-1">My Assessment Results</h2>
+              <p className="text-sm text-charcoal/40 mb-4">View your full report or download a PDF copy.</p>
+
+              {assessmentsLoading ? (
+                <div className="card p-4 animate-pulse h-20" />
+              ) : assessments.length === 0 ? (
+                <div className="card p-6 text-center">
+                  <p className="text-charcoal/50 text-sm">No linked assessments yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {assessments.map(a => (
+                    <div key={a.id} className="card p-4 flex items-center justify-between gap-4 flex-wrap">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold text-charcoal">{a.full_name}</p>
+                          {a.top_type && <span className="chip capitalize !py-0.5 !text-[11px]">{a.top_type} type</span>}
+                        </div>
+                        <p className="text-xs text-charcoal/40 mt-0.5">
+                          {new Date(a.created_at).toLocaleDateString()} · {a.country}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Link
+                          href={`/results/${a.id}`}
+                          className="text-xs font-medium bg-lightblue text-primary border border-[var(--line)] px-3 py-1.5 rounded-lg hover:bg-primary hover:text-white transition-colors"
+                        >
+                          View Results
+                        </Link>
+                        <a
+                          href={`${BASE_URL}/assessment/${a.id}/report`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-medium bg-white text-charcoal/60 border border-[var(--line-strong)] px-3 py-1.5 rounded-lg hover:bg-lightblue transition-colors"
+                        >
+                          Download Report
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'jobs' && (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-lg font-bold text-charcoal">Job Application Tracker</h2>
+                  <p className="text-sm text-charcoal/40">Track jobs you&apos;ve saved from your results, through to offer.</p>
+                </div>
+              </div>
+
+              {error && <p className="text-rose-500 text-sm mb-4">{error}</p>}
+
+              {appsLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {STAGES.map(s => (
+                    <div key={s.key} className="card p-4 animate-pulse h-40" />
+                  ))}
+                </div>
+              ) : applications.length === 0 ? (
+                <div className="card p-10 text-center">
+                  <p className="text-charcoal/50 text-sm">No saved jobs yet. Jobs you save from your results page will show up here.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {STAGES.map(stage => {
+                    const stageApps = applications.filter(a => a.status === stage.key)
+                    return (
+                      <div key={stage.key} className="card p-4 flex flex-col">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-bold text-charcoal text-sm">{stage.label}</h3>
+                          <span className="text-xs font-medium bg-lightblue text-primary px-2 py-0.5 rounded-full">{stageApps.length}</span>
+                        </div>
+                        <div className="space-y-2 flex-1">
+                          {stageApps.map(app => (
+                            <div key={app.id} className="border border-[var(--line)] rounded-xl p-3 hover:border-[var(--line-strong)] transition-colors">
+                              <p className="text-sm font-bold text-charcoal truncate">{app.job_title}</p>
+                              <p className="text-xs text-charcoal/50 truncate">{app.company}{app.location ? ` · ${app.location}` : ''}</p>
+                              {app.url && (
+                                <a href={app.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                                  View posting
+                                </a>
+                              )}
+                              <div className="flex items-center gap-2 mt-2">
+                                <select
+                                  value={app.status}
+                                  onChange={e => moveStage(app.id, e.target.value as Application['status'])}
+                                  className="text-xs border border-[var(--line-strong)] rounded-lg px-1.5 py-1 flex-1 bg-white"
+                                >
+                                  {STAGES.map(s => (
+                                    <option key={s.key} value={s.key}>{s.label}</option>
+                                  ))}
+                                </select>
+                                <button
+                                  onClick={() => removeApplication(app.id)}
+                                  className="text-xs text-charcoal/40 hover:text-rose-500"
+                                  title="Remove"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

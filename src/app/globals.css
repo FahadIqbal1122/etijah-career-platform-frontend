@@ -1,36 +1,359 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   Etijahi "UFUQ" design system
+   Ported from the Design/ prototype. Brand tokens + gamified-assessment CSS.
+   Primary Blue #0770BA · Electric Teal #00C9A7 · Tajawal + IBM Plex Mono.
+   ========================================================================== */
+
 :root {
+  --primary: #0770BA;
+  --primary-deep: #075288;
+  --teal: #00C9A7;
+  --lightblue: #EBF3FF;
+  --charcoal: #414142;
+  --surface: #FFFFFF;
+  --accent: #00C9A7;
+  --glow: 0.62;
+  --motion: 1;
+  --dur-confirm: 560ms;
+  --ink-dim: rgba(65, 65, 66, 0.62);
+  --ink-faint: rgba(65, 65, 66, 0.42);
+  --line: rgba(7, 112, 186, 0.12);
+  --line-strong: rgba(7, 112, 186, 0.24);
+
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: var(--charcoal);
 }
 
+/* Expose brand tokens to Tailwind utilities (bg-primary, text-teal, font-sans…) */
 @theme inline {
+  --color-primary: var(--primary);
+  --color-primary-deep: var(--primary-deep);
+  --color-teal: var(--teal);
+  --color-accent: var(--accent);
+  --color-lightblue: var(--lightblue);
+  --color-charcoal: var(--charcoal);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-tajawal);
+  --font-mono: var(--font-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-tajawal), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
+html { scroll-behavior: smooth; }
+
+/* Shared eyebrow / mono label. In Arabic the mono face reads poorly, so we swap
+   to Tajawal and drop the wide tracking. */
+.eyebrow {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--teal);
+}
+[dir="rtl"] .eyebrow {
+  font-family: var(--font-tajawal), sans-serif;
+  letter-spacing: 0.04em;
+  font-size: 12px;
+  text-transform: none;
+}
+
+/* ── Brand CTA button ──────────────────────────────────────────────────── */
+.cta {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  white-space: nowrap; text-decoration: none;
+  background: var(--primary); color: #fff; border: none; border-radius: 16px;
+  padding: 16px 24px; font-family: var(--font-tajawal), sans-serif;
+  font-size: 16px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 14px 40px -12px rgba(7, 112, 186, 0.55);
+  transition: transform .16s, box-shadow .2s, opacity .2s;
+}
+.cta:hover { transform: translateY(-2px); box-shadow: 0 20px 50px -12px rgba(7, 112, 186, 0.65); }
+.cta:active { transform: translateY(0); }
+.cta:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.cta-teal { background: var(--teal); box-shadow: 0 14px 40px -12px rgba(0, 201, 167, 0.5); }
+.cta-arrow { font-size: 18px; transition: transform .2s; }
+.cta:hover .cta-arrow { transform: translateX(4px); }
+[dir="rtl"] .cta:hover .cta-arrow { transform: translateX(-4px); }
+
+/* ============================================================================
+   ASSESSMENT — immersive gamified flow
+   Full-bleed brand gradient with a centered, responsive single-question column
+   (adapted from the prototype's 375px phone screen → full-width responsive).
+   ========================================================================== */
+.assess-screen {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(120% 70% at 50% -10%, #188BDC 0%, var(--primary) 45%, var(--primary-deep) 100%);
+  --accent: var(--teal);
+  transition: opacity calc(.5s / var(--motion)) ease, background calc(.5s / var(--motion)) ease;
+}
+.assess-screen.is-reveal {
+  background: radial-gradient(130% 80% at 50% 12%, #2BE3C6 0%, var(--teal) 48%, #00A88C 100%);
+}
+.assess-screen.leaving { opacity: 0; }
+
+/* layout scaffolding: topbar sits full-width on top; below it a "main" row
+   holds an ambient panel (constellation + progress) and the content column.
+   Mobile: stacks into one centered column. Desktop (≥900px): splits side-by-side. */
+.assess-main {
+  position: relative; z-index: 3;
+  flex: 1; min-height: 0; width: 100%;
+  display: flex; flex-direction: column;
+}
+.assess-aside {
+  flex: 0 0 auto;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+}
+/* the ambient context (eyebrow + progress count) only shows on desktop */
+.assess-aside-context { display: none; }
+.assess-content {
+  position: relative; flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
+}
+
+/* the question column — centered, widens on larger screens */
+.assess-stage {
+  position: relative; z-index: 3;
+  width: 100%; max-width: 480px;
+  margin: 0 auto; flex: 1;
+  display: flex; flex-direction: column;
+  padding: 0 20px 28px;
+}
+
+/* progress — thin journey bar pinned to top of the viewport */
+.prog { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.18); z-index: 6; }
+.prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), color-mix(in oklch, var(--teal), #fff 25%));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--teal) calc(var(--glow) * 100%), transparent);
+  border-radius: 0 3px 3px 0;
+  transition: width calc(0.7s / var(--motion)) cubic-bezier(.4, .8, .3, 1);
+}
+[dir="rtl"] .prog-fill { border-radius: 3px 0 0 3px; }
+
+/* topbar: brand + language toggle */
+.assess-topbar {
+  position: relative; z-index: 5;
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; max-width: 1180px; margin: 0 auto;
+  padding: 20px clamp(20px, 4vw, 48px) 0;
+}
+.assess-lang {
+  appearance: none; border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12); color: #fff;
+  font-family: var(--font-tajawal), sans-serif; font-size: 12px; font-weight: 500;
+  padding: 6px 13px; border-radius: 999px; cursor: pointer; transition: all .2s;
+}
+.assess-lang:hover { border-color: rgba(255, 255, 255, 0.6); background: rgba(255, 255, 255, 0.2); }
+
+/* constellation band */
+.cst-wrap { position: relative; z-index: 2; height: 118px; margin: 8px auto 0; width: 100%; max-width: 460px; padding: 0 14px; flex: 0 0 auto; }
+.cst { width: 100%; height: 100%; overflow: visible; }
+.cst-ripple {
+  animation-name: ripple; animation-timing-function: cubic-bezier(.2, .6, .3, 1);
+  animation-fill-mode: forwards; transform-box: fill-box; transform-origin: center;
+}
+@keyframes ripple { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(7); opacity: 0; } }
+
+/* the question body — a white card floating on the gradient */
+.qbody {
+  position: relative; z-index: 3; flex: 1;
+  display: flex; flex-direction: column;
+  margin-top: 10px; padding: 22px; min-height: 0;
+  overflow-y: auto; overscroll-behavior: contain; /* long option lists (e.g. QO6 = 15 options) scroll instead of clipping */
+  background:
+    radial-gradient(140% 60% at 78% 6%, #F5F9FF 0%, rgba(245, 249, 255, 0) 60%),
+    var(--surface);
+  border-radius: 28px;
+  box-shadow: 0 40px 120px -30px rgba(0, 40, 100, 0.45), 0 0 0 1px rgba(7, 112, 186, 0.06);
+  animation: enterUp calc(.5s / var(--motion)) cubic-bezier(.2, .7, .3, 1) both;
+}
+@keyframes enterUp { 0% { opacity: 1; transform: none; } .5% { opacity: 0; transform: translateY(16px); } 100% { opacity: 1; transform: none; } }
+.qbody.confirming { animation: confirmOut var(--dur-confirm) cubic-bezier(.5, 0, .4, 1) forwards; }
+@keyframes confirmOut { 60% { opacity: 1; } 100% { opacity: 0; transform: translateY(-10px); } }
+
+/* Unused since the eyebrow moved to .qsection/tSections — kept (commented) in case
+   we reintroduce a fixed "Discovering you" label.
+.discovering {
+  font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: .28em;
+  text-transform: uppercase; color: var(--teal); margin-bottom: 14px; text-align: center;
+}
+[dir="rtl"] .discovering { letter-spacing: .06em; font-family: var(--font-tajawal), sans-serif; font-weight: 500; font-size: 12px; }
+*/
+
+.qcard {
+  background: var(--lightblue); border: 1px solid var(--line); border-radius: 22px;
+  padding: 24px 22px; margin-bottom: 18px;
+}
+.qtext {
+  font-size: 22px; line-height: 1.34; font-weight: 700; text-align: center; text-wrap: balance;
+  color: var(--charcoal); letter-spacing: -0.01em;
+}
+[dir="rtl"] .qtext { letter-spacing: 0; line-height: 1.5; }
+
+/* section label above the question */
+.qsection {
+  text-align: center; font-family: var(--font-mono), monospace; font-size: 10px;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px;
+}
+[dir="rtl"] .qsection { font-family: var(--font-tajawal), sans-serif; letter-spacing: 0; font-size: 12px; text-transform: none; }
+
+/* pills (behavioral scale) */
+.pills { display: flex; flex-direction: column; gap: 8px; }
+.pill {
+  display: flex; align-items: center; gap: 13px; width: 100%; text-align: start;
+  background: var(--lightblue); border: 1px solid var(--line); border-radius: 14px;
+  padding: 12px 16px; cursor: pointer; color: var(--charcoal);
+  font-family: var(--font-tajawal), sans-serif; font-size: 14.5px; font-weight: 500; line-height: 1.2;
+  transition: border-color .18s, background .18s, color .18s, transform .14s;
+}
+.pill-label { flex: 1; text-wrap: balance; }
+.pill:hover { border-color: var(--line-strong); color: var(--primary); transform: translateX(2px); }
+[dir="rtl"] .pill:hover { transform: translateX(-2px); }
+.pill-dot { flex: 0 0 auto; width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--line-strong); transition: all .2s; }
+.pill.sel {
+  color: var(--charcoal); font-weight: 700; border-color: var(--accent);
+  background: linear-gradient(180deg, color-mix(in oklch, var(--accent), #fff 8%), var(--accent));
+  box-shadow: 0 0 0 1px var(--accent),
+    0 6px 26px -6px color-mix(in srgb, var(--accent) calc(var(--glow) * 90%), transparent),
+    0 0 40px -8px color-mix(in srgb, var(--accent) calc(var(--glow) * 70%), transparent);
+  transform: none;
+}
+.pill.sel .pill-dot { background: var(--charcoal); border-color: var(--charcoal); box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent), #fff 30%) inset; }
+
+/* forced choice */
+.choice-wrap { display: flex; flex-direction: column; }
+.choice-prompt { font-size: 19px; font-weight: 700; text-align: center; line-height: 1.4; margin-bottom: 16px; color: var(--charcoal); text-wrap: balance; }
+[dir="rtl"] .choice-prompt { line-height: 1.55; }
+.choices { display: flex; flex-direction: column; gap: 12px; }
+.choice {
+  position: relative; display: flex; flex-direction: column; gap: 10px; text-align: start;
+  background: var(--lightblue); border: 1px solid var(--line); border-radius: 20px; padding: 18px; cursor: pointer;
+  color: var(--charcoal); transition: transform .28s cubic-bezier(.2, .7, .3, 1), border-color .22s, box-shadow .22s, opacity .28s, background .22s;
+}
+.choice:hover { border-color: var(--line-strong); }
+.choice-tag {
+  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono), monospace; font-size: 13px; font-weight: 500;
+  border: 1.5px solid var(--line-strong); color: var(--ink-dim);
+}
+.choice-text { font-size: 16px; line-height: 1.4; font-weight: 500; color: var(--charcoal); }
+[dir="rtl"] .choice-text { line-height: 1.55; }
+.choice.sel {
+  border-color: var(--accent); transform: scale(1.015);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 16%, var(--surface)), color-mix(in srgb, var(--accent) 6%, var(--surface)));
+  box-shadow: 0 0 0 1px var(--accent), 0 10px 40px -10px color-mix(in srgb, var(--accent) calc(var(--glow) * 80%), transparent);
+}
+.choice.sel .choice-tag { background: var(--accent); color: var(--charcoal); border-color: var(--accent); }
+.choice.dim { opacity: .38; transform: scale(.975); filter: saturate(.7); }
+
+/* styled text/email inputs inside the card */
+.qinput {
+  width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line-strong);
+  background: var(--lightblue); color: var(--charcoal); font-family: var(--font-tajawal), sans-serif;
+  font-size: 16px; outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.qinput:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+
+/* save & exit + continue */
+.save-exit {
+  margin-top: 16px; align-self: center; white-space: nowrap; background: none; border: none; cursor: pointer;
+  font-family: var(--font-tajawal), sans-serif; font-size: 13px; font-weight: 500; color: var(--ink-faint);
+  padding: 6px 8px 2px; transition: color .2s;
+}
+.save-exit:hover { color: var(--ink-dim); }
+
+/* ── reveal / finish takeover ──────────────────────────────────────────── */
+.reveal {
+  position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; padding: 0 30px 40px; text-align: center;
+  animation: revealIn calc(.55s / var(--motion)) cubic-bezier(.2, .7, .3, 1) both;
+}
+@keyframes revealIn { 0% { opacity: 1; } .5% { opacity: 0; } 100% { opacity: 1; } }
+.reveal-inner { max-width: 420px; margin: auto; }
+.reveal-spark { font-size: 26px; color: var(--primary); opacity: .55; margin-bottom: 16px; }
+.reveal-head { font-size: 32px; line-height: 1.16; font-weight: 900; color: var(--primary); letter-spacing: -0.02em; text-wrap: balance; }
+[dir="rtl"] .reveal-head { letter-spacing: 0; line-height: 1.3; }
+.reveal-body { font-size: 16px; line-height: 1.5; font-weight: 500; color: rgba(65, 65, 66, 0.88); margin-top: 16px; max-width: 340px; margin-inline: auto; }
+.reveal .cta { margin-top: 28px; }
+.reveal.finish .reveal-spark { color: var(--accent); opacity: 1; }
+
+/* ── desktop: split the immersive screen into an ambient panel + content ──── */
+@media (min-width: 900px) {
+  .assess-main { flex-direction: row; align-items: stretch; gap: clamp(24px, 4vw, 72px);
+    max-width: 1180px; margin: 0 auto; padding: 8px clamp(20px, 4vw, 48px) 48px; }
+
+  /* left: brand constellation grows big, with progress context beneath it */
+  .assess-aside { flex: 1 1 44%; max-width: 46%; justify-content: center; }
+  .assess-aside .cst-wrap { height: clamp(240px, 34vh, 380px); max-width: 100%; margin: 0; padding: 0; }
+  .assess-aside-context { display: block; text-align: center; margin-top: 32px; }
+  .assess-aside-eyebrow {
+    font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: .28em;
+    text-transform: uppercase; color: color-mix(in srgb, #fff 82%, transparent);
+  }
+  [dir="rtl"] .assess-aside-eyebrow { font-family: var(--font-tajawal), sans-serif; letter-spacing: 0; font-size: 14px; text-transform: none; font-weight: 500; }
+  .assess-aside-count {
+    margin-top: 10px; color: #fff; font-weight: 800; letter-spacing: -0.02em;
+    font-size: clamp(28px, 3vw, 40px); font-variant-numeric: tabular-nums;
+  }
+  .assess-aside-count small { font-size: .5em; font-weight: 500; opacity: .6; margin-inline-start: 4px; }
+
+  /* right: the question card, vertically centered and a touch wider */
+  .assess-content { flex: 1 1 56%; justify-content: center; }
+  .assess-stage { max-width: 560px; padding: 0; flex: 0 1 auto; }
+  .qbody { max-height: min(80vh, 780px); }
+  .qtext { font-size: 24px; }
+  .choice-text { font-size: 16.5px; }
+}
+
+/* ============================================================================
+   SITE SURFACES — landing / results / dashboard (light theme)
+   ========================================================================== */
+.brand-surface { background: linear-gradient(180deg, #F7FBFF 0%, #EFF6FF 100%); }
+.brand-hero {
+  background: radial-gradient(120% 80% at 50% -10%, #188BDC 0%, var(--primary) 48%, var(--primary-deep) 100%);
+  color: #fff;
+}
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 22px;
+  box-shadow: 0 2px 20px -12px rgba(0, 40, 100, 0.25);
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: var(--lightblue); color: var(--primary); border: 1px solid var(--line);
+}
+.chip-teal { background: color-mix(in srgb, var(--teal) 14%, #fff); color: #00816c; border-color: color-mix(in srgb, var(--teal) 30%, transparent); }
+.chip-solid { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* landing section headline */
+.section-h { font-size: clamp(1.6rem, 3.2vw, 2.3rem); font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; color: var(--charcoal); text-wrap: balance; }
+[dir="rtl"] .section-h { letter-spacing: 0; line-height: 1.35; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* react-phone-input-2 — keep dropdown legible on the brand surface */
 .react-tel-input .country-list .country-name,
 .react-tel-input .country-list .dial-code {
-  color: #171717;
+  color: var(--charcoal);
 }
-
 .react-tel-input .country-list .country:hover,
 .react-tel-input .country-list .country.highlight {
-  background-color: #eff6ff;
+  background-color: var(--lightblue);
 }

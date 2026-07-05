@@ -3,6 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import Logomark from '@/components/brand/Logomark'
+
+const field =
+  'w-full border border-[var(--line-strong)] rounded-xl px-3.5 py-2.5 text-sm bg-lightblue text-charcoal placeholder-charcoal/40 focus:outline-none focus:border-accent focus:ring-2 focus:ring-teal/20 transition-colors'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -26,37 +30,42 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 w-full max-w-sm">
-        <h1 className="text-xl font-bold text-slate-800 mb-1">Sign in</h1>
-        <p className="text-sm text-slate-400 mb-6">Etijah Career Compass</p>
+    <div className="min-h-screen brand-surface flex items-center justify-center px-4">
+      <div className="card p-8 w-full max-w-sm">
+        <div className="mb-6 flex items-center gap-3">
+          <Logomark size={34} />
+          <div>
+            <h1 className="text-xl font-extrabold text-charcoal leading-none">Sign in</h1>
+            <p className="text-xs text-charcoal/40 mt-1">Etijahi · إتجاهي</p>
+          </div>
+        </div>
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-charcoal/70 mb-1">Email</label>
             <input
               type="email"
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={field}
               autoComplete="email"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+            <label className="block text-sm font-medium text-charcoal/70 mb-1">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 pr-10 text-sm bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`${field} pe-10`}
                 autoComplete="current-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute end-3 top-1/2 -translate-y-1/2 text-charcoal/40 hover:text-primary"
                 tabIndex={-1}
               >
                 {showPassword ? (
@@ -72,18 +81,19 @@ export default function LoginPage() {
               </button>
             </div>
           </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-rose-500 text-sm">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+            className="cta w-full"
+            style={{ width: '100%', padding: '12px', fontSize: 14, borderRadius: 12 }}
           >
             {loading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
-          <p className="text-center text-sm text-slate-400">
+          <p className="text-center text-sm text-charcoal/40">
             No account?{' '}
-            <a href="/en/signup" className="text-blue-600 hover:underline">Sign up</a>
+            <a href="/en/signup" className="text-primary font-medium hover:underline">Sign up</a>
           </p>
         </form>
       </div>

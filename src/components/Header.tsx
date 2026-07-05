@@ -1,34 +1,35 @@
-  'use client'
+'use client'
 
-  import { useEffect, useState } from 'react'
-  import LanguageSwitcher from './LanguageSwitcher'
-  import { Link } from '@/i18n/navigation'
-  import { supabase } from '@/lib/supabase'
+import { useEffect, useState } from 'react'
+import LanguageSwitcher from './LanguageSwitcher'
+import { Link } from '@/i18n/navigation'
+import { supabase } from '@/lib/supabase'
+import { Wordmark } from '@/components/brand/Logomark'
 
-  export default function Header() {
-    const [loggedIn, setLoggedIn] = useState(false)
+export default function Header() {
+  const [loggedIn, setLoggedIn] = useState(false)
 
-    useEffect(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        setLoggedIn(!!session)
-      })
-      const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-        setLoggedIn(!!session)
-      })
-      return () => listener.subscription.unsubscribe()
-    }, [])
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setLoggedIn(!!session)
+    })
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setLoggedIn(!!session)
+    })
+    return () => listener.subscription.unsubscribe()
+  }, [])
 
-    return (
-      <header className="fixed top-0 left-0 right-0 z-20 bg-white border-b border-gray-200 h-14 flex items-center px-6">
-        <div className="max-w-2xl mx-auto w-full flex justify-between items-center">
-          <span className="font-semibold text-gray-800">Etijah</span>
+  return (
+    <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-[var(--line)]">
+      <div className="max-w-6xl mx-auto w-full h-16 px-5 flex items-center justify-between">
+        <Link href="/" aria-label="Etijahi home"><Wordmark size={28} /></Link>
         <div className="flex items-center gap-4">
           {loggedIn && (
-            <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-800">Dashboard</Link>
+            <Link href="/dashboard" className="text-sm font-medium text-charcoal/60 hover:text-primary">Dashboard</Link>
           )}
           <LanguageSwitcher />
         </div>
-        </div>
-      </header>
-    )
-  }
+      </div>
+    </header>
+  )
+}

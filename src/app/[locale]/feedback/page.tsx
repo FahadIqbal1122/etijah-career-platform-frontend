@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react'
 type ScaleValues = Record<string, number>
 type Errors = Record<string, boolean>
 
-const input = 'w-full text-sm text-slate-800 bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10 transition-colors'
+const input = 'w-full text-sm text-slate-800 bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-accent focus:ring-2 focus:ring-teal/15 transition-colors'
 const inputError = 'w-full text-sm text-slate-800 bg-white border border-red-400 rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-400/10 transition-colors'
 
 export default function FeedbackPage() {
@@ -90,14 +90,14 @@ export default function FeedbackPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+      <div className="min-h-screen brand-surface flex items-center justify-center px-4">
         <div className="text-center max-w-sm">
-          <div className="w-14 h-14 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-6">
+          <div className="w-14 h-14 rounded-full bg-teal/10 flex items-center justify-center mx-auto mb-6">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1D4E4E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-teal-800 mb-2">Thank you!</h2>
+          <h2 className="text-xl font-semibold text-primary mb-2">Thank you!</h2>
           <p className="text-sm text-slate-500 leading-relaxed">Your feedback has been received. We will be in touch within 24 hours to book your coaching session.</p>
         </div>
       </div>
@@ -105,22 +105,22 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 pb-20 px-4">
+    <div className="min-h-screen brand-surface py-10 pb-20 px-4">
       <div className="max-w-[620px] mx-auto">
 
         {/* Header */}
         <div className="mb-8">
-          <div className="inline-flex items-center gap-2 text-xs text-teal-800 tracking-widest mb-5">
-            <span className="w-2 h-2 rounded-full bg-teal-800 inline-block" />
+          <div className="inline-flex items-center gap-2 text-xs text-primary tracking-widest mb-5">
+            <span className="w-2 h-2 rounded-full bg-primary inline-block" />
             Etijah · AI Career Compass
           </div>
-          <h1 className="text-2xl font-semibold text-teal-800 mb-2">Assessment feedback</h1>
+          <h1 className="text-2xl font-semibold text-primary mb-2">Assessment feedback</h1>
           <p className="text-sm text-slate-500 leading-relaxed">Help us improve the tool. This takes about 3 minutes.</p>
         </div>
 
         {/* Progress */}
         <div className="h-1 bg-slate-200 rounded-full mb-8 overflow-hidden">
-          <div className="h-full bg-teal-700 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+          <div className="h-full bg-teal rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
         </div>
 
         <form onSubmit={handleSubmit} noValidate className="space-y-8">
@@ -233,7 +233,7 @@ export default function FeedbackPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-4 bg-teal-800 hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-xl text-sm transition-colors"
+            className="w-full py-4 bg-primary hover:bg-primary-deep disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-xl text-sm transition-colors"
           >
             {submitting ? 'Submitting…' : 'Submit feedback'}
           </button>
@@ -263,8 +263,8 @@ function ScaleCard({ label, lowLabel, highLabel, value, onChange }: {
             onClick={() => onChange(n)}
             className={`flex-1 h-11 rounded-lg text-sm font-medium border transition-colors ${
               value === n
-                ? 'bg-teal-800 border-teal-800 text-white'
-                : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-teal-600 hover:text-teal-700 hover:bg-teal-50'
+                ? 'bg-primary border-primary text-white'
+                : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-primary hover:text-primary hover:bg-lightblue'
             }`}
           >
             {n}
@@ -300,10 +300,10 @@ function PillField({ label, required, options, value, onChange, error }: {
             onClick={() => onChange(val)}
             className={`px-4 py-2 rounded-full text-sm border transition-colors ${
               value === val
-                ? 'bg-teal-800 border-teal-800 text-white font-medium'
+                ? 'bg-primary border-primary text-white font-medium'
                 : error
-                ? 'border-red-400 text-slate-500 bg-white hover:border-teal-700 hover:text-teal-700'
-                : 'border-slate-200 text-slate-500 bg-white hover:border-teal-700 hover:text-teal-700'
+                ? 'border-red-400 text-slate-500 bg-white hover:border-primary hover:text-primary'
+                : 'border-slate-200 text-slate-500 bg-white hover:border-primary hover:text-primary'
             }`}
           >
             {lbl}

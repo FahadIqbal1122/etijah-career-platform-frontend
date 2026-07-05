@@ -5,8 +5,8 @@ import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
 
 export const metadata: Metadata = {
-  title: 'Etijah Career Compass',
-  description: 'Demo questions for career assessment',
+  title: 'Etijahi — Career Compass',
+  description: 'The GCC’s AI-powered career coaching platform. Discover who you are, where you belong, and exactly how to get there.',
 }
 
 export function generateStaticParams() {

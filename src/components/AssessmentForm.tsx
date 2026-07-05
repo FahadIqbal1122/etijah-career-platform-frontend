@@ -1,440 +1,474 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
-import {useState} from 'react'
-import {questions, BEHAVIORAL_SCALE, Question} from '@/data/questions'
+// AssessmentForm — Etijahi "UFUQ" gamified assessment.
+// One question at a time over the REAL question set (src/data/questions.ts):
+// a rising constellation, periodic encouragement "reveal" takeovers, and the
+// same skip logic / existing-user check / backend submit as the original form
+// (preserved in AssessmentForm.legacy.tsx).
+
+import { useEffect, useRef, useState } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
+import { useRouter, usePathname } from '@/i18n/navigation'
+import { questions, BEHAVIORAL_SCALE, Question } from '@/data/questions'
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { apiPost } from '@/lib/api'
-import { useRouter } from 'next/navigation'
+import Logomark from '@/components/brand/Logomark'
+import Constellation, { CONSTELLATION } from '@/components/brand/Constellation'
+import { frameworkOf, buildReveal, REVEAL_FRAMEWORKS } from '@/data/revealScoring'
 
-//Group questions by section
-const sections = questions.reduce((acc, question) =>{
-    if (!acc[question.section]) acc[question.section] = []
-    acc[question.section].push(question)
-    return acc
-}, {} as Record<string, Question[]>)
-
-const sectionNames = Object.keys(sections)
-
-const SKIP_RULES: {
-  condition: (a: Record<string, any>) => boolean;
-  ids: Record<string, any>;
-}[] = [
-  {
-    condition: (a: Record<string, any>) => a['QO4'] === 'high_school',
-    ids: { QO5: 'not_applicable' },
-  },
-  {
-    condition: (a: Record<string, any>) => a['QO7'] === 'employee',
-    ids: { Q69: 1, Q71: 'B', Q73: 1 },
-  },
+// ── skip / auto-fill rules (identical to the original form) ──────────────────
+const SKIP_RULES: { condition: (a: Record<string, any>) => boolean; ids: Record<string, any> }[] = [
+  { condition: a => a['QO4'] === 'high_school', ids: { QO5: 'not_applicable' } },
+  { condition: a => a['QO7'] === 'employee', ids: { Q69: 1, Q71: 'B', Q73: 1 } },
 ]
-
 function getAutoFills(answers: Record<string, any>): Record<string, any> {
-  return SKIP_RULES
-    .filter(r => r.condition(answers))
-    .reduce((acc, r) => ({ ...acc, ...r.ids }), {} as Record<string, any>)
+  return SKIP_RULES.filter(r => r.condition(answers)).reduce((acc, r) => ({ ...acc, ...r.ids }), {})
 }
+
+const CONFIRM_MS = 560
+const TOTAL_NODES = CONSTELLATION.nodes.length
+const CHROME: Record<string, Record<string, string>> = {
+  en: {
+    asideEyebrow: 'Discovering you', // ambient label on the desktop split panel
+    revealCta: 'Keep going',
+    finishHead: 'Your map is taking shape.',
+    finishBody: 'You’ve lit the path. This is the start of your Etijahi profile — the full reading is next.',
+    finishCta: 'Reveal my result',
+    saveExit: 'Save & exit',
+    welcomeTitle: 'Welcome back!',
+    welcomeBody: 'We found a previous assessment linked to your details. View those results, or retake the assessment?',
+    viewPrevious: 'View previous results',
+    retake: 'Retake the assessment',
+  },
+  ar: {
+    asideEyebrow: 'نكتشفك', // ambient label on the desktop split panel
+    revealCta: 'أكمل',
+    finishHead: 'خريطتك تتشكّل.',
+    finishBody: 'لقد أضأت الطريق. هذه بداية ملفك في إتجاهي — والقراءة الكاملة تنتظرك.',
+    finishCta: 'اكشف نتيجتي',
+    saveExit: 'احفظ واخرج',
+    welcomeTitle: 'أهلاً بعودتك!',
+    welcomeBody: 'وجدنا تقييماً سابقاً مرتبطاً ببياناتك. اعرض تلك النتائج، أو أعد التقييم؟',
+    viewPrevious: 'عرض النتائج السابقة',
+    retake: 'إعادة التقييم',
+  },
+}
+
+const MANUAL_TYPES = new Set(['multi_select', 'text_input', 'email_input', 'phone_input'])
 
 export default function AssessmentForm() {
-    const [currentSectionIndex, setCurrentSectionIndex] = useState(0)
-    const [answers, setAnswers] = useState<Record<string, any>>({})
-    const [submitted, setSubmitted] = useState(false)
-    const [submitting, setSubmitting] = useState(false)
-    const [summary, setSummary] = useState<any>(null)
-    const [error, setError] = useState('')
-    const [showExistingModal, setShowExistingModal] = useState(false)
-    const [existingResultId, setExistingResultId] = useState<string | null>(null)
-    const router = useRouter()
+  const locale = useLocale()
+  const dir = locale === 'ar' ? 'rtl' : 'ltr'
+  const router = useRouter()
+  const pathname = usePathname()
+  const chrome = CHROME[locale] ?? CHROME.en
 
-    const autoFills = getAutoFills(answers)
-    const skippedIds = new Set(Object.keys(autoFills))
+  const tForm = useTranslations('form')
+  const tSections = useTranslations('sections')
+  const tQ = useTranslations('questions')
+  const tScale = useTranslations('scale')
 
-    const visibleSectionNames = sectionNames.filter(name => 
-      sections[name].some(q => !skippedIds.has(q.id))
-    )
+  const [answers, setAnswers] = useState<Record<string, any>>({})
+  const [index, setIndex] = useState(0)
+  const [phase, setPhase] = useState<'question' | 'reveal' | 'finish'>('question')
+  const [picked, setPicked] = useState<any>(null)
+  const [confirming, setConfirming] = useState(false)
+  const [revealMsg, setRevealMsg] = useState<{ head: string; body: string } | null>(null)
+  const [rippleKey, setRippleKey] = useState(0)
+  const [enterKey, setEnterKey] = useState(0)
+  const [checking, setChecking] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  const [error, setError] = useState('')
+  const [showExistingModal, setShowExistingModal] = useState(false)
+  const [existingResultId, setExistingResultId] = useState<string | null>(null)
 
-    const tForm = useTranslations('form')
-    const tSections = useTranslations('sections')
-    const tQ = useTranslations('questions')
-    const tScale = useTranslations('scale')
+  const pendingRef = useRef(0)
+  const answersRef = useRef<Record<string, any>>({}) // latest answers, for choice-based reveals
+  const revealedRef = useRef<Set<string>>(new Set())  // frameworks already revealed
+  const timers = useRef<number[]>([])
+  useEffect(() => () => timers.current.forEach(clearTimeout), [])
+  const after = (ms: number, fn: () => void) => {
+    const id = window.setTimeout(fn, ms)
+    timers.current.push(id)
+    return id
+  }
 
-    const currentSection = visibleSectionNames[currentSectionIndex]
-    const currentQuestions = sections[currentSection].filter(q => !skippedIds.has(q.id))
-    const isLastSection = currentSectionIndex === visibleSectionNames.length - 1
-    const progress = ((currentSectionIndex) / visibleSectionNames.length) * 100
+  // Effective (non-skipped) question list — recomputed as answers change.
+  const autoFills = getAutoFills(answers)
+  const skipped = new Set(Object.keys(autoFills))
+  const visibleQuestions = questions.filter(q => !skipped.has(q.id))
+  const total = visibleQuestions.length
+  const q = visibleQuestions[Math.min(index, total - 1)]
 
-    function isAnswerValid(q: Question): boolean {
-        const answer = answers[q.id]
-        if (answer === undefined || answer === null || answer === '') return false
-        if (Array.isArray(answer)) return answer.length > 0
-        if (q.type === 'phone_input') return String(answer).replace(/\D/g, '').length >= 7
-        if (q.type === 'email_input') return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(answer))
-        if (q.type === 'text_input') return String(answer).trim().length >= 2
-        return true
+  const progress = phase === 'finish' ? 1 : total ? index / total : 0
+  const litCount = phase === 'finish'
+    ? TOTAL_NODES
+    : Math.max(1, Math.min(TOTAL_NODES, Math.round(progress * (TOTAL_NODES - 1)) + 1))
+
+  function isAnswerValid(question: Question): boolean {
+    const a = answers[question.id]
+    if (a === undefined || a === null || a === '') return false
+    if (Array.isArray(a)) return a.length > 0
+    if (question.type === 'phone_input') return String(a).replace(/\D/g, '').length >= 7
+    if (question.type === 'email_input') return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(a))
+    if (question.type === 'text_input') return String(a).trim().length >= 2
+    return true
+  }
+
+  async function checkExistingUser(email: string, phone: string) {
+    return apiPost<{ id: string } | null>('/assessment/check-existing', { email, phone })
+  }
+
+  // single source of truth for answers — keep the ref in sync so reveals can
+  // score the choices made right up to (and including) the current question.
+  function setAnswer(id: string, value: any) {
+    answersRef.current = { ...answersRef.current, [id]: value }
+    setAnswers(answersRef.current)
+  }
+
+  function doAdvance() {
+    const next = index + 1
+    const done = next >= total
+    // Fire a reveal when we cross out of a "reveal framework" block (RIASEC,
+    // Values, Strengths) — the message reflects the top dimension the user
+    // actually leaned toward in that block.
+    const curFw = q ? frameworkOf(q.id) : null
+    const nextFw = !done ? frameworkOf(visibleQuestions[next]?.id) : null
+    const shouldReveal =
+      !done &&
+      !!curFw &&
+      curFw !== nextFw &&
+      REVEAL_FRAMEWORKS.includes(curFw) &&
+      !revealedRef.current.has(curFw)
+
+    if (shouldReveal && curFw) {
+      revealedRef.current.add(curFw)
+      setRevealMsg(buildReveal(answersRef.current, curFw, locale))
+      setRippleKey(k => k + 1)
+      pendingRef.current = next
+      setPhase('reveal')
+    } else if (done) {
+      setPhase('finish')
+    } else {
+      setIndex(next)
+      setPhase('question')
     }
+    setEnterKey(k => k + 1)
+  }
 
-    // Check all questions in current section are answered
-    const currentSectionComplete = currentQuestions.every(isAnswerValid)
-
-    function handleSingleSelect(questionId: string, value: string){
-        setAnswers(prev => ({...prev, [questionId]: value}))
-    }
-
-    function handleMultiSelect(questionId: string, value: string, maxSelect?: number){
-    setAnswers(prev => {
-        const current: string[] = prev[questionId] || []
-        const exists = current.includes(value)
-        if(exists){
-            return { ...prev, [questionId]: current.filter(v => v !== value)}
-        } else {
-            if (maxSelect && current.length >= maxSelect) return prev
-            return { ...prev, [questionId]: [...current, value]}
+  async function handleProceed() {
+    // After the last "Your Details" question, check for a returning user.
+    if (q.id === 'QD3') {
+      setChecking(true)
+      try {
+        const existing = await checkExistingUser(answers['QD2'], answers['QD3'])
+        setChecking(false)
+        if (existing) {
+          setExistingResultId(existing.id)
+          setShowExistingModal(true)
+          return
         }
+      } catch {
+        setChecking(false)
+      }
+    }
+    doAdvance()
+  }
+
+  // auto-advance types (scale / forced_choice / single_select) — tap commits
+  function pick(value: any) {
+    if (confirming || checking) return
+    setPicked(value)
+    setAnswer(q.id, value)
+    setConfirming(true)
+    after(CONFIRM_MS, () => {
+      setConfirming(false)
+      setPicked(null)
+      handleProceed()
     })
-}
+  }
 
-    function handleScale(questionId: string, value: number){
-        setAnswers(prev => ({...prev, [questionId]: value}))
+  // manual types (multi-select / inputs) — explicit Continue
+  function proceedManual() {
+    if (confirming || checking || !isAnswerValid(q)) return
+    setConfirming(true)
+    after(CONFIRM_MS, () => {
+      setConfirming(false)
+      handleProceed()
+    })
+  }
+
+  function toggleMulti(value: string, maxSelect?: number) {
+    const current: string[] = answersRef.current[q.id] || []
+    let nextArr: string[]
+    if (current.includes(value)) nextArr = current.filter(v => v !== value)
+    else if (maxSelect && current.length >= maxSelect) nextArr = current
+    else nextArr = [...current, value]
+    setAnswer(q.id, nextArr)
+  }
+
+  function continueFromReveal() {
+    const next = pendingRef.current
+    if (next >= total) setPhase('finish')
+    else {
+      setIndex(next)
+      setPhase('question')
     }
+    setEnterKey(k => k + 1)
+  }
 
-    async function checkExistingUser(email: string, phone: string) {
-      const data = await apiPost<{id: string} | null>('/assessment/check-existing', {
-        email,
-        phone,
+  async function handleSubmit() {
+    if (submitting) return
+    const finalAnswers = { ...answers, ...autoFills }
+    setSubmitting(true)
+    setError('')
+    try {
+      const result = await apiPost<{ response_id: string }>('/assessment/submit', {
+        full_name: answers['QD1'],
+        email: answers['QD2'],
+        phone: answers['QD3'],
+        country: answers['QO1'],
+        nationality: answers['QO2'],
+        age_bracket: answers['QO3'],
+        current_stage: answers['QO4'],
+        education_field: finalAnswers['QO5'],
+        sectors_of_interest: answers['QO6'] || [],
+        career_structure: answers['QO7'],
+        languages: answers['QO8'] || [],
+        geographic_openness: answers['QO9'],
+        why_here: answers['QO10'],
+        answers: finalAnswers,
+        completed: true,
       })
-      return data 
+      setLeaving(true)
+      after(400, () => router.push(`/results/${result.response_id}`))
+    } catch (err: any) {
+      console.error('Submission error:', err)
+      setError(err?.message || tForm('error'))
+      setSubmitting(false)
     }
+  }
 
-    async function handleNext(){
-        if (currentSectionIndex === 0){
-          const existing = await checkExistingUser(answers['QD2'], answers['QD3'])
-          if (existing) {
-            setExistingResultId(existing.id)
-            setShowExistingModal(true)
-            return
-          }
-        }
-        setCurrentSectionIndex(prev => prev + 1)
-        window.scrollTo(0,0)
-    }
+  function switchLocale(next: string) {
+    router.replace(pathname, { locale: next })
+  }
 
-    async function handleSubmit(){
-        const finalAnswers = { ...answers, ...autoFills }
-        const unanswered = questions.filter(q => !skippedIds.has(q.id) && !isAnswerValid(q) )
-        if (unanswered.length > 0) {
-            setError('Some questions are incomplete. Please go back and fill in all required fields.')
-            return
-        }
+  const arrow = dir === 'rtl' ? '←' : '→'
+  const sel = picked !== null ? picked : q ? answers[q.id] : undefined
 
-        setSubmitting(true)
-        setError('')
-
-        try{
-            const result = await apiPost<{response_id: string, summary: any}>('/assessment/submit', {
-                    full_name: answers['QD1'],
-                    email: answers['QD2'],
-                    phone: answers['QD3'],
-                    country: answers['QO1'],
-                    nationality: answers['QO2'],
-                    age_bracket: answers['QO3'],
-                    current_stage: answers['QO4'],
-                    education_field: finalAnswers['QO5'],
-                    sectors_of_interest: answers['QO6'] || [],
-                    career_structure: answers['QO7'],
-                    languages: answers['QO8'] || [],
-                    geographic_openness: answers['QO9'],
-                    why_here: answers['QO10'],
-                    answers: finalAnswers,
-                    completed: true,
-                })
-            router.push(`/results/${result.response_id}`)
-            setSummary(result.summary)
-            setSubmitted(true) 
-        } catch (err: any) {
-            console.error('Submission error:', err)
-            setError(err?.message || tForm('error'))
-        } finally {
-            setSubmitting(false)
-        }
-    }
-
-    // ─── SUBMITTED STATE ──────────────────────────────────
-    if (submitted && summary) {
-        return (
-            <div className="max-w-2xl mx-auto px-4 py-12 space-y-8">
-                <h2 className="text-2xl font-bold text-gray-800">Your Results</h2>
-
-                <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h3 className="font-semibold text-gray-700 mb-3">Top Career Types</h3>
-                    <div className="flex gap-2 flex-wrap">
-                        {summary.riasec.top_types.map((t: string) => (
-                            <span key={t} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm capitalize">{t}</span>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h3 className="font-semibold text-gray-700 mb-3">Top Values</h3>
-                    <div className="flex gap-2 flex-wrap">
-                        {summary.values.top_values.map((v: string) => (
-                            <span key={v} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm capitalize">{v}</span>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h3 className="font-semibold text-gray-700 mb-3">Top Strengths</h3>
-                    <div className="flex gap-2 flex-wrap">
-                        {summary.strengths.top_strengths.map((s: string) => (
-                            <span key={s} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm capitalize">{s}</span>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-xl p-6 shadow-sm">
-                    <h3 className="font-semibold text-gray-700 mb-3">Personality</h3>
-                    <div className="space-y-2">
-                        {Object.entries(summary.big_five).map(([trait, level]: any) => (
-                            <div key={trait} className="flex justify-between text-sm">
-                                <span className="text-gray-600 capitalize">{trait.replace('_', ' ')}</span>
-                                <span className="font-medium text-gray-800 capitalize">{level}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-  // ─── MAIN FORM ────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`assess-screen ${phase === 'reveal' ? 'is-reveal' : ''} ${leaving ? 'leaving' : ''}`} dir={dir} lang={locale}>
+      <div className="prog"><div className="prog-fill" style={{ width: `${progress * 100}%` }} /></div>
 
-      {/* Progress bar */}
-      <div className="fixed top-14 left-0 right-0 z-10 bg-gray-50 border-b border-gray-100">
-        <div className="max-w-2xl mx-auto px-4 py-2">
-          <div className="flex justify-between text-xs text-gray-400 mb-1.5">
-            <span>{tSections(currentSection)}</span>
-            <span>{tForm('ofTotal', { current: currentSectionIndex + 1, total: visibleSectionNames.length })}</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-1">
-            <div
-              className="bg-blue-500 h-1 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
+      <div className="assess-topbar">
+        <Logomark size={30} tone="dark" />
+        <button className="assess-lang" onClick={() => switchLocale(locale === 'en' ? 'ar' : 'en')}>
+          {locale === 'en' ? 'العربية' : 'English'}
+        </button>
       </div>
 
-      {/* Questions */}
-      <div className="max-w-2xl mx-auto px-4 pt-36 pb-32">
-        <div className="space-y-10">
-          {currentQuestions.map((question) => (
-            <div key={question.id} className="bg-white rounded-xl p-6 shadow-sm">
+      {/* ── main: ambient panel (left on desktop) + question column (right) ── */}
+      <div className="assess-main">
+        <aside className="assess-aside">
+          <div className="cst-wrap">
+            <Constellation litCount={litCount} theme={phase === 'reveal' ? 'teal' : 'dark'} rippleKey={rippleKey} accent="#00C9A7" />
+          </div>
+          {/* desktop-only progress context beneath the constellation */}
+          <div className="assess-aside-context">
+            <div className="assess-aside-eyebrow">{chrome.asideEyebrow}</div>
+            <div className="assess-aside-count">
+              {Math.min(index + 1, total)}<small>/ {total}</small>
+            </div>
+          </div>
+        </aside>
 
-              {/* Question text */}
-              <p className="text-gray-800 font-medium mb-4 leading-relaxed">
-                {tQ(`${question.id}.text`)}
-              </p>
+        {/* ── question ──────────────────────────────────────────────────── */}
+        <div className="assess-content">
+          {phase === 'question' && q && (
+            <div className="assess-stage">
+              <div className={`qbody ${confirming ? 'confirming' : ''}`} key={`q-${index}-${enterKey}`}>
+            <div className="qsection">{safe(() => tSections(q.section), q.section)}</div>
 
-              {/* ── Text / Email / Phone Input ── */}
-              {(question.type === 'text_input' || question.type === 'email_input') && (
+            {q.type === 'behavioral_scale' && (
+              <>
+                <div className="qcard"><p className="qtext">{tQ(`${q.id}.text`)}</p></div>
+                <div className="pills">
+                  {BEHAVIORAL_SCALE.map(opt => (
+                    <button key={opt.value} className={`pill ${sel === opt.value ? 'sel' : ''}`} onClick={() => pick(opt.value)}>
+                      <span className="pill-dot" />
+                      <span className="pill-label">{tScale(String(opt.value))}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {q.type === 'forced_choice' && (
+              <div className="choice-wrap">
+                <p className="choice-prompt">{tQ(`${q.id}.text`)}</p>
+                <div className="choices">
+                  {q.options?.map(opt => (
+                    <button
+                      key={opt.value}
+                      className={`choice ${sel === opt.value ? 'sel' : ''} ${sel && sel !== opt.value ? 'dim' : ''}`}
+                      onClick={() => pick(opt.value)}
+                    >
+                      <span className="choice-tag">{opt.value}</span>
+                      <span className="choice-text">{tQ(`${q.id}.options.${opt.value}`)}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {q.type === 'single_select' && (
+              <>
+                <div className="qcard"><p className="qtext">{tQ(`${q.id}.text`)}</p></div>
+                <div className="pills">
+                  {q.options?.map(opt => (
+                    <button key={opt.value} className={`pill ${sel === opt.value ? 'sel' : ''}`} onClick={() => pick(opt.value)}>
+                      <span className="pill-label">{tQ(`${q.id}.options.${opt.value}`)}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {q.type === 'multi_select' && (
+              <>
+                <div className="qcard"><p className="qtext">{tQ(`${q.id}.text`)}</p></div>
+                {q.maxSelect && <p className="qsection" style={{ marginBottom: 12 }}>{tForm('selectUpTo', { max: q.maxSelect })}</p>}
+                <div className="pills">
+                  {q.options?.map(opt => {
+                    const selected: string[] = answers[q.id] || []
+                    const on = selected.includes(opt.value)
+                    return (
+                      <button key={opt.value} className={`pill ${on ? 'sel' : ''}`} onClick={() => toggleMulti(opt.value, q.maxSelect)}>
+                        <span className="pill-dot" />
+                        <span className="pill-label">{tQ(`${q.id}.options.${opt.value}`)}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
+            {(q.type === 'text_input' || q.type === 'email_input') && (
+              <>
+                <div className="qcard"><p className="qtext">{tQ(`${q.id}.text`)}</p></div>
                 <input
-                  type={question.type === 'email_input' ? 'email' : 'text'}
-                  value={answers[question.id] || ''}
-                  onChange={e => handleSingleSelect(question.id, e.target.value)}
+                  className="qinput"
+                  type={q.type === 'email_input' ? 'email' : 'text'}
+                  value={answers[q.id] || ''}
+                  onChange={e => setAnswer(q.id, e.target.value)}
                   placeholder={tForm('placeholder')}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-blue-500 focus:outline-none text-gray-800"
+                  autoFocus
                 />
-              )}
-              {/* phone gets its own block with PhoneInput */}
-              {question.type === 'phone_input' && (
+              </>
+            )}
+
+            {q.type === 'phone_input' && (
+              <>
+                <div className="qcard"><p className="qtext">{tQ(`${q.id}.text`)}</p></div>
                 <PhoneInput
                   country={'bh'}
-                  value={answers[question.id] || ''}
-                  onChange={val => handleSingleSelect(question.id, val)}
+                  value={answers[q.id] || ''}
+                  onChange={val => setAnswer(q.id, val)}
                   containerClass="!w-full"
-                  inputClass="!w-full !h-12 !rounded-lg !border !border-gray-200 !text-gray-800 !text-base"
-                  buttonClass="!rounded-l-lg !border !border-gray-200 !bg-white"
+                  inputClass="!w-full !h-12 !rounded-2xl !text-base"
+                  buttonClass="!rounded-s-2xl"
                 />
+              </>
+            )}
+
+            {/* footer: Continue (manual types) + save & exit */}
+            <div style={{ marginTop: 'auto', paddingTop: 18 }}>
+              {MANUAL_TYPES.has(q.type) && (
+                <button
+                  className="cta"
+                  style={{ width: '100%' }}
+                  disabled={!isAnswerValid(q) || checking}
+                  onClick={proceedManual}
+                >
+                  <span>{checking ? '…' : tForm('next')}</span>
+                  {!checking && <span className="cta-arrow">{arrow}</span>}
+                </button>
               )}
-
-              {/* ── Behavioral Scale ── */}
-              {question.type === 'behavioral_scale' && (
-                <div className="space-y-2">
-                  {BEHAVIORAL_SCALE.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => handleScale(question.id, option.value)}
-                      className={`w-full text-start px-4 py-3 rounded-lg border transition-all ${
-                        answers[question.id] === option.value
-                          ? 'border-blue-600 bg-blue-50 text-blue-800 font-medium'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                      }`}
-                    >
-                      <span className="text-gray-400 text-sm me-2">{option.value}</span>
-                      {tScale(String(option.value))}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* ── Forced Choice ── */}
-              {question.type === 'forced_choice' && (
-                <div className="space-y-3">
-                  {question.options?.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => handleSingleSelect(question.id, option.value)}
-                      className={`w-full text-start px-4 py-4 rounded-lg border transition-all ${
-                        answers[question.id] === option.value
-                          ? 'border-blue-600 bg-blue-50 text-blue-800 font-medium'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                      }`}
-                    >
-                      <span className="font-bold me-2">{option.value})</span>
-                      {tQ(`${question.id}.options.${option.value}`)}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* ── Single Select ── */}
-              {question.type === 'single_select' && (
-                <div className="space-y-2">
-                  {question.options?.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => handleSingleSelect(question.id, option.value)}
-                      className={`w-full text-start px-4 py-3 rounded-lg border transition-all ${
-                        answers[question.id] === option.value
-                          ? 'border-blue-600 bg-blue-50 text-blue-800 font-medium'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                      }`}
-                    >
-                      {tQ(`${question.id}.options.${option.value}`)}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* ── Multi Select ── */}
-              {question.type === 'multi_select' && (
-                <div>
-                  {question.maxSelect && (
-                    <p className="text-sm text-gray-400 mb-3">
-                      {tForm('selectUpTo', { max: question.maxSelect })}
-                    </p>
-                  )}
-                  <div className="space-y-2">
-                    {question.options?.map((option) => {
-                      const selected: string[] = answers[question.id] || []
-                      const isSelected = selected.includes(option.value)
-                      return (
-                        <button
-                          key={option.value}
-                          onClick={() => handleMultiSelect(question.id, option.value, question.maxSelect)}
-                          className={`w-full text-start px-4 py-3 rounded-lg border transition-all ${
-                            isSelected
-                              ? 'border-blue-600 bg-blue-50 text-blue-800 font-medium'
-                              : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                          }`}
-                        >
-                          <span className="mr-2">{isSelected ? '☑' : '☐'}</span>
-                          {tQ(`${question.id}.options.${option.value}`)}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Bottom navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm shadow-[0_-2px_12px_rgba(0,0,0,0.06)] p-4">
-        <div className="max-w-2xl mx-auto flex justify-between items-center">
-
-          {/* Back button */}
-          {currentSectionIndex > 0 && (
-            <button
-              onClick={() => {
-                setCurrentSectionIndex(prev => prev - 1)
-                window.scrollTo(0, 0)
-              }}
-              className="px-6 py-2 text-gray-600 hover:text-gray-800"
-            >
-              {tForm('back')}
-            </button>
-          )}
-          <div />
-
-          {/* Next / Submit button */}
-          {isLastSection ? (
-            <button
-              onClick={handleSubmit}
-              disabled={!currentSectionComplete || submitting}
-              className={`px-8 py-3 rounded-xl font-medium transition-all ${
-                currentSectionComplete && !submitting
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              {submitting ? tForm('submitting') : tForm('submit')}
-            </button>
-          ) : (
-            <button
-              onClick={handleNext}
-              disabled={!currentSectionComplete}
-              className={`px-8 py-3 rounded-xl font-medium transition-all ${
-                currentSectionComplete
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              {tForm('next')}
-            </button>
-          )}
-
-        </div>
-
-        {error && (
-          <p className="text-center text-red-500 text-sm mt-2">{error}</p>
-        )}
-      </div>
-
-      {showExistingModal && existingResultId && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-xl space-y-4">
-              <h3 className="text-lg font-bold text-gray-800">Welcome back!</h3>
-              <p className="text-gray-500 text-sm">We found a previous assessment linked to your details. Would you like to view those results or retake the test?</p>
-              <div className="flex flex-col gap-3 pt-2">
-                  <button
-                      onClick={() => router.push(`/results/${existingResultId}`)}
-                      className="w-full py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-all"
-                  >
-                      View Previous Results
-                  </button>
-                  <button
-                      onClick={() => {
-                          setShowExistingModal(false)
-                          setCurrentSectionIndex(prev => prev + 1)
-                          window.scrollTo(0, 0)
-                      }}
-                      className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-all"
-                  >
-                      Retake the Assessment
-                  </button>
+              <div style={{ textAlign: 'center' }}>
+                <button className="save-exit" onClick={() => router.push('/')}>{chrome.saveExit}</button>
               </div>
-          </div>
+            </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* ── reveal takeover (full-screen overlay) ───────────────────────── */}
+      {phase === 'reveal' && revealMsg && (
+        <div className="reveal" key={`rv-${enterKey}`}>
+          <div className="reveal-inner">
+            <div className="reveal-spark">✦</div>
+            <h1 className="reveal-head">{revealMsg.head}</h1>
+            <p className="reveal-body">{revealMsg.body}</p>
+          </div>
+          <button className="cta" onClick={continueFromReveal}>
+            <span>{chrome.revealCta}</span>
+            <span className="cta-arrow">{arrow}</span>
+          </button>
+        </div>
       )}
 
+      {/* ── finish (full-screen overlay) ────────────────────────────────── */}
+      {phase === 'finish' && (
+        <div className="reveal finish" key={`fn-${enterKey}`}>
+          <div className="reveal-inner">
+            <div className="reveal-spark">✦</div>
+            <h1 className="reveal-head">{chrome.finishHead}</h1>
+            <p className="reveal-body">{chrome.finishBody}</p>
+            {error && <p style={{ color: '#e11d48', fontSize: 14, marginTop: 12 }}>{error}</p>}
+          </div>
+          <button className="cta" onClick={handleSubmit} disabled={submitting}>
+            <span>{submitting ? tForm('submitting') : chrome.finishCta}</span>
+            {!submitting && <span className="cta-arrow">{arrow}</span>}
+          </button>
+        </div>
+      )}
+
+      {/* ── returning-user modal ────────────────────────────────────────── */}
+      {showExistingModal && existingResultId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" dir={dir}>
+          <div className="card w-full max-w-sm p-8 space-y-4">
+            <h3 className="text-lg font-extrabold text-charcoal">{chrome.welcomeTitle}</h3>
+            <p className="text-sm text-charcoal/60">{chrome.welcomeBody}</p>
+            <div className="flex flex-col gap-3 pt-2">
+              <button className="cta" style={{ width: '100%' }} onClick={() => router.push(`/results/${existingResultId}`)}>
+                {chrome.viewPrevious}
+              </button>
+              <button
+                className="w-full py-3 rounded-2xl border border-[var(--line-strong)] text-charcoal/70 font-medium hover:bg-lightblue transition-colors"
+                onClick={() => {
+                  setShowExistingModal(false)
+                  doAdvance()
+                }}
+              >
+                {chrome.retake}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+// tSections may throw for an unmapped key; fall back to the raw section name.
+function safe(fn: () => string, fallback: string): string {
+  try {
+    return fn()
+  } catch {
+    return fallback
+  }
 }
