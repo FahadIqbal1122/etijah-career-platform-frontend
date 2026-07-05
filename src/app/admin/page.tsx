@@ -464,13 +464,7 @@ export default function AdminPage() {
 
   async function handleSaveCountry(e: React.FormEvent) {
     e.preventDefault()
-    // Parse JSON fields
     const payload: any = { ...countryForm }
-    for (const key of ['strategic_priorities', 'nationalisation_rates_by_sector', 'wage_support_tiers', 'job_boards']) {
-      if (typeof payload[key] === 'string') {
-        try {payload[key] = JSON.parse(payload[key]) } catch { payload[key] = null }
-      }
-    }
     if (editingCountry) {
       await fetch(`/api/admin/country-profiles/${editingCountry.country_code}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -1902,8 +1896,6 @@ export default function AdminPage() {
                       ['country_code', 'Country Code (2-letter)', false],
                       ['country_name', 'Country Name (EN)', false],
                       ['country_name_ar', 'Country Name (AR)', true],
-                      ['labour_market_authority', 'Labour Market Authority', true],
-                      ['nationalisation_programme', 'Nationalisation Programme', true],
                       ['source_url_primary', 'Source URL', true],
                     ] as [string, string, boolean][]).map(([key, label, optional]) => (
                       <div key={key}>
@@ -1918,22 +1910,17 @@ export default function AdminPage() {
                       </div>
                     ))}
                   </div>
-                  {(['strategic_priorities', 'nationalisation_rates_by_sector', 'wage_support_tiers', 'job_boards'] as const).map(key => (
-                    <div key={key}>
-                      <label className="block text-xs text-slate-500 mb-1 capitalize">{key.replace(/_/g, ' ')}</label>
-                      <textarea
-                        rows={3}
-                        value={
-                          typeof (countryForm as any)[key] === 'object' && (countryForm as any)[key] !== null
-                            ? JSON.stringify((countryForm as any)[key], null, 2)
-                            : ((countryForm as any)[key] ?? '')
-                        }
-                        onChange={e => setCountryForm(prev => ({ ...prev, [key]: e.target.value }))}
-                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                        placeholder='{"key": "value"}'
-                      />
-                    </div>
-                  ))}
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1">Country Notes</label>
+                    <p className="text-xs text-slate-400 mb-2">Paste any information about this country's labour market — government websites, news articles, reports, anything. The AI will use this when coaching users from this country and generating their reports.</p>
+                    <textarea
+                      rows={10}
+                      value={(countryForm as any).raw_notes ?? ''}
+                      onChange={e => setCountryForm(prev => ({ ...prev, raw_notes: e.target.value }))}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                      placeholder="Paste any text about this country's job market, nationalisation policies, key industries, salary ranges, hiring trends..."
+                    />
+                  </div>
                   <div className="flex gap-3 pt-2">
                     <button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors">
                       {editingCountry ? 'Save Changes' : 'Create'}
@@ -1965,8 +1952,7 @@ export default function AdminPage() {
                       <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Code</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Tier</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Labour Authority</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Strategic Priorities</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Notes</th>
                       <th className="px-4 py-3" />
                     </tr>
                   </thead>
@@ -1980,21 +1966,14 @@ export default function AdminPage() {
                             {cp.context_tier}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-slate-500 text-xs">{cp.labour_market_authority || '—'}</td>
-                        <td className="px-4 py-3 text-slate-400 text-xs font-mono truncate max-w-xs">
-                          {cp.strategic_priorities ? JSON.stringify(cp.strategic_priorities).slice(0, 60) + '…' : '—'}
+                        <td className="px-4 py-3 text-slate-400 text-xs truncate max-w-xs">
+                          {(cp as any).raw_notes ? (cp as any).raw_notes.slice(0, 80) + '…' : <span className="text-slate-300">No notes yet</span>}
                         </td>
                         <td className="px-4 py-3 flex items-center gap-3">
                           <button
                             onClick={() => {
                               setEditingCountry(cp)
-                              setCountryForm({
-                                ...cp,
-                                strategic_priorities: cp.strategic_priorities ? JSON.stringify(cp.strategic_priorities, null, 2) : '',
-                                nationalisation_rates_by_sector: cp.nationalisation_rates_by_sector ? JSON.stringify(cp.nationalisation_rates_by_sector, null, 2) : '',
-                                wage_support_tiers: cp.wage_support_tiers ? JSON.stringify(cp.wage_support_tiers, null, 2) : '',
-                                job_boards: cp.job_boards ? JSON.stringify(cp.job_boards, null, 2) : '',
-                              })
+                              setCountryForm({ ...cp })
                               setShowCountryForm(true)
                             }}
                             className="text-xs text-blue-600 hover:underline font-medium"
