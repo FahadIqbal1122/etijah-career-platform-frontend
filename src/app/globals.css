@@ -292,6 +292,22 @@ html { scroll-behavior: smooth; }
 .reveal .cta { margin-top: 28px; }
 .reveal.finish .reveal-spark { color: var(--accent); opacity: 1; }
 
+/* small spinner inside the Submit button while the assessment is submitting */
+.cta-spinner {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35); border-top-color: #fff;
+  animation: ctaSpin .7s linear infinite;
+}
+@keyframes ctaSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .cta-spinner { animation-duration: 1.4s; } }
+
+/* fade the results page in once its data has actually loaded, instead of a
+   hard cut from the assessment's leaving-fade straight to a fully-laid-out page */
+@media (prefers-reduced-motion: no-preference) {
+  .page-fade-in { animation: pageFadeIn .5s cubic-bezier(.2, .7, .3, 1) both; }
+}
+@keyframes pageFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
 /* ── desktop: split the immersive screen into an ambient panel + content ──── */
 @media (min-width: 900px) {
   .assess-main { flex-direction: row; align-items: stretch; gap: clamp(24px, 4vw, 72px);

@@ -113,11 +113,15 @@ export default function ResultsPage() {
   }
 
   if (!summary) {
+    // Match the assessment's blue gradient (brand-hero) instead of the light
+    // brand-surface here — the assessment screen fades out on submit straight
+    // into this screen, so a matching backdrop avoids a jarring color-flash
+    // hand-off between the two pages.
     return (
-      <div className="min-h-screen brand-surface flex items-center justify-center">
+      <div className="min-h-screen brand-hero flex items-center justify-center">
         <div className="text-center space-y-3">
-          <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-charcoal/40 text-sm">Loading your results…</p>
+          <div className="w-7 h-7 border-2 border-white/40 border-t-white rounded-full animate-spin mx-auto" />
+          <p className="text-white/70 text-sm">Loading your results…</p>
         </div>
       </div>
     )
@@ -144,7 +148,7 @@ export default function ResultsPage() {
   const riasecCode = summary.riasec.top_types.map((t: string) => t[0].toUpperCase()).join('')
 
   return (
-    <div className="min-h-screen brand-surface">
+    <div className="min-h-screen brand-surface page-fade-in">
 
       {/* Hero */}
       <div className="brand-hero px-4 pt-10 pb-16 text-center relative overflow-hidden">

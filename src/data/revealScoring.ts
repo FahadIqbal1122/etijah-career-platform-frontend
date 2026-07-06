@@ -108,8 +108,26 @@ export const REVEAL_FRAMEWORKS: FrameworkKey[] = ['riasec', 'values', 'strengths
 
 type Msg = { head: string; body: string }
 
-// Neutral fallback when the top dimension isn't clearly ahead (near-tie / low signal).
-const NEUTRAL: Record<string, Msg> = {
+// Neutral fallback when the top dimension isn't clearly ahead (near-tie / low
+// signal) — one per framework, so a tie in RIASEC doesn't read as the exact
+// same screen as a tie in Values or Strengths.
+const NEUTRAL: Record<FrameworkKey, Record<string, Msg>> = {
+  riasec: {
+    en: { head: 'You’re a genuine mix.', body: 'So far no single interest dominates — you’re pulling from a few directions at once. Keep going.' },
+    ar: { head: 'أنت مزيج حقيقي.', body: 'حتى الآن لا يهيمن اتجاه واحد — تجمع بين عدة ميول في آن. أكمل.' },
+  },
+  values: {
+    en: { head: 'You value more than one thing at once.', body: 'So far a few things matter to you fairly equally — there’s no single value pulling ahead yet. Keep going.' },
+    ar: { head: 'تقدّر أكثر من شيء في آن.', body: 'حتى الآن هناك أكثر من قيمة تهمّك بالتساوي تقريباً — لا شيء يتصدّر بعد. أكمل.' },
+  },
+  strengths: {
+    en: { head: 'You’re well-rounded.', body: 'So far your strengths are fairly balanced rather than lopsided toward one thing. Keep going — the full picture is next.' },
+    ar: { head: 'أنت متوازن القدرات.', body: 'حتى الآن نقاط قوتك متوازنة إلى حدٍّ بعيد بدلاً من أن تتركّز في جانب واحد. أكمل — الصورة الكاملة تنتظرك.' },
+  },
+  big_five: {}, resilience: {}, work_style: {}, entrepreneurship: {},
+} as Record<FrameworkKey, Record<string, Msg>>
+
+const GENERIC_NEUTRAL: Record<string, Msg> = {
   en: { head: 'A clear shape is forming.', body: 'Your answers are painting a rich, balanced picture. Keep going — the full reading is next.' },
   ar: { head: 'بدأت ملامح واضحة تتشكّل.', body: 'إجاباتك ترسم صورة غنية ومتوازنة. أكمل — القراءة الكاملة تنتظرك.' },
 }
@@ -151,8 +169,10 @@ const BANK: Record<FrameworkKey, Record<string, Record<string, Msg>>> = {
 export function buildReveal(answers: Record<string, any>, framework: FrameworkKey, locale: string): Msg {
   const lang = locale === 'ar' ? 'ar' : 'en'
   const leaning = computeLeaning(answers, framework)
-  // low signal or near-tie → neutral, honest fallback
-  if (!leaning || leaning.margin < 0.4) return NEUTRAL[lang]
+  const neutral = NEUTRAL[framework]?.[lang] ?? GENERIC_NEUTRAL[lang]
+  // low signal or near-tie → neutral, honest fallback (framework-specific, so
+  // three ties in a row don't read as the exact same screen three times)
+  if (!leaning || leaning.margin < 0.4) return neutral
   const msg = BANK[framework]?.[leaning.dimension]?.[lang]
-  return msg ?? NEUTRAL[lang]
+  return msg ?? neutral
 }

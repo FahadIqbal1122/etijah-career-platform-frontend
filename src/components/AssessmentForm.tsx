@@ -253,7 +253,9 @@ export default function AssessmentForm() {
         completed: true,
       })
       setLeaving(true)
-      after(400, () => router.push(`/results/${result.response_id}`))
+      // navigate once the .leaving fade (500ms, see .assess-screen in globals.css)
+      // has actually finished, instead of cutting it off mid-transition
+      after(520, () => router.push(`/results/${result.response_id}`))
     } catch (err: any) {
       console.error('Submission error:', err)
       setError(err?.message || tForm('error'))
@@ -448,6 +450,7 @@ export default function AssessmentForm() {
             {error && <p style={{ color: '#e11d48', fontSize: 14, marginTop: 12 }}>{error}</p>}
           </div>
           <button className="cta" onClick={handleSubmit} disabled={submitting}>
+            {submitting && <span className="cta-spinner" aria-hidden="true" />}
             <span>{submitting ? tForm('submitting') : chrome.finishCta}</span>
             {!submitting && <span className="cta-arrow">{arrow}</span>}
           </button>
