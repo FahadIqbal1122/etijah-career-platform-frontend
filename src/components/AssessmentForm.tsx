@@ -200,6 +200,16 @@ export default function AssessmentForm() {
     })
   }
 
+  // Enter commits text/email/phone inputs (pills/choices already advance on
+  // click, and Enter on a focused <button> would just re-fire that click).
+  function handleStageKeyDown(e: React.KeyboardEvent) {
+    if (e.key !== 'Enter') return
+    if ((e.target as HTMLElement).tagName === 'BUTTON') return
+    if (!q || !MANUAL_TYPES.has(q.type)) return
+    e.preventDefault()
+    proceedManual()
+  }
+
   function toggleMulti(value: string, maxSelect?: number) {
     const current: string[] = answersRef.current[q.id] || []
     let nextArr: string[]
@@ -288,7 +298,11 @@ export default function AssessmentForm() {
         <div className="assess-content">
           {phase === 'question' && q && (
             <div className="assess-stage">
-              <div className={`qbody ${confirming ? 'confirming' : ''}`} key={`q-${index}-${enterKey}`}>
+              <div
+                className={`qbody ${confirming ? 'confirming' : ''}`}
+                key={`q-${index}-${enterKey}`}
+                onKeyDown={handleStageKeyDown}
+              >
             <div className="qsection">{safe(() => tSections(q.section), q.section)}</div>
 
             {q.type === 'behavioral_scale' && (
@@ -392,7 +406,10 @@ export default function AssessmentForm() {
                   disabled={!isAnswerValid(q) || checking}
                   onClick={proceedManual}
                 >
-                  <span>{checking ? '…' : tForm('next')}</span>
+                  {/* tForm('next') already carries a bundled arrow (shared with the legacy
+                      form's plain-text buttons) — strip it here since we render our own
+                      animated .cta-arrow span. */}
+                  <span>{checking ? '…' : tForm('next').replace(/[→←]\s*$/, '')}</span>
                   {!checking && <span className="cta-arrow">{arrow}</span>}
                 </button>
               )}
