@@ -328,10 +328,22 @@ html { scroll-behavior: smooth; }
   background: radial-gradient(120% 80% at 50% -10%, #188BDC 0%, var(--primary) 48%, var(--primary-deep) 100%);
   color: #fff;
 }
+/* dark charcoal section (Heritage / social proof) */
+.sec-charcoal {
+  background: radial-gradient(120% 90% at 50% -10%, #4d4d4e 0%, var(--charcoal) 52%, #353536 100%);
+  color: #fff;
+}
+/* teal section (Final CTA) */
+.sec-teal {
+  background: radial-gradient(110% 80% at 50% -10%, color-mix(in srgb, var(--teal) 80%, #fff) 0%, var(--teal) 50%, color-mix(in srgb, var(--teal) 76%, #063) 100%);
+  color: #fff;
+}
 .card {
   background: var(--surface); border: 1px solid var(--line); border-radius: 22px;
   box-shadow: 0 2px 20px -12px rgba(0, 40, 100, 0.25);
 }
+.card-hover { transition: transform .2s, box-shadow .2s, border-color .2s; }
+.card-hover:hover { transform: translateY(-3px); box-shadow: 0 24px 50px -26px rgba(0, 40, 100, 0.28); border-color: var(--line-strong); }
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 600;
@@ -339,10 +351,75 @@ html { scroll-behavior: smooth; }
 }
 .chip-teal { background: color-mix(in srgb, var(--teal) 14%, #fff); color: #00816c; border-color: color-mix(in srgb, var(--teal) 30%, transparent); }
 .chip-solid { background: var(--primary); color: #fff; border-color: var(--primary); }
+.chip-onteal { background: color-mix(in srgb, var(--teal) 16%, transparent); border: 1px solid color-mix(in srgb, var(--teal) 48%, transparent); color: #fff; }
 
 /* landing section headline */
 .section-h { font-size: clamp(1.6rem, 3.2vw, 2.3rem); font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; color: var(--charcoal); text-wrap: balance; }
 [dir="rtl"] .section-h { letter-spacing: 0; line-height: 1.35; }
+
+/* ── secondary CTA button variants ──────────────────────────────────────── */
+.cta-outline {
+  background: transparent; color: var(--charcoal);
+  box-shadow: inset 0 0 0 1.5px rgba(65, 65, 66, 0.32);
+}
+.cta-outline:hover { background: rgba(65, 65, 66, 0.045); box-shadow: inset 0 0 0 1.5px var(--charcoal); }
+.cta-onteal { background: #fff; color: var(--charcoal); box-shadow: 0 18px 44px -14px rgba(0, 40, 36, 0.45); }
+.cta-onteal:hover { box-shadow: 0 24px 58px -14px rgba(0, 40, 36, 0.55); }
+
+/* ── hero stats — flat divided strip (not boxed cards) ──────────────────── */
+.hero-stats-strip { border-top: 1px solid var(--line); }
+.hero-stat { border-inline-end: 1px solid var(--line); padding-block: 28px; }
+.hero-stat:last-child { border-inline-end: none; }
+@media (max-width: 640px) {
+  .hero-stat:nth-child(2n) { border-inline-end: none; }
+  .hero-stat { border-bottom: 1px solid var(--line); }
+}
+
+/* ── hero product preview — progress bar + idle float ───────────────────── */
+.hp-bar { height: 5px; border-radius: 999px; background: rgba(7, 112, 186, 0.1); overflow: hidden; margin-bottom: 18px; }
+.hp-bar-fill { height: 100%; width: 22%; border-radius: 999px; background: linear-gradient(90deg, var(--primary), var(--accent)); }
+[dir="rtl"] .hp-bar-fill { margin-inline-start: auto; background: linear-gradient(270deg, var(--primary), var(--accent)); }
+.hero-product-float { animation: hpFloat 7s ease-in-out infinite; }
+@keyframes hpFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@media (prefers-reduced-motion: reduce) { .hero-product-float { animation: none; } }
+.cst-node-pulse { animation: cstPulse 2.6s ease-in-out infinite; }
+@keyframes cstPulse { 0% { opacity: 1; } 50% { opacity: .5; } 100% { opacity: 1; } }
+
+/* ── problem section — highlighted payoff callout ───────────────────────── */
+.payoff {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-inline-start: 3px solid var(--teal);
+  border-radius: 0 12px 12px 0;
+  padding: 20px 24px;
+}
+[dir="rtl"] .payoff { border-radius: 12px 0 0 12px; }
+
+/* ── pricing — "most popular" card gets the brand-gradient treatment ────── */
+.pcard-paid {
+  background: radial-gradient(120% 80% at 50% 0%, #188BDC 0%, var(--primary) 55%, var(--primary-deep) 100%);
+  color: #fff;
+  box-shadow: 0 40px 80px -30px rgba(7, 112, 186, 0.55);
+}
+@media (min-width: 768px) { .pcard-paid { margin-top: -8px; } }
+.pcard-badge {
+  background: var(--teal); color: #06302a; font-weight: 900; font-size: 12.5px;
+  padding: 8px 18px; border-radius: 999px; white-space: nowrap;
+  box-shadow: 0 10px 24px -8px rgba(0, 201, 167, 0.6);
+}
+
+/* ── FAQ accordion ───────────────────────────────────────────────────────── */
+.faq-chev { transition: transform .3s; }
+.faq-item.open .faq-chev { transform: rotate(180deg); }
+.faq-a-wrap { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .34s cubic-bezier(.4, .8, .3, 1); }
+.faq-item.open .faq-a-wrap { grid-template-rows: 1fr; }
+.faq-a-inner { overflow: hidden; }
+
+/* ── scroll-reveal ───────────────────────────────────────────────────────── */
+.reveal-up { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-up { opacity: 0; transform: translateY(26px); transition: opacity .7s cubic-bezier(.2,.7,.3,1), transform .7s cubic-bezier(.2,.7,.3,1); }
+  .reveal-up.in { opacity: 1; transform: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
