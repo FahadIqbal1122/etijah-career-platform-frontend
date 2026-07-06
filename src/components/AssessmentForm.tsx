@@ -26,6 +26,59 @@ function getAutoFills(answers: Record<string, any>): Record<string, any> {
   return SKIP_RULES.filter(r => r.condition(answers)).reduce((acc, r) => ({ ...acc, ...r.ids }), {})
 }
 
+// ── "Save & exit" draft (client-side only — no backend, no cross-device sync) ──
+const DRAFT_KEY = 'ufuq_assessment_draft'
+const DRAFT_VERSION = 1
+const DRAFT_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
+
+type Draft = {
+  version: number
+  savedAt: number
+  totalQuestions: number // sanity check: bail if the question set has changed shape since
+  answers: Record<string, any>
+  index: number
+  revealedFrameworks: string[]
+}
+
+function saveDraft(answers: Record<string, any>, index: number, revealedFrameworks: Set<string>) {
+  try {
+    const draft: Draft = {
+      version: DRAFT_VERSION,
+      savedAt: Date.now(),
+      totalQuestions: questions.length,
+      answers,
+      index,
+      revealedFrameworks: [...revealedFrameworks],
+    }
+    window.localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+  } catch {
+    // localStorage unavailable (private mode, quota, etc.) — saving is best-effort
+  }
+}
+
+function loadDraft(): Draft | null {
+  try {
+    const raw = window.localStorage.getItem(DRAFT_KEY)
+    if (!raw) return null
+    const draft = JSON.parse(raw) as Draft
+    if (draft.version !== DRAFT_VERSION) return null
+    if (draft.totalQuestions !== questions.length) return null
+    if (Date.now() - draft.savedAt > DRAFT_MAX_AGE_MS) return null
+    if (!draft.answers || Object.keys(draft.answers).length === 0) return null
+    return draft
+  } catch {
+    return null
+  }
+}
+
+function clearDraft() {
+  try {
+    window.localStorage.removeItem(DRAFT_KEY)
+  } catch {
+    // ignore
+  }
+}
+
 const CONFIRM_MS = 560
 const TOTAL_NODES = CONSTELLATION.nodes.length
 const CHROME: Record<string, Record<string, string>> = {
@@ -40,6 +93,10 @@ const CHROME: Record<string, Record<string, string>> = {
     welcomeBody: 'We found a previous assessment linked to your details. View those results, or retake the assessment?',
     viewPrevious: 'View previous results',
     retake: 'Retake the assessment',
+    draftTitle: 'Pick up where you left off?',
+    draftBody: 'You have an assessment in progress. Continue from where you saved, or start fresh?',
+    draftContinue: 'Continue where I left off',
+    draftRestart: 'Start over',
   },
   ar: {
     asideEyebrow: 'نكتشفك', // ambient label on the desktop split panel
@@ -52,6 +109,10 @@ const CHROME: Record<string, Record<string, string>> = {
     welcomeBody: 'وجدنا تقييماً سابقاً مرتبطاً ببياناتك. اعرض تلك النتائج، أو أعد التقييم؟',
     viewPrevious: 'عرض النتائج السابقة',
     retake: 'إعادة التقييم',
+    draftTitle: 'أتريد إكمال ما بدأته؟',
+    draftBody: 'لديك تقييم لم تكمله بعد. أكمل من حيث توقفت، أم تفضّل البدء من جديد؟',
+    draftContinue: 'أكمل من حيث توقفت',
+    draftRestart: 'ابدأ من جديد',
   },
 }
 
@@ -83,6 +144,7 @@ export default function AssessmentForm() {
   const [error, setError] = useState('')
   const [showExistingModal, setShowExistingModal] = useState(false)
   const [existingResultId, setExistingResultId] = useState<string | null>(null)
+  const [draft, setDraft] = useState<Draft | null>(null)
 
   const pendingRef = useRef(0)
   const answersRef = useRef<Record<string, any>>({}) // latest answers, for choice-based reveals
@@ -93,6 +155,30 @@ export default function AssessmentForm() {
     const id = window.setTimeout(fn, ms)
     timers.current.push(id)
     return id
+  }
+
+  // offer to resume a saved draft on mount (once). localStorage isn't available
+  // during SSR, so this has to run post-mount rather than as a lazy useState
+  // initializer — otherwise the server/client render would mismatch.
+  useEffect(() => {
+    const found = loadDraft()
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of an external (browser-only) store, not a derived/cascading update
+    if (found) setDraft(found)
+  }, [])
+
+  function resumeDraft() {
+    if (!draft) return
+    answersRef.current = draft.answers
+    revealedRef.current = new Set(draft.revealedFrameworks)
+    setAnswers(draft.answers)
+    setIndex(draft.index)
+    setPhase('question')
+    setDraft(null)
+  }
+
+  function discardDraft() {
+    clearDraft()
+    setDraft(null)
   }
 
   // Effective (non-skipped) question list — recomputed as answers change.
@@ -252,6 +338,7 @@ export default function AssessmentForm() {
         answers: finalAnswers,
         completed: true,
       })
+      clearDraft()
       setLeaving(true)
       // navigate once the .leaving fade (500ms, see .assess-screen in globals.css)
       // has actually finished, instead of cutting it off mid-transition
@@ -416,7 +503,15 @@ export default function AssessmentForm() {
                 </button>
               )}
               <div style={{ textAlign: 'center' }}>
-                <button className="save-exit" onClick={() => router.push('/')}>{chrome.saveExit}</button>
+                <button
+                  className="save-exit"
+                  onClick={() => {
+                    saveDraft(answersRef.current, index, revealedRef.current)
+                    router.push('/')
+                  }}
+                >
+                  {chrome.saveExit}
+                </button>
               </div>
             </div>
               </div>
@@ -475,6 +570,27 @@ export default function AssessmentForm() {
                 }}
               >
                 {chrome.retake}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── resume-draft modal ───────────────────────────────────────────── */}
+      {draft && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" dir={dir}>
+          <div className="card w-full max-w-sm p-8 space-y-4">
+            <h3 className="text-lg font-extrabold text-charcoal">{chrome.draftTitle}</h3>
+            <p className="text-sm text-charcoal/60">{chrome.draftBody}</p>
+            <div className="flex flex-col gap-3 pt-2">
+              <button className="cta" style={{ width: '100%' }} onClick={resumeDraft}>
+                {chrome.draftContinue}
+              </button>
+              <button
+                className="w-full py-3 rounded-2xl border border-[var(--line-strong)] text-charcoal/70 font-medium hover:bg-lightblue transition-colors"
+                onClick={discardDraft}
+              >
+                {chrome.draftRestart}
               </button>
             </div>
           </div>
