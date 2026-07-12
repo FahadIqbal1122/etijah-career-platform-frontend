@@ -219,6 +219,24 @@ export default function AdminPage() {
     })
   }, [])
 
+  // Supabase silently refreshes the access token in the background (persistSession +
+  // autoRefreshToken are on by default), but the httpOnly admin_session cookie used to
+  // authenticate proxy requests is only ever set once at login. Resync it on every
+  // refresh so the cookie doesn't go stale ~1h into a session while the client still
+  // thinks it's logged in.
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') && session?.access_token) {
+        fetch('/api/admin/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: session.access_token }),
+        })
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
   const fetchSubmissions = useCallback(async () => {
     setLoading(true)
     setFetchError('')

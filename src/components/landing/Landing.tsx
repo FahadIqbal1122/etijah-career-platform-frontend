@@ -116,7 +116,7 @@ export default function Landing() {
           <Wordmark size={30} />
           <div className="hidden md:flex items-center gap-7 text-sm font-medium text-charcoal/70">
             {c.nav.links.map((l: string, i: number) => {
-              const href = ['/assessment', '#how', '#who', '#pricing'][i] ?? '#'
+              const href = ['#how', '#report', '#who', '#pricing', '#about'][i] ?? '#'
               return href.startsWith('/')
                 ? <Link key={l} href={href} className="hover:text-teal">{l}</Link>
                 : <a key={l} href={href} className="hover:text-teal">{l}</a>
@@ -154,7 +154,7 @@ export default function Landing() {
                 <span>{c.hero.cta}</span>
                 <span className="cta-arrow">{arrow}</span>
               </Link>
-              <a href="#how" className="text-sm font-semibold text-charcoal hover:text-teal">{c.hero.secondary}</a>
+              <a href="#report" className="text-sm font-semibold text-charcoal hover:text-teal">{c.hero.secondary}</a>
             </div>
           </Reveal>
 
@@ -243,6 +243,29 @@ export default function Landing() {
         </Reveal>
       </Section>
 
+      {/* ── INSIDE YOUR REPORT ───────────────────────────────────────── */}
+      <Section id="report" eyebrow={c.insideReport.label} tint>
+        <Reveal>
+          <h2 className="section-h max-w-2xl">
+            <Highlight text={c.insideReport.headline} hl={c.insideReport.hl} />
+          </h2>
+          <p className="mt-4 text-charcoal/70 leading-relaxed max-w-xl">{c.insideReport.intro}</p>
+        </Reveal>
+        <Reveal>
+          <ul className="mt-8 grid sm:grid-cols-2 gap-3.5 max-w-3xl">
+            {c.insideReport.items.map((it: string) => (
+              <li key={it} className="flex items-start gap-2.5 card p-5 text-sm text-charcoal">
+                <span className="flex-none w-5 h-5 rounded-full bg-teal/15 text-teal text-[11px] font-black flex items-center justify-center mt-0.5">✓</span>
+                {it}
+              </li>
+            ))}
+          </ul>
+        </Reveal>
+        <Reveal className="mt-8 flex justify-center">
+          <a href="#pricing" className="cta cta-outline">{c.insideReport.cta}</a>
+        </Reveal>
+      </Section>
+
       {/* ── WHO IT'S FOR ─────────────────────────────────────────────── */}
       <Section id="who" eyebrow={c.who.label}>
         <Reveal><h2 className="section-h max-w-3xl"><Highlight text={c.who.headline} hl={c.who.hl} /></h2></Reveal>
@@ -258,7 +281,7 @@ export default function Landing() {
       </Section>
 
       {/* ── HERITAGE / PROOF (dark charcoal) ─────────────────────────── */}
-      <section className="sec-charcoal">
+      <section id="about" className="sec-charcoal scroll-mt-20">
         <div className="max-w-6xl mx-auto px-5 py-16">
           <Reveal>
             <p className="eyebrow !text-white/70">{c.heritage.label}</p>
@@ -347,6 +370,18 @@ export default function Landing() {
         <Reveal className="mt-8 text-sm text-charcoal/55 max-w-xl mx-auto text-center">{c.pricing.reassure}</Reveal>
       </Section>
 
+      {/* ── FOR INSTITUTIONS (compact band) ──────────────────────────── */}
+      <section className="bg-white border-y border-[var(--line)]">
+        <div className="max-w-4xl mx-auto px-5 py-14 text-center">
+          <Reveal>
+            <p className="eyebrow mb-3">{c.institutions.label}</p>
+            <h2 className="section-h max-w-2xl mx-auto">{c.institutions.headline}</h2>
+            <p className="mt-4 text-charcoal/70 leading-relaxed max-w-2xl mx-auto">{c.institutions.body}</p>
+            <a href="/contact" className="cta cta-outline mt-7 inline-flex">{c.institutions.cta}</a>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ── FAQ ──────────────────────────────────────────────────────── */}
       <Section eyebrow={locale === 'ar' ? 'الأسئلة الشائعة' : 'FAQ'} center>
         <Reveal><h2 className="section-h"><Highlight text={c.faq.headline} hl={c.faq.hl} /></h2></Reveal>
@@ -389,8 +424,8 @@ export default function Landing() {
               <a href={`mailto:${c.footer.email}`} className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.email}</a>
             </div>
           </div>
-          <FooterCol head={c.footer.colPlatform.head} links={c.footer.colPlatform.links} hrefs={['/assessment', '#how', '#pricing', '#who']} />
-          <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} />
+          <FooterCol head={c.footer.colPlatform.head} links={c.footer.colPlatform.links} hrefs={['/assessment', '#how', '#report', '#pricing']} />
+          <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about']} />
           <div>
             <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.colLegal.head}</p>
             <p className="text-sm text-white/85 font-semibold mb-2">{c.footer.copyright}</p>

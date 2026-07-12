@@ -278,17 +278,30 @@ html { scroll-behavior: smooth; }
 .save-exit:hover { color: var(--ink-dim); }
 
 /* ── reveal / finish takeover ──────────────────────────────────────────── */
+/* Opaque, full-screen — this is meant to fully replace the aside/question
+   view underneath (not layer transparently over it, which let the aside's
+   constellation + progress count show through and collide with this text). */
 .reveal {
   position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column;
   justify-content: center; align-items: center; padding: 0 30px 40px; text-align: center;
+  background: radial-gradient(120% 70% at 50% -10%, #188BDC 0%, var(--primary) 45%, var(--primary-deep) 100%);
   animation: revealIn calc(.55s / var(--motion)) cubic-bezier(.2, .7, .3, 1) both;
 }
-@keyframes revealIn { 0% { opacity: 1; } .5% { opacity: 0; } 100% { opacity: 1; } }
-.reveal-inner { max-width: 420px; margin: auto; }
-.reveal-spark { font-size: 26px; color: var(--primary); opacity: .55; margin-bottom: 16px; }
-.reveal-head { font-size: 32px; line-height: 1.16; font-weight: 900; color: var(--primary); letter-spacing: -0.02em; text-wrap: balance; }
+.assess-screen.is-reveal .reveal {
+  background: radial-gradient(130% 80% at 50% 12%, #2BE3C6 0%, var(--teal) 48%, #00A88C 100%);
+}
+@keyframes revealIn { from { opacity: 0; } to { opacity: 1; } }
+/* no auto vertical margins here — .reveal's own justify-content:center already
+   centers {reveal-inner + .cta} as one group; auto margins fought that and
+   stretched the gap between text and button to fill the whole viewport height */
+.reveal-inner { max-width: 420px; }
+/* text sits directly on the blue/teal gradient above (no white card behind
+   it, unlike the original phone-mockup prototype), so it needs light colors
+   for contrast — the previous blue/charcoal was designed for a white backing */
+.reveal-spark { font-size: 26px; color: #fff; opacity: .7; margin-bottom: 16px; }
+.reveal-head { font-size: 32px; line-height: 1.16; font-weight: 900; color: #fff; letter-spacing: -0.02em; text-wrap: balance; }
 [dir="rtl"] .reveal-head { letter-spacing: 0; line-height: 1.3; }
-.reveal-body { font-size: 16px; line-height: 1.5; font-weight: 500; color: rgba(65, 65, 66, 0.88); margin-top: 16px; max-width: 340px; margin-inline: auto; }
+.reveal-body { font-size: 16px; line-height: 1.5; font-weight: 500; color: rgba(255, 255, 255, 0.82); margin-top: 16px; max-width: 340px; margin-inline: auto; }
 .reveal .cta { margin-top: 28px; }
 .reveal.finish .reveal-spark { color: var(--accent); opacity: 1; }
 
@@ -398,6 +411,7 @@ html { scroll-behavior: smooth; }
 .hero-product-float { animation: hpFloat 7s ease-in-out infinite; }
 @keyframes hpFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 @media (prefers-reduced-motion: reduce) { .hero-product-float { animation: none; } }
+.cst-svg { width: 100%; height: 100%; display: block; overflow: visible; }
 .cst-node-pulse { animation: cstPulse 2.6s ease-in-out infinite; }
 @keyframes cstPulse { 0% { opacity: 1; } 50% { opacity: .5; } 100% { opacity: 1; } }
 
