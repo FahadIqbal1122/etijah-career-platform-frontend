@@ -2,6 +2,7 @@
   "form": {
     "next": "التالي →",
     "back": "→ رجوع",
+    "forward": "التالي",
     "submit": "إرسال",
     "submitting": "جارٍ الإرسال...",
     "selectUpTo": "اختر حتى {max}",

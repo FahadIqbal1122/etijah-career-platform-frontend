@@ -277,6 +277,20 @@ html { scroll-behavior: smooth; }
 }
 .save-exit:hover { color: var(--ink-dim); }
 
+/* back/forward step nav flanking save & exit — grid keeps the center label
+   centered whether or not the forward arrow is present. */
+.step-nav { margin-top: 16px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+.step-nav .save-exit { margin-top: 0; justify-self: center; }
+.step-arrow {
+  justify-self: start; width: 32px; height: 32px; border-radius: 999px; border: 1px solid var(--line-strong);
+  background: none; cursor: pointer; font-size: 15px; color: var(--ink-faint); transition: color .2s, border-color .2s, background .2s;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.step-arrow:last-child { justify-self: end; }
+.step-arrow:hover:not(:disabled) { color: var(--primary); border-color: var(--primary); background: var(--lightblue); }
+.step-arrow:disabled { opacity: .3; cursor: not-allowed; }
+.step-arrow-spacer { width: 32px; height: 32px; }
+
 /* ── reveal / finish takeover ──────────────────────────────────────────── */
 /* Opaque, full-screen — this is meant to fully replace the aside/question
    view underneath (not layer transparently over it, which let the aside's

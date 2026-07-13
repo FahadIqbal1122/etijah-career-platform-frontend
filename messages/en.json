@@ -2,6 +2,7 @@
   "form": {
     "next": "Next →",
     "back": "← Back",
+    "forward": "Forward",
     "submit": "Submit",
     "submitting": "Submitting...",
     "selectUpTo": "Select up to {max}",

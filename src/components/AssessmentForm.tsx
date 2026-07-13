@@ -2,9 +2,8 @@
 
 // AssessmentForm — Etijahi "UFUQ" gamified assessment.
 // One question at a time over the REAL question set (src/data/questions.ts):
-// a rising constellation, periodic encouragement "reveal" takeovers, and the
-// same skip logic / existing-user check / backend submit as the original form
-// (preserved in AssessmentForm.legacy.tsx).
+// a rising constellation, periodic encouragement "reveal" takeovers, skip
+// logic, existing-user check, and backend submit.
 
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
@@ -132,6 +131,9 @@ export default function AssessmentForm() {
 
   const [answers, setAnswers] = useState<Record<string, any>>({})
   const [index, setIndex] = useState(0)
+  // furthest position reached — lets a forward arrow reappear after going back
+  // without re-answering, instead of just re-triggering auto-advance.
+  const [maxIndex, setMaxIndex] = useState(0)
   const [phase, setPhase] = useState<'question' | 'reveal' | 'finish'>('question')
   const [picked, setPicked] = useState<any>(null)
   const [confirming, setConfirming] = useState(false)
@@ -172,6 +174,7 @@ export default function AssessmentForm() {
     revealedRef.current = new Set(draft.revealedFrameworks)
     setAnswers(draft.answers)
     setIndex(draft.index)
+    setMaxIndex(draft.index)
     setPhase('question')
     setDraft(null)
   }
@@ -239,8 +242,29 @@ export default function AssessmentForm() {
       setPhase('finish')
     } else {
       setIndex(next)
+      setMaxIndex(m => Math.max(m, next))
       setPhase('question')
     }
+    setEnterKey(k => k + 1)
+  }
+
+  // step back to the previous question without losing the answer already
+  // given there — lets someone correct a wrong tap instead of restarting.
+  function goBack() {
+    if (confirming || checking || index === 0) return
+    setPicked(null)
+    setIndex(i => Math.max(0, i - 1))
+    setPhase('question')
+    setEnterKey(k => k + 1)
+  }
+
+  // re-advance to the furthest point already reached, without re-answering
+  // the question currently shown (only available after goBack()).
+  function goForward() {
+    if (confirming || checking || index >= maxIndex) return
+    setPicked(null)
+    setIndex(i => Math.min(maxIndex, i + 1))
+    setPhase('question')
     setEnterKey(k => k + 1)
   }
 
@@ -310,6 +334,7 @@ export default function AssessmentForm() {
     if (next >= total) setPhase('finish')
     else {
       setIndex(next)
+      setMaxIndex(m => Math.max(m, next))
       setPhase('question')
     }
     setEnterKey(k => k + 1)
@@ -502,7 +527,16 @@ export default function AssessmentForm() {
                   {!checking && <span className="cta-arrow">{arrow}</span>}
                 </button>
               )}
-              <div style={{ textAlign: 'center' }}>
+              <div className="step-nav">
+                <button
+                  type="button"
+                  className="step-arrow"
+                  aria-label={tForm('back')}
+                  disabled={index === 0}
+                  onClick={goBack}
+                >
+                  {dir === 'rtl' ? '→' : '←'}
+                </button>
                 <button
                   className="save-exit"
                   onClick={() => {
@@ -512,6 +546,18 @@ export default function AssessmentForm() {
                 >
                   {chrome.saveExit}
                 </button>
+                {index < maxIndex ? (
+                  <button
+                    type="button"
+                    className="step-arrow"
+                    aria-label={tForm('forward')}
+                    onClick={goForward}
+                  >
+                    {dir === 'rtl' ? '←' : '→'}
+                  </button>
+                ) : (
+                  <span className="step-arrow-spacer" />
+                )}
               </div>
             </div>
               </div>
