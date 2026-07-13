@@ -415,6 +415,14 @@ html { scroll-behavior: smooth; }
 .cst-node-pulse { animation: cstPulse 2.6s ease-in-out infinite; }
 @keyframes cstPulse { 0% { opacity: 1; } 50% { opacity: .5; } 100% { opacity: 1; } }
 
+/* ── report generation — pulsing logomark while sections assemble ───────── */
+.report-loading-logo { animation: reportLoadingPulse 1.6s ease-in-out infinite; }
+@keyframes reportLoadingPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.12); opacity: .72; }
+}
+@media (prefers-reduced-motion: reduce) { .report-loading-logo { animation: none; } }
+
 /* ── problem section — highlighted payoff callout ───────────────────────── */
 .payoff {
   background: color-mix(in srgb, var(--accent) 8%, transparent);

@@ -31,25 +31,6 @@ function SectionHead({ icon, title, subtitle }: { icon: ReactNode; title: string
   )
 }
 
-function SkeletonCard({ rows = 3 }: { rows?: number }) {
-  return (
-    <div className="card p-6 animate-pulse">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-9 h-9 rounded-xl bg-lightblue shrink-0" />
-        <div className="space-y-2 flex-1">
-          <div className="h-4 bg-lightblue rounded w-1/3" />
-          <div className="h-3 bg-lightblue rounded w-1/2" />
-        </div>
-      </div>
-      <div className="space-y-3">
-        {Array.from({ length: rows }).map((_, i) => (
-          <div key={i} className="h-14 bg-lightblue rounded-xl" />
-        ))}
-      </div>
-    </div>
-  )
-}
-
 export default function ResultsPage() {
   const params = useParams()
   const id = params.id as string
@@ -57,6 +38,7 @@ export default function ResultsPage() {
   const [summary, setSummary] = useState<any>(null)
   const [error, setError] = useState('')
   const [jobs, setJobs] = useState<any[]>([])
+  const [jobsSuggestionsLoading, setJobsSuggestionsLoading] = useState(true)
   const [aiImpact, setAiImpact] = useState<any>(null)
   const [jobListings, setJobListings] = useState<any[]>([])
   const [aiLoading, setAiLoading] = useState(true)
@@ -86,6 +68,7 @@ export default function ResultsPage() {
     apiGet<any>(`/assessment/${id}/career-suggestions`)
       .then(data => setJobs(data.suggestions))
       .catch(() => {})
+      .finally(() => setJobsSuggestionsLoading(false))
     apiGet<any>(`/assessment/${id}/ai-impact`)
       .then(data => setAiImpact(data))
       .catch(() => {})
@@ -112,16 +95,19 @@ export default function ResultsPage() {
     )
   }
 
-  if (!summary) {
+  const allLoaded = !!summary && !jobsSuggestionsLoading && !aiLoading && !jobsLoading && !companiesLoading && !coursesLoading
+
+  if (!allLoaded) {
     // Match the assessment's blue gradient (brand-hero) instead of the light
     // brand-surface here — the assessment screen fades out on submit straight
     // into this screen, so a matching backdrop avoids a jarring color-flash
-    // hand-off between the two pages.
+    // hand-off between the two pages. We hold the whole report back behind
+    // one loader so sections don't pop in piecemeal as each request resolves.
     return (
       <div className="min-h-screen brand-hero flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <div className="w-7 h-7 border-2 border-white/40 border-t-white rounded-full animate-spin mx-auto" />
-          <p className="text-white/70 text-sm">Loading your results…</p>
+        <div className="text-center space-y-4">
+          <div className="report-loading-logo inline-flex"><Logomark size={44} tone="dark" glow /></div>
+          <p className="text-white/70 text-sm">Preparing your report…</p>
         </div>
       </div>
     )
@@ -331,9 +317,7 @@ export default function ResultsPage() {
         )}
 
         {/* Live Job Postings */}
-        {jobsLoading ? (
-          <SkeletonCard rows={3} />
-        ) : jobListings.length > 0 ? (
+        {jobListings.length > 0 ? (
           <div className="card p-5">
             <SectionHead
               title="Live Job Postings"
@@ -370,9 +354,7 @@ export default function ResultsPage() {
         ) : null}
 
         {/* AI Impact */}
-        {aiLoading ? (
-          <SkeletonCard rows={4} />
-        ) : aiImpact ? (
+        {aiImpact ? (
           <div className="card p-5">
             <SectionHead
               title="AI Impact on Your Careers"
@@ -414,9 +396,7 @@ export default function ResultsPage() {
         ) : null}
 
         {/* Course Recommendations */}
-        {coursesLoading ? (
-          <SkeletonCard rows={3} />
-        ) : courses.length > 0 ? (
+        {courses.length > 0 ? (
           <div className="card p-5">
             <SectionHead
               title="Recommended Courses"
@@ -446,9 +426,7 @@ export default function ResultsPage() {
         ) : null}
 
         {/* Company Target List */}
-        {companiesLoading ? (
-          <SkeletonCard rows={3} />
-        ) : companies.length > 0 ? (
+        {companies.length > 0 ? (
           <div className="card p-5">
             <SectionHead
               title="Companies to Target"
