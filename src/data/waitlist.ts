@@ -1,0 +1,206 @@
+// Waitlist page copy — bilingual, mirrors the structure of src/data/landing.ts.
+/* eslint-disable */
+export const W = {
+  en: {
+    nav: { tagline: 'by Etijah Coaching & Consulting' },
+    hero: {
+      eyebrow: 'Launching Soon',
+      headline: ['Your direction is', 'almost ready.'],
+      hl: 'almost ready',
+      sub: 'Etijahi is a new AI career companion built on 15 years of real coaching across the GCC. We’re putting the final touches on it — leave your email and be first through the door when we open, plus get early updates on how it works.',
+      formLabel: 'Email address',
+      placeholder: 'you@example.com',
+      cta: 'Join the waiting list',
+      ctaLoading: 'Joining…',
+      trust: 'No spam, ever. Just a note the day we launch.',
+      stats: [
+        { num: '15+', label: 'Years of GCC Coaching' },
+        { num: '88,540+', label: 'Lives Impacted' },
+        { num: '90%', label: 'Employed Within 6 Months' },
+        { num: 'GCC', label: 'Rooted in Saudi & Bahrain' },
+      ],
+    },
+    success: {
+      headline: 'You’re on the list.',
+      body: 'We’ll email you the moment Etijahi opens — and we’ll keep you posted along the way. In the meantime, here’s exactly what you signed up for.',
+    },
+    explainer: {
+      label: 'What you’re waiting for',
+      headline: 'Etijahi is not another personality quiz.',
+      hl: 'not another personality quiz',
+      body: 'Most career tools stop at a report you read once and forget. Etijahi is built by coaches who’ve spent 15 years asking GCC job seekers the questions that actually matter — then paired that experience with AI, so it’s personal, affordable, and available the moment you need it.',
+    },
+    how: {
+      label: 'Simple. Deep. Yours.',
+      headline: 'Here’s exactly how it will work.',
+      hl: 'exactly how it will work',
+      steps: [
+        { n: '01', title: 'Tell us who you are.', body: 'A 15-minute bilingual assessment built on five proven frameworks, adapted by Etijah’s coaches for the GCC. No jargon, no 200-question forms — just honest questions that surface what matters.' },
+        { n: '02', title: 'Get your full picture.', body: 'Your personality, strengths, and values come together with real GCC labour-market data in one plain-language report — written the way a coach would explain it, not the way a machine would print it.' },
+        { n: '03', title: 'Move — with support that stays.', body: 'Ranked career paths, AI-impact analysis, course recommendations, daily job matching — and a real Etijah coach one step away whenever you want a human in the room.' },
+      ],
+    },
+    insideReport: {
+      label: 'What you’ll actually get',
+      headline: 'Your report, before you’ve even joined.',
+      hl: 'before you’ve even joined',
+      intro: 'No mystery. When you’re in, this is what your Etijahi report will include:',
+      items: [
+        'Your personality profile — explained in plain language, not labels.',
+        'Your top strengths, and how they show up at work.',
+        'Your core values — and what they mean for the kind of work that will actually satisfy you.',
+        'Ranked career paths matched to the Saudi and Bahraini job markets.',
+        'An honest read on how AI is reshaping the roles you’re considering.',
+        'A clear next step — not just a score.',
+      ],
+    },
+    who: {
+      label: 'Built for the GCC',
+      headline: 'Who Etijahi is for.',
+      hl: 'for',
+      cards: [
+        { tag: 'Students & new grads', head: 'Figuring out where to start', body: 'You’re choosing a major or your first job and want a decision grounded in who you actually are, not just what pays well.' },
+        { tag: 'Career switchers', head: 'Ready for something else', body: 'You’ve built experience but it doesn’t fit anymore. Etijahi maps what transfers and where it takes you next.' },
+        { tag: 'Job seekers', head: 'Applying without a clear target', body: 'You’re sending applications everywhere. Etijahi narrows the field to roles that actually match your strengths.' },
+        { tag: 'Institutions & employers', head: 'Guiding many people at once', body: 'Universities and organisations can bring Etijahi to their students or staff at scale, backed by the same 15 years of coaching.' },
+      ],
+    },
+    heritage: {
+      label: 'Not built overnight',
+      headline: ['15 years of coaching,', 'now becoming software.'],
+      stats: [
+        { num: '15+', label: 'Years of GCC Coaching' },
+        { num: '88,540+', label: 'Lives Impacted' },
+        { num: '90%', label: 'Employed Within 6 Months' },
+        { num: '2', label: 'Countries, Rooted Locally' },
+      ],
+      body: [
+        'Etijah Coaching & Consulting has spent 15 years inside the Saudi and Bahraini job markets — in classrooms, career centres, and one-on-one coaching sessions with tens of thousands of people.',
+        'Etijahi is that experience, distilled into software: the same questions, the same market knowledge, the same honesty — available the moment you need it, not just when you can book a session.',
+      ],
+    },
+    faq: {
+      headline: 'Questions people ask us.',
+      hl: 'ask',
+      items: [
+        { q: 'When does Etijahi launch?', a: 'We’re in the final stretch of building and testing. Everyone on the waiting list will get an email the moment it opens — join now to be first in line.' },
+        { q: 'Will I be notified, or do I need to keep checking back?', a: 'You’ll get one email on launch day, and occasional short updates before then. Nothing else — no spam.' },
+        { q: 'Is it free?', a: 'Yes. The core assessment and report are free. A paid tier adds deeper coaching support for people who want more.' },
+        { q: 'Is my email shared with anyone?', a: 'No. Your email is stored only to notify you about Etijahi and is never sold or shared with third parties.' },
+        { q: 'Is this only for Saudi Arabia and Bahrain?', a: 'That’s where our market data and coaching are deepest today, but the assessment itself is useful anywhere in the GCC.' },
+      ],
+    },
+    finalCta: {
+      headline: 'Be first through the door.',
+      sub: 'Join the waiting list and get your direction the moment we open.',
+    },
+    footer: {
+      brandTagline: 'AI-powered career direction, grounded in 15 years of real GCC coaching.',
+      contactHead: 'Contact',
+      phone: '+974 3508 2446',
+      email: 'hello@etijah.com',
+      copyright: '© 2026 Etijah Coaching & Consulting. All rights reserved.',
+    },
+  },
+  ar: {
+    nav: { tagline: 'من إتجاه للتدريب والاستشارات' },
+    hero: {
+      eyebrow: 'الإطلاق قريباً',
+      headline: ['اتجاهك أصبح', 'على الأبواب.'],
+      hl: 'على الأبواب',
+      sub: 'إتجاهي رفيقك المهني الجديد المدعوم بالذكاء الاصطناعي، ومبني على 15 عاماً من التدريب الحقيقي في دول الخليج. نحن نضع اللمسات الأخيرة الآن — اترك بريدك الإلكتروني لتكون أول من يجرّبه عند الإطلاق، وتصلك تحديثات مبكرة عن طريقة عمله.',
+      formLabel: 'البريد الإلكتروني',
+      placeholder: 'you@example.com',
+      cta: 'انضم لقائمة الانتظار',
+      ctaLoading: 'جارٍ الانضمام…',
+      trust: 'لا رسائل مزعجة أبداً. فقط إشعار يوم الإطلاق.',
+      stats: [
+        { num: '+15', label: 'عاماً من التدريب الخليجي' },
+        { num: '+88,540', label: 'حياة تأثرت' },
+        { num: '90%', label: 'توظيف خلال 6 أشهر' },
+        { num: 'الخليج', label: 'متجذر في السعودية والبحرين' },
+      ],
+    },
+    success: {
+      headline: 'أنت الآن ضمن القائمة.',
+      body: 'سنراسلك فور إطلاق إتجاهي، وسنبقيك على اطلاع في الطريق. في الأثناء، إليك بالضبط ما اشتركت من أجله.',
+    },
+    explainer: {
+      label: 'ما الذي تنتظره',
+      headline: 'إتجاهي ليس اختبار شخصية آخر.',
+      hl: 'ليس اختبار شخصية آخر',
+      body: 'معظم أدوات المسار المهني تتوقف عند تقرير تقرأه مرة واحدة ثم تنساه. إتجاهي بناه مدربون قضوا 15 عاماً يطرحون على الباحثين عن عمل في الخليج الأسئلة التي تهم فعلاً — ثم جمعوا هذه الخبرة مع الذكاء الاصطناعي، ليكون شخصياً وبأسعار معقولة ومتاحاً في اللحظة التي تحتاجه فيها.',
+    },
+    how: {
+      label: 'بسيط. عميق. خاص بك.',
+      headline: 'هذه هي الطريقة بالضبط.',
+      hl: 'بالضبط',
+      steps: [
+        { n: '01', title: 'أخبرنا من أنت.', body: 'تقييم ثنائي اللغة مدته 15 دقيقة، مبني على خمسة أطر مثبتة، كيّفها مدربو إتجاه لسوق الخليج. بلا مصطلحات معقدة ولا استمارات من 200 سؤال — فقط أسئلة صادقة تكشف ما يهم.' },
+        { n: '02', title: 'احصل على صورتك الكاملة.', body: 'شخصيتك ونقاط قوتك وقيمك تجتمع مع بيانات سوق العمل الخليجي الحقيقية في تقرير واحد بلغة واضحة — مكتوب كما يشرحه مدرب، لا كما تطبعه آلة.' },
+        { n: '03', title: 'تحرّك — بدعم يبقى معك.', body: 'مسارات مهنية مرتبة، تحليل تأثير الذكاء الاصطناعي، توصيات دورات، مطابقة وظائف يومية — ومدرب حقيقي من إتجاه على بعد خطوة واحدة متى أردت وجود إنسان معك.' },
+      ],
+    },
+    insideReport: {
+      label: 'ما الذي ستحصل عليه فعلاً',
+      headline: 'تقريرك، قبل أن تنضم حتى.',
+      hl: 'قبل أن تنضم حتى',
+      intro: 'لا غموض. عندما تنضم، هذا ما سيتضمنه تقرير إتجاهي:',
+      items: [
+        'ملفك الشخصي — مشروح بلغة واضحة، لا بمجرد تصنيفات.',
+        'أبرز نقاط قوتك، وكيف تظهر في بيئة العمل.',
+        'قيمك الأساسية — وما تعنيه بالنسبة لنوع العمل الذي سيرضيك فعلاً.',
+        'مسارات مهنية مرتبة تناسب سوقي العمل السعودي والبحريني.',
+        'قراءة صادقة لكيفية إعادة تشكيل الذكاء الاصطناعي للأدوار التي تفكر فيها.',
+        'خطوة تالية واضحة — لا مجرد درجة.',
+      ],
+    },
+    who: {
+      label: 'مصمم لدول الخليج',
+      headline: 'لمن إتجاهي؟',
+      hl: 'لمن',
+      cards: [
+        { tag: 'الطلاب والخريجون الجدد', head: 'يبحثون عن نقطة البداية', body: 'تختار تخصصاً أو وظيفتك الأولى وتريد قراراً مبنياً على من أنت فعلاً، لا فقط على الراتب.' },
+        { tag: 'الباحثون عن تغيير مسارهم', head: 'مستعدون لشيء مختلف', body: 'بنيت خبرة لكنها لم تعد تناسبك. إتجاهي يحدد ما يمكن نقله وإلى أين يقودك بعد ذلك.' },
+        { tag: 'الباحثون عن عمل', head: 'يتقدمون بلا هدف واضح', body: 'ترسل طلبات في كل مكان. إتجاهي يضيّق البحث إلى الأدوار التي تناسب نقاط قوتك فعلاً.' },
+        { tag: 'المؤسسات وأصحاب العمل', head: 'توجيه عدد كبير دفعة واحدة', body: 'يمكن للجامعات والمؤسسات تقديم إتجاهي لطلابها أو موظفيها على نطاق واسع، مدعوماً بنفس 15 عاماً من التدريب.' },
+      ],
+    },
+    heritage: {
+      label: 'لم يُبنَ بين ليلة وضحاها',
+      headline: ['15 عاماً من التدريب،', 'تتحول الآن إلى برنامج.'],
+      stats: [
+        { num: '+15', label: 'عاماً من التدريب الخليجي' },
+        { num: '+88,540', label: 'حياة تأثرت' },
+        { num: '90%', label: 'توظيف خلال 6 أشهر' },
+        { num: '2', label: 'دولتان، جذور محلية' },
+      ],
+      body: [
+        'قضت إتجاه للتدريب والاستشارات 15 عاماً داخل سوقي العمل السعودي والبحريني — في الفصول الدراسية، ومراكز التوجيه المهني، وجلسات تدريب فردية مع عشرات الآلاف من الأشخاص.',
+        'إتجاهي هو تلك الخبرة، مكثّفة في برنامج: نفس الأسئلة، ونفس معرفة السوق، ونفس الصراحة — متاحة في اللحظة التي تحتاجها، لا فقط عند حجز جلسة.',
+      ],
+    },
+    faq: {
+      headline: 'أسئلة يطرحها الناس علينا.',
+      hl: 'يطرحها',
+      items: [
+        { q: 'متى يُطلق إتجاهي؟', a: 'نحن في المراحل الأخيرة من البناء والاختبار. سيصل بريد إلكتروني لكل من في قائمة الانتظار فور الإطلاق — انضم الآن لتكون أول من يعرف.' },
+        { q: 'هل سأُخطر أم يجب أن أتابع بنفسي؟', a: 'ستصلك رسالة واحدة يوم الإطلاق، وتحديثات قصيرة بين الحين والآخر قبل ذلك. لا شيء آخر — بلا إزعاج.' },
+        { q: 'هل هو مجاني؟', a: 'نعم. التقييم الأساسي والتقرير مجانيان. هناك باقة مدفوعة تضيف دعماً تدريبياً أعمق لمن يريد المزيد.' },
+        { q: 'هل يُشارك بريدي الإلكتروني مع أحد؟', a: 'لا. يُحفظ بريدك فقط لإشعارك بشأن إتجاهي، ولا يُباع أو يُشارك مع أي طرف ثالث أبداً.' },
+        { q: 'هل هذا مخصص فقط للسعودية والبحرين؟', a: 'بيانات السوق والتدريب لدينا أعمق ما تكون هناك حالياً، لكن التقييم نفسه مفيد في أي مكان بدول الخليج.' },
+      ],
+    },
+    finalCta: {
+      headline: 'كن أول من يدخل.',
+      sub: 'انضم لقائمة الانتظار واحصل على اتجاهك فور الإطلاق.',
+    },
+    footer: {
+      brandTagline: 'اتجاه مهني مدعوم بالذكاء الاصطناعي، متجذر في 15 عاماً من التدريب الخليجي الحقيقي.',
+      contactHead: 'تواصل معنا',
+      phone: '+974 3508 2446',
+      email: 'hello@etijah.com',
+      copyright: '© 2026 إتجاه للتدريب والاستشارات. جميع الحقوق محفوظة.',
+    },
+  },
+}

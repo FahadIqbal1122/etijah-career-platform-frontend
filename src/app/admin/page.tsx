@@ -87,6 +87,15 @@ type FeedbackEntry = {
   created_at: string
 }
 
+type WaitlistEntry = {
+  id: string
+  email: string
+  name: string | null
+  locale: string | null
+  source: string | null
+  created_at: string
+}
+
 type OnetLink = {
   id: string
   email: string
@@ -144,7 +153,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback' | 'coaching' | 'country' | 'courses' | 'market'>('submissions')
+  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market'>('submissions')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -163,6 +172,10 @@ export default function AdminPage() {
   const [feedbackLoading, setFeedbackLoading] = useState(false)
   const [feedbackError, setFeedbackError] = useState('')
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackEntry | null>(null)
+
+  const [waitlistList, setWaitlistList] = useState<WaitlistEntry[]>([])
+  const [waitlistLoading, setWaitlistLoading] = useState(false)
+  const [waitlistError, setWaitlistError] = useState('')
 
   const [onetLinks, setOnetLinks] = useState<OnetLink[]>([])
   const [onetLoading, setOnetLoading] = useState(false)
@@ -265,6 +278,20 @@ export default function AdminPage() {
     }
   }, [])
 
+  const fetchWaitlist = useCallback(async () => {
+    setWaitlistLoading(true)
+    setWaitlistError('')
+    try {
+      const res = await fetch('/api/admin/waitlist')
+      if (!res.ok) throw new Error('Failed to load waitlist')
+      setWaitlistList(await res.json())
+    } catch (err: any) {
+      setWaitlistError(err.message)
+    } finally {
+      setWaitlistLoading(false)
+    }
+  }, [])
+
   const fetchOnetLinks = useCallback(async () => {
     setOnetLoading(true)
     setOnetError('')
@@ -359,12 +386,13 @@ export default function AdminPage() {
       fetchSubmissions()
       fetchOnetLinks()
       fetchFeedback()
+      fetchWaitlist()
       fetchCoachingSessions()
       fetchCountryProfiles()
       fetchCourses()
       fetchMarketTrends()
     }
-  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends])
+  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -407,6 +435,7 @@ export default function AdminPage() {
     setSelectedOnet(null)
     setFeedbackList([])
     setSelectedFeedback(null)
+    setWaitlistList([])
     setCoachingSessions([])
   }
 
@@ -1262,7 +1291,7 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends() }}
+              onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends() }}
               className="text-sm text-primary hover:underline"
             >
               Refresh
@@ -1301,6 +1330,15 @@ export default function AdminPage() {
             Feedback
             {feedbackList.length > 0 && (
               <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{feedbackList.length}</span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('waitlist')}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'waitlist' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Waitlist
+            {waitlistList.length > 0 && (
+              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{waitlistList.length}</span>
             )}
           </button>
           <button
@@ -1483,6 +1521,52 @@ export default function AdminPage() {
                       {feedbackList.length === 0 && (
                         <tr>
                           <td colSpan={8} className="px-4 py-12 text-center text-slate-400">No feedback responses yet</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── Waitlist Tab ── */}
+        {activeTab === 'waitlist' && (
+          <>
+            {waitlistLoading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {waitlistError && <p className="text-red-500 text-sm text-center py-8">{waitlistError}</p>}
+            {!waitlistLoading && !waitlistError && (
+              <>
+                <p className="text-sm text-slate-400 mb-4">{waitlistList.length} signup{waitlistList.length !== 1 ? 's' : ''}</p>
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50">
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Locale</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Source</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {waitlistList.map((w, i) => (
+                        <tr key={w.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                          <td className="px-4 py-3 font-medium text-slate-800">{w.email}</td>
+                          <td className="px-4 py-3 text-slate-500">{w.name || '—'}</td>
+                          <td className="px-4 py-3 text-slate-500 uppercase">{w.locale || '—'}</td>
+                          <td className="px-4 py-3 text-slate-500">{w.source || '—'}</td>
+                          <td className="px-4 py-3 text-slate-400 text-xs">{new Date(w.created_at).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                      {waitlistList.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-12 text-center text-slate-400">No waitlist signups yet</td>
                         </tr>
                       )}
                     </tbody>
