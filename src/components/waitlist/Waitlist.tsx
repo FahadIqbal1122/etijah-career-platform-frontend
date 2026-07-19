@@ -118,11 +118,15 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
   tone?: 'light' | 'onteal'
 }) {
   const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
+  const [country, setCountry] = useState('')
+  const [status, setStatus] = useState('')
   const [state, setState] = useState<FormState>('idle')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+    if (!emailValid || !name.trim() || !country || !status) {
       setState('error')
       return
     }
@@ -131,7 +135,14 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
       const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), locale, source: 'waitlist_page' }),
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          name: name.trim(),
+          country,
+          status,
+          locale,
+          source: 'waitlist_page',
+        }),
       })
       if (!res.ok) throw new Error('failed')
       setState('done')
@@ -142,22 +153,55 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
   }
 
   const light = tone === 'light'
+  const fieldCls = `w-full text-sm rounded-full px-5 py-3.5 border transition-colors focus:outline-none focus:ring-2 ${
+    light
+      ? `bg-white text-charcoal border-[var(--line-strong)] focus:ring-teal/20`
+      : `bg-white/12 text-white placeholder:text-white/60 border-white/25 focus:ring-white/30`
+  }`
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
-      <div className="flex-1">
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3 w-full max-w-md">
+      <div>
         <label className="sr-only">{c.formLabel}</label>
         <input
           type="email"
           value={email}
           onChange={(e) => { setEmail(e.target.value); if (state === 'error') setState('idle') }}
           placeholder={c.placeholder}
-          className={`w-full text-sm rounded-full px-5 py-3.5 border transition-colors focus:outline-none focus:ring-2 ${
-            light
-              ? `bg-white text-charcoal border-[var(--line-strong)] focus:ring-teal/20 ${state === 'error' ? 'border-red-400' : ''}`
-              : `bg-white/12 text-white placeholder:text-white/60 border-white/25 focus:ring-white/30 ${state === 'error' ? 'border-red-300' : ''}`
-          }`}
+          className={fieldCls}
         />
+      </div>
+      <div>
+        <label className="sr-only">{c.namePlaceholder}</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => { setName(e.target.value); if (state === 'error') setState('idle') }}
+          placeholder={c.namePlaceholder}
+          className={fieldCls}
+        />
+      </div>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <select
+          value={country}
+          onChange={(e) => { setCountry(e.target.value); if (state === 'error') setState('idle') }}
+          className={`${fieldCls} flex-1`}
+        >
+          <option value="" disabled>{c.countryPlaceholder}</option>
+          {c.countries.map((opt: any) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        <select
+          value={status}
+          onChange={(e) => { setStatus(e.target.value); if (state === 'error') setState('idle') }}
+          className={`${fieldCls} flex-1`}
+        >
+          <option value="" disabled>{c.statusPlaceholder}</option>
+          {c.statuses.map((opt: any) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
       </div>
       <button
         type="submit"
@@ -168,8 +212,8 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
         {state === 'submitting' ? c.ctaLoading : c.cta}
       </button>
       {state === 'error' && (
-        <p className={`text-xs sm:absolute sm:mt-14 ${light ? 'text-red-500' : 'text-red-200'}`}>
-          {locale === 'ar' ? 'يرجى إدخال بريد إلكتروني صحيح.' : 'Please enter a valid email.'}
+        <p className={`text-xs ${light ? 'text-red-500' : 'text-red-200'}`}>
+          {locale === 'ar' ? 'يرجى تعبئة جميع الحقول ببريد إلكتروني صحيح.' : 'Please fill in all fields with a valid email.'}
         </p>
       )}
     </form>

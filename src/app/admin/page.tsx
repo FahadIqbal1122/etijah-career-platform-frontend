@@ -91,6 +91,8 @@ type WaitlistEntry = {
   id: string
   email: string
   name: string | null
+  country: string | null
+  status: string | null
   locale: string | null
   source: string | null
   created_at: string
@@ -1549,6 +1551,8 @@ export default function AdminPage() {
                       <tr className="border-b border-slate-100 bg-slate-50">
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Locale</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Source</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
@@ -1559,6 +1563,8 @@ export default function AdminPage() {
                         <tr key={w.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
                           <td className="px-4 py-3 font-medium text-slate-800">{w.email}</td>
                           <td className="px-4 py-3 text-slate-500">{w.name || '—'}</td>
+                          <td className="px-4 py-3 text-slate-500">{w.country || '—'}</td>
+                          <td className="px-4 py-3 text-slate-500">{w.status || '—'}</td>
                           <td className="px-4 py-3 text-slate-500 uppercase">{w.locale || '—'}</td>
                           <td className="px-4 py-3 text-slate-500">{w.source || '—'}</td>
                           <td className="px-4 py-3 text-slate-400 text-xs">{new Date(w.created_at).toLocaleDateString()}</td>
@@ -1566,7 +1572,7 @@ export default function AdminPage() {
                       ))}
                       {waitlistList.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="px-4 py-12 text-center text-slate-400">No waitlist signups yet</td>
+                          <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No waitlist signups yet</td>
                         </tr>
                       )}
                     </tbody>
