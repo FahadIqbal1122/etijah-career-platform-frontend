@@ -51,6 +51,8 @@ export default function ResultsPage() {
   const [saveError, setSaveError] = useState('')
   const [email, setEmail] = useState('')
   const [loggedIn, setLoggedIn] = useState(false)
+  const [reassessing, setReassessing] = useState(false)
+  const [reassessError, setReassessError] = useState('')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -111,6 +113,23 @@ export default function ResultsPage() {
         </div>
       </div>
     )
+  }
+
+  async function reassess() {
+    setReassessing(true)
+    setReassessError('')
+    try {
+      const [ai, jl] = await Promise.all([
+        apiGet<any>(`/assessment/${id}/ai-impact?force=true`),
+        apiGet<any>(`/assessment/${id}/job-listings?force=true`),
+      ])
+      setAiImpact(ai)
+      setJobListings(jl.jobs || [])
+    } catch (err: any) {
+      setReassessError(err.message || 'Failed to refresh — try again shortly')
+    } finally {
+      setReassessing(false)
+    }
   }
 
   async function saveJob(job: any, index: number) {
@@ -452,6 +471,22 @@ export default function ResultsPage() {
             </div>
           </div>
         ) : null}
+
+        {/* Reassess */}
+        <div className="flex flex-col items-center gap-2 pt-4">
+          <button
+            onClick={reassess}
+            disabled={reassessing}
+            className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full border border-[var(--line-strong)] text-charcoal/60 hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+          >
+            <svg className={`w-3.5 h-3.5 ${reassessing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            {reassessing ? 'Refreshing…' : 'Refresh AI impact & job data'}
+          </button>
+          <p className="text-[11px] text-charcoal/35">Pulls the latest market data — your personality profile stays the same</p>
+          {reassessError && <p className="text-xs text-rose-500">{reassessError}</p>}
+        </div>
 
         {/* Share */}
         <div className="flex flex-col items-center gap-2 pt-2 pb-4">
