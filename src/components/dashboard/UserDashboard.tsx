@@ -12,7 +12,7 @@ import { useRouter as useNavRouter } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useRouter, usePathname, Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
-import { apiAuthGet, apiAuthPatch, apiAuthDelete, apiGet, BASE_URL } from '@/lib/api'
+import { apiAuthGet, apiAuthPost, apiAuthPatch, apiAuthDelete, apiGet, BASE_URL } from '@/lib/api'
 import Logomark from '@/components/brand/Logomark'
 
 type Application = {
@@ -23,6 +23,8 @@ type Application = {
 type AssessmentSummary = {
   id: string; full_name: string; country: string; completed: boolean; created_at: string; top_type: string | null
 }
+type Plan = { plan_code: string | null; status: 'active' | 'expired' | 'free'; current_period_end: string | null }
+type Transaction = { order_ref: string; plan_code: string; amount: number; currency: string; status: string; created_at: string }
 
 const STAGES: { key: Application['status']; label: string }[] = [
   { key: 'saved', label: 'Saved' }, { key: 'applied', label: 'Applied' },
@@ -158,6 +160,9 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true)
   const [assessments, setAssessments] = useState<AssessmentSummary[]>([])
   const [applications, setApplications] = useState<Application[]>([])
+  const [plan, setPlan] = useState<Plan | null>(null)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [buying, setBuying] = useState(false)
   const [topMatch, setTopMatch] = useState<string | null>(null)
   const [notifs, setNotifs] = useState(NOTIF.map(n => n.on))
   const [active, setActive] = useState('home')
@@ -174,6 +179,8 @@ export default function UserDashboard() {
   useEffect(() => {
     if (!user) return
     apiAuthGet<Application[]>('/applications').then(setApplications).catch(() => {})
+    apiAuthGet<Plan>('/billing/plan').then(setPlan).catch(() => {})
+    apiAuthGet<Transaction[]>('/billing/transaction').then(setTransactions).catch(() => {})
     apiAuthGet<AssessmentSummary[]>('/assessment/my-assessments')
       .then(list => {
         const sorted = [...list].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
@@ -196,6 +203,22 @@ export default function UserDashboard() {
     catch (e: unknown) { setError(e instanceof Error ? e.message : 'Failed to remove') }
   }
   async function handleLogout() { await supabase.auth.signOut(); navRouter.push(`/${locale}/login`) }
+  async function handleBuyPlan() {
+    setBuying(true)
+    try {
+      // TODO: replace with the real plan catalog (code/name/amount/currency) once pricing is finalized
+      const { checkout_url } = await apiAuthPost<{ checkout_url: string }>('/billing/checkout', {
+        plan_code: 'premium_monthly',
+        plan_name: 'Etijahi Premium (Monthly)',
+        amount: 49,
+        currency: 'BHD',
+      })
+      window.location.href = checkout_url
+    } catch (e: unknown) {
+      setBuying(false)
+      setError(e instanceof Error ? e.message : 'Could not start checkout')
+    }
+  }
 
   function go(id: string) {
     setActive(id)
@@ -344,7 +367,7 @@ export default function UserDashboard() {
             </div>
           </section>
 
-          {/* billing (preview) */}
+          {/* billing (preview) — replaced by real Buy Plan flow below, kept for reference
           <section id="sec-billing" className="card p-6">
             <div className="flex items-center gap-2 mb-4"><h3 className="font-bold text-charcoal">{t.billingHead}</h3><PreviewTag label={t.preview} /></div>
             <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -358,6 +381,40 @@ export default function UserDashboard() {
               <p className="text-xs text-charcoal/45 mb-2">{t.paymentLabel}</p>
               <div className="flex flex-wrap gap-2">{PAYMENTS.map(p => <span key={p} className="chip !text-[11px] !py-0.5">{p}</span>)}</div>
             </div>
+          </section>
+          */}
+
+          <section id="sec-billing" className="card p-6">
+            <div className="flex items-center gap-2 mb-4"><h3 className="font-bold text-charcoal">{t.billingHead}</h3></div>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <p className="font-bold text-charcoal">{t.currentPlan}: {plan?.status === 'active' ? plan.plan_code : t.explorer}</p>
+                <p className="text-2xl font-extrabold text-primary mt-1">
+                  {plan?.status === 'active' && plan.current_period_end
+                    ? <span className="text-sm font-medium text-charcoal/60">Renews {new Date(plan.current_period_end).toLocaleDateString()}</span>
+                    : <>{t.free}<span className="text-xs font-medium text-charcoal/40 ms-1">{t.always}</span></>}
+                </p>
+              </div>
+              {plan?.status !== 'active' && (
+                <button onClick={handleBuyPlan} disabled={buying}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-50">
+                  {buying ? '…' : 'Buy Plan'}
+                </button>
+              )}
+            </div>
+            {transactions.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-[var(--line)]">
+                <p className="text-xs text-charcoal/45 mb-2">Payment history</p>
+                <div className="space-y-1">
+                  {transactions.map(txn => (
+                    <div key={txn.order_ref} className="flex justify-between text-xs text-charcoal/70">
+                      <span>{txn.plan_code} · {txn.status}</span>
+                      <span>{txn.amount} {txn.currency} · {new Date(txn.created_at).toLocaleDateString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
 
           {/* notifications (preview) */}
