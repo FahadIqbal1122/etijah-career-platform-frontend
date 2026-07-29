@@ -1,5 +1,8 @@
 // AUTO-PORTED verbatim from Design/src/landing-content.jsx — approved bilingual copy.
 // AR is the primary/legally-binding version for KSA; do not paraphrase.
+// Updated to v5 draft (July 2026): adds "What is Etijahi?", "Not Just What Pays", and
+// "Built for the Gulf" sections; adds the Launchpad subscription tier + coaching add-on;
+// generalises Saudi/Bahrain-specific language to Gulf-wide framing per team decision.
 /* eslint-disable */
 export const L = {
   en: {
@@ -16,11 +19,13 @@ export const L = {
     },
     // ── HERO ──────────────────────────────────────────────────────────
     hero: {
+      eyebrow: 'While everyone else seems sure… you’re still asking which way to go?',
       headline: ['You don’t need another test.', 'You need a direction.'],
       hl: 'direction',
-      sub: 'Etijahi is built on 15 years of real coaching across the GCC — enhanced with AI to make that experience personal, affordable, and available the moment you need it. Discover who you are, where you fit, and exactly how to get there.',
+      sub: 'That hesitation isn’t a weakness. It’s the right question, and it deserves more than a personality quiz. We put 15 years of real career guidance from across the Gulf in your hands, grounded in the customs and traditions of the region, with the clarity to see which paths will still be standing as AI reshapes the world of work. You won’t figure it out alone.',
       trust: '15 years of coaching, now in your hands. · Etijahi — by Etijah Coaching & Consulting',
       cta: 'Find My Direction',
+      microcopy: 'Start at no cost · 15 minutes · No card needed',
       secondary: 'See a sample report ↓',
       preview: {
         eyebrow: 'Discovering you',
@@ -38,37 +43,48 @@ export const L = {
         { num: '15+', label: 'Years of GCC Coaching' },
         { num: '88,540+', label: 'Lives Impacted' },
         { num: '90%', label: 'Employed Within 6 Months' },
-        { num: 'GCC', label: 'Rooted in Saudi & Bahrain' },
+        { num: 'GCC', label: 'Built for the Gulf, by people from it' },
       ],
     },
-    // ── SECTION 3 — PROBLEM ───────────────────────────────────────────
+    // ── SECTION 3 — WHAT IS ETIJAHI? ──────────────────────────────────
+    whatIsIt: {
+      label: 'What is Etijahi?',
+      blocks: [
+        { head: 'What it is', body: 'Etijahi is your personal career guide in digital form. It helps you understand yourself, find the paths that genuinely fit, and see how AI is already reshaping each one, so you can choose with your eyes open.' },
+        { head: 'What makes it different', body: 'Any tool can run a test. We do something harder: we read your results through 15 years of real career guidance and show you how AI is reshaping every path in front of you — which roles are growing and which are quietly disappearing — so you don’t pour years into a major or career your market won’t need.' },
+        { head: 'What you get', body: 'A 15-minute assessment → a clear report: your strengths, your values, the careers that fit you best, and an honest AI-impact outlook for each → then real help getting there — job matches in your market, a stronger CV, interview practice, and a real coach whenever you want one.' },
+      ],
+    },
+    // ── SECTION 3B — NOT JUST WHAT PAYS ───────────────────────────────
+    notJustWhatPays: {
+      headline: ['Not just what pays.', 'What fits who you are.'],
+      hl: 'who you are',
+      body: 'A bigger salary won’t help if the work quietly drains you. We read your values — meaning, stability, freedom, impact — alongside your strengths, so the direction we point you toward isn’t just employable. It’s yours.',
+    },
+    // ── SECTION 4 — PROBLEM ───────────────────────────────────────────
     problem: {
       label: 'Sound Familiar?',
-      headline: ['Most career tools stop at the report.', 'Etijahi starts there.'],
-      hl: 'starts there',
-      intro: 'You’ve probably taken a personality test before. You got a report, read it once, and life moved on.',
-      lead: 'The problem was never the test — it’s that the results weren’t connected to anything real.',
-      items: [
-        'The Saudi or Bahraini job market',
-        'Nationalisation rates in your field',
-        'How AI is already reshaping the roles you’re considering',
-        'What you actually value in a career',
+      headline: ['Choosing a path is hard enough.', 'Choosing one AI won’t erase is harder.'],
+      hl: 'AI won’t erase',
+      body: [
+        'You’ve probably taken a personality test before. You got the report, read it, closed the page, and went on with your life. Simply because it wasn’t connected to your reality.',
+        'It never tied you to the real job market you actually live in and face every day, nor to how nationalisation is reshaping the opportunities in your field. And above all, it overlooked the fastest force redrawing careers right now: artificial intelligence, quietly rewriting the rules of the game, revealing which roles are gaining value and which are quietly fading. Meanwhile, many guidance tools are still steering people toward paths that have already begun to shrink.',
+        'A label isn’t a direction, and yesterday’s advice won’t prepare you for tomorrow’s market. Most tools hand you a report and wish you luck. We don’t. We read your strengths against where your world is actually heading, and stay beside you while you get there. That’s why we built Etijahi.',
       ],
-      payoff: 'Etijahi was built by coaches who have spent 15 years asking people the questions that matter. It connects your personality, strengths, and values to your real market — then stays with you while you act on it.',
     },
-    // ── SECTION 4 — HOW IT WORKS ──────────────────────────────────────
+    // ── SECTION 5 — HOW IT WORKS ──────────────────────────────────────
     how: {
-      label: 'Simple. Deep. Yours.',
-      headline: 'Three steps between you and a clear direction.',
-      hl: 'a clear direction',
+      label: 'Simple. Deep. Customised.',
+      headline: 'Three steps between you and a direction you can trust.',
+      hl: 'you can trust',
       steps: [
-        { n: '01', title: 'Tell us who you are.', body: 'A 15-minute bilingual assessment built on five proven frameworks, adapted by Etijah’s coaches for the GCC. No jargon, no 200-question forms — just honest questions that surface what matters.' },
-        { n: '02', title: 'Get your full picture.', body: 'Your personality, strengths, and values come together with real GCC labour-market data in one plain-language report — written the way a coach would explain it, not the way a machine would print it.' },
-        { n: '03', title: 'Move — with support that stays.', body: 'Ranked career paths, AI-impact analysis, course recommendations, daily job matching — and a real Etijah coach one step away whenever you want a human in the room. Etijahi walks with you past the first step.' },
+        { n: '01', title: 'Tell us who you are.', body: 'A 15-minute assessment, available in Arabic and English, built on five proven frameworks, adapted by our own coaches for the realities of the Gulf. No jargon, no 200-question forms — just honest questions that surface what matters.' },
+        { n: '02', title: 'See your full picture. And where it’s heading.', body: 'Your personality, strengths, and values come together with real labour-market data from your region, and an honest read on how AI is reshaping each path, in one plain-language report — written the way a coach would explain it, not the way a machine would print it.' },
+        { n: '03', title: 'Move with support that stays.', body: 'Career paths ranked by fit, a future-proof outlook for each, course recommendations, daily job matches in your market — and a real coach one step away whenever you want a human in the room. We walk with you past the first step.' },
       ],
       cta: 'Start my assessment →',
     },
-    // ── SECTION 5 — INSIDE YOUR REPORT ────────────────────────────────
+    // ── SECTION 6 — INSIDE YOUR REPORT ────────────────────────────────
     insideReport: {
       label: 'What you actually get',
       headline: 'See your report before you take the assessment.',
@@ -79,45 +95,58 @@ export const L = {
         'Your top strengths, and how they show up at work.',
         'Your core values — and what they mean for the kind of work that will actually satisfy you.',
         'Your top 5 career paths, ranked by fit.',
-        'An AI-impact outlook for each path — what’s changing, and which human skills grow in value.',
-        'Nationalisation alignment — where Saudization or Bahrainisation works in your favour.',
+        'An AI-impact outlook for each path — which roles are growing, which are quietly disappearing, and which human skills gain value.',
+        'Nationalisation intelligence — how nationalisation shapes hiring in your market, and where your strongest openings are.',
         'A learning roadmap — the courses and certifications worth your time.',
         'Clear next steps — because a report should be a beginning, not an ending.',
       ],
       cta: 'See a sample report →',
     },
-    // ── SECTION 6 — WHO IT'S FOR ──────────────────────────────────────
+    // ── SECTION 7 — BUILT FOR THE GULF ────────────────────────────────
+    builtForGulf: {
+      label: 'Not translated for the Gulf. Born in it.',
+      headline: 'Global tests get adapted for this market. We’re from it.',
+      localisationLine: 'Built by people of the Gulf, for everyone who’s building a future here.',
+      pillars: [
+        { title: 'Local market intelligence', body: 'Real, continuously updated data on your country’s labour market — deepest where we’ve worked longest, expanding across the GCC.' },
+        { title: 'The nationalisation factor is built in', body: 'We account for how nationalisation shapes hiring across the GCC, so whoever you are — national or expat — you target the roles where you have the strongest edge.' },
+        { title: 'Vision-aligned', body: 'Career paths are mapped to the national visions reshaping the Gulf’s economies.' },
+        { title: 'Available in both languages, by design', body: 'Every question, every report, every word is available in Arabic and English from day one.' },
+      ],
+    },
+    // ── SECTION 8 — WHO IT'S FOR ──────────────────────────────────────
     who: {
       label: 'Who is Etijahi for?',
       headline: 'Built for every turning point in a career.',
       hl: 'every turning point',
       cards: [
-        { tag: 'Fresh Graduates (0–2 years)', head: 'You did everything right. So why is no one replying?', body: 'Sending applications into silence is exhausting. Etijahi shows you which roles genuinely fit you, what employers in Saudi Arabia, Bahrain, and across the GCC are actually screening for, and how to present your real strengths — so you stop guessing and start interviewing.' },
-        { tag: 'Career Changers (30s–40s)', head: 'Good at your job. Not sure it was ever yours.', body: 'A pivot in your 30s or 40s isn’t a step back — it’s one of the bravest professional moves there is. Etijahi maps the skills you’ve spent years building to new paths that genuinely fit you, and shows you how to make the move with evidence, not guesswork.' },
-        { tag: 'University Students', head: 'Halfway through your degree, and something feels off.', body: 'Etijahi helps you understand whether it’s the major, the career it leads to, or just the uncertainty everyone feels — and if a change makes sense, exactly how to navigate it without losing what you’ve built.' },
-        { tag: 'High School Students (16–18)', head: 'The biggest decision of your life so far — made clearer.', body: 'Choosing a major at 17 shouldn’t be a guess. Etijahi helps you understand your strengths and interests before you commit, so you choose a path that fits who you are — not just what sounds impressive.' },
+        { tag: 'Fresh Graduates (0–2 years)', head: 'You did everything right. So why is no one replying?', body: 'Sending applications into silence is exhausting. Etijahi shows you which roles genuinely fit you, what employers in your market are actually screening for, and how to present your real strengths — so you stop guessing and start interviewing.' },
+        { tag: 'Career Changers (30s–40s)', head: 'Good at your job. Not sure it was ever yours.', body: 'A pivot in your 30s or 40s isn’t a step back — it’s one of the bravest professional moves there is. Etijahi maps the skills you’ve spent years building to new paths that genuinely fit you, factors in where AI is taking each one, and shows you how to make the move with evidence, not guesswork.' },
+        { tag: 'University Students', head: 'Halfway through your degree, and something feels off.', body: 'Etijahi helps you understand whether it’s the major, the career it leads to, or just the uncertainty everyone feels — and whether that path still has a future as AI reshapes your field. If a change makes sense, Etijahi shows you exactly how to navigate it.' },
+        { tag: 'High School Students (16–18)', head: 'The biggest decision of your life so far — made clearer.', body: 'Choosing a major at 17 shouldn’t be a guess, especially when AI is already changing what these fields look like. Etijahi helps you understand your strengths and interests, and how each path is shifting right now, so the decision is made with clarity, not pressure. And for parents: a report you can look through together, so the conversation starts from understanding.' },
       ],
     },
-    // ── SECTION 7 — SOCIAL PROOF / HERITAGE ───────────────────────────
+    // ── SECTION 9 — SOCIAL PROOF / HERITAGE ───────────────────────────
     heritage: {
       label: 'The proof is in the people',
-      headline: ['Not another AI startup.', 'Fifteen years of coaching, made digital.'],
+      headline: ['For 15 years, we’ve helped people find their direction.', 'Etijahi is that experience, in your hands.'],
       stats: [
         { num: '2010', label: 'Founded' },
         { num: '15+', label: 'Years of GCC Coaching' },
         { num: '88,540+', label: 'Lives Impacted' },
-        { num: 'Trusted', label: 'By Governments, Universities & Multinationals' },
+        { num: 'Trusted', label: 'By Governments, Universities & Multinationals Across the Region' },
       ],
       body: [
-        'Etijahi is by Etijah Coaching & Consulting — a social enterprise that has spent 15 years helping people across the GCC find their direction: students choosing a first major, professionals navigating a pivot, women stepping into leadership.',
-        'Everything the platform does is shaped by what our coaches have learned from tens of thousands of real conversations. AI gives that experience scale. The coaching gives it a soul.',
+        'We are Etijah Coaching & Consulting, a social enterprise from the Gulf, working across the GCC. For 15 years, we’ve sat with people at every stage of a career: students choosing a first major, graduates chasing a first offer, professionals rethinking their path, women stepping into leadership — alongside the employers, universities, and organisations that shape their opportunities.',
+        'Because we work with them every day, we see what’s changing before the reports do — and we’re continuously watching how AI is redrawing which careers will matter most. We built Etijahi so the foresight and guidance we’ve spent 15 years developing wouldn’t stay inside a coaching room. It would be in your hands the moment you need it.',
+        'AI gives that experience scale. The guidance gives it a soul.',
       ],
       testimonials: [
         { quote: 'Before Etijahi, I was applying for any job I could find. After my report, I knew exactly what roles to target — and why. I had three interviews in two weeks.', name: '[Name]', role: 'Fresh Graduate, Riyadh', initials: 'F' },
         { quote: 'I spent 8 years in banking and knew I wanted out. Etijahi helped me see that my skills translated perfectly into financial consulting. I needed someone to show me what I couldn’t see myself.', name: '[Name]', role: 'Career Changer, Manama', initials: 'C' },
       ],
     },
-    // ── SECTION 8 — PRICING ───────────────────────────────────────────
+    // ── SECTION 10 — PRICING ──────────────────────────────────────────
     pricing: {
       label: 'Start at no cost. Go further when you’re ready.',
       headline: 'Every Etijahi journey starts the same way — nothing to pay, everything to gain.',
@@ -130,7 +159,7 @@ export const L = {
         bullets: [
           'The full 15-minute assessment across five frameworks',
           'Your personality profile, top strengths, and core values — in plain language',
-          'Your top 5 matched career paths, with GCC context',
+          'Your top 5 matched career paths, with context for your market',
           'A preview of AI’s impact on your top 2 matches',
           'A shareable results link for family or mentors',
         ],
@@ -145,42 +174,61 @@ export const L = {
         bullets: [
           'Everything in Explorer',
           'The full AI-impact deep dive — which tasks in your target roles are changing, and which human skills gain value',
-          'A 1–3 year outlook for your matched roles in the Saudi and Bahraini markets',
+          'A 1–3 year outlook for your matched roles in your market',
           'Personalised course and certification recommendations',
           'Your top-20 target company list, matched to your profile',
         ],
         cta: 'Unlock Full Report',
       },
+      subscription: {
+        label: 'Launchpad',
+        price: '99 SAR',
+        priceSub: '/month',
+        priceAlt: 'or 799 SAR/year — save 33%',
+        for: 'You’re actively job hunting and want daily support on your side.',
+        bullets: [
+          'Everything in Pathfinder',
+          'Your CV rebuilt around your real strengths, with ATS keyword optimisation',
+          'Daily matched job opportunities to your dashboard and WhatsApp',
+          'Your full target list (50+ companies) with personalised outreach emails',
+          'Unlimited interview practice with role-specific questions and scored feedback',
+        ],
+        cta: 'Subscribe Now',
+      },
+      addOn: {
+        title: 'Add a 1:1 session with a real coach to any tier.',
+        body: 'To interpret your results, pressure-test a decision, or plan your move — because sometimes you just want a person in the room.',
+      },
       reassure: 'Not sure which tier is right? Begin with Explorer — no cost, no card, no commitment. Your results will make the next step obvious.',
     },
-    // ── SECTION 9 — FOR INSTITUTIONS ──────────────────────────────────
+    // ── SECTION 11 — FOR INSTITUTIONS ─────────────────────────────────
     institutions: {
       label: 'For institutions',
-      headline: 'Guiding young people is where Etijah began. Etijahi helps your institution do it at scale.',
-      body: 'If you’re a university career centre, a school, or a youth organisation, Etijahi gives every one of your students a personal career guide — bilingual assessments, GCC-specific reports, and group dashboards to track progress. All built on the same programmes Etijah has delivered with governments, universities, and foundations across the region for 15 years.',
+      headline: 'You can’t sit one-on-one with every student. Now you don’t have to.',
+      body: 'Etijahi gives every student a personal career guide — a bilingual assessment, a report built for the Gulf, and an honest read on how AI is reshaping their options. It lifts the repetitive load off your team and gives you cohort-level dashboards to prove employability outcomes to your leadership. The same guidance we’ve delivered with governments, universities, and foundations for 15 years — now working for every student you serve.',
       cta: 'Partner with us →',
     },
-    // ── SECTION 10 — FAQ ───────────────────────────────────────────────
+    // ── SECTION 12 — FAQ ───────────────────────────────────────────────
     faq: {
       headline: 'Questions? Good. That’s where clarity starts.',
       hl: 'clarity starts',
       items: [
         { q: 'How long does the assessment take?', a: 'Most people finish in 12–15 minutes. It’s designed to feel like a conversation, not a 200-question HR form.' },
         { q: 'Is Etijahi the same as Etijah?', a: 'Etijahi is Etijah’s digital career platform. For 15 years, Etijah has guided organisations, communities, and individuals across the GCC; Etijahi brings that same guidance expertise directly to you — starting with a complimentary assessment.' },
-        { q: 'Is everything available in Arabic?', a: 'Fully. Etijahi is bilingual from day one — the platform, the assessment, and your report are all available in Arabic and English.' },
+        { q: 'Is everything available in Arabic?', a: 'Fully. Etijahi is available in Arabic and English from day one — the platform, the assessment, and your report.' },
         { q: 'Is a real human involved, or is it all AI?', a: 'Both. The platform is designed and supervised by Etijah’s coaches, the frameworks come from 15 years of real coaching, and you can add a 1:1 session with a real coach whenever you want a human in the conversation.' },
-        { q: 'Is my data private and secure?', a: 'Your data is stored securely in the Middle East region and is never sold to third parties. Your profile and results belong to you.' },
+        { q: 'Is my data private and secure?', a: 'Yes. Your data is stored securely and is never sold to third parties. Your profile and results belong to you.' },
         { q: 'I already know what career I want. Is Etijahi still useful?', a: 'Often the hardest part isn’t choosing the direction — it’s getting there. The job matching, CV analysis, interview practice, and AI-impact outlook are built exactly for people who know where they’re going and need momentum.' },
-        { q: 'I’m in the GCC but outside Saudi Arabia or Bahrain. Is Etijahi for me?', a: 'Yes. Etijahi is built for the whole GCC, with career context for your market. Our deepest local intelligence covers Saudi Arabia and Bahrain — where Etijah has guided people for 15 years — and coverage across the rest of the GCC is expanding, with international markets on the roadmap.' },
+        { q: 'Based elsewhere in the GCC? Is Etijahi suitable for me?', a: 'Yes. Etijahi is built for the whole GCC, with career context for your market. Our local intelligence is deepest where we’ve worked longest, and coverage across the rest of the GCC is expanding, with international markets on the roadmap.' },
       ],
     },
-    // ── SECTION 11 — FINAL CTA ────────────────────────────────────────
+    // ── SECTION 13 — FINAL CTA ────────────────────────────────────────
     finalCta: {
       headline: 'Your direction is closer than you think.',
       sub: 'No cost. Fifteen minutes. And it might change where everything is heading.',
       cta: 'Find My Direction',
       arrow: '→',
-      trust: 'Etijahi — by Etijah Coaching & Consulting · 15 years of real coaching impact · Your data stays in the Middle East',
+      trust: 'Etijahi — by Etijah Coaching & Consulting · 15 years of real coaching impact · Your data stays in the Gulf',
     },
     // ── FOOTER ────────────────────────────────────────────────────────
     footer: {
@@ -191,7 +239,7 @@ export const L = {
       phone: '3508 2446',
       email: 'projects@etijahcoaching.com',
       colPlatform: { head: 'Platform', links: ['Take the Assessment', 'How It Works', 'Inside Your Report', 'Pricing'] },
-      colCompany: { head: 'Company', links: ['About Etijah', 'For Institutions', 'Career Insights (Blog)', 'Contact Us'] },
+      colCompany: { head: 'Company', links: ['About Etijah', 'Etijah Coaching & Consulting', 'For Institutions', 'Career Insights (Blog)', 'Contact Us'] },
       colLegal: { head: 'Legal & Social' },
       copyright: '© 2026 Etijahi · All rights reserved',
       legalLinks: 'Terms & Conditions | Privacy Policy | Cookie Policy',
@@ -213,11 +261,13 @@ export const L = {
       arrow: '←',
     },
     hero: {
+      eyebrow: 'بينما يبدو الجميع واثقين من خطواتهم… ما زلت تتساءل: إلى أين أتجه؟',
       headline: ['لست بحاجة إلى اختبار آخر.', 'أنت بحاجة إلى اتجاه.'],
       hl: 'اتجاه',
-      sub: 'اتجاهي مبنية على ١٥ عاماً من الإرشاد الحقيقي في الخليج — معزَّزة بالذكاء الاصطناعي لتجعل هذه الخبرة شخصية، وميسورة، ومتاحة لحظة حاجتك إليها. اكتشف من أنت، وأين مكانك، وكيف تصل إليه بالضبط.',
+      sub: 'حيرتك ليست ضعفاً، بل هو السؤال الصحيح الذي تبحث عنه، وهو سؤال يستحق إجابة أعمق بكثير من مجرد "اختبار شخصية" عابر. لقد وضعنا بين يديك خلاصة ١٥ عاماً من التوجيه المهني الحقيقي والمبني على واقع منطقتنا الخليجية بعاداتها وتقاليدها، لنمنحك رؤية واضحة تُمكّنك من معرفة المسارات المهنية التي ستظل صامدة ومزدهرة في ظل تشكيل الذكاء الاصطناعي لملامح سوق العمل المستقبلي. لن تخوض هذه الرحلة بمفردك.',
       trust: '١٥ عاماً من الخبرة، بين يديك. · اتجاهي — من اتجاه للإرشاد والاستشارات',
       cta: 'اكتشف اتجاهي',
+      microcopy: 'دون أي رسوم · ١٥ دقيقة فقط · لا يتطلب بطاقة ائتمان',
       secondary: 'اطّلع على نموذج التقرير ↓',
       preview: {
         eyebrow: 'نكتشفك',
@@ -235,31 +285,40 @@ export const L = {
         { num: '+15', label: 'عاماً من الإرشاد في الخليج' },
         { num: '+88,540', label: 'حياة تأثرت' },
         { num: '90%', label: 'نسبة التوظيف خلال 6 أشهر' },
-        { num: 'الخليج', label: 'بجذور في السعودية والبحرين' },
+        { num: 'الخليج', label: 'صُنِع للمنطقة، بأيدي خبراء من أبنائها' },
       ],
+    },
+    whatIsIt: {
+      label: 'ما هو إتجاهي؟',
+      blocks: [
+        { head: 'ما هو', body: 'إتجاهي هو مرشدك المهني الشخصي في قالبٍ رقمي ذكي؛ يساعدك على فهم ذاتك بعمق، واكتشاف المسارات التي تشبهك وتناسبك حقاً، وإدراك كيف يعيد الذكاء الاصطناعي تشكيل كل مسار اليوم، لتبني قرارك على وعيٍ لا على تخمين.' },
+        { head: 'ما الذي يميزه', body: 'أي أداة يمكنها إجراء اختبار. لكننا نقوم بما هو أصعب وأعمق: نأخذ نتائجك ونقرؤها بعين الخبرة الممتدة لـ ١٥ عاماً من الإرشاد المهني الفعلي. ونكشف لك بوضوح كيف يعيد الذكاء الاصطناعي تشكيل كل مسار مهني أمامك، وما هي الوظائف التي تنمو وتزدهر وتلك التي تتلاشى في صمت؛ لتتجنب هدر سنوات من عمرك في تخصص أو مهنة قد لا يحتاجها سوق العمل مستقبلاً.' },
+        { head: 'ما الذي ستحصل عليه', body: 'تقييم في ١٥ دقيقة ← تقرير واضح: نقاط قوتك، وقيمك الشخصية، والمهن الأنسب لك، ونظرة صادقة على أثر الذكاء الاصطناعي في كلٍّ منها ← ثم دعم حقيقي للوصول: وظائف تناسب سوقك، وسيرة ذاتية أقوى، وتدريب عملي على المقابلات، ومرشد حقيقي بجانبك وقتما تشاء.' },
+      ],
+    },
+    notJustWhatPays: {
+      headline: ['المسألة لا تقتصر على ما يدرّ عليك مالاً.', 'بل ما يناسب حقيقتك ومن أنت.'],
+      hl: 'حقيقتك ومن أنت',
+      body: 'الراتب الأعلى لن يسعفك إن كانت الوظيفة تستهلك روحك في صمت. نحن لا ننظر فقط إلى مهاراتك، بل نقرأ قيمك الشخصية بدقة — ما تبحث عنه من معنى، واستقرار، وحرية، وأثر — لنرسم لك مساراً لا يضمن لك وظيفة فحسب، بل يضمن لك مساراً يشبهك ويمثلك أنت.',
     },
     problem: {
       label: 'هل يبدو هذا مألوفاً؟',
-      headline: ['معظم أدوات التوجيه المهني تتوقف عند التقرير.', 'اتجاهي تبدأ من هناك.'],
-      hl: 'تبدأ من هناك',
-      intro: 'على الأرجح أنك خضت اختبار شخصية من قبل. حصلت على تقرير، قرأته مرة، ثم مضت الحياة.',
-      lead: 'المشكلة لم تكن يوماً في الاختبار — بل في أن النتائج لم تكن مرتبطة بأي شيء حقيقي.',
-      items: [
-        'سوق العمل السعودي أو البحريني',
-        'نسب التوطين في مجالك',
-        'الطريقة التي يعيد بها الذكاء الاصطناعي تشكيل الوظائف التي تفكر فيها',
-        'ما تقدّره أنت فعلاً في مسيرتك المهنية',
+      headline: ['اختيار مسارك المهني صعب بما يكفي…', 'لكن اختيار مسارٍ لا يمحوه الذكاء الاصطناعي هو الأصعب.'],
+      hl: 'لا يمحوه الذكاء الاصطناعي',
+      body: [
+        'على الأرجح أنك جرّبت أحد اختبارات الشخصية من قبل؛ حصلت على التقرير، قرأته، ثم طويت الصفحة وواصلت حياتك… ببساطة لأنه لم يكن متصلاً بواقعك.',
+        'لم يربطك بسوق العمل الفعلي الذي تعيش فيه وتواجهه، ولا بكيفية إعادة سياسات التوطين صياغة فرص التوظيف في مجالك. وقبل كل شيء، لم يلتفت للقوة الأسرع التي تعيد تشكيل المستقبل المهني الآن: الذكاء الاصطناعي الذي يعيد كتابة قواعد اللعبة في صمت، ليكشف أي الوظائف تكتسب قيمة وأيها يتلاشى بهدوء. بينما لا تزال الكثير من أدوات التوجيه ترشد الناس نحو مسارات بدأت تتقلص بالفعل.',
+        'مجرد تصنيف لشخصيتك لن يمنحك اتجاهاً، ونصائح الأمس لن تجهزك لسوق الغد. معظم الأدوات تكتفي بمنحك تقريراً وتتمنى لك حظاً سعيداً.. أما نحن فلا نفعل ذلك؛ نحن نقرأ نقاط قوتك في ضوء الاتجاه الفعلي الذي يسير نحوه عالمك، ونبقى بجانبك خطوة بخطوة حتى تصل. لأجل هذا كله.. بنينا إتجاهي.',
       ],
-      payoff: 'اتجاهي بناها مرشدون مهنيون أمضوا ١٥ عاماً يطرحون على الناس الأسئلة التي تصنع الفرق. تربط شخصيتك ونقاط قوتك وقيمك بسوقك الحقيقي — ثم تبقى معك وأنت تتحرك.',
     },
     how: {
-      label: 'بسيط. عميق. لك وحدك.',
-      headline: 'ثلاث خطوات تفصلك عن اتجاه واضح.',
-      hl: 'اتجاه واضح',
+      label: 'بسيط. عميق. يشبهك تماماً.',
+      headline: 'ثلاث خطوات تفصلك عن اتجاه تثق به.',
+      hl: 'تثق به',
       steps: [
-        { n: '٠١', title: 'أخبرنا من أنت.', body: 'تقييم ثنائي اللغة مدته ١٥ دقيقة، مبني على خمسة أطر علمية معتمدة كيَّفها مرشدو اتجاه للسياق الخليجي. بلا مصطلحات معقدة، وبلا نماذج من ٢٠٠ سؤال — فقط أسئلة صادقة تكشف ما يهم حقاً.' },
-        { n: '٠٢', title: 'احصل على صورتك الكاملة.', body: 'تجتمع شخصيتك ونقاط قوتك وقيمك مع بيانات حقيقية عن سوق العمل الخليجي في تقرير واحد بلغة واضحة — مكتوب بالطريقة التي يشرح بها المرشد، لا بالطريقة التي تطبعها الآلة.' },
-        { n: '٠٣', title: 'تحرَّك — بدعم لا يتوقف.', body: 'مسارات مهنية مرتبة حسب الملاءمة، وتحليل لتأثير الذكاء الاصطناعي، وتوصيات بالدورات، ومطابقة يومية للوظائف — ومرشد حقيقي من اتجاه على بُعد خطوة متى أردت إنساناً إلى جانبك. اتجاهي تمشي معك إلى ما بعد الخطوة الأولى.' },
+        { n: '٠١', title: 'أخبرنا من أنت.', body: 'تقييم من ١٥ دقيقة، متوفر باللغتين العربية والإنجليزية، مبنيّ على خمسة أساليب عمل علمية معتمدة طوّرها مرشدونا لتناسب واقع منطقتنا الخليجية. لا مصطلحات معقدة، ولا استبيانات بـ ٢٠٠ سؤال؛ فقط أسئلة صادقة تلمس جوهر ما يهمك.' },
+        { n: '٠٢', title: 'شاهد صورتك الكاملة، وإلى أين تتجه.', body: 'شخصيتك، نقاط قوتك، وقيمك تتكامل مع بيانات سوق العمل الحقيقية في منطقتك، مع قراءة واقعية وصادقة لكيفية إعادة تشكيل الذكاء الاصطناعي لكل مسار، في تقرير واحد سهل ومباشر — مكتوب بأسلوب مرشد مهني يشرح لك التفاصيل بوضوح، لا بأسلوب آلة تطبع كلمات جافة.' },
+        { n: '٠٣', title: 'تقدَّم بثقة.. مع دعم مستمر لا يتركك.', body: 'مسارات مهنية مرتبة حسب ملاءمتها لك، مع رؤية للمستقبل، وتوصيات للدورات المناسبة، وفرص عمل يومية متطابقة مع سوقك — ومرشد حقيقي على بعد خطوة واحدة منك متى ما أردت شخصاً تتحدث إليه ويوجهك. نحن نسير معك إلى ما بعد خطوتك الأولى.' },
       ],
       cta: 'ابدأ التقييم ←',
     },
@@ -273,36 +332,48 @@ export const L = {
         'أبرز نقاط قوتك، وكيف تظهر في بيئة العمل.',
         'قيمك الجوهرية — وما تعنيه لنوع العمل الذي سيمنحك رضاً حقيقياً.',
         'أفضل ٥ مسارات مهنية لك، مرتبة حسب مدى الملاءمة.',
-        'نظرة على تأثير الذكاء الاصطناعي في كل مسار — ما الذي يتغير، وأي المهارات البشرية تزداد قيمة.',
-        'مواءمة التوطين — أين تصب السعودة أو البحرنة في مصلحتك.',
+        'رؤية حول تأثير الذكاء الاصطناعي — ما هي الوظائف الآخذة في النمو، وما التي تتلاشى في صمت، وأي المهارات البشرية تزداد قيمة.',
+        'أبعاد التوطين — كيف تشكّل سياسات التوطين التوظيف في سوقك، وأين تكمن أقوى الفرص المتاحة لك.',
         'خارطة طريق تعليمية — الدورات والشهادات التي تستحق وقتك.',
         'خطوات تالية واضحة — لأن التقرير يجب أن يكون بداية، لا نهاية.',
       ],
       cta: 'اطّلع على نموذج التقرير ←',
+    },
+    builtForGulf: {
+      label: 'لم يُترجم لأجل منطقتنا الخليجية. بل وُلد فيها.',
+      headline: 'الاختبارات العالمية يتم تكييفها لتناسب هذا السوق.. أما نحن، فننتمي إليه.',
+      localisationLine: 'صُمِّم بأيدي أبناء الخليج، لكل من يبني مستقبله هنا.',
+      pillars: [
+        { title: 'معلومات ذكية عن سوق العمل المحلي', body: 'بيانات حقيقية ومحدثة باستمرار حول سوق العمل في بلدك، نابعة من خبرتنا الطويلة في الأسواق المحلية والخليجية الآخذة في التوسع والنمو.' },
+        { title: 'عامل التوطين جزء من التصميم', body: 'نأخذ في الحسبان كيف يشكّل التوطين التوظيف في أنحاء الخليج، لتستهدف — أياً كنت، مواطناً أو مقيماً — الأدوار التي تملك فيها أقوى ميزة تنافسية.' },
+        { title: 'متوافق مع الرؤى الوطنية', body: 'مسارات مهنية مجهّزة ومصممة لتتواكب مع الرؤى الوطنية الطموحة التي تعيد تشكيل اقتصاد دول الخليج بأكملها.' },
+        { title: 'بلغتين منذ التصميم', body: 'كل سؤال وكل تقرير وكل كلمة، متاحة بالعربية والإنجليزية منذ البداية.' },
+      ],
     },
     who: {
       label: 'لمن اتجاهي؟',
       headline: 'صُمِّمت لكل منعطف في المسيرة المهنية.',
       hl: 'كل منعطف',
       cards: [
-        { tag: 'الخريجون الجدد (٠–٢ سنة)', head: 'فعلتَ كل شيء بشكل صحيح. فلماذا لا يرد أحد؟', body: 'إرسال الطلبات إلى الصمت أمر مرهق. اتجاهي تريك الوظائف التي تناسبك فعلاً، وما الذي يبحث عنه أصحاب العمل في السعودية والبحرين وسائر دول الخليج فعلياً، وكيف تقدّم نقاط قوتك الحقيقية — لتتوقف عن التخمين وتبدأ بالمقابلات.' },
-        { tag: 'الباحثون عن تغيير مهني (٣٠–٤٠)', head: 'بارع في عملك. لكنك لست متأكداً أنه كان يوماً عملك أنت.', body: 'تغيير المسار في الثلاثينيات أو الأربعينيات ليس خطوة إلى الوراء — بل هو من أشجع الخطوات المهنية على الإطلاق. اتجاهي تربط المهارات التي أمضيت سنوات في بنائها بمسارات جديدة تناسبك فعلاً، وتريك كيف تُقدِم على الخطوة بالأدلة لا بالتخمين.' },
-        { tag: 'طلاب الجامعة', head: 'في منتصف دراستك، وشيء ما لا يبدو صحيحاً.', body: 'اتجاهي تساعدك على فهم ما إذا كانت المشكلة في التخصص، أم في المسار الذي يقود إليه، أم أنها مجرد حيرة طبيعية يمر بها الجميع — وإذا كان التغيير منطقياً، تريك بالضبط كيف تخطوه دون أن تخسر ما بنيته.' },
-        { tag: 'طلاب الثانوية (١٦–١٨)', head: 'أكبر قرار في حياتك حتى الآن — أصبح أوضح.', body: 'اختيار التخصص في السابعة عشرة لا ينبغي أن يكون تخميناً. اتجاهي تساعدك على فهم نقاط قوتك واهتماماتك قبل أن تلتزم، لتختار مساراً يشبهك أنت — لا ما يبدو مبهراً فحسب.' },
+        { tag: 'الخريجون الجدد (٠–٢ سنة)', head: 'فعلتَ كل شيء بشكل صحيح. فلماذا لا يرد أحد؟', body: 'إرسال الطلبات إلى الصمت أمر مرهق. اتجاهي تريك الوظائف التي تناسبك فعلاً، وما الذي يبحث عنه أصحاب العمل في سوقك فعلياً، وكيف تقدّم نقاط قوتك الحقيقية — لتتوقف عن التخمين وتبدأ بالمقابلات.' },
+        { tag: 'الباحثون عن تغيير مهني (٣٠–٤٠)', head: 'بارع في عملك. لكنك لست متأكداً أنه كان يوماً عملك أنت.', body: 'تغيير المسار في الثلاثينيات أو الأربعينيات ليس خطوة إلى الوراء — بل هو من أشجع الخطوات المهنية على الإطلاق. اتجاهي تربط المهارات التي أمضيت سنوات في بنائها بمسارات جديدة تناسبك فعلاً، وتأخذ بعين الاعتبار تأثير الذكاء الاصطناعي في كل مسار، وتريك كيف تُقدِم على الخطوة بالأدلة لا بالتخمين.' },
+        { tag: 'طلاب الجامعة', head: 'في منتصف دراستك، وشيء ما لا يبدو صحيحاً.', body: 'اتجاهي تساعدك على فهم ما إذا كانت المشكلة في التخصص، أم في المسار الذي يقود إليه، أم أنها مجرد حيرة طبيعية يمر بها الجميع — وهل ما زال لهذا المسار مستقبل في ظل إعادة تشكيل الذكاء الاصطناعي لمجالك. وإذا كان التغيير منطقياً، تريك اتجاهي بالضبط كيف تخطوه.' },
+        { tag: 'طلاب الثانوية (١٦–١٨)', head: 'أكبر قرار في حياتك حتى الآن — أصبح أوضح.', body: 'اختيار التخصص في السابعة عشرة لا ينبغي أن يكون تخميناً، خاصة والذكاء الاصطناعي يعيد اليوم تشكيل ملامح هذه المجالات. اتجاهي تساعدك على فهم نقاط قوتك واهتماماتك، وإدراك كيف يتغيّر كل مسار الآن، لتتخذ القرار بوضوح بعيداً عن الضغوطات. ولأولياء الأمور: نقدم لكم تقريراً شاملاً تطلعون عليه معاً، لتتحول مناقشاتكم العائلية إلى حوارٍ يملؤه التفاهم.' },
       ],
     },
     heritage: {
       label: 'الدليل في الناس',
-      headline: ['لسنا شركة ذكاء اصطناعي ناشئة أخرى.', 'بل خمسة عشر عاماً من الإرشاد المهني، في صورة رقمية.'],
+      headline: ['على مدى ١٥ عاماً، ساعدنا الناس على إيجاد اتجاههم.', 'واتجاهي يضع كل هذه الخبرة اليوم بين يديك.'],
       stats: [
         { num: '2010', label: 'تأسست' },
         { num: '+15', label: 'عاماً من الإرشاد في الخليج' },
         { num: '+88,540', label: 'حياة تأثرت' },
-        { num: 'موثوقة', label: 'من حكومات وجامعات وشركات متعددة الجنسيات' },
+        { num: 'موثوقة', label: 'من حكومات وجامعات وشركات متعددة الجنسيات في المنطقة' },
       ],
       body: [
-        'اتجاهي من اتجاه للإرشاد والاستشارات — مؤسسة اجتماعية أمضت ١٥ عاماً في مساعدة الناس في الخليج على إيجاد اتجاههم: طلاب يختارون تخصصهم الأول، ومهنيون يخوضون تحولاً في مسارهم، ونساء يتقدمن نحو مواقع القيادة.',
-        'كل ما تقوم به المنصة تشكَّل مما تعلمه مرشدونا من عشرات الآلاف من المحادثات الحقيقية. الذكاء الاصطناعي يمنح هذه الخبرة الاتساع. والإرشاد يمنحها الروح.',
+        'نحن اتجاه للإرشاد والاستشارات، مؤسسة اجتماعية نابعة من منطقة الخليج ونعمل في أرجائها. على مدى ١٥ عاماً، جلسنا مع أشخاص في كل منعطف من مسيرتهم المهنية: طلاب يختارون تخصصهم الأول، وخريجون يطمحون لأول فرصة عمل، ومهنيون يعيدون التفكير في مساراتهم، ونساء يخطون بثقة نحو القيادة — جنباً إلى جنب مع أصحاب العمل، والجامعات، والمنظمات التي تصنع هذه الفرص.',
+        'ولأننا نعمل معهم يوماً بيوم، نرى ملامح التغيير قبل أن ترصده التقارير — ونشهد باستمرار كيف يُعيد الذكاء الاصطناعي رسم ملامح المهن التي ستقود المستقبل. بنينا اتجاهي كي لا تبقى هذه الرؤية والخبرة، التي طورناها على مدى ١٥ عاماً، حبيسة غرفة إرشاد، بل تكون بين يديك لحظة احتياجك إليها.',
+        'الذكاء الاصطناعي يمنح خبرتنا هذه نطاقاً أوسع. والإرشاد يمنحها الروح.',
       ],
       testimonials: [
         { quote: 'قبل اتجاهي، كنت أتقدّم لأي وظيفة أجدها. بعد تقريري، عرفت بالضبط أي الأدوار أستهدف — ولماذا. حصلت على ثلاث مقابلات في أسبوعين.', name: '[الاسم]', role: 'خريجة جديدة، الرياض', initials: 'خ' },
@@ -321,7 +392,7 @@ export const L = {
         bullets: [
           'التقييم الكامل (١٥ دقيقة) عبر خمسة أطر علمية',
           'ملفك الشخصي وأبرز نقاط قوتك وقيمك الجوهرية — بلغة واضحة',
-          'أفضل ٥ مسارات مهنية تناسبك، مع السياق الخليجي',
+          'أفضل ٥ مسارات مهنية تناسبك، مع سياق سوقك',
           'نظرة عامة على تأثير الذكاء الاصطناعي على أفضل مسارَين لديك',
           'رابط لمشاركة نتائجك مع العائلة أو المرشدين',
         ],
@@ -336,18 +407,37 @@ export const L = {
         bullets: [
           'كل ما في «مستكشف»',
           'التحليل الكامل لتأثير الذكاء الاصطناعي — أي المهام في أدوارك المستهدفة تتغير، وأي المهارات البشرية تزداد قيمة',
-          'توقعات لمدة ١–٣ سنوات لأدوارك المتوافقة في السوقين السعودي والبحريني',
+          'توقعات لمدة ١–٣ سنوات لأدوارك المتوافقة في سوقك',
           'توصيات مخصصة بالدورات والشهادات',
           'قائمة بأفضل ٢٠ شركة مستهدفة تتوافق مع ملفك',
         ],
         cta: 'افتح التقرير الكامل',
       },
+      subscription: {
+        label: 'منصة الانطلاق',
+        price: '٩٩ ريال',
+        priceSub: '/شهرياً',
+        priceAlt: 'أو ٧٩٩ ريالاً سنوياً — وفّر ٣٣٪',
+        for: 'تبحث عن عمل بنشاط وترغب في دعم يومي حقيقي إلى جانبك.',
+        bullets: [
+          'كل ما في «مرشد المسار»',
+          'إعادة بناء سيرتك الذاتية لتبرز نقاط قوتك، مع تحسينها لأنظمة فرز السير الذاتية (ATS)',
+          'فرص عمل مطابقة يومياً تصل مباشرة إلى لوحتك وعلى واتساب',
+          'قائمتك الكاملة للشركات المستهدفة (+٥٠ شركة) مع رسائل تواصل مخصصة',
+          'تدريب غير محدود على المقابلات، بأسئلة مخصصة لكل وظيفة وتقييم دقيق لأدائك',
+        ],
+        cta: 'اشترك الآن',
+      },
+      addOn: {
+        title: 'أضف جلسة توجيه شخصية (1:1) مع مرشد حقيقي لأي باقة اخترتها.',
+        body: 'لتحليل نتائجك بدقة، أو اختبار مدى صحة قرار مصيري، أو التخطيط لخطوتك القادمة — لأننا نعرف أنه في بعض الأحيان، كل ما تحتاجه هو وجود شخص حقيقي ينصت إليك ويوجهك.',
+      },
       reassure: 'لست متأكداً من الباقة المناسبة؟ ابدأ بباقة «مستكشف» — دون رسوم، ودون بطاقة، ودون التزام. ونتائجك ستجعل الخطوة التالية واضحة.',
     },
     institutions: {
       label: 'للمؤسسات',
-      headline: 'توجيه الشباب هو النقطة التي بدأت منها اتجاه. واتجاهي تساعد مؤسستك على القيام بذلك على نطاق أوسع.',
-      body: 'إذا كنتم مركزاً للإرشاد المهني في جامعة، أو مدرسة، أو مؤسسة شبابية، فإن اتجاهي تمنح كل طالب لديكم مرشداً مهنياً شخصياً — تقييمات ثنائية اللغة، وتقارير خاصة بسياق الخليج، ولوحات متابعة جماعية لرصد التقدم. كل ذلك مبني على البرامج نفسها التي قدّمتها اتجاه مع الحكومات والجامعات والمؤسسات في المنطقة على مدى ١٥ عاماً.',
+      headline: 'لا يمكنكم الجلوس في جلسة فردية مع كل طالب. والآن لم تعودوا مضطرين لذلك.',
+      body: 'اتجاهي يمنح كل طالب مرشداً مهنياً شخصياً — تقييماً ثنائي اللغة، وتقريراً مبنياً لواقع منطقتنا الخليجية، وقراءة صادقة لأثر الذكاء الاصطناعي في خياراته. يرفع هذا العبء المتكرر عن كاهل فريقكم، ويمنحكم لوحات متابعة على مستوى الدفعات لإثبات نتائج التوظيف أمام قيادتكم. إنها الخبرة نفسها التي قدّمناها مع الحكومات والجامعات والمؤسسات على مدى ١٥ عاماً — نضعها اليوم لتعمل من أجل كل طالب ترعونه.',
       cta: 'كن شريكاً لنا ←',
     },
     faq: {
@@ -356,11 +446,11 @@ export const L = {
       items: [
         { q: 'كم يستغرق التقييم؟', a: 'ينهيه معظم الأشخاص في ١٢–١٥ دقيقة. صُمِّم ليبدو كمحادثة، لا كنموذج موارد بشرية من ٢٠٠ سؤال.' },
         { q: 'هل اتجاهي هي نفسها اتجاه؟', a: 'اتجاهي هي المنصة المهنية الرقمية من اتجاه. على مدى ١٥ عاماً، قدّمت اتجاه الإرشاد والتوجيه المهني للمؤسسات والمجتمعات والأفراد في الخليج؛ أما اتجاهي فتقدّم هذه الخبرة نفسها مباشرة إليك — بدءاً من تقييم دون رسوم.' },
-        { q: 'هل كل شيء متاح باللغة العربية؟', a: 'بالكامل. اتجاهي ثنائية اللغة منذ اليوم الأول — المنصة والتقييم وتقريرك، جميعها متاحة بالعربية والإنجليزية.' },
+        { q: 'هل كل شيء متاح باللغة العربية؟', a: 'بالكامل. اتجاهي متاحة بالعربية والإنجليزية منذ اليوم الأول — المنصة والتقييم وتقريرك، جميعها.' },
         { q: 'هل هناك إنسان حقيقي، أم أن كل شيء ذكاء اصطناعي؟', a: 'الاثنان معاً. المنصة صمَّمها ويشرف عليها مرشدو اتجاه، والأطر العلمية مستمدة من ١٥ عاماً من الإرشاد الحقيقي، ويمكنك إضافة جلسة فردية مع مرشد حقيقي متى أردت إنساناً في الحوار.' },
-        { q: 'هل بياناتي خاصة وآمنة؟', a: 'تُخزَّن بياناتك بأمان داخل منطقة الشرق الأوسط ولا تُباع لأي طرف ثالث أبداً. ملفك ونتائجك ملك لك.' },
+        { q: 'هل بياناتي خاصة وآمنة؟', a: 'نعم. تُخزَّن بياناتك بأمان ولا تُباع لأي طرف ثالث أبداً. ملفك ونتائجك ملك لك.' },
         { q: 'أعرف بالفعل المسار الذي أريده. هل تفيدني اتجاهي؟', a: 'غالباً ليست الصعوبة في اختيار الاتجاه — بل في الوصول إليه. مطابقة الوظائف وتحليل السيرة الذاتية وتمارين المقابلات وتحليل تأثير الذكاء الاصطناعي، كلها صُمِّمت تحديداً لمن يعرف وجهته ويحتاج إلى دفعة.' },
-        { q: 'أنا في الخليج ولكن خارج السعودية أو البحرين. هل اتجاهي لي؟', a: 'نعم. صُمِّمت اتجاهي للخليج كله، مع سياق مهني لسوقك. أعمق بياناتنا المحلية تغطي السعودية والبحرين — حيث قدّمت اتجاه الإرشاد للناس على مدى ١٥ عاماً — وتتوسع تغطيتنا في بقية دول الخليج، والأسواق العالمية على خارطة الطريق.' },
+        { q: 'أنا في مكان آخر بالخليج؟ هل اتجاهي مناسبة لي؟', a: 'نعم. صُمِّمت اتجاهي للخليج كله، مع سياق مهني لسوقك. بياناتنا المحلية أعمق في الأسواق التي عملنا بها لسنوات طويلة، وتتوسع تغطيتنا في بقية دول الخليج، والأسواق العالمية على خارطة الطريق.' },
       ],
     },
     finalCta: {
@@ -368,7 +458,7 @@ export const L = {
       sub: 'دون أي رسوم. خمس عشرة دقيقة. وقد يغيّر وجهة كل ما هو قادم.',
       cta: 'اكتشف اتجاهي',
       arrow: '←',
-      trust: 'اتجاهي — من اتجاه للإرشاد والاستشارات · ١٥ عاماً من الأثر الحقيقي للإرشاد المهني · بياناتك تبقى في الشرق الأوسط',
+      trust: 'اتجاهي — من اتجاه للإرشاد والاستشارات · ١٥ عاماً من الأثر الحقيقي للإرشاد المهني · بياناتك تبقى في الخليج',
     },
     footer: {
       brandLine: 'اتجاهي · Etijahi',
@@ -378,7 +468,7 @@ export const L = {
       phone: '3508 2446',
       email: 'projects@etijahcoaching.com',
       colPlatform: { head: 'المنصة', links: ['ابدأ التقييم', 'كيف يعمل؟', 'ماذا يتضمن تقريرك؟', 'الأسعار'] },
-      colCompany: { head: 'الشركة', links: ['عن اتجاه', 'للمؤسسات', 'رؤى مهنية (المدونة)', 'تواصل معنا'] },
+      colCompany: { head: 'الشركة', links: ['عن اتجاه', 'اتجاه للإرشاد والاستشارات', 'للمؤسسات', 'رؤى مهنية (المدونة)', 'تواصل معنا'] },
       colLegal: { head: 'القانوني والتواصل' },
       copyright: '© 2026 اتجاهي · جميع الحقوق محفوظة',
       legalLinks: 'الشروط والأحكام | سياسة الخصوصية | سياسة ملفات الارتباط',

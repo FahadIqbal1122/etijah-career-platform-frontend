@@ -85,14 +85,6 @@ const IconAct = () => (
 )
 const STEP_ICONS = [IconWho, IconBuild, IconAct]
 
-const IconMismatch = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <path d="M9.5 9.5 4 4M14.5 14.5 20 20" />
-    <path d="M10.2 13.8a3 3 0 0 1 0-3.6M13.8 10.2a3 3 0 0 1 0 3.6" />
-    <circle cx="12" cy="12" r="0.6" fill="currentColor" stroke="none" />
-  </svg>
-)
-
 const Chevron = () => (
   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
     <path d="M6 9l6 6 6-6" />
@@ -113,7 +105,10 @@ export default function Landing() {
       {/* ── NAV ──────────────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-30 bg-white border-b border-[var(--line)]">
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between gap-4">
-          <Wordmark size={30} />
+          <div className="flex flex-col leading-none gap-1">
+            <Wordmark size={30} />
+            <span className="text-[10px] text-charcoal/45 whitespace-nowrap">{c.nav.tagline}</span>
+          </div>
           <div className="hidden md:flex items-center gap-7 text-sm font-medium text-charcoal/70">
             {c.nav.links.map((l: string, i: number) => {
               const href = ['#how', '#report', '#who', '#pricing', '#about'][i] ?? '#'
@@ -140,7 +135,7 @@ export default function Landing() {
       <header className="relative overflow-hidden">
         <div className="max-w-6xl mx-auto px-5 pt-16 pb-14 grid lg:grid-cols-2 gap-12 items-center">
           <Reveal>
-            <p className="eyebrow mb-4">{c.nav.tagline}</p>
+            <p className="eyebrow mb-4">{c.hero.eyebrow}</p>
             <h1 className="text-4xl sm:text-5xl font-extrabold leading-[1.1] tracking-tight text-charcoal">
               {c.hero.headline[0]}<br />
               <Highlight text={c.hero.headline[1]} hl={c.hero.hl} />
@@ -156,6 +151,7 @@ export default function Landing() {
               </Link>
               <a href="#report" className="text-sm font-semibold text-charcoal hover:text-teal">{c.hero.secondary}</a>
             </div>
+            <p className="mt-3 text-xs text-charcoal/45">{c.hero.microcopy}</p>
           </Reveal>
 
           {/* live "discovering you" preview card */}
@@ -195,6 +191,31 @@ export default function Landing() {
         </Reveal>
       </header>
 
+      {/* ── WHAT IS ETIJAHI? ─────────────────────────────────────────── */}
+      <Section id="what" eyebrow={c.whatIsIt.label}>
+        <div className="grid md:grid-cols-3 gap-5">
+          {c.whatIsIt.blocks.map((b: any, i: number) => (
+            <Reveal key={b.head} className="card p-6" style={{ transitionDelay: `${i * 90}ms` }}>
+              <h3 className="font-extrabold text-charcoal text-lg">{b.head}</h3>
+              <p className="mt-2 text-sm text-charcoal/65 leading-relaxed">{b.body}</p>
+            </Reveal>
+          ))}
+        </div>
+      </Section>
+
+      {/* ── NOT JUST WHAT PAYS ───────────────────────────────────────── */}
+      <section className="bg-white border-y border-[var(--line)]">
+        <div className="max-w-3xl mx-auto px-5 py-14 text-center">
+          <Reveal>
+            <h2 className="section-h">
+              {c.notJustWhatPays.headline[0]}<br />
+              <Highlight text={c.notJustWhatPays.headline[1]} hl={c.notJustWhatPays.hl} />
+            </h2>
+            <p className="mt-4 text-charcoal/70 leading-relaxed">{c.notJustWhatPays.body}</p>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ── PROBLEM ──────────────────────────────────────────────────── */}
       <Section eyebrow={c.problem.label}>
         <Reveal>
@@ -203,20 +224,10 @@ export default function Landing() {
             <Highlight text={c.problem.headline[1]} hl={c.problem.hl} />
           </h2>
         </Reveal>
-        <Reveal className="mt-7 flex flex-col gap-6">
-          <p className="text-lg font-bold text-charcoal max-w-2xl">{c.problem.intro}</p>
-          <p className="text-charcoal/70 leading-relaxed max-w-2xl">{c.problem.lead}</p>
-          <ul className="grid sm:grid-cols-2 gap-3.5 max-w-2xl">
-            {c.problem.items.map((it: string) => (
-              <li key={it} className="flex items-center gap-4 card p-5">
-                <span className="flex-none w-10 h-10 rounded-xl border-[1.5px] border-teal text-teal flex items-center justify-center [&_svg]:w-5 [&_svg]:h-5">
-                  <IconMismatch />
-                </span>
-                <span className="font-bold text-charcoal leading-snug">{it}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="payoff max-w-2xl font-semibold text-charcoal leading-relaxed">{c.problem.payoff}</p>
+        <Reveal className="mt-7 flex flex-col gap-5">
+          <p className="text-lg font-bold text-charcoal max-w-2xl">{c.problem.body[0]}</p>
+          <p className="text-charcoal/70 leading-relaxed max-w-2xl">{c.problem.body[1]}</p>
+          <p className="payoff max-w-2xl font-semibold text-charcoal leading-relaxed">{c.problem.body[2]}</p>
         </Reveal>
       </Section>
 
@@ -264,6 +275,22 @@ export default function Landing() {
         <Reveal className="mt-8 flex justify-center">
           <a href="#pricing" className="cta cta-outline">{c.insideReport.cta}</a>
         </Reveal>
+      </Section>
+
+      {/* ── BUILT FOR THE GULF ───────────────────────────────────────── */}
+      <Section id="gulf" eyebrow={c.builtForGulf.label} tint>
+        <Reveal>
+          <h2 className="section-h max-w-2xl">{c.builtForGulf.headline}</h2>
+          <p className="mt-3 text-charcoal/70 leading-relaxed max-w-xl">{c.builtForGulf.localisationLine}</p>
+        </Reveal>
+        <div className="mt-8 grid sm:grid-cols-2 gap-5">
+          {c.builtForGulf.pillars.map((p: any, i: number) => (
+            <Reveal key={p.title} className="card p-6" style={{ transitionDelay: `${(i % 2) * 90}ms` }}>
+              <h3 className="font-extrabold text-charcoal text-base">{p.title}</h3>
+              <p className="mt-2 text-sm text-charcoal/65 leading-relaxed">{p.body}</p>
+            </Reveal>
+          ))}
+        </div>
       </Section>
 
       {/* ── WHO IT'S FOR ─────────────────────────────────────────────── */}
@@ -328,7 +355,7 @@ export default function Landing() {
       {/* ── PRICING ──────────────────────────────────────────────────── */}
       <Section id="pricing" eyebrow={c.pricing.label} tint center>
         <Reveal><h2 className="section-h max-w-3xl mx-auto">{<Highlight text={c.pricing.headline} hl={c.pricing.hl} />}</h2></Reveal>
-        <div className="mt-10 grid md:grid-cols-2 gap-6 max-w-4xl mx-auto items-start text-start">
+        <div className="mt-10 grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-start text-start">
           <Reveal className="card p-7 relative">
             <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.free.label}</p>
             <div className="mt-3 flex items-baseline gap-2">
@@ -366,7 +393,30 @@ export default function Landing() {
             </ul>
             <Link href="/assessment" className="cta mt-7 w-full !bg-white !text-primary !shadow-[0_16px_40px_-14px_rgba(0,0,0,0.4)]">{c.pricing.paid.cta}</Link>
           </Reveal>
+          <Reveal className="card p-7 relative" style={{ transitionDelay: '150ms' }}>
+            <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.subscription.label}</p>
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-charcoal">{c.pricing.subscription.price}</span>
+              <span className="text-xs text-charcoal/45">{c.pricing.subscription.priceSub}</span>
+            </div>
+            <p className="mt-1 text-xs text-charcoal/45">{c.pricing.subscription.priceAlt}</p>
+            <p className="mt-3 text-sm text-charcoal/65 leading-relaxed">{c.pricing.subscription.for}</p>
+            <div className="h-px bg-[var(--line)] my-6" />
+            <ul className="space-y-3.5 flex-1">
+              {c.pricing.subscription.bullets.map((b: string) => (
+                <li key={b} className="flex items-start gap-2.5 text-sm text-charcoal">
+                  <span className="flex-none w-5 h-5 rounded-full bg-teal/15 text-teal text-[11px] font-black flex items-center justify-center mt-0.5">✓</span>
+                  {b}
+                </li>
+              ))}
+            </ul>
+            <Link href="/assessment" className="cta cta-outline mt-7 w-full">{c.pricing.subscription.cta}</Link>
+          </Reveal>
         </div>
+        <Reveal className="mt-8 max-w-2xl mx-auto text-center card p-6">
+          <p className="font-bold text-charcoal">{c.pricing.addOn.title}</p>
+          <p className="mt-2 text-sm text-charcoal/65 leading-relaxed">{c.pricing.addOn.body}</p>
+        </Reveal>
         <Reveal className="mt-8 text-sm text-charcoal/55 max-w-xl mx-auto text-center">{c.pricing.reassure}</Reveal>
       </Section>
 
