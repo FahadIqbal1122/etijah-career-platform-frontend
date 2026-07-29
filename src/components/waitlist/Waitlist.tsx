@@ -288,12 +288,16 @@ export default function Waitlist() {
         </Reveal>
       </header>
 
-      {/* ── EXPLAINER ────────────────────────────────────────────────── */}
-      <Section eyebrow={c.explainer.label} tint>
-        <Reveal>
-          <h2 className="section-h max-w-2xl"><Highlight text={c.explainer.headline} hl={c.explainer.hl} /></h2>
-          <p className="mt-5 text-charcoal/70 leading-relaxed max-w-2xl">{c.explainer.body}</p>
-        </Reveal>
+      {/* ── WHAT IS ETIJAHI? ─────────────────────────────────────────── */}
+      <Section eyebrow={c.whatIsIt.label} tint>
+        <div className="grid md:grid-cols-3 gap-5">
+          {c.whatIsIt.blocks.map((b: any, i: number) => (
+            <Reveal key={b.head} className="card p-6" style={{ transitionDelay: `${i * 90}ms` }}>
+              <h3 className="font-extrabold text-charcoal text-lg">{b.head}</h3>
+              <p className="mt-2 text-sm text-charcoal/65 leading-relaxed">{b.body}</p>
+            </Reveal>
+          ))}
+        </div>
       </Section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────── */}

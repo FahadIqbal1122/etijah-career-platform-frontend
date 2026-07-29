@@ -98,6 +98,13 @@ type WaitlistEntry = {
   created_at: string
 }
 
+const WAITLIST_STATUS_LABELS: Record<string, string> = {
+  high_school: 'High School Student',
+  university: 'University Student',
+  recent_graduate: 'Fresh Graduate',
+  career_changer: 'Career Changer',
+}
+
 type OnetLink = {
   id: string
   email: string
@@ -1564,7 +1571,7 @@ export default function AdminPage() {
                           <td className="px-4 py-3 font-medium text-slate-800">{w.email}</td>
                           <td className="px-4 py-3 text-slate-500">{w.name || '—'}</td>
                           <td className="px-4 py-3 text-slate-500">{w.country || '—'}</td>
-                          <td className="px-4 py-3 text-slate-500">{w.status || '—'}</td>
+                          <td className="px-4 py-3 text-slate-500">{w.status ? (WAITLIST_STATUS_LABELS[w.status] || w.status) : '—'}</td>
                           <td className="px-4 py-3 text-slate-500 uppercase">{w.locale || '—'}</td>
                           <td className="px-4 py-3 text-slate-500">{w.source || '—'}</td>
                           <td className="px-4 py-3 text-slate-400 text-xs">{new Date(w.created_at).toLocaleDateString()}</td>
