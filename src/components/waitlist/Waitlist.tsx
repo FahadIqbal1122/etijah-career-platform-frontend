@@ -292,7 +292,7 @@ export default function Waitlist() {
         </div>
 
         <Reveal className="max-w-6xl mx-auto px-5 pb-14">
-          <div className="hero-stats-strip grid grid-cols-2 md:grid-cols-4">
+          <div className="hero-stats-strip grid grid-cols-1 sm:grid-cols-3">
             {c.hero.stats.map((s: any) => (
               <div key={s.label} className="hero-stat text-center px-3">
                 <p className={`font-extrabold text-teal leading-none ${s.num.length > 5 ? 'text-2xl' : 'text-3xl'}`}>{s.num}</p>

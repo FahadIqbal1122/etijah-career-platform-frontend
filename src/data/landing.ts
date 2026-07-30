@@ -42,7 +42,6 @@ export const L = {
       stats: [
         { num: '15+', label: 'Years of GCC Coaching' },
         { num: '88,540+', label: 'Lives Impacted' },
-        { num: '90%', label: 'Employed Within 6 Months' },
         { num: 'GCC', label: 'Built for the Gulf, by people from it' },
       ],
     },
@@ -284,7 +283,6 @@ export const L = {
       stats: [
         { num: '+15', label: 'عاماً من الإرشاد في الخليج' },
         { num: '+88,540', label: 'حياة تأثرت' },
-        { num: '90%', label: 'نسبة التوظيف خلال 6 أشهر' },
         { num: 'الخليج', label: 'صُنِع للمنطقة، بأيدي خبراء من أبنائها' },
       ],
     },
