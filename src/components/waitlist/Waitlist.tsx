@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocale } from 'next-intl'
-import { useRouter, usePathname } from '@/i18n/navigation'
+import { Link, useRouter, usePathname } from '@/i18n/navigation'
 import { W } from '@/data/waitlist'
 import Logomark, { Wordmark } from '@/components/brand/Logomark'
 import LandingConstellation from '@/components/brand/LandingConstellation'
@@ -315,8 +315,36 @@ export default function Waitlist() {
         </div>
       </Section>
 
+      {/* ── NOT JUST WHAT PAYS ───────────────────────────────────────── */}
+      <section className="bg-white border-y border-[var(--line)]">
+        <div className="max-w-3xl mx-auto px-5 py-14 text-center">
+          <Reveal>
+            <h2 className="section-h">
+              {c.notJustWhatPays.headline[0]}<br />
+              <Highlight text={c.notJustWhatPays.headline[1]} hl={c.notJustWhatPays.hl} />
+            </h2>
+            <p className="mt-4 text-charcoal/70 leading-relaxed">{c.notJustWhatPays.body}</p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── PROBLEM ──────────────────────────────────────────────────── */}
+      <Section eyebrow={c.problem.label}>
+        <Reveal>
+          <h2 className="section-h">
+            {c.problem.headline[0]}<br />
+            <Highlight text={c.problem.headline[1]} hl={c.problem.hl} />
+          </h2>
+        </Reveal>
+        <Reveal className="mt-7 flex flex-col gap-5">
+          <p className="text-lg font-bold text-charcoal max-w-2xl">{c.problem.body[0]}</p>
+          <p className="text-charcoal/70 leading-relaxed max-w-2xl">{c.problem.body[1]}</p>
+          <p className="payoff max-w-2xl font-semibold text-charcoal leading-relaxed">{c.problem.body[2]}</p>
+        </Reveal>
+      </Section>
+
       {/* ── HOW IT WORKS ─────────────────────────────────────────────── */}
-      <Section eyebrow={c.how.label}>
+      <Section id="how" eyebrow={c.how.label} tint>
         <Reveal><h2 className="section-h"><Highlight text={c.how.headline} hl={c.how.hl} /></h2></Reveal>
         <div className="mt-8 grid md:grid-cols-3 gap-5">
           {c.how.steps.map((st: any, i: number) => {
@@ -336,7 +364,7 @@ export default function Waitlist() {
       </Section>
 
       {/* ── INSIDE YOUR REPORT ───────────────────────────────────────── */}
-      <Section eyebrow={c.insideReport.label} tint>
+      <Section id="report" eyebrow={c.insideReport.label} tint>
         <Reveal>
           <h2 className="section-h max-w-2xl"><Highlight text={c.insideReport.headline} hl={c.insideReport.hl} /></h2>
           <p className="mt-4 text-charcoal/70 leading-relaxed max-w-xl">{c.insideReport.intro}</p>
@@ -351,6 +379,22 @@ export default function Waitlist() {
             ))}
           </ul>
         </Reveal>
+      </Section>
+
+      {/* ── BUILT FOR THE GULF ───────────────────────────────────────── */}
+      <Section eyebrow={c.builtForGulf.label} tint>
+        <Reveal>
+          <h2 className="section-h max-w-2xl">{c.builtForGulf.headline}</h2>
+          <p className="mt-3 text-charcoal/70 leading-relaxed max-w-xl">{c.builtForGulf.localisationLine}</p>
+        </Reveal>
+        <div className="mt-8 grid sm:grid-cols-2 gap-5">
+          {c.builtForGulf.pillars.map((p: any, i: number) => (
+            <Reveal key={p.title} className="card p-6" style={{ transitionDelay: `${(i % 2) * 90}ms` }}>
+              <h3 className="font-extrabold text-charcoal text-base">{p.title}</h3>
+              <p className="mt-2 text-sm text-charcoal/65 leading-relaxed">{p.body}</p>
+            </Reveal>
+          ))}
+        </div>
       </Section>
 
       {/* ── WHO IT'S FOR ─────────────────────────────────────────────── */}
@@ -368,7 +412,7 @@ export default function Waitlist() {
       </Section>
 
       {/* ── HERITAGE / PROOF (dark charcoal) ─────────────────────────── */}
-      <section className="sec-charcoal">
+      <section id="about" className="sec-charcoal scroll-mt-20">
         <div className="max-w-6xl mx-auto px-5 py-16">
           <Reveal>
             <p className="eyebrow !text-white/70">{c.heritage.label}</p>
@@ -388,6 +432,100 @@ export default function Waitlist() {
           <div className="mt-8 space-y-3 max-w-3xl text-white/80 leading-relaxed">
             {c.heritage.body.map((p: string) => <p key={p.slice(0, 24)}>{p}</p>)}
           </div>
+          <div className="mt-8 grid md:grid-cols-2 gap-5">
+            {c.heritage.testimonials.map((t: any, i: number) => (
+              <Reveal key={t.role} className="bg-white/10 border border-white/15 rounded-2xl p-6 backdrop-blur-sm" style={{ transitionDelay: `${i * 90}ms` }}>
+                <p className="text-white/90 leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
+                <div className="mt-4 flex items-center gap-3">
+                  <span className="w-9 h-9 rounded-full bg-teal text-charcoal font-bold grid place-items-center flex-none">{t.initials}</span>
+                  <div>
+                    <div className="text-sm font-bold text-white">{t.name}</div>
+                    <div className="text-xs text-white/60">{t.role}</div>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRICING ──────────────────────────────────────────────────── */}
+      <Section id="pricing" eyebrow={c.pricing.label} tint center>
+        <Reveal><h2 className="section-h max-w-3xl mx-auto">{<Highlight text={c.pricing.headline} hl={c.pricing.hl} />}</h2></Reveal>
+        <div className="mt-10 grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-start text-start">
+          <Reveal className="card p-7 relative">
+            <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.free.label}</p>
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-charcoal">{c.pricing.free.price}</span>
+              <span className="text-xs text-charcoal/45">{c.pricing.free.priceSub}</span>
+            </div>
+            <p className="mt-3 text-sm text-charcoal/65 leading-relaxed">{c.pricing.free.for}</p>
+            <div className="h-px bg-[var(--line)] my-6" />
+            <ul className="space-y-3.5 flex-1">
+              {c.pricing.free.bullets.map((b: string) => (
+                <li key={b} className="flex items-start gap-2.5 text-sm text-charcoal">
+                  <span className="flex-none w-5 h-5 rounded-full bg-teal/15 text-teal text-[11px] font-black flex items-center justify-center mt-0.5">✓</span>
+                  {b}
+                </li>
+              ))}
+            </ul>
+            <Link href="/assessment" className="cta cta-outline mt-7 w-full">{c.pricing.free.cta}</Link>
+          </Reveal>
+          <Reveal className="pcard-paid rounded-[26px] p-7 relative" style={{ transitionDelay: '90ms' }}>
+            <span className="pcard-badge absolute -top-3.5 start-1/2 -translate-x-1/2 rtl:translate-x-1/2">{c.pricing.paid.badge}</span>
+            <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.paid.label}</p>
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-white">{c.pricing.paid.price}</span>
+              <span className="text-xs text-white/70">{c.pricing.paid.priceSub}</span>
+            </div>
+            <p className="mt-3 text-sm text-white/80 leading-relaxed">{c.pricing.paid.for}</p>
+            <div className="h-px bg-white/16 my-6" />
+            <ul className="space-y-3.5 flex-1">
+              {c.pricing.paid.bullets.map((b: string) => (
+                <li key={b} className="flex items-start gap-2.5 text-sm text-white/90">
+                  <span className="flex-none w-5 h-5 rounded-full bg-teal/25 text-teal text-[11px] font-black flex items-center justify-center mt-0.5">✓</span>
+                  {b}
+                </li>
+              ))}
+            </ul>
+            <Link href="/assessment" className="cta mt-7 w-full !bg-white !text-primary !shadow-[0_16px_40px_-14px_rgba(0,0,0,0.4)]">{c.pricing.paid.cta}</Link>
+          </Reveal>
+          <Reveal className="card p-7 relative" style={{ transitionDelay: '150ms' }}>
+            <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.subscription.label}</p>
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-charcoal">{c.pricing.subscription.price}</span>
+              <span className="text-xs text-charcoal/45">{c.pricing.subscription.priceSub}</span>
+            </div>
+            <p className="mt-1 text-xs text-charcoal/45">{c.pricing.subscription.priceAlt}</p>
+            <p className="mt-3 text-sm text-charcoal/65 leading-relaxed">{c.pricing.subscription.for}</p>
+            <div className="h-px bg-[var(--line)] my-6" />
+            <ul className="space-y-3.5 flex-1">
+              {c.pricing.subscription.bullets.map((b: string) => (
+                <li key={b} className="flex items-start gap-2.5 text-sm text-charcoal">
+                  <span className="flex-none w-5 h-5 rounded-full bg-teal/15 text-teal text-[11px] font-black flex items-center justify-center mt-0.5">✓</span>
+                  {b}
+                </li>
+              ))}
+            </ul>
+            <Link href="/assessment" className="cta cta-outline mt-7 w-full">{c.pricing.subscription.cta}</Link>
+          </Reveal>
+        </div>
+        <Reveal className="mt-8 max-w-2xl mx-auto text-center card p-6">
+          <p className="font-bold text-charcoal">{c.pricing.addOn.title}</p>
+          <p className="mt-2 text-sm text-charcoal/65 leading-relaxed">{c.pricing.addOn.body}</p>
+        </Reveal>
+        <Reveal className="mt-8 text-sm text-charcoal/55 max-w-xl mx-auto text-center">{c.pricing.reassure}</Reveal>
+      </Section>
+
+      {/* ── FOR INSTITUTIONS (compact band) ──────────────────────────── */}
+      <section className="bg-white border-y border-[var(--line)]">
+        <div className="max-w-4xl mx-auto px-5 py-14 text-center">
+          <Reveal>
+            <p className="eyebrow mb-3">{c.institutions.label}</p>
+            <h2 className="section-h max-w-2xl mx-auto">{c.institutions.headline}</h2>
+            <p className="mt-4 text-charcoal/70 leading-relaxed max-w-2xl mx-auto">{c.institutions.body}</p>
+            <a href="/contact" className="cta cta-outline mt-7 inline-flex">{c.institutions.cta}</a>
+          </Reveal>
         </div>
       </section>
 
@@ -422,21 +560,55 @@ export default function Waitlist() {
 
       {/* ── FOOTER (dark charcoal) ──────────────────────────────────── */}
       <footer className="bg-charcoal text-white/70">
-        <div className="max-w-6xl mx-auto px-5 py-10 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="text-center sm:text-start">
-            <Wordmark size={26} tone="dark" />
-            <p className="mt-3 text-xs text-white/60 leading-relaxed max-w-sm">{c.footer.brandTagline}</p>
+        <div className="max-w-6xl mx-auto px-5 py-14 grid sm:grid-cols-2 md:grid-cols-4 gap-10">
+          <div>
+            <Wordmark size={30} tone="dark" />
+            <p className="mt-3 text-xs text-white/60 leading-relaxed">{c.footer.brandTagline}</p>
+            <p className="mt-3 text-xs text-white/45">{c.footer.brandPowered}</p>
+            <div className="mt-5">
+              <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.contactHead}</p>
+              <a href="tel:+97435082446" dir="ltr" className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.phone}</a>
+              <a href={`mailto:${c.footer.email}`} className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.email}</a>
+            </div>
           </div>
-          <div className="text-center sm:text-end">
-            <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.contactHead}</p>
-            <a href="tel:+97435082446" dir="ltr" className="block text-sm text-white/80 hover:text-white">{c.footer.phone}</a>
-            <a href={`mailto:${c.footer.email}`} className="block text-sm text-white/80 hover:text-white">{c.footer.email}</a>
+          <FooterCol head={c.footer.colPlatform.head} links={c.footer.colPlatform.links} hrefs={['/assessment', '#how', '#report', '#pricing']} />
+          <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about']} />
+          <div>
+            <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.colLegal.head}</p>
+            <p className="text-sm text-white/85 font-semibold mb-2">{c.footer.copyright}</p>
+            <p className="text-xs text-white/55 leading-relaxed mb-2">{c.footer.legalLinks}</p>
+            <p className="text-xs text-white/55 mb-3">{c.footer.registered}</p>
+            <div className="space-y-1">
+              {c.footer.social.map((s: string) => <p key={s} className="text-xs text-white/55">{s}</p>)}
+            </div>
           </div>
         </div>
         <div className="border-t border-white/10">
-          <div className="max-w-6xl mx-auto px-5 py-4 text-xs text-white/45 text-center">{c.footer.copyright}</div>
+          <div className="max-w-6xl mx-auto px-5 py-4 text-xs text-white/45">{c.footer.copyright}</div>
         </div>
       </footer>
+    </div>
+  )
+}
+
+function FooterCol({ head, links, hrefs }: { head: string; links: string[]; hrefs?: string[] }) {
+  return (
+    <div>
+      <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{head}</p>
+      <ul className="space-y-2.5">
+        {links.map((l, i) => {
+          const href = hrefs?.[i]
+          return (
+            <li key={l} className="text-sm text-white/75">
+              {href
+                ? href.startsWith('/')
+                  ? <Link href={href} className="hover:text-white">{l}</Link>
+                  : <a href={href} className="hover:text-white">{l}</a>
+                : <span className="cursor-default">{l}</span>}
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }
