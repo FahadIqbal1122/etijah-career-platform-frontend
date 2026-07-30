@@ -5,6 +5,8 @@
 //   tone: 'light' → blue path + teal star  (on white / #EBF3FF)
 //         'dark'  → white path + teal star (on Primary Blue / charcoal)
 
+import { useLocale } from 'next-intl'
+
 type LogomarkProps = {
   size?: number
   tone?: 'light' | 'dark'
@@ -64,20 +66,20 @@ export default function Logomark({
   )
 }
 
-// Full lockup: logomark + bilingual wordmark. `tone='dark'` for use on the brand
-// gradient; `tone='light'` on white surfaces.
+// Full lockup: logomark + wordmark, name shown in the active locale only.
+// `tone='dark'` for use on the brand gradient; `tone='light'` on white surfaces.
 export function Wordmark({ tone = 'light', size = 30 }: { tone?: 'light' | 'dark'; size?: number }) {
+  const locale = useLocale()
   const ink = tone === 'dark' ? '#FFFFFF' : '#0770BA'
-  const faint = tone === 'dark' ? 'rgba(255,255,255,0.7)' : 'var(--ink-faint)'
+  const name = locale === 'ar' ? 'إتجاهي' : 'Etijahi'
   return (
     <span className="inline-flex items-center gap-2.5">
       <Logomark size={size} tone={tone} />
-      <span className="flex flex-col leading-none">
-        <span style={{ color: ink, fontWeight: 800, fontSize: size * 0.6 }}>Etijahi</span>
-        {/* Arabic wordmark — Tajawal (IBM Plex Mono has no Arabic glyphs) */}
-        <span className="font-sans" style={{ color: faint, fontWeight: 700, fontSize: size * 0.34 }}>
-          إتجاهي
-        </span>
+      <span
+        className={locale === 'ar' ? 'font-sans' : undefined}
+        style={{ color: ink, fontWeight: 800, fontSize: size * 0.6, lineHeight: 1 }}
+      >
+        {name}
       </span>
     </span>
   )

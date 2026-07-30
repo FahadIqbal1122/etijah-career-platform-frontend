@@ -93,6 +93,7 @@ type WaitlistEntry = {
   name: string | null
   country: string | null
   status: string | null
+  age: string | null
   locale: string | null
   source: string | null
   created_at: string
@@ -1560,6 +1561,7 @@ export default function AdminPage() {
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Age</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Locale</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Source</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
@@ -1572,6 +1574,7 @@ export default function AdminPage() {
                           <td className="px-4 py-3 text-slate-500">{w.name || '—'}</td>
                           <td className="px-4 py-3 text-slate-500">{w.country || '—'}</td>
                           <td className="px-4 py-3 text-slate-500">{w.status ? (WAITLIST_STATUS_LABELS[w.status] || w.status) : '—'}</td>
+                          <td className="px-4 py-3 text-slate-500">{w.age || '—'}</td>
                           <td className="px-4 py-3 text-slate-500 uppercase">{w.locale || '—'}</td>
                           <td className="px-4 py-3 text-slate-500">{w.source || '—'}</td>
                           <td className="px-4 py-3 text-slate-400 text-xs">{new Date(w.created_at).toLocaleDateString()}</td>
@@ -1579,7 +1582,7 @@ export default function AdminPage() {
                       ))}
                       {waitlistList.length === 0 && (
                         <tr>
-                          <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No waitlist signups yet</td>
+                          <td colSpan={8} className="px-4 py-12 text-center text-slate-400">No waitlist signups yet</td>
                         </tr>
                       )}
                     </tbody>

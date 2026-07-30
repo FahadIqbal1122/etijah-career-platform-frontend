@@ -121,12 +121,13 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
   const [name, setName] = useState('')
   const [country, setCountry] = useState('')
   const [status, setStatus] = useState('')
+  const [age, setAge] = useState('')
   const [state, setState] = useState<FormState>('idle')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-    if (!emailValid || !name.trim() || !country || !status) {
+    if (!emailValid || !name.trim() || !country || !status || !age) {
       setState('error')
       return
     }
@@ -140,6 +141,7 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
           name: name.trim(),
           country,
           status,
+          age,
           locale,
           source: 'waitlist_page',
         }),
@@ -199,6 +201,19 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
         >
           <option value="" disabled>{c.statusPlaceholder}</option>
           {c.statuses.map((opt: any) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="sr-only">{c.agePlaceholder}</label>
+        <select
+          value={age}
+          onChange={(e) => { setAge(e.target.value); if (state === 'error') setState('idle') }}
+          className={fieldCls}
+        >
+          <option value="" disabled>{c.agePlaceholder}</option>
+          {c.ages.map((opt: any) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>

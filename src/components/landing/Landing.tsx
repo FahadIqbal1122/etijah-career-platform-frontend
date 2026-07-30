@@ -105,10 +105,7 @@ export default function Landing() {
       {/* ── NAV ──────────────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-30 bg-white border-b border-[var(--line)]">
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between gap-4">
-          <div className="flex flex-col leading-none gap-1">
-            <Wordmark size={30} />
-            <span className="text-[10px] text-charcoal/45 whitespace-nowrap">{c.nav.tagline}</span>
-          </div>
+          <Wordmark size={30} />
           <div className="hidden md:flex items-center gap-7 text-sm font-medium text-charcoal/70">
             {c.nav.links.map((l: string, i: number) => {
               const href = ['#how', '#report', '#who', '#pricing', '#about'][i] ?? '#'
