@@ -11,7 +11,7 @@ import { useRouter, usePathname } from '@/i18n/navigation'
 import { questions, BEHAVIORAL_SCALE, Question } from '@/data/questions'
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
-import { apiPost } from '@/lib/api'
+import { apiPost, apiAuthPost } from '@/lib/api'
 import Logomark from '@/components/brand/Logomark'
 import Constellation, { CONSTELLATION } from '@/components/brand/Constellation'
 import { frameworkOf, buildReveal, REVEAL_FRAMEWORKS } from '@/data/revealScoring'
@@ -346,7 +346,7 @@ export default function AssessmentForm() {
     setSubmitting(true)
     setError('')
     try {
-      const result = await apiPost<{ response_id: string }>('/assessment/submit', {
+      const result = await apiAuthPost<{ response_id: string }>('/assessment/submit', {
         full_name: answers['QD1'],
         email: answers['QD2'],
         phone: answers['QD3'],
@@ -362,6 +362,7 @@ export default function AssessmentForm() {
         why_here: answers['QO10'],
         answers: finalAnswers,
         completed: true,
+        locale,
       })
       clearDraft()
       setLeaving(true)
