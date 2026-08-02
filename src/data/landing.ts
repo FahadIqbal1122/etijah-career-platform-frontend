@@ -41,7 +41,7 @@ export const L = {
       },
       stats: [
         { num: '15+', label: 'Years of GCC Coaching' },
-        { num: '88,540+', label: 'Lives Impacted' },
+        { num: '88,500+', label: 'Lives Impacted' },
         { num: 'GCC', label: 'Built for the Gulf, by people from it' },
       ],
     },
@@ -132,7 +132,7 @@ export const L = {
       stats: [
         { num: '2010', label: 'Founded' },
         { num: '15+', label: 'Years of GCC Coaching' },
-        { num: '88,540+', label: 'Lives Impacted' },
+        { num: '88,500+', label: 'Lives Impacted' },
         { num: 'Trusted', label: 'By Governments, Universities & Multinationals Across the Region' },
       ],
       body: [
@@ -282,7 +282,7 @@ export const L = {
       },
       stats: [
         { num: '+15', label: 'عاماً من الإرشاد في الخليج' },
-        { num: '+88,540', label: 'حياة تأثرت' },
+        { num: '+88,500', label: 'حياة تأثرت' },
         { num: 'الخليج', label: 'صُنِع للمنطقة، بأيدي خبراء من أبنائها' },
       ],
     },
@@ -365,7 +365,7 @@ export const L = {
       stats: [
         { num: '2010', label: 'تأسست' },
         { num: '+15', label: 'عاماً من الإرشاد في الخليج' },
-        { num: '+88,540', label: 'حياة تأثرت' },
+        { num: '+88,500', label: 'حياة تأثرت' },
         { num: 'موثوقة', label: 'من حكومات وجامعات وشركات متعددة الجنسيات في المنطقة' },
       ],
       body: [
