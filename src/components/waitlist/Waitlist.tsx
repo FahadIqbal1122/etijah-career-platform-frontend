@@ -263,7 +263,13 @@ export default function Waitlist() {
       <header className="relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-5 pt-16 pb-14 text-center">
           <Reveal>
-            <p className="eyebrow mb-4 justify-center">{c.hero.eyebrow}</p>
+            <p className="eyebrow mb-4 justify-center inline-flex items-center gap-2 mx-auto px-4 py-2 rounded-full bg-teal/10 border border-teal/30 !text-[13px] tracking-[0.15em]">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-teal" />
+              </span>
+              {c.hero.eyebrow}
+            </p>
             <h1 className="text-4xl sm:text-5xl font-extrabold leading-[1.1] tracking-tight text-charcoal">
               {c.hero.headline[0]}<br />
               <Highlight text={c.hero.headline[1]} hl={c.hero.hl} />
