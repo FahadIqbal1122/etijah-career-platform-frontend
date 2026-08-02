@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { apiPost } from '@/lib/api'
 import Logomark from '@/components/brand/Logomark'
 
 const field =
@@ -32,9 +31,6 @@ export default function SignupPage() {
       setError(error.message)
       setLoading(false)
       return
-    }
-    if (data.user) {
-      apiPost('/assessment/link-by-email', { user_id: data.user.id, email }).catch(() => {})
     }
     setDone(true)
   }

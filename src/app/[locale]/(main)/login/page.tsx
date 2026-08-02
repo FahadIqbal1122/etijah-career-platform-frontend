@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { apiAuthPost } from '@/lib/api'
 import Logomark from '@/components/brand/Logomark'
 
 const field =
@@ -26,6 +27,7 @@ export default function LoginPage() {
       setLoading(false)
       return
     }
+    apiAuthPost('/assessment/link-by-email', {}).catch(() => {})
     router.push('/en/dashboard')
   }
 

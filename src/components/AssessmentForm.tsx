@@ -146,6 +146,7 @@ export default function AssessmentForm() {
   const [error, setError] = useState('')
   const [showExistingModal, setShowExistingModal] = useState(false)
   const [existingResultId, setExistingResultId] = useState<string | null>(null)
+  const [showClaimedModal, setShowClaimedModal] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
 
   const pendingRef = useRef(0)
@@ -207,7 +208,7 @@ export default function AssessmentForm() {
   }
 
   async function checkExistingUser(email: string, phone: string) {
-    return apiPost<{ id: string } | null>('/assessment/check-existing', { email, phone })
+    return apiPost<{ id: string | null; claimed?: boolean } | null>('/assessment/check-existing', { email, phone })
   }
 
   // single source of truth for answers — keep the ref in sync so reveals can
@@ -275,7 +276,11 @@ export default function AssessmentForm() {
       try {
         const existing = await checkExistingUser(answers['QD2'], answers['QD3'])
         setChecking(false)
-        if (existing) {
+        if (existing?.claimed) {
+          setShowClaimedModal(true)
+          return
+        }
+        if (existing?.id) {
           setExistingResultId(existing.id)
           setShowExistingModal(true)
           return
@@ -613,6 +618,30 @@ export default function AssessmentForm() {
                 className="w-full py-3 rounded-2xl border border-[var(--line-strong)] text-charcoal/70 font-medium hover:bg-lightblue transition-colors"
                 onClick={() => {
                   setShowExistingModal(false)
+                  doAdvance()
+                }}
+              >
+                {chrome.retake}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── already-has-an-account modal ────────────────────────────────── */}
+      {showClaimedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" dir={dir}>
+          <div className="card w-full max-w-sm p-8 space-y-4">
+            <h3 className="text-lg font-extrabold text-charcoal">This email already has an account</h3>
+            <p className="text-sm text-charcoal/60">Log in to view your previous results.</p>
+            <div className="flex flex-col gap-3 pt-2">
+              <button className="cta" style={{ width: '100%' }} onClick={() => router.push('/login')}>
+                Log in
+              </button>
+              <button
+                className="w-full py-3 rounded-2xl border border-[var(--line-strong)] text-charcoal/70 font-medium hover:bg-lightblue transition-colors"
+                onClick={() => {
+                  setShowClaimedModal(false)
                   doAdvance()
                 }}
               >
