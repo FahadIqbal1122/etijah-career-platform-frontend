@@ -92,6 +92,8 @@ type WaitlistEntry = {
   email: string
   name: string | null
   country: string | null
+  nationality: string | null
+  phone: string | null
   status: string | null
   age: string | null
   locale: string | null
@@ -1560,6 +1562,8 @@ export default function AdminPage() {
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Nationality</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Phone</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Age</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Locale</th>
@@ -1573,6 +1577,8 @@ export default function AdminPage() {
                           <td className="px-4 py-3 font-medium text-slate-800">{w.email}</td>
                           <td className="px-4 py-3 text-slate-500">{w.name || '—'}</td>
                           <td className="px-4 py-3 text-slate-500">{w.country || '—'}</td>
+                          <td className="px-4 py-3 text-slate-500">{w.nationality || '—'}</td>
+                          <td className="px-4 py-3 text-slate-500" dir="ltr">{w.phone || '—'}</td>
                           <td className="px-4 py-3 text-slate-500">{w.status ? (WAITLIST_STATUS_LABELS[w.status] || w.status) : '—'}</td>
                           <td className="px-4 py-3 text-slate-500">{w.age || '—'}</td>
                           <td className="px-4 py-3 text-slate-500 uppercase">{w.locale || '—'}</td>
@@ -1582,7 +1588,7 @@ export default function AdminPage() {
                       ))}
                       {waitlistList.length === 0 && (
                         <tr>
-                          <td colSpan={8} className="px-4 py-12 text-center text-slate-400">No waitlist signups yet</td>
+                          <td colSpan={10} className="px-4 py-12 text-center text-slate-400">No waitlist signups yet</td>
                         </tr>
                       )}
                     </tbody>

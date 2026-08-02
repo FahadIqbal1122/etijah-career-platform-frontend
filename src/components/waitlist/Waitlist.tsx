@@ -5,12 +5,16 @@
 // from feedback_responses / assessment data). Same brand design language as
 // components/landing/Landing.tsx.
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useLocale } from 'next-intl'
+import PhoneInput from 'react-phone-input-2'
+import 'react-phone-input-2/lib/style.css'
 import { Link, useRouter, usePathname } from '@/i18n/navigation'
 import { W } from '@/data/waitlist'
+import { getCountryOptions } from '@/data/countryCodes'
 import Logomark, { Wordmark } from '@/components/brand/Logomark'
 import LandingConstellation from '@/components/brand/LandingConstellation'
+import SearchableSelect from '@/components/waitlist/SearchableSelect'
 
 function Highlight({ text, hl }: { text: string; hl?: string }) {
   const i = hl ? text.indexOf(hl) : -1
@@ -120,9 +124,13 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [country, setCountry] = useState('')
+  const [nationality, setNationality] = useState('')
+  const [phone, setPhone] = useState('')
   const [status, setStatus] = useState('')
   const [age, setAge] = useState('')
   const [state, setState] = useState<FormState>('idle')
+
+  const countryOptions = useMemo(() => getCountryOptions(locale), [locale])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -140,6 +148,8 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
           email: email.trim().toLowerCase(),
           name: name.trim(),
           country,
+          nationality: nationality.trim() || null,
+          phone: phone.trim() ? `+${phone.trim()}` : null,
           status,
           age,
           locale,
@@ -160,6 +170,12 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
       ? `bg-white text-charcoal border-[var(--line-strong)] focus:ring-teal/20`
       : `bg-white/12 text-white placeholder:text-white/60 border-white/25 focus:ring-white/30`
   }`
+  const phoneInputCls = `!w-full !h-[46px] !text-sm !rounded-full ${
+    light
+      ? '!bg-white !text-charcoal !border-[var(--line-strong)]'
+      : '!bg-white/12 !text-white !border-white/25'
+  }`
+  const phoneButtonCls = `!rounded-s-full ${light ? '!bg-white !border-[var(--line-strong)]' : '!bg-white/12 !border-white/25'}`
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3 w-full max-w-md">
@@ -184,16 +200,13 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
         />
       </div>
       <div className="flex flex-col sm:flex-row gap-3">
-        <select
+        <SearchableSelect
+          options={countryOptions}
           value={country}
-          onChange={(e) => { setCountry(e.target.value); if (state === 'error') setState('idle') }}
+          onChange={(v) => { setCountry(v); if (state === 'error') setState('idle') }}
+          placeholder={c.countryPlaceholder}
           className={`${fieldCls} flex-1`}
-        >
-          <option value="" disabled>{c.countryPlaceholder}</option>
-          {c.countries.map((opt: any) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
+        />
         <select
           value={status}
           onChange={(e) => { setStatus(e.target.value); if (state === 'error') setState('idle') }}
@@ -205,18 +218,39 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
           ))}
         </select>
       </div>
-      <div>
-        <label className="sr-only">{c.agePlaceholder}</label>
-        <select
-          value={age}
-          onChange={(e) => { setAge(e.target.value); if (state === 'error') setState('idle') }}
-          className={fieldCls}
-        >
-          <option value="" disabled>{c.agePlaceholder}</option>
-          {c.ages.map((opt: any) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <SearchableSelect
+          options={countryOptions}
+          value={nationality}
+          onChange={(v) => setNationality(v)}
+          placeholder={c.nationalityPlaceholder}
+          className={`${fieldCls} flex-1`}
+        />
+        <div>
+          <label className="sr-only">{c.agePlaceholder}</label>
+          <select
+            value={age}
+            onChange={(e) => { setAge(e.target.value); if (state === 'error') setState('idle') }}
+            className={`${fieldCls} flex-1`}
+          >
+            <option value="" disabled>{c.agePlaceholder}</option>
+            {c.ages.map((opt: any) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div dir="ltr">
+        <label className="sr-only">{c.phonePlaceholder}</label>
+        <PhoneInput
+          country="bh"
+          value={phone}
+          onChange={(val) => setPhone(val)}
+          placeholder={c.phonePlaceholder}
+          containerClass="!w-full"
+          inputClass={phoneInputCls}
+          buttonClass={phoneButtonCls}
+        />
       </div>
       <button
         type="submit"
