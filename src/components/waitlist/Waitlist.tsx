@@ -168,14 +168,14 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
   const fieldCls = `w-full text-sm rounded-full px-5 py-3.5 border transition-colors focus:outline-none focus:ring-2 ${
     light
       ? `bg-white text-charcoal border-[var(--line-strong)] focus:ring-teal/20`
-      : `bg-white/12 text-white placeholder:text-white/60 border-white/25 focus:ring-white/30`
+      : `bg-white/12 backdrop-blur-md text-white placeholder:text-white/60 border-white/25 focus:ring-white/30`
   }`
   const phoneInputCls = `!w-full !h-[46px] !text-sm !rounded-full ${
     light
       ? '!bg-white !text-charcoal !border-[var(--line-strong)]'
-      : '!bg-white/12 !text-white !border-white/25'
+      : '!bg-white/12 !backdrop-blur-md !text-white !border-white/25'
   }`
-  const phoneButtonCls = `!rounded-s-full ${light ? '!bg-white !border-[var(--line-strong)]' : '!bg-white/12 !border-white/25'}`
+  const phoneButtonCls = `!rounded-s-full ${light ? '!bg-white !border-[var(--line-strong)]' : '!bg-white/12 !backdrop-blur-md !border-white/25'}`
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3 w-full max-w-md">
