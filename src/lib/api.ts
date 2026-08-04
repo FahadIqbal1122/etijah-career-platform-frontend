@@ -64,6 +64,12 @@ export async function apiAuthPatch<T>(path: string, body: unknown): Promise<T> {
     return res.json()
 }
 
+export type PlanCode = 'pathfinder' | 'launchpad_monthly' | 'launchpad_yearly'
+
+export async function startCheckout(planCode: PlanCode): Promise<{ checkout_url: string }> {
+    return apiAuthPost<{ checkout_url: string }>('/billing/checkout', { plan_code: planCode })
+}
+
 export async function apiAuthDelete<T>(path: string): Promise<T> {
     const res = await fetch(`${BASE_URL}${path}`, {
         method: 'DELETE',

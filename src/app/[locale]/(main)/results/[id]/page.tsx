@@ -7,6 +7,7 @@ import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
+import { LockedSection } from '@/components/shared/LockedSection'
 
 const levelToWidth: Record<string, string> = {
   low: '20%',
@@ -36,6 +37,7 @@ export default function ResultsPage() {
   const id = params.id as string
 
   const [summary, setSummary] = useState<any>(null)
+  const [tier, setTier] = useState<'free' | 'pathfinder' | 'launchpad'>('launchpad')
   const [error, setError] = useState('')
   const [jobs, setJobs] = useState<any[]>([])
   const [jobsSuggestionsLoading, setJobsSuggestionsLoading] = useState(true)
@@ -65,6 +67,7 @@ export default function ResultsPage() {
       .then(data => {
         setSummary(data.summary)
         setEmail(data.email || '')
+        if (data.tier === 'free' || data.tier === 'pathfinder' || data.tier === 'launchpad') setTier(data.tier)
       })
       .catch(err => setError(err.message || 'Failed to load results'))
     apiGet<any>(`/assessment/${id}/career-suggestions`)
@@ -374,6 +377,7 @@ export default function ResultsPage() {
 
         {/* AI Impact */}
         {aiImpact ? (
+          <>
           <div className="card p-5">
             <SectionHead
               title="AI Impact on Your Careers"
@@ -412,6 +416,16 @@ export default function ResultsPage() {
               ))}
             </div>
           </div>
+          {tier === 'free' && (
+            <LockedSection
+              tag="Pathfinder"
+              title="Unlock the full AI-impact deep dive"
+              body="See all 5 of your top matches, a 1–3 year outlook for your market, and which human skills gain value as AI changes these roles."
+              ctaLabel="Unlock Full Report"
+              ctaHref="/#pricing"
+            />
+          )}
+          </>
         ) : null}
 
         {/* Course Recommendations */}
@@ -442,6 +456,14 @@ export default function ResultsPage() {
               ))}
             </div>
           </div>
+        ) : tier === 'free' ? (
+          <LockedSection
+            tag="Pathfinder"
+            title="Unlock personalised course recommendations"
+            body="Get certification and course picks matched to your strengths and target careers, not just the generic report."
+            ctaLabel="Unlock Full Report"
+            ctaHref="/#pricing"
+          />
         ) : null}
 
         {/* Company Target List */}
@@ -470,6 +492,14 @@ export default function ResultsPage() {
               ))}
             </div>
           </div>
+        ) : tier === 'free' ? (
+          <LockedSection
+            tag="Pathfinder"
+            title="Unlock your target company list"
+            body="Get a list of companies hiring in your sector and country, matched to your profile."
+            ctaLabel="Unlock Full Report"
+            ctaHref="/#pricing"
+          />
         ) : null}
 
         {/* Reassess */}

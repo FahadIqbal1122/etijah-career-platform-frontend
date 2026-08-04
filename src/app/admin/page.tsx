@@ -165,7 +165,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market'>('submissions')
+  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode'>('submissions')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -237,6 +237,11 @@ export default function AdminPage() {
     is_free: false, level: 'beginner', duration_hours: '', language: 'en',
     country_code: '',
   })
+
+  const [testModeEnabled, setTestModeEnabled] = useState(false)
+  const [testModeLoading, setTestModeLoading] = useState(false)
+  const [testModeSaving, setTestModeSaving] = useState(false)
+  const [testModeError, setTestModeError] = useState('')
 
   useEffect(() => {
     fetch('/api/admin/session').then(res => {
@@ -360,6 +365,38 @@ export default function AdminPage() {
     }
   }, [])
 
+  const fetchTestMode = useCallback(async () => {
+    setTestModeLoading(true)
+    setTestModeError('')
+    try {
+      const res = await fetch('/api/admin/test-mode')
+      if (!res.ok) throw new Error('Failed to load test mode')
+      setTestModeEnabled((await res.json()).enabled)
+    } catch (err: any) {
+      setTestModeError(err.message)
+    } finally {
+      setTestModeLoading(false)
+    }
+  }, [])
+
+  async function toggleTestMode(enabled: boolean) {
+    setTestModeSaving(true)
+    setTestModeError('')
+    try {
+      const res = await fetch('/api/admin/test-mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      })
+      if (!res.ok) throw new Error('Failed to save test mode')
+      setTestModeEnabled((await res.json()).enabled)
+    } catch (err: any) {
+      setTestModeError(err.message)
+    } finally {
+      setTestModeSaving(false)
+    }
+  }
+
   const fetchMarketTrends = useCallback(async () => {
     setMarketLoading(true)
     setMarketError('')
@@ -403,8 +440,9 @@ export default function AdminPage() {
       fetchCountryProfiles()
       fetchCourses()
       fetchMarketTrends()
+      fetchTestMode()
     }
-  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends])
+  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -1303,7 +1341,7 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends() }}
+              onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
               className="text-sm text-primary hover:underline"
             >
               Refresh
@@ -1385,6 +1423,15 @@ export default function AdminPage() {
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'market' ? 'bg-amber-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
           >
             Market Analysis
+          </button>
+          <button
+            onClick={() => { setActiveTab('testmode'); fetchTestMode() }}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'testmode' ? 'bg-cyan-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Test Mode
+            {testModeEnabled && (
+              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">ON</span>
+            )}
           </button>
         </div>
       </div>
@@ -2404,6 +2451,39 @@ export default function AdminPage() {
               </>
             )
           })()}
+        </div>
+      )}
+
+      {/* ── Test Mode Tab ── */}
+      {activeTab === 'testmode' && (
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <h2 className="text-xl font-bold text-slate-800 mb-1">Test Mode</h2>
+          <p className="text-sm text-slate-400 mb-6">
+            When enabled, every user — regardless of what plan they've actually bought, including anonymous
+            visitors — gets treated as the top tier everywhere: full reports, full AI-impact deep dive, courses,
+            target companies, and daily job matches. Use this to walk the full paid experience without a real
+            purchase, then turn it back off.
+          </p>
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="font-semibold text-slate-800">
+                  All plans unlocked {testModeEnabled ? <span className="text-cyan-600">(ON)</span> : <span className="text-slate-400">(OFF)</span>}
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5">Affects production immediately for every visitor — not just your own admin session.</p>
+              </div>
+              <button
+                role="switch"
+                aria-checked={testModeEnabled}
+                disabled={testModeLoading || testModeSaving}
+                onClick={() => toggleTestMode(!testModeEnabled)}
+                className={`relative w-12 h-7 rounded-full transition-colors shrink-0 disabled:opacity-50 ${testModeEnabled ? 'bg-cyan-600' : 'bg-slate-200'}`}
+              >
+                <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-all ${testModeEnabled ? 'left-[22px]' : 'left-0.5'}`} />
+              </button>
+            </div>
+            {testModeError && <p className="text-xs text-red-500 mt-3">{testModeError}</p>}
+          </div>
         </div>
       )}
 

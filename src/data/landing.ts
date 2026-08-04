@@ -151,6 +151,7 @@ export const L = {
       headline: 'Every Etijahi journey starts the same way — nothing to pay, everything to gain.',
       hl: 'everything to gain',
       free: {
+        code: null,
         label: 'Explorer',
         price: 'Free',
         priceSub: 'Always',
@@ -165,6 +166,7 @@ export const L = {
         cta: 'Start Now',
       },
       paid: {
+        code: 'pathfinder',
         badge: 'Most popular',
         label: 'Pathfinder',
         price: '149 SAR',
@@ -180,6 +182,8 @@ export const L = {
         cta: 'Unlock Full Report',
       },
       subscription: {
+        code: 'launchpad_monthly',
+        yearlyCode: 'launchpad_yearly',
         label: 'Launchpad',
         price: '99 SAR',
         priceSub: '/month',
@@ -383,6 +387,7 @@ export const L = {
       headline: 'كل رحلة في اتجاهي تبدأ بالطريقة نفسها — لا شيء تدفعه، والكثير لتكسبه.',
       hl: 'والكثير لتكسبه',
       free: {
+        code: null,
         label: 'المستكشف',
         price: 'مجاناً',
         priceSub: 'دائماً',
@@ -397,6 +402,7 @@ export const L = {
         cta: 'ابدأ الآن',
       },
       paid: {
+        code: 'pathfinder',
         badge: 'الأكثر شيوعاً',
         label: 'مرشد المسار',
         price: '١٤٩ ريال',
@@ -412,6 +418,8 @@ export const L = {
         cta: 'افتح التقرير الكامل',
       },
       subscription: {
+        code: 'launchpad_monthly',
+        yearlyCode: 'launchpad_yearly',
         label: 'منصة الانطلاق',
         price: '٩٩ ريال',
         priceSub: '/شهرياً',

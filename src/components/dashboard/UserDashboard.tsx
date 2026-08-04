@@ -8,12 +8,13 @@
 // shown as clearly-labelled previews so nothing pretends to work.
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { useRouter as useNavRouter } from 'next/navigation'
+import { useRouter as useNavRouter, useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useRouter, usePathname, Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
-import { apiAuthGet, apiAuthPost, apiAuthPatch, apiAuthDelete, apiGet, BASE_URL } from '@/lib/api'
+import { apiAuthGet, apiAuthPost, apiAuthPatch, apiAuthDelete, apiGet, BASE_URL, startCheckout, type PlanCode } from '@/lib/api'
 import Logomark from '@/components/brand/Logomark'
+import { LockedSection } from '@/components/shared/LockedSection'
 
 type Application = {
   id: string; job_title: string; company: string | null; location: string | null
@@ -23,8 +24,20 @@ type Application = {
 type AssessmentSummary = {
   id: string; full_name: string; country: string; completed: boolean; created_at: string; top_type: string | null
 }
-type Plan = { plan_code: string | null; status: 'active' | 'expired' | 'free'; current_period_end: string | null }
+type Plan = {
+  tier: 'free' | 'pathfinder' | 'launchpad'
+  pathfinder_unlocked: boolean
+  pathfinder_unlocked_at: string | null
+  subscription_plan_code: string | null
+  subscription_status: string | null
+  subscription_current_period_end: string | null
+}
 type Transaction = { order_ref: string; plan_code: string; amount: number; currency: string; status: string; created_at: string }
+type JobMatch = {
+  id: string
+  matched_at: string
+  job_data: { title: string; company: string | null; location: string | null; source: string | null; url: string | null; matched_career: string | null }
+}
 
 const STAGES: { key: Application['status']; label: string }[] = [
   { key: 'saved', label: 'Saved' }, { key: 'applied', label: 'Applied' },
@@ -53,6 +66,11 @@ const T = {
     jobsBullets: ['Daily job matching from real openings', 'CV analysis against every role', 'Interview prep tied to your profile'],
     trackerHead: 'Your saved jobs', trackerSub: 'Jobs you save from your results, tracked through to offer.',
     trackerEmpty: 'No saved jobs yet. Save jobs from your results page and track them here.',
+    comingSoonHead: 'More on the way', comingSoon: 'Coming Soon',
+    cvHead: 'CV rebuild', cvBody: 'Your CV rebuilt around your real strengths, with ATS keyword optimisation — coming soon.',
+    whatsappHead: 'WhatsApp delivery', whatsappBody: 'Job matches and updates delivered straight to WhatsApp — coming soon.',
+    outreachHead: 'Outreach lists', outreachBody: 'Your full target list of 50+ companies with personalised outreach emails — coming soon.',
+    interviewHead: 'Interview practice', interviewBody: 'Unlimited mock interviews with role-specific questions and scored feedback — coming soon.',
     billingHead: 'Subscription & billing', currentPlan: 'Current plan', free: 'Free', always: 'Always',
     upgradeSoon: 'Paid tiers coming soon', paymentLabel: 'Payment methods',
     notifHead: 'Notifications', notifSub: 'Choose what we send you. (Preview — not saved yet.)',
@@ -73,6 +91,11 @@ const T = {
     jobsBullets: ['مطابقة يومية من فرص حقيقية', 'تحليل سيرتك مع كل وظيفة', 'تحضير للمقابلات مرتبط بملفّك'],
     trackerHead: 'وظائفك المحفوظة', trackerSub: 'الوظائف التي تحفظها من نتائجك، متابَعة حتى العرض.',
     trackerEmpty: 'لا توجد وظائف محفوظة بعد. احفظ الوظائف من صفحة نتائجك وتابعها هنا.',
+    comingSoonHead: 'المزيد قريباً', comingSoon: 'قريباً',
+    cvHead: 'إعادة بناء السيرة الذاتية', cvBody: 'إعادة بناء سيرتك الذاتية لتبرز نقاط قوتك، مع تحسينها لأنظمة فرز السير الذاتية — قريباً.',
+    whatsappHead: 'التسليم عبر واتساب', whatsappBody: 'فرص العمل والتحديثات تصل مباشرة إلى واتساب — قريباً.',
+    outreachHead: 'قوائم التواصل', outreachBody: 'قائمتك الكاملة (+٥٠ شركة) مع رسائل تواصل مخصصة — قريباً.',
+    interviewHead: 'تدريب المقابلات', interviewBody: 'تدريب غير محدود على المقابلات بأسئلة مخصصة لكل وظيفة وتقييم دقيق — قريباً.',
     billingHead: 'الاشتراك والفوترة', currentPlan: 'الباقة الحالية', free: 'مجاناً', always: 'دائماً',
     upgradeSoon: 'الباقات المدفوعة قريباً', paymentLabel: 'وسائل الدفع',
     notifHead: 'الإشعارات', notifSub: 'اختر ما نرسله إليك. (معاينة — غير محفوظة بعد.)',
@@ -162,6 +185,7 @@ export default function UserDashboard() {
   const [applications, setApplications] = useState<Application[]>([])
   const [plan, setPlan] = useState<Plan | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [jobMatches, setJobMatches] = useState<JobMatch[]>([])
   const [buying, setBuying] = useState(false)
   const [topMatch, setTopMatch] = useState<string | null>(null)
   const [notifs, setNotifs] = useState(NOTIF.map(n => n.on))
@@ -181,6 +205,7 @@ export default function UserDashboard() {
     apiAuthGet<Application[]>('/applications').then(setApplications).catch(() => {})
     apiAuthGet<Plan>('/billing/plan').then(setPlan).catch(() => {})
     apiAuthGet<Transaction[]>('/billing/transaction').then(setTransactions).catch(() => {})
+    apiAuthGet<JobMatch[]>('/jobs/my-matches').then(setJobMatches).catch(() => {})
     apiAuthGet<AssessmentSummary[]>('/assessment/my-assessments')
       .then(list => {
         const sorted = [...list].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
@@ -203,22 +228,27 @@ export default function UserDashboard() {
     catch (e: unknown) { setError(e instanceof Error ? e.message : 'Failed to remove') }
   }
   async function handleLogout() { await supabase.auth.signOut(); navRouter.push(`/${locale}/login`) }
-  async function handleBuyPlan() {
+  async function handleBuyPlan(planCode: PlanCode) {
     setBuying(true)
     try {
-      // TODO: replace with the real plan catalog (code/name/amount/currency) once pricing is finalized
-      const { checkout_url } = await apiAuthPost<{ checkout_url: string }>('/billing/checkout', {
-        plan_code: 'premium_monthly',
-        plan_name: 'Etijahi Premium (Monthly)',
-        amount: 49,
-        currency: 'BHD',
-      })
+      const { checkout_url } = await startCheckout(planCode)
       window.location.href = checkout_url
     } catch (e: unknown) {
       setBuying(false)
       setError(e instanceof Error ? e.message : 'Could not start checkout')
     }
   }
+
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    if (!user) return
+    const buy = searchParams.get('buy')
+    if (buy === 'pathfinder' || buy === 'launchpad_monthly' || buy === 'launchpad_yearly') {
+      navRouter.replace(`/${locale}/dashboard`)
+      handleBuyPlan(buy)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   function go(id: string) {
     setActive(id)
@@ -316,17 +346,43 @@ export default function UserDashboard() {
             </div>
           )}
 
-          {/* job matches: locked preview + real tracker */}
+          {/* job matches: real for Launchpad, locked preview otherwise */}
           <section id="sec-jobs" className="space-y-4 scroll-mt-4">
-            <div className="card p-6 relative overflow-hidden">
-              <div className="flex items-center gap-2 mb-1"><span className="text-primary"><Icon name="lock" size={18} /></span><span className="eyebrow !text-primary">{t.jobsHead}</span><PreviewTag label={t.preview} /></div>
-              <h3 className="text-lg font-extrabold text-charcoal">{t.jobsLockedHead}</h3>
-              <p className="text-sm text-charcoal/60 mt-1">{t.jobsLockedBody}</p>
-              <ul className="mt-3 space-y-1.5">
-                {t.jobsBullets.map(b => <li key={b} className="flex items-start gap-2 text-sm text-charcoal/70"><span className="text-teal mt-0.5"><Icon name="check" size={14} /></span>{b}</li>)}
-              </ul>
-              <span className="inline-block mt-4 text-xs font-medium text-charcoal/45">{t.notBuilt}</span>
-            </div>
+            {plan?.tier === 'launchpad' ? (
+              <div className="card p-5">
+                <div className="flex items-center gap-2 mb-1"><span className="eyebrow !text-primary">{t.jobsHead}</span></div>
+                <p className="text-xs text-charcoal/45 mb-4">Refreshed daily from live GCC openings matched to your top careers.</p>
+                {jobMatches.length === 0 ? (
+                  <p className="text-sm text-charcoal/50 py-4 text-center">No matches yet — check back after the next daily refresh.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {jobMatches.map(m => (
+                      <a key={m.id} href={m.job_data.url || '#'} target="_blank" rel="noopener noreferrer"
+                        className="flex items-start justify-between gap-3 border border-[var(--line)] rounded-xl p-3.5 hover:border-[var(--line-strong)] hover:bg-lightblue/50 transition-colors group">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-bold text-charcoal group-hover:text-primary truncate">{m.job_data.title}</p>
+                          <p className="text-xs text-charcoal/50 truncate">{m.job_data.company}{m.job_data.location ? ` · ${m.job_data.location}` : ''}</p>
+                        </div>
+                        <span className="chip !py-0.5 !text-[11px] shrink-0">{new Date(m.matched_at).toLocaleDateString()}</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="card p-6 relative overflow-hidden">
+                <div className="flex items-center gap-2 mb-1"><span className="text-primary"><Icon name="lock" size={18} /></span><span className="eyebrow !text-primary">{t.jobsHead}</span><PreviewTag label={t.preview} /></div>
+                <h3 className="text-lg font-extrabold text-charcoal">{t.jobsLockedHead}</h3>
+                <p className="text-sm text-charcoal/60 mt-1">{t.jobsLockedBody}</p>
+                <ul className="mt-3 space-y-1.5">
+                  {t.jobsBullets.map(b => <li key={b} className="flex items-start gap-2 text-sm text-charcoal/70"><span className="text-teal mt-0.5"><Icon name="check" size={14} /></span>{b}</li>)}
+                </ul>
+                <button onClick={() => handleBuyPlan('launchpad_monthly')} disabled={buying}
+                  className="cta cta-teal inline-flex mt-4" style={{ padding: '9px 16px', fontSize: 13, borderRadius: 999 }}>
+                  {buying ? '…' : 'Subscribe to Launchpad'}
+                </button>
+              </div>
+            )}
 
             <div className="card p-5">
               <h3 className="font-bold text-charcoal">{t.trackerHead}</h3>
@@ -365,6 +421,16 @@ export default function UserDashboard() {
                 </div>
               )}
             </div>
+
+            <div>
+              <h3 className="font-bold text-charcoal mb-3">{t.comingSoonHead}</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <LockedSection tag={t.comingSoon} title={t.cvHead} body={t.cvBody} footer={t.notBuilt} />
+                <LockedSection tag={t.comingSoon} title={t.whatsappHead} body={t.whatsappBody} footer={t.notBuilt} />
+                <LockedSection tag={t.comingSoon} title={t.outreachHead} body={t.outreachBody} footer={t.notBuilt} />
+                <LockedSection tag={t.comingSoon} title={t.interviewHead} body={t.interviewBody} footer={t.notBuilt} />
+              </div>
+            </div>
           </section>
 
           {/* billing (preview) — replaced by real Buy Plan flow below, kept for reference
@@ -388,19 +454,31 @@ export default function UserDashboard() {
             <div className="flex items-center gap-2 mb-4"><h3 className="font-bold text-charcoal">{t.billingHead}</h3></div>
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
-                <p className="font-bold text-charcoal">{t.currentPlan}: {plan?.status === 'active' ? plan.plan_code : t.explorer}</p>
+                <p className="font-bold text-charcoal">
+                  {t.currentPlan}: {plan?.tier === 'launchpad' ? 'Launchpad' : plan?.tier === 'pathfinder' ? 'Pathfinder' : t.explorer}
+                </p>
                 <p className="text-2xl font-extrabold text-primary mt-1">
-                  {plan?.status === 'active' && plan.current_period_end
-                    ? <span className="text-sm font-medium text-charcoal/60">Renews {new Date(plan.current_period_end).toLocaleDateString()}</span>
-                    : <>{t.free}<span className="text-xs font-medium text-charcoal/40 ms-1">{t.always}</span></>}
+                  {plan?.tier === 'launchpad' && plan.subscription_current_period_end
+                    ? <span className="text-sm font-medium text-charcoal/60">Renews {new Date(plan.subscription_current_period_end).toLocaleDateString()}</span>
+                    : plan?.tier === 'pathfinder'
+                      ? <span className="text-sm font-medium text-charcoal/60">Unlocked for life</span>
+                      : <>{t.free}<span className="text-xs font-medium text-charcoal/40 ms-1">{t.always}</span></>}
                 </p>
               </div>
-              {plan?.status !== 'active' && (
-                <button onClick={handleBuyPlan} disabled={buying}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-50">
-                  {buying ? '…' : 'Buy Plan'}
-                </button>
-              )}
+              <div className="flex gap-2 flex-wrap">
+                {plan?.tier === 'free' && (
+                  <button onClick={() => handleBuyPlan('pathfinder')} disabled={buying}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary text-primary text-sm font-medium disabled:opacity-50">
+                    {buying ? '…' : 'Unlock Full Report — 149 SAR'}
+                  </button>
+                )}
+                {plan?.tier !== 'launchpad' && (
+                  <button onClick={() => handleBuyPlan('launchpad_monthly')} disabled={buying}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-50">
+                    {buying ? '…' : 'Subscribe to Launchpad — 99 SAR/mo'}
+                  </button>
+                )}
+              </div>
             </div>
             {transactions.length > 0 && (
               <div className="mt-4 pt-4 border-t border-[var(--line)]">

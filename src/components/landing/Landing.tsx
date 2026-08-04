@@ -10,6 +10,8 @@ import { Link, useRouter, usePathname } from '@/i18n/navigation'
 import { L } from '@/data/landing'
 import Logomark, { Wordmark } from '@/components/brand/Logomark'
 import LandingConstellation from '@/components/brand/LandingConstellation'
+import { supabase } from '@/lib/supabase'
+import { startCheckout, type PlanCode } from '@/lib/api'
 
 // Render a headline, tealing the `hl` phrase inside it. Uses indexOf so text
 // after a repeated phrase is never dropped.
@@ -98,6 +100,26 @@ export default function Landing() {
   const pathname = usePathname()
   const c = (L as any)[locale] ?? L.en
   const arrow = dir === 'rtl' ? '←' : '→'
+  const [loggedIn, setLoggedIn] = useState(false)
+  const [checkingOut, setCheckingOut] = useState<PlanCode | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setLoggedIn(!!session))
+  }, [])
+
+  async function handlePlanCta(planCode: PlanCode) {
+    if (!loggedIn) {
+      router.push(`/login?next=${encodeURIComponent(`/dashboard?buy=${planCode}`)}`)
+      return
+    }
+    setCheckingOut(planCode)
+    try {
+      const { checkout_url } = await startCheckout(planCode)
+      window.location.href = checkout_url
+    } catch {
+      setCheckingOut(null)
+    }
+  }
 
   return (
     <div className="brand-surface text-charcoal" dir={dir}>
@@ -388,7 +410,13 @@ export default function Landing() {
                 </li>
               ))}
             </ul>
-            <Link href="/assessment" className="cta mt-7 w-full !bg-white !text-primary !shadow-[0_16px_40px_-14px_rgba(0,0,0,0.4)]">{c.pricing.paid.cta}</Link>
+            <button
+              onClick={() => handlePlanCta(c.pricing.paid.code)}
+              disabled={checkingOut === c.pricing.paid.code}
+              className="cta mt-7 w-full !bg-white !text-primary !shadow-[0_16px_40px_-14px_rgba(0,0,0,0.4)]"
+            >
+              {checkingOut === c.pricing.paid.code ? '…' : c.pricing.paid.cta}
+            </button>
           </Reveal>
           <Reveal className="card p-7 relative" style={{ transitionDelay: '150ms' }}>
             <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.subscription.label}</p>
@@ -396,7 +424,12 @@ export default function Landing() {
               <span className="text-3xl font-extrabold text-charcoal">{c.pricing.subscription.price}</span>
               <span className="text-xs text-charcoal/45">{c.pricing.subscription.priceSub}</span>
             </div>
-            <p className="mt-1 text-xs text-charcoal/45">{c.pricing.subscription.priceAlt}</p>
+            <button
+              onClick={() => handlePlanCta(c.pricing.subscription.yearlyCode)}
+              className="mt-1 text-xs text-charcoal/45 hover:text-teal underline-offset-2 hover:underline text-start"
+            >
+              {c.pricing.subscription.priceAlt}
+            </button>
             <p className="mt-3 text-sm text-charcoal/65 leading-relaxed">{c.pricing.subscription.for}</p>
             <div className="h-px bg-[var(--line)] my-6" />
             <ul className="space-y-3.5 flex-1">
@@ -407,7 +440,13 @@ export default function Landing() {
                 </li>
               ))}
             </ul>
-            <Link href="/assessment" className="cta cta-outline mt-7 w-full">{c.pricing.subscription.cta}</Link>
+            <button
+              onClick={() => handlePlanCta(c.pricing.subscription.code)}
+              disabled={checkingOut === c.pricing.subscription.code}
+              className="cta cta-outline mt-7 w-full"
+            >
+              {checkingOut === c.pricing.subscription.code ? '…' : c.pricing.subscription.cta}
+            </button>
           </Reveal>
         </div>
         <Reveal className="mt-8 max-w-2xl mx-auto text-center card p-6">

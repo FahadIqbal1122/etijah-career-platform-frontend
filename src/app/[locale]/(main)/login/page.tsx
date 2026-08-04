@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { supabase } from '@/lib/supabase'
 import { apiAuthPost } from '@/lib/api'
 import Logomark from '@/components/brand/Logomark'
@@ -10,7 +11,17 @@ const field =
   'w-full border border-[var(--line-strong)] rounded-xl px-3.5 py-2.5 text-sm bg-lightblue text-charcoal placeholder-charcoal/40 focus:outline-none focus:border-accent focus:ring-2 focus:ring-teal/20 transition-colors'
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const locale = useLocale()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -28,7 +39,8 @@ export default function LoginPage() {
       return
     }
     apiAuthPost('/assessment/link-by-email', {}).catch(() => {})
-    router.push('/en/dashboard')
+    const next = searchParams.get('next')
+    router.push(next ? `/${locale}${next}` : `/${locale}/dashboard`)
   }
 
   return (
