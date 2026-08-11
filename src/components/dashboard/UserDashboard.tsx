@@ -541,7 +541,7 @@ export default function UserDashboard() {
             <h3 className="font-bold text-charcoal">{t.contactHead}</h3>
             <p className="text-xs text-charcoal/45 mb-3">{t.contactSub}</p>
             <div className="flex flex-wrap gap-3">
-              <a href="tel:+97335082446" dir="ltr" className="chip">3508 2446</a>
+              <a href="tel:+97335082446" dir="ltr" className="chip">+973 3508 2446</a>
               <a href="mailto:projects@etijahcoaching.com" dir="ltr" className="chip">projects@etijahcoaching.com</a>
             </div>
           </section>

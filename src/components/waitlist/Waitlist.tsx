@@ -325,7 +325,7 @@ export default function Waitlist() {
             ) : (
               <WaitlistForm c={c.hero} locale={locale} onJoined={() => setJoined(true)} />
             )}
-            <p className="text-xs text-charcoal/40 flex items-center gap-2">
+            <p className="text-sm text-charcoal/55 flex items-center gap-2">
               <span className="text-teal">✦</span>{c.hero.trust}
             </p>
           </Reveal>
@@ -607,7 +607,7 @@ export default function Waitlist() {
             <p className="mt-3 text-xs text-white/45">{c.footer.brandPowered}</p>
             <div className="mt-5">
               <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.contactHead}</p>
-              <a href="tel:+97435082446" dir="ltr" className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.phone}</a>
+              <a href="tel:+97335082446" dir="ltr" className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.phone}</a>
               <a href={`mailto:${c.footer.email}`} className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.email}</a>
             </div>
           </div>

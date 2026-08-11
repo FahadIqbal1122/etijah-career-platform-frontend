@@ -53,7 +53,7 @@ html { scroll-behavior: smooth; }
    to Tajawal and drop the wide tracking. */
 .eyebrow {
   font-family: var(--font-mono), monospace;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--teal);
@@ -61,7 +61,7 @@ html { scroll-behavior: smooth; }
 [dir="rtl"] .eyebrow {
   font-family: var(--font-tajawal), sans-serif;
   letter-spacing: 0.04em;
-  font-size: 12px;
+  font-size: 15px;
   text-transform: none;
 }
 
