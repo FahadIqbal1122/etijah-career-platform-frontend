@@ -2,12 +2,26 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { apiGet, apiAuthPost } from '@/lib/api'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 import { LockedSection } from '@/components/shared/LockedSection'
+
+const LOADING_MESSAGES: Record<'en' | 'ar', string[]> = {
+  en: [
+    'Built on 15 years of real GCC career coaching experience.',
+    "You're not just getting a personality quiz — this is matched against real regional job market data.",
+    'Every recommendation is tailored to your answers, not a generic template.',
+  ],
+  ar: [
+    'مبني على خبرة ١٥ عاماً من الإرشاد المهني الحقيقي في الخليج.',
+    'هذا ليس مجرد اختبار شخصية، بل تحليل مطابق لبيانات سوق العمل الإقليمي الحقيقية.',
+    'كل توصية مصممة خصيصاً لإجاباتك، وليست قالباً عاماً.',
+  ],
+}
 
 const levelToWidth: Record<string, string> = {
   low: '20%',
@@ -35,8 +49,11 @@ function SectionHead({ icon, title, subtitle }: { icon: ReactNode; title: string
 export default function ResultsPage() {
   const params = useParams()
   const id = params.id as string
+  const locale = useLocale() === 'ar' ? 'ar' : 'en'
 
   const [summary, setSummary] = useState<any>(null)
+  const [recentCompletions, setRecentCompletions] = useState<number | null>(null)
+  const [messageIndex, setMessageIndex] = useState(0)
   const [tier, setTier] = useState<'free' | 'pathfinder' | 'launchpad'>('launchpad')
   const [error, setError] = useState('')
   const [jobs, setJobs] = useState<any[]>([])
@@ -92,6 +109,20 @@ export default function ResultsPage() {
       .finally(() => setCoursesLoading(false))
   }, [id])
 
+  useEffect(() => {
+    apiGet<{ count: number }>('/stats/recent-completions')
+      .then(data => setRecentCompletions(data.count))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    const messages = LOADING_MESSAGES[locale]
+    const interval = setInterval(() => {
+      setMessageIndex(i => (i + 1) % messages.length)
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [locale])
+
   if (error) {
     return (
       <div className="min-h-screen brand-surface flex items-center justify-center px-4">
@@ -108,11 +139,18 @@ export default function ResultsPage() {
     // into this screen, so a matching backdrop avoids a jarring color-flash
     // hand-off between the two pages. We hold the whole report back behind
     // one loader so sections don't pop in piecemeal as each request resolves.
+    const t = locale === 'ar'
+      ? { preparing: 'جاري تجهيز تقريرك…', recent: (n: number) => `أنهى ${n} ${n === 1 ? 'شخص' : 'أشخاص'} تقييمهم خلال الساعة الماضية` }
+      : { preparing: 'Preparing your report…', recent: (n: number) => `${n} ${n === 1 ? 'person' : 'people'} completed their assessment in the last hour` }
     return (
-      <div className="min-h-screen brand-hero flex items-center justify-center">
-        <div className="text-center space-y-4">
+      <div className="min-h-screen brand-hero flex items-center justify-center px-6">
+        <div className="text-center space-y-4 max-w-sm">
           <div className="report-loading-logo inline-flex"><Logomark size={44} tone="dark" glow /></div>
-          <p className="text-white/70 text-sm">Preparing your report…</p>
+          <p className="text-white/70 text-sm">{t.preparing}</p>
+          <p className="text-white/50 text-xs leading-relaxed min-h-[2.5rem]">{LOADING_MESSAGES[locale][messageIndex]}</p>
+          {!!recentCompletions && (
+            <p className="text-teal text-xs font-medium">✦ {t.recent(recentCompletions)}</p>
+          )}
         </div>
       </div>
     )
