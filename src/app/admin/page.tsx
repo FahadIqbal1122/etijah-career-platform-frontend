@@ -415,14 +415,25 @@ export default function AdminPage() {
     setMarketFetching(true)
     setMarketFetchResult(null)
     try {
-      const res = await fetch('/api/admin/market-analysis/fetch', {
-        method: 'POST',
-        signal: AbortSignal.timeout(120_000),
-      })
-      const text = await res.text()
-      const data = text ? JSON.parse(text) : { error: 'Empty response from server' }
-      setMarketFetchResult(data)
-      fetchMarketTrends()
+      const startRes = await fetch('/api/admin/market-analysis/fetch', { method: 'POST' })
+      const startText = await startRes.text()
+      const startData = startText ? JSON.parse(startText) : { error: 'Empty response from server' }
+      if (startData.error) {
+        setMarketFetchResult(startData)
+        return
+      }
+
+      for (let i = 0; i < 60; i++) { // poll for up to ~5 minutes
+        await new Promise(r => setTimeout(r, 5000))
+        const statusRes = await fetch('/api/admin/market-analysis/fetch-status')
+        const status = await statusRes.json()
+        if (status.status === 'done') {
+          setMarketFetchResult(status)
+          fetchMarketTrends()
+          return
+        }
+      }
+      setMarketFetchResult({ error: 'Fetch is taking longer than expected — check back shortly' })
     } catch (err: any) {
       setMarketFetchResult({ error: err.message })
     } finally {
