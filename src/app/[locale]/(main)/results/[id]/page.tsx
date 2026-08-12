@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
-import { apiGet, apiAuthGet, apiAuthPost } from '@/lib/api'
+import { apiGet, apiAuthGet, apiAuthPost, apiAuthGetBlob } from '@/lib/api'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
@@ -72,6 +72,9 @@ export default function ResultsPage() {
   const [loggedIn, setLoggedIn] = useState(false)
   const [reassessing, setReassessing] = useState(false)
   const [reassessError, setReassessError] = useState('')
+  const [downloadingReport, setDownloadingReport] = useState(false)
+  const [downloadError, setDownloadError] = useState('')
+  const [reportLocale, setReportLocale] = useState<'en' | 'ar'>('en')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -85,6 +88,7 @@ export default function ResultsPage() {
         setSummary(data.summary)
         setEmail(data.email || '')
         if (data.tier === 'free' || data.tier === 'pathfinder' || data.tier === 'launchpad') setTier(data.tier)
+        if (data.locale === 'ar' || data.locale === 'en') setReportLocale(data.locale)
       })
       .catch(err => setError(err.message || 'Failed to load results'))
     apiAuthGet<any>(`/assessment/${id}/career-suggestions`)
@@ -173,6 +177,27 @@ export default function ResultsPage() {
     }
   }
 
+  async function downloadReport(reportLang?: 'en' | 'ar') {
+    setDownloadingReport(true)
+    setDownloadError('')
+    try {
+      const query = reportLang ? `?locale=${reportLang}` : ''
+      const { blob, filename } = await apiAuthGetBlob(`/assessment/${id}/report${query}`)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename || 'career-report.pdf'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (e: unknown) {
+      setDownloadError(e instanceof Error ? e.message : 'Failed to download report')
+    } finally {
+      setDownloadingReport(false)
+    }
+  }
+
   async function saveJob(job: any, index: number) {
     try {
       await apiAuthPost('/applications', {
@@ -214,6 +239,37 @@ export default function ResultsPage() {
             <span className="inline-block bg-white/15 border border-white/25 backdrop-blur-sm text-white px-5 py-2 rounded-full text-sm font-semibold">
               RIASEC: {riasecCode}
             </span>
+          </div>
+          <div className="flex flex-col items-center gap-2 mt-6">
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <button
+                onClick={() => downloadReport()}
+                disabled={downloadingReport}
+                className="inline-flex items-center gap-2 bg-white text-primary px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-white/90 transition-colors disabled:opacity-50"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                {downloadingReport
+                  ? (locale === 'ar' ? 'جاري التحميل…' : 'Downloading…')
+                  : (locale === 'ar' ? 'تحميل التقرير PDF' : 'Download PDF Report')}
+              </button>
+              <button
+                onClick={() => downloadReport(reportLocale === 'ar' ? 'en' : 'ar')}
+                disabled={downloadingReport}
+                className="inline-flex items-center gap-2 bg-white/10 border border-white/25 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-white/20 transition-colors disabled:opacity-50"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                {downloadingReport
+                  ? (locale === 'ar' ? 'جاري التحميل…' : 'Downloading…')
+                  : reportLocale === 'ar'
+                    ? (locale === 'ar' ? 'تحميل النسخة الإنجليزية' : 'Download English PDF')
+                    : (locale === 'ar' ? 'تحميل النسخة العربية' : 'Download Arabic PDF')}
+              </button>
+            </div>
+            {downloadError && <p className="text-rose-200 text-xs">{downloadError}</p>}
           </div>
         </div>
       </div>

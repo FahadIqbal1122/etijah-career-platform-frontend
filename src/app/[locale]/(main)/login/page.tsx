@@ -40,7 +40,10 @@ function LoginForm() {
     }
     apiAuthPost('/assessment/link-by-email', {}).catch(() => {})
     const next = searchParams.get('next')
-    router.push(next ? `/${locale}${next}` : `/${locale}/dashboard`)
+    // Only follow `next` if it's a same-app relative path — a leading "//" (or "/\") is
+    // protocol-relative and would silently redirect off-site after a real login.
+    const safeNext = next && /^\/(?!\/|\\)/.test(next) ? next : null
+    router.push(safeNext ? `/${locale}${safeNext}` : `/${locale}/dashboard`)
   }
 
   return (

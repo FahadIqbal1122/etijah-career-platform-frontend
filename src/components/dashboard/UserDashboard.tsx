@@ -23,6 +23,7 @@ type Application = {
 }
 type AssessmentSummary = {
   id: string; full_name: string; country: string; completed: boolean; created_at: string; top_type: string | null
+  locale?: 'en' | 'ar' | null
 }
 type Plan = {
   tier: 'free' | 'pathfinder' | 'launchpad'
@@ -58,6 +59,7 @@ const T = {
     reportReadyEyebrow: 'Your report', reportReadyHead: 'Your full report is ready',
     reportReadySub: 'Career matches · AI impact · courses · companies to target',
     viewReport: 'View report', download: 'Download PDF', downloading: 'Downloading…',
+    downloadAr: 'Download Arabic PDF', downloadEn: 'Download English PDF',
     noReportHead: 'You haven’t taken the assessment yet', noReportSub: 'It takes about 15 minutes and it’s free.',
     startAssessment: 'Start the assessment',
     statCompleted: 'Assessment completed', statMatch: 'Top career match', statRetake: 'Recommended retake',
@@ -83,6 +85,7 @@ const T = {
     reportReadyEyebrow: 'تقريرك', reportReadyHead: 'تقريرك الكامل جاهز',
     reportReadySub: 'مسارات مهنية · أثر الذكاء الاصطناعي · دورات · شركات مستهدفة',
     viewReport: 'عرض التقرير', download: 'تحميل PDF', downloading: 'جاري التحميل…',
+    downloadAr: 'تحميل النسخة العربية PDF', downloadEn: 'تحميل النسخة الإنجليزية PDF',
     noReportHead: 'لم تُجرِ التقييم بعد', noReportSub: 'يستغرق حوالي ١٥ دقيقة وهو مجاني.',
     startAssessment: 'ابدأ التقييم',
     statCompleted: 'اكتمل التقييم', statMatch: 'أفضل مسار مهني', statRetake: 'إعادة التقييم المقترحة',
@@ -230,11 +233,12 @@ export default function UserDashboard() {
     catch (e: unknown) { setError(e instanceof Error ? e.message : 'Failed to remove') }
   }
   async function handleLogout() { await supabase.auth.signOut(); navRouter.push(`/${locale}/login`) }
-  async function downloadReport(id: string) {
+  async function downloadReport(id: string, reportLocale?: 'en' | 'ar') {
     setDownloadingReport(true)
     setDownloadError('')
     try {
-      const { blob, filename } = await apiAuthGetBlob(`/assessment/${id}/report`)
+      const query = reportLocale ? `?locale=${reportLocale}` : ''
+      const { blob, filename } = await apiAuthGetBlob(`/assessment/${id}/report${query}`)
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -341,6 +345,14 @@ export default function UserDashboard() {
                   <button onClick={() => downloadReport(latest.id)} disabled={downloadingReport}
                     className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--line-strong)] text-charcoal/70 text-sm font-medium hover:bg-lightblue transition-colors disabled:opacity-50">
                     <Icon name="report" size={16} />{downloadingReport ? t.downloading : t.download}
+                  </button>
+                  <button
+                    onClick={() => downloadReport(latest.id, latest.locale === 'ar' ? 'en' : 'ar')}
+                    disabled={downloadingReport}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--line-strong)] text-charcoal/70 text-sm font-medium hover:bg-lightblue transition-colors disabled:opacity-50"
+                  >
+                    <Icon name="report" size={16} />
+                    {downloadingReport ? t.downloading : (latest.locale === 'ar' ? t.downloadEn : t.downloadAr)}
                   </button>
                 </div>
                 {downloadError && <p className="text-rose-500 text-xs mt-2">{downloadError}</p>}
