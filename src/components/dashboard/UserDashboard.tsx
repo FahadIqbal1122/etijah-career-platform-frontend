@@ -12,7 +12,7 @@ import { useRouter as useNavRouter, useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useRouter, usePathname, Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
-import { apiAuthGet, apiAuthPost, apiAuthPatch, apiAuthDelete, apiGet, BASE_URL, startCheckout, type PlanCode } from '@/lib/api'
+import { apiAuthGet, apiAuthGetBlob, apiAuthPost, apiAuthPatch, apiAuthDelete, apiGet, startCheckout, type PlanCode } from '@/lib/api'
 import Logomark from '@/components/brand/Logomark'
 import { LockedSection } from '@/components/shared/LockedSection'
 
@@ -57,7 +57,7 @@ const T = {
     welcome: 'Welcome back,', explorer: 'Explorer', preview: 'Preview',
     reportReadyEyebrow: 'Your report', reportReadyHead: 'Your full report is ready',
     reportReadySub: 'Career matches · AI impact · courses · companies to target',
-    viewReport: 'View report', download: 'Download PDF',
+    viewReport: 'View report', download: 'Download PDF', downloading: 'Downloading…',
     noReportHead: 'You haven’t taken the assessment yet', noReportSub: 'It takes about 15 minutes and it’s free.',
     startAssessment: 'Start the assessment',
     statCompleted: 'Assessment completed', statMatch: 'Top career match', statRetake: 'Recommended retake',
@@ -82,7 +82,7 @@ const T = {
     welcome: 'مرحباً بعودتك،', explorer: 'المُكتشِف', preview: 'معاينة',
     reportReadyEyebrow: 'تقريرك', reportReadyHead: 'تقريرك الكامل جاهز',
     reportReadySub: 'مسارات مهنية · أثر الذكاء الاصطناعي · دورات · شركات مستهدفة',
-    viewReport: 'عرض التقرير', download: 'تحميل PDF',
+    viewReport: 'عرض التقرير', download: 'تحميل PDF', downloading: 'جاري التحميل…',
     noReportHead: 'لم تُجرِ التقييم بعد', noReportSub: 'يستغرق حوالي ١٥ دقيقة وهو مجاني.',
     startAssessment: 'ابدأ التقييم',
     statCompleted: 'اكتمل التقييم', statMatch: 'أفضل مسار مهني', statRetake: 'إعادة التقييم المقترحة',
@@ -191,6 +191,8 @@ export default function UserDashboard() {
   const [notifs, setNotifs] = useState(NOTIF.map(n => n.on))
   const [active, setActive] = useState('home')
   const [error, setError] = useState('')
+  const [downloadingReport, setDownloadingReport] = useState(false)
+  const [downloadError, setDownloadError] = useState('')
   const mainRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -228,6 +230,25 @@ export default function UserDashboard() {
     catch (e: unknown) { setError(e instanceof Error ? e.message : 'Failed to remove') }
   }
   async function handleLogout() { await supabase.auth.signOut(); navRouter.push(`/${locale}/login`) }
+  async function downloadReport(id: string) {
+    setDownloadingReport(true)
+    setDownloadError('')
+    try {
+      const { blob, filename } = await apiAuthGetBlob(`/assessment/${id}/report`)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename || 'career-report.pdf'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (e: unknown) {
+      setDownloadError(e instanceof Error ? e.message : 'Failed to download report')
+    } finally {
+      setDownloadingReport(false)
+    }
+  }
   async function handleBuyPlan(planCode: PlanCode) {
     setBuying(true)
     try {
@@ -317,11 +338,12 @@ export default function UserDashboard() {
                   <Link href={`/results/${latest.id}`} className="cta" style={{ padding: '11px 18px', fontSize: 14, borderRadius: 12 }}>
                     <span>{t.viewReport}</span><span className="cta-arrow">{dir === 'rtl' ? '←' : '→'}</span>
                   </Link>
-                  <a href={`${BASE_URL}/assessment/${latest.id}/report`} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--line-strong)] text-charcoal/70 text-sm font-medium hover:bg-lightblue transition-colors">
-                    <Icon name="report" size={16} />{t.download}
-                  </a>
+                  <button onClick={() => downloadReport(latest.id)} disabled={downloadingReport}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--line-strong)] text-charcoal/70 text-sm font-medium hover:bg-lightblue transition-colors disabled:opacity-50">
+                    <Icon name="report" size={16} />{downloadingReport ? t.downloading : t.download}
+                  </button>
                 </div>
+                {downloadError && <p className="text-rose-500 text-xs mt-2">{downloadError}</p>}
               </>
             ) : (
               <div className="text-center py-4">

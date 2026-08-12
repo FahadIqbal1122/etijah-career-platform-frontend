@@ -38,6 +38,20 @@ export async function apiAuthGet<T>(path: string): Promise<T> {
     return res.json()
 }
 
+// For binary responses (e.g. PDF downloads) that need the auth header a plain
+// <a href> can't carry — fetches as a blob and reads the filename off
+// Content-Disposition so callers don't have to guess it.
+export async function apiAuthGetBlob(path: string): Promise<{ blob: Blob; filename: string | null }> {
+    const res = await fetch(`${BASE_URL}${path}`, { headers: await authHeader() })
+    if (!res.ok) {
+        const text = await res.text()
+        throw new Error(text || `Request failed: ${res.status}`)
+    }
+    const disposition = res.headers.get('Content-Disposition') || ''
+    const match = disposition.match(/filename="?([^"]+)"?/)
+    return { blob: await res.blob(), filename: match ? match[1] : null }
+}
+
 export async function apiAuthPost<T>(path: string, body: unknown): Promise<T> {
     const res = await fetch(`${BASE_URL}${path}`, {
         method: 'POST',
