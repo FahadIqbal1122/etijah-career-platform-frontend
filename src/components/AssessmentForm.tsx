@@ -12,6 +12,7 @@ import { questions, BEHAVIORAL_SCALE, Question } from '@/data/questions'
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { apiPost, apiAuthPost } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 import Constellation, { CONSTELLATION } from '@/components/brand/Constellation'
 import { frameworkOf, buildReveal, REVEAL_FRAMEWORKS } from '@/data/revealScoring'
@@ -167,6 +168,19 @@ export default function AssessmentForm() {
     const found = loadDraft()
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of an external (browser-only) store, not a derived/cascading update
     if (found) setDraft(found)
+  }, [])
+
+  // Logged-in users shouldn't have to retype their name/email — pre-fill QD1/QD2
+  // from the Supabase session, without clobbering anything already answered
+  // (e.g. a resumed draft) and leaving the fields editable either way.
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user
+      if (!user) return
+      if (!answersRef.current.QD1 && user.user_metadata?.full_name) setAnswer('QD1', user.user_metadata.full_name)
+      if (!answersRef.current.QD2 && user.email) setAnswer('QD2', user.email)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setAnswer is a stable helper closing over refs, safe to omit
   }, [])
 
   function resumeDraft() {
