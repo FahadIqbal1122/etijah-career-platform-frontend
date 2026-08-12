@@ -423,8 +423,8 @@ export default function AdminPage() {
         return
       }
 
-      for (let i = 0; i < 60; i++) { // poll for up to ~5 minutes
-        await new Promise(r => setTimeout(r, 5000))
+      for (let i = 0; i < 90; i++) { // poll for up to ~15 minutes (6 countries x 25 roles x 2 sources can take a while)
+        await new Promise(r => setTimeout(r, 10000))
         const statusRes = await fetch('/api/admin/market-analysis/fetch-status')
         const status = await statusRes.json()
         if (status.status === 'done') {
@@ -433,7 +433,7 @@ export default function AdminPage() {
           return
         }
       }
-      setMarketFetchResult({ error: 'Fetch is taking longer than expected — check back shortly' })
+      setMarketFetchResult({ error: 'Still running in the background — refresh in a few minutes to see results' })
     } catch (err: any) {
       setMarketFetchResult({ error: err.message })
     } finally {
@@ -2199,7 +2199,7 @@ export default function AdminPage() {
           <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
             <div>
               <h2 className="text-xl font-bold text-slate-800">GCC Job Market Intelligence</h2>
-              <p className="text-sm text-slate-400 mt-1">Saudi Arabia &amp; Bahrain · 25 role categories · weekly snapshots</p>
+              <p className="text-sm text-slate-400 mt-1">Saudi Arabia, UAE, Bahrain, Qatar, Kuwait &amp; Oman · 25 role categories · weekly snapshots</p>
             </div>
             <button
               onClick={triggerMarketFetch}
