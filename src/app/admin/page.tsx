@@ -223,7 +223,7 @@ export default function AdminPage() {
   const [marketError, setMarketError] = useState('')
   const [marketFetching, setMarketFetching] = useState(false)
   const [marketFetchResult, setMarketFetchResult] = useState<any>(null)
-  const [marketCountryFilter, setMarketCountryFilter] = useState<'SA' | 'BH' | 'both'>('both')
+  const [marketCountryFilter, setMarketCountryFilter] = useState<'SA' | 'AE' | 'BH' | 'QA' | 'KW' | 'OM' | 'both'>('both')
   const [marketRoleFilter, setMarketRoleFilter] = useState<string>('all')
 
   const [courses, setCourses] = useState<CourseEntry[]>([])
@@ -2248,7 +2248,7 @@ export default function AdminPage() {
             const salaryByRole: Record<string, number[]> = {}
             for (const s of filteredSalary) {
               if (!salaryByRole[s.role]) salaryByRole[s.role] = []
-              salaryByRole[s.role].push(s.avg_salary)
+              salaryByRole[s.role].push(s.avg_salary_usd)
             }
 
             const maxCompanyCount = Math.max(...filteredCompanies.slice(0,10).map((c: any) => c.total), 1)
@@ -2257,11 +2257,11 @@ export default function AdminPage() {
               <>
                 {/* Country filter */}
                 <div className="flex gap-3 mb-6 flex-wrap items-center">
-                  <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
-                    {(['both', 'SA', 'BH'] as const).map(c => (
+                  <div className="flex gap-1 bg-slate-100 p-1 rounded-xl flex-wrap">
+                    {(['both', 'SA', 'AE', 'BH', 'QA', 'KW', 'OM'] as const).map(c => (
                       <button key={c} onClick={() => setMarketCountryFilter(c)}
                         className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-colors ${marketCountryFilter === c ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                        {c === 'both' ? 'Both Countries' : c === 'SA' ? '🇸🇦 Saudi Arabia' : '🇧🇭 Bahrain'}
+                        {c === 'both' ? 'All Countries' : { SA: '🇸🇦 Saudi Arabia', AE: '🇦🇪 UAE', BH: '🇧🇭 Bahrain', QA: '🇶🇦 Qatar', KW: '🇰🇼 Kuwait', OM: '🇴🇲 Oman' }[c]}
                       </button>
                     ))}
                   </div>
@@ -2323,7 +2323,7 @@ export default function AdminPage() {
                               <div className="h-3 rounded-full bg-amber-500 transition-all duration-500" style={{ width: `${pct}%` }} />
                             </div>
                             <span className="text-xs font-semibold text-slate-600 w-5 text-right">{count}</span>
-                            {salaryAvg && <span className="text-[10px] text-slate-400 w-16 text-right hidden md:block">{salaryAvg.toLocaleString()}</span>}
+                            {salaryAvg && <span className="text-[10px] text-slate-400 w-16 text-right hidden md:block">${salaryAvg.toLocaleString()}</span>}
                           </div>
                         )
                       })}
@@ -2397,7 +2397,7 @@ export default function AdminPage() {
                 {Object.keys(salaryByRole).length > 0 && (
                   <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
                     <h3 className="text-sm font-bold text-slate-700 mb-0.5">Salary Insights by Role</h3>
-                    <p className="text-xs text-slate-400 mb-4">Average across all collected listings where salary was disclosed</p>
+                    <p className="text-xs text-slate-400 mb-4">Average monthly salary in USD, across all collected listings where salary was disclosed</p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {Object.entries(salaryByRole)
                         .map(([role, vals]) => ({ role, avg: Math.round(vals.reduce((s, v) => s + v, 0) / vals.length), count: vals.length }))
@@ -2405,7 +2405,7 @@ export default function AdminPage() {
                         .map(({ role, avg, count }) => (
                           <div key={role} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                             <p className="text-xs text-slate-500 capitalize mb-1">{role}</p>
-                            <p className="text-lg font-bold text-slate-800">{avg.toLocaleString()}</p>
+                            <p className="text-lg font-bold text-slate-800">${avg.toLocaleString()}</p>
                             <p className="text-[10px] text-slate-400 mt-0.5">{count} data point{count !== 1 ? 's' : ''}</p>
                           </div>
                         ))}
