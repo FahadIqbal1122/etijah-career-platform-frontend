@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
-import { apiGet, apiAuthPost } from '@/lib/api'
+import { apiGet, apiAuthGet, apiAuthPost } from '@/lib/api'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
@@ -80,30 +80,30 @@ export default function ResultsPage() {
   }, [])
 
   useEffect(() => {
-    apiGet<any>(`/assessment/${id}/results`)
+    apiAuthGet<any>(`/assessment/${id}/results`)
       .then(data => {
         setSummary(data.summary)
         setEmail(data.email || '')
         if (data.tier === 'free' || data.tier === 'pathfinder' || data.tier === 'launchpad') setTier(data.tier)
       })
       .catch(err => setError(err.message || 'Failed to load results'))
-    apiGet<any>(`/assessment/${id}/career-suggestions`)
+    apiAuthGet<any>(`/assessment/${id}/career-suggestions`)
       .then(data => setJobs(data.suggestions))
       .catch(() => {})
       .finally(() => setJobsSuggestionsLoading(false))
-    apiGet<any>(`/assessment/${id}/ai-impact`)
+    apiAuthGet<any>(`/assessment/${id}/ai-impact`)
       .then(data => setAiImpact(data))
       .catch(() => {})
       .finally(() => setAiLoading(false))
-    apiGet<any>(`/assessment/${id}/job-listings`)
+    apiAuthGet<any>(`/assessment/${id}/job-listings`)
       .then(data => setJobListings(data.jobs || []))
       .catch(() => {})
       .finally(() => setJobsLoading(false))
-    apiGet<any[]>(`/assessment/${id}/companies`)
+    apiAuthGet<any[]>(`/assessment/${id}/companies`)
       .then(data => setCompanies(data || []))
       .catch(() => {})
       .finally(() => setCompaniesLoading(false))
-    apiGet<any[]>(`/assessment/${id}/courses`)
+    apiAuthGet<any[]>(`/assessment/${id}/courses`)
       .then(data => setCourses(data || []))
       .catch(() => {})
       .finally(() => setCoursesLoading(false))
@@ -161,8 +161,8 @@ export default function ResultsPage() {
     setReassessError('')
     try {
       const [ai, jl] = await Promise.all([
-        apiGet<any>(`/assessment/${id}/ai-impact?force=true`),
-        apiGet<any>(`/assessment/${id}/job-listings?force=true`),
+        apiAuthGet<any>(`/assessment/${id}/ai-impact?force=true`),
+        apiAuthGet<any>(`/assessment/${id}/job-listings?force=true`),
       ])
       setAiImpact(ai)
       setJobListings(jl.jobs || [])
