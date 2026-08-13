@@ -272,6 +272,21 @@ export default function AdminPage() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Belt-and-suspenders for the resync above: if the admin_session cookie ever does
+  // go stale anyway (resync missed a beat, tab was backgrounded through a refresh),
+  // every tab's data fetch starts silently 401ing and just sits there showing a
+  // generic "Failed to load X" forever. Poll the same session-check endpoint used at
+  // mount so a stale session bounces back to the login screen instead.
+  useEffect(() => {
+    if (!authed) return
+    const interval = setInterval(() => {
+      fetch('/api/admin/session').then(res => {
+        if (!res.ok) setAuthed(false)
+      })
+    }, 60000)
+    return () => clearInterval(interval)
+  }, [authed])
+
   const fetchSubmissions = useCallback(async () => {
     setLoading(true)
     setFetchError('')
