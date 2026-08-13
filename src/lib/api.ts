@@ -7,42 +7,69 @@ async function authHeader(): Promise<Record<string, string>> {
     return session ? { Authorization: `Bearer ${session.access_token}` } : {}
 }
 
+const RETRY_DELAY_MS = 800
+
+function wait(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// Right after a redirect (assessment submit, login) the Supabase client can
+// still be hydrating/refreshing its session when the first authenticated
+// call fires, producing a network error or a 401 that has nothing to do with
+// the request itself. `getHeaders` is called fresh on each attempt so a retry
+// picks up a session that's since settled, rather than reusing stale headers.
+async function requestWithRetry(path: string, init: RequestInit, getHeaders: () => Promise<Record<string, string>>): Promise<Response> {
+    async function attempt(): Promise<Response> {
+        const headers = { ...init.headers, ...(await getHeaders()) }
+        return fetch(`${BASE_URL}${path}`, { ...init, headers })
+    }
+
+    let res: Response
+    try {
+        res = await attempt()
+    } catch {
+        await wait(RETRY_DELAY_MS)
+        res = await attempt()
+    }
+    if (res.status === 401) {
+        await wait(RETRY_DELAY_MS)
+        res = await attempt()
+    }
+    return res
+}
+
+async function asJson<T>(res: Response): Promise<T> {
+    if (!res.ok) {
+        const text = await res.text()
+        throw new Error(text || `Request failed: ${res.status}`)
+    }
+    return res.json()
+}
+
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const res = await requestWithRetry(path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-    })
-    if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || `Request failed: ${res.status}`)
-    }
-    return res.json()
+    }, async () => ({}))
+    return asJson<T>(res)
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
-    const res = await fetch(`${BASE_URL}${path}`)
-    if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || `Request failed: ${res.status}`)
-    }
-    return res.json()
+    const res = await requestWithRetry(path, {}, async () => ({}))
+    return asJson<T>(res)
 }
 
 export async function apiAuthGet<T>(path: string): Promise<T> {
-    const res = await fetch(`${BASE_URL}${path}`, { headers: await authHeader() })
-    if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || `Request failed: ${res.status}`)
-    }
-    return res.json()
+    const res = await requestWithRetry(path, {}, authHeader)
+    return asJson<T>(res)
 }
 
 // For binary responses (e.g. PDF downloads) that need the auth header a plain
 // <a href> can't carry — fetches as a blob and reads the filename off
 // Content-Disposition so callers don't have to guess it.
 export async function apiAuthGetBlob(path: string): Promise<{ blob: Blob; filename: string | null }> {
-    const res = await fetch(`${BASE_URL}${path}`, { headers: await authHeader() })
+    const res = await requestWithRetry(path, {}, authHeader)
     if (!res.ok) {
         const text = await res.text()
         throw new Error(text || `Request failed: ${res.status}`)
@@ -53,29 +80,21 @@ export async function apiAuthGetBlob(path: string): Promise<{ blob: Blob; filena
 }
 
 export async function apiAuthPost<T>(path: string, body: unknown): Promise<T> {
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const res = await requestWithRetry(path, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-    })
-    if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || `Request failed: ${res.status}`)
-    }
-    return res.json()
+    }, authHeader)
+    return asJson<T>(res)
 }
 
 export async function apiAuthPatch<T>(path: string, body: unknown): Promise<T> {
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const res = await requestWithRetry(path, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-    })
-    if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || `Request failed: ${res.status}`)
-    }
-    return res.json()
+    }, authHeader)
+    return asJson<T>(res)
 }
 
 export type PlanCode = 'pathfinder' | 'launchpad_monthly' | 'launchpad_yearly'
@@ -85,13 +104,6 @@ export async function startCheckout(planCode: PlanCode): Promise<{ checkout_url:
 }
 
 export async function apiAuthDelete<T>(path: string): Promise<T> {
-    const res = await fetch(`${BASE_URL}${path}`, {
-        method: 'DELETE',
-        headers: await authHeader(),
-    })
-    if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || `Request failed: ${res.status}`)
-    }
-    return res.json()
+    const res = await requestWithRetry(path, { method: 'DELETE' }, authHeader)
+    return asJson<T>(res)
 }
