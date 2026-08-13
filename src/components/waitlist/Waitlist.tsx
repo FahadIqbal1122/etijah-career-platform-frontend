@@ -165,11 +165,17 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
   }
 
   const light = tone === 'light'
-  const fieldCls = `w-full text-sm rounded-full px-5 py-3.5 border transition-colors focus:outline-none focus:ring-2 ${
+  const fieldBase = `w-full text-sm rounded-full py-3.5 border transition-colors focus:outline-none focus:ring-2 ${
     light
       ? `bg-white text-charcoal border-[var(--line-strong)] focus:ring-teal/20`
       : `bg-white/12 backdrop-blur-md text-white placeholder:text-white/60 border-white/25 focus:ring-white/30`
   }`
+  const fieldCls = `${fieldBase} px-5`
+  // native <select> arrows are rendered by the browser with their own
+  // (unequal, non-adjustable) inset — appearance-none strips that and we draw
+  // our own Chevron, positioned to match the text's start-side padding so the
+  // margins on both sides of the pill are actually equal
+  const selectCls = `${fieldBase} ps-5 pe-11 appearance-none`
   const phoneInputCls = `!w-full !h-[46px] !text-sm !rounded-full ${
     light
       ? '!bg-white !text-charcoal !border-[var(--line-strong)]'
@@ -207,16 +213,21 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
           placeholder={c.countryPlaceholder}
           className={`${fieldCls} flex-1`}
         />
-        <select
-          value={status}
-          onChange={(e) => { setStatus(e.target.value); if (state === 'error') setState('idle') }}
-          className={`${fieldCls} flex-1`}
-        >
-          <option value="" disabled>{c.statusPlaceholder}</option>
-          {c.statuses.map((opt: any) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
+        <div className="relative flex-1">
+          <select
+            value={status}
+            onChange={(e) => { setStatus(e.target.value); if (state === 'error') setState('idle') }}
+            className={`${selectCls} w-full`}
+          >
+            <option value="" disabled>{c.statusPlaceholder}</option>
+            {c.statuses.map((opt: any) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <span className={`pointer-events-none absolute end-5 top-1/2 -translate-y-1/2 ${light ? 'text-charcoal/40' : 'text-white/60'}`}>
+            <Chevron />
+          </span>
+        </div>
       </div>
       <div className="flex flex-col sm:flex-row gap-3">
         <SearchableSelect
@@ -226,18 +237,21 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
           placeholder={c.nationalityPlaceholder}
           className={`${fieldCls} flex-1`}
         />
-        <div>
+        <div className="relative flex-1">
           <label className="sr-only">{c.agePlaceholder}</label>
           <select
             value={age}
             onChange={(e) => { setAge(e.target.value); if (state === 'error') setState('idle') }}
-            className={`${fieldCls} flex-1`}
+            className={`${selectCls} w-full`}
           >
             <option value="" disabled>{c.agePlaceholder}</option>
             {c.ages.map((opt: any) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
+          <span className={`pointer-events-none absolute end-5 top-1/2 -translate-y-1/2 ${light ? 'text-charcoal/40' : 'text-white/60'}`}>
+            <Chevron />
+          </span>
         </div>
       </div>
       <div dir="ltr">

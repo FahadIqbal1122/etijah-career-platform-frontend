@@ -440,10 +440,15 @@ export default function UserDashboard() {
                               <p className="text-xs font-bold text-charcoal truncate">{app.job_title}</p>
                               <p className="text-[11px] text-charcoal/50 truncate">{app.company}{app.location ? ` · ${app.location}` : ''}</p>
                               <div className="flex items-center gap-1.5 mt-1.5">
-                                <select value={app.status} onChange={e => moveStage(app.id, e.target.value as Application['status'])}
-                                  className="text-[11px] border border-[var(--line-strong)] rounded-md px-1 py-0.5 flex-1 bg-white">
-                                  {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
-                                </select>
+                                <div className="relative flex-1">
+                                  <select value={app.status} onChange={e => moveStage(app.id, e.target.value as Application['status'])}
+                                    className="text-[11px] border border-[var(--line-strong)] rounded-md ps-1 pe-4 py-0.5 w-full bg-white appearance-none">
+                                    {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                                  </select>
+                                  <svg className="pointer-events-none absolute end-1 top-1/2 -translate-y-1/2 text-charcoal/40" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M6 9l6 6 6-6" />
+                                  </svg>
+                                </div>
                                 <button onClick={() => removeApplication(app.id)} className="text-charcoal/40 hover:text-rose-500 text-xs" title="Remove">✕</button>
                               </div>
                             </div>

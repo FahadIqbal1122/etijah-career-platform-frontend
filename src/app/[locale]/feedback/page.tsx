@@ -5,8 +5,22 @@ import { useState, useMemo } from 'react'
 type ScaleValues = Record<string, number>
 type Errors = Record<string, boolean>
 
-const input = 'w-full text-sm text-slate-800 bg-white border border-slate-200 rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-accent focus:ring-2 focus:ring-teal/15 transition-colors'
-const inputError = 'w-full text-sm text-slate-800 bg-white border border-red-400 rounded-lg px-3.5 py-2.5 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-400/10 transition-colors'
+const fieldBase = 'w-full text-sm text-slate-800 bg-white border rounded-lg py-2.5 focus:outline-none focus:ring-2 transition-colors'
+const input = `${fieldBase} border-slate-200 focus:border-accent focus:ring-teal/15 px-3.5`
+const inputError = `${fieldBase} border-red-400 focus:border-red-500 focus:ring-red-400/10 px-3.5`
+// native <select> arrows carry their own (unequal, non-adjustable) inset —
+// appearance-none strips that so we can draw our own, positioned to match
+// the text's start-side padding for genuinely equal margins
+const select = `${fieldBase} border-slate-200 focus:border-accent focus:ring-teal/15 ps-3.5 pe-9 appearance-none`
+const selectError = `${fieldBase} border-red-400 focus:border-red-500 focus:ring-red-400/10 ps-3.5 pe-9 appearance-none`
+
+function SelectChevron() {
+  return (
+    <svg className="pointer-events-none absolute end-3.5 top-1/2 -translate-y-1/2 text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  )
+}
 
 export default function FeedbackPage() {
   const [fname, setFname] = useState('')
@@ -143,40 +157,49 @@ export default function FeedbackPage() {
             <div className="grid grid-cols-2 gap-3 mb-5 max-sm:grid-cols-1">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Age group <span className="text-red-500">*</span></label>
-                <select className={errors.age ? inputError : input} value={age} onChange={e => setAge(e.target.value)}>
-                  <option value="">Select…</option>
-                  <option value="16-18">16 – 18</option>
-                  <option value="19-22">19 – 22</option>
-                  <option value="23-26">23 – 26</option>
-                  <option value="27-35">27 – 35</option>
-                </select>
+                <div className="relative">
+                  <select className={errors.age ? selectError : select} value={age} onChange={e => setAge(e.target.value)}>
+                    <option value="">Select…</option>
+                    <option value="16-18">16 – 18</option>
+                    <option value="19-22">19 – 22</option>
+                    <option value="23-26">23 – 26</option>
+                    <option value="27-35">27 – 35</option>
+                  </select>
+                  <SelectChevron />
+                </div>
                 {errors.age && <p className="text-xs text-red-500 mt-1">Please select your age group.</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Country</label>
-                <select className={input} value={country} onChange={e => setCountry(e.target.value)}>
-                  <option value="">Select…</option>
-                  <option value="KSA">Saudi Arabia</option>
-                  <option value="BH">Bahrain</option>
-                  <option value="UAE">UAE</option>
-                  <option value="KW">Kuwait</option>
-                  <option value="QA">Qatar</option>
-                  <option value="OM">Oman</option>
-                  <option value="GCC_other">Other GCC</option>
-                  <option value="non_GCC">Outside GCC</option>
-                </select>
+                <div className="relative">
+                  <select className={select} value={country} onChange={e => setCountry(e.target.value)}>
+                    <option value="">Select…</option>
+                    <option value="KSA">Saudi Arabia</option>
+                    <option value="BH">Bahrain</option>
+                    <option value="UAE">UAE</option>
+                    <option value="KW">Kuwait</option>
+                    <option value="QA">Qatar</option>
+                    <option value="OM">Oman</option>
+                    <option value="GCC_other">Other GCC</option>
+                    <option value="non_GCC">Outside GCC</option>
+                  </select>
+                  <SelectChevron />
+                </div>
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">How did you hear about this?</label>
-              <select className={input} value={source} onChange={e => setSource(e.target.value)}>
-                <option value="">Select…</option>
-                <option value="intern_network">Etijah team / intern network</option>
-                <option value="employee">Employee referral</option>
-                <option value="instagram">Instagram / social media</option>
-                <option value="university">University partner</option>
-                <option value="friend_family">Friend or family</option>
-              </select>
+              <div className="relative">
+                <select className={select} value={source} onChange={e => setSource(e.target.value)}>
+                  <option value="">Select…</option>
+                  <option value="intern_network">Etijah team / intern network</option>
+                  <option value="employee">Employee referral</option>
+                  <option value="instagram">Instagram / social media</option>
+                  <option value="university">University partner</option>
+                  <option value="friend_family">Friend or family</option>
+                </select>
+                <SelectChevron />
+              </div>
             </div>
           </section>
 

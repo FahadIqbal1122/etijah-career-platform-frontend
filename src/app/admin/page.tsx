@@ -1977,26 +1977,36 @@ export default function AdminPage() {
                     ))}
                     <div>
                       <label className="block text-xs text-slate-500 mb-1">Level</label>
-                      <select
-                        value={courseForm.level}
-                        onChange={e => setCourseForm(prev => ({ ...prev, level: e.target.value }))}
-                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-400"
-                      >
-                        <option value="beginner">Beginner</option>
-                        <option value="intermediate">Intermediate</option>
-                        <option value="advanced">Advanced</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={courseForm.level}
+                          onChange={e => setCourseForm(prev => ({ ...prev, level: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-lg ps-3 pe-8 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-400 appearance-none"
+                        >
+                          <option value="beginner">Beginner</option>
+                          <option value="intermediate">Intermediate</option>
+                          <option value="advanced">Advanced</option>
+                        </select>
+                        <svg className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-slate-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 9l6 6 6-6" />
+                        </svg>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs text-slate-500 mb-1">Language</label>
-                      <select
-                        value={courseForm.language}
-                        onChange={e => setCourseForm(prev => ({ ...prev, language: e.target.value }))}
-                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-400"
-                      >
-                        <option value="en">English</option>
-                        <option value="ar">Arabic</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={courseForm.language}
+                          onChange={e => setCourseForm(prev => ({ ...prev, language: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-lg ps-3 pe-8 py-2 text-sm bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-400 appearance-none"
+                        >
+                          <option value="en">English</option>
+                          <option value="ar">Arabic</option>
+                        </select>
+                        <svg className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-slate-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 9l6 6 6-6" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                   <div>
