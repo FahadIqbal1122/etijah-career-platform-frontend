@@ -359,16 +359,11 @@ html { scroll-behavior: smooth; }
     text-transform: uppercase; color: color-mix(in srgb, #fff 82%, transparent);
   }
   [dir="rtl"] .assess-aside-eyebrow { font-family: var(--font-tajawal), sans-serif; letter-spacing: 0; font-size: 14px; text-transform: none; font-weight: 500; }
-  .assess-aside-count {
-    margin-top: 10px; color: #fff; font-weight: 800; letter-spacing: -0.02em;
-    font-size: clamp(28px, 3vw, 40px); font-variant-numeric: tabular-nums;
-  }
-  .assess-aside-count small { font-size: .5em; font-weight: 500; opacity: .6; margin-inline-start: 4px; }
   .assess-aside-progress-msg {
-    margin-top: 8px; font-size: 13px; font-weight: 500;
-    color: color-mix(in srgb, #fff 85%, transparent);
+    margin-top: 12px; color: #fff; font-weight: 700; letter-spacing: -0.01em;
+    font-size: clamp(20px, 2.2vw, 26px); max-width: 260px; margin-inline: auto;
   }
-  [dir="rtl"] .assess-aside-progress-msg { font-family: var(--font-tajawal), sans-serif; }
+  [dir="rtl"] .assess-aside-progress-msg { font-family: var(--font-tajawal), sans-serif; font-weight: 600; }
 
   /* right: the question card, vertically centered and a touch wider */
   .assess-content { flex: 1 1 56%; justify-content: center; }

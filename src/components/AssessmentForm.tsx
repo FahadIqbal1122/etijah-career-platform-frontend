@@ -492,9 +492,6 @@ export default function AssessmentForm() {
           {/* desktop-only progress context beneath the constellation */}
           <div className="assess-aside-context">
             <div className="assess-aside-eyebrow">{chrome.asideEyebrow}</div>
-            <div className="assess-aside-count">
-              {Math.min(index + 1, total)}<small>/ {total}</small>
-            </div>
             {phase === 'question' && <div className="assess-aside-progress-msg">{progressMsg}</div>}
           </div>
         </aside>
