@@ -135,7 +135,7 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-    if (!emailValid || !name.trim() || !country || !status || !age) {
+    if (!emailValid || !name.trim() || !country || !status || !age || !nationality) {
       setState('error')
       return
     }
@@ -148,7 +148,7 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
           email: email.trim().toLowerCase(),
           name: name.trim(),
           country,
-          nationality: nationality.trim() || null,
+          nationality: nationality.trim(),
           phone: phone.trim() ? `+${phone.trim()}` : null,
           status,
           age,
@@ -222,7 +222,7 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
         <SearchableSelect
           options={countryOptions}
           value={nationality}
-          onChange={(v) => setNationality(v)}
+          onChange={(v) => { setNationality(v); if (state === 'error') setState('idle') }}
           placeholder={c.nationalityPlaceholder}
           className={`${fieldCls} flex-1`}
         />
@@ -489,74 +489,6 @@ export default function Waitlist() {
         </div>
       </section>
 
-      {/* ── PRICING ──────────────────────────────────────────────────── */}
-      <Section id="pricing" eyebrow={c.pricing.label} tint center>
-        <Reveal><h2 className="section-h max-w-3xl mx-auto">{<Highlight text={c.pricing.headline} hl={c.pricing.hl} />}</h2></Reveal>
-        <div className="mt-10 grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-start text-start">
-          <Reveal className="card p-7 relative">
-            <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.free.label}</p>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-charcoal">{c.pricing.free.price}</span>
-              <span className="text-xs text-charcoal/45">{c.pricing.free.priceSub}</span>
-            </div>
-            <p className="mt-3 text-sm text-charcoal/65 leading-relaxed">{c.pricing.free.for}</p>
-            <div className="h-px bg-[var(--line)] my-6" />
-            <ul className="space-y-3.5 flex-1">
-              {c.pricing.free.bullets.map((b: string) => (
-                <li key={b} className="flex items-start gap-2.5 text-sm text-charcoal">
-                  <span className="flex-none w-5 h-5 rounded-full bg-teal/15 text-teal text-[11px] font-black flex items-center justify-center mt-0.5">✓</span>
-                  {b}
-                </li>
-              ))}
-            </ul>
-            <Link href="/assessment" className="cta cta-outline mt-7 w-full">{c.pricing.free.cta}</Link>
-          </Reveal>
-          <Reveal className="pcard-paid rounded-[26px] p-7 relative" style={{ transitionDelay: '90ms' }}>
-            <span className="pcard-badge absolute -top-3.5 start-1/2 -translate-x-1/2 rtl:translate-x-1/2">{c.pricing.paid.badge}</span>
-            <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.paid.label}</p>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-white">{c.pricing.paid.price}</span>
-              <span className="text-xs text-white/70">{c.pricing.paid.priceSub}</span>
-            </div>
-            <p className="mt-3 text-sm text-white/80 leading-relaxed">{c.pricing.paid.for}</p>
-            <div className="h-px bg-white/16 my-6" />
-            <ul className="space-y-3.5 flex-1">
-              {c.pricing.paid.bullets.map((b: string) => (
-                <li key={b} className="flex items-start gap-2.5 text-sm text-white/90">
-                  <span className="flex-none w-5 h-5 rounded-full bg-teal/25 text-teal text-[11px] font-black flex items-center justify-center mt-0.5">✓</span>
-                  {b}
-                </li>
-              ))}
-            </ul>
-            <Link href="/assessment" className="cta mt-7 w-full !bg-white !text-primary !shadow-[0_16px_40px_-14px_rgba(0,0,0,0.4)]">{c.pricing.paid.cta}</Link>
-          </Reveal>
-          <Reveal className="card p-7 relative" style={{ transitionDelay: '150ms' }}>
-            <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.subscription.label}</p>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-charcoal">{c.pricing.subscription.price}</span>
-              <span className="text-xs text-charcoal/45">{c.pricing.subscription.priceSub}</span>
-            </div>
-            <p className="mt-1 text-xs text-charcoal/45">{c.pricing.subscription.priceAlt}</p>
-            <p className="mt-3 text-sm text-charcoal/65 leading-relaxed">{c.pricing.subscription.for}</p>
-            <div className="h-px bg-[var(--line)] my-6" />
-            <ul className="space-y-3.5 flex-1">
-              {c.pricing.subscription.bullets.map((b: string) => (
-                <li key={b} className="flex items-start gap-2.5 text-sm text-charcoal">
-                  <span className="flex-none w-5 h-5 rounded-full bg-teal/15 text-teal text-[11px] font-black flex items-center justify-center mt-0.5">✓</span>
-                  {b}
-                </li>
-              ))}
-            </ul>
-            <Link href="/assessment" className="cta cta-outline mt-7 w-full">{c.pricing.subscription.cta}</Link>
-          </Reveal>
-        </div>
-        <Reveal className="mt-8 max-w-2xl mx-auto text-center card p-6">
-          <p className="font-bold text-charcoal">{c.pricing.addOn.title}</p>
-          <p className="mt-2 text-sm text-charcoal/65 leading-relaxed">{c.pricing.addOn.body}</p>
-        </Reveal>
-        <Reveal className="mt-8 text-sm text-charcoal/55 max-w-xl mx-auto text-center">{c.pricing.reassure}</Reveal>
-      </Section>
-
       {/* ── FOR INSTITUTIONS (compact band) ──────────────────────────── */}
       <section className="bg-white border-y border-[var(--line)]">
         <div className="max-w-4xl mx-auto px-5 py-14 text-center">
@@ -611,7 +543,7 @@ export default function Waitlist() {
               <a href={`mailto:${c.footer.email}`} className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.email}</a>
             </div>
           </div>
-          <FooterCol head={c.footer.colPlatform.head} links={c.footer.colPlatform.links} hrefs={['/assessment', '#how', '#report', '#pricing']} />
+          <FooterCol head={c.footer.colPlatform.head} links={c.footer.colPlatform.links} hrefs={['#how', '#report']} />
           <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about']} />
           <div>
             <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.colLegal.head}</p>

@@ -165,7 +165,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode'>('submissions')
+  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage'>('submissions')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -242,6 +242,11 @@ export default function AdminPage() {
   const [testModeLoading, setTestModeLoading] = useState(false)
   const [testModeSaving, setTestModeSaving] = useState(false)
   const [testModeError, setTestModeError] = useState('')
+
+  const [homepageMode, setHomepageMode] = useState<'landing' | 'waitlist'>('landing')
+  const [homepageModeLoading, setHomepageModeLoading] = useState(false)
+  const [homepageModeSaving, setHomepageModeSaving] = useState(false)
+  const [homepageModeError, setHomepageModeError] = useState('')
 
   useEffect(() => {
     fetch('/api/admin/session').then(res => {
@@ -397,6 +402,38 @@ export default function AdminPage() {
     }
   }
 
+  const fetchHomepageMode = useCallback(async () => {
+    setHomepageModeLoading(true)
+    setHomepageModeError('')
+    try {
+      const res = await fetch('/api/admin/homepage-mode')
+      if (!res.ok) throw new Error('Failed to load homepage mode')
+      setHomepageMode((await res.json()).mode)
+    } catch (err: any) {
+      setHomepageModeError(err.message)
+    } finally {
+      setHomepageModeLoading(false)
+    }
+  }, [])
+
+  async function toggleHomepageMode(mode: 'landing' | 'waitlist') {
+    setHomepageModeSaving(true)
+    setHomepageModeError('')
+    try {
+      const res = await fetch('/api/admin/homepage-mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      })
+      if (!res.ok) throw new Error('Failed to save homepage mode')
+      setHomepageMode((await res.json()).mode)
+    } catch (err: any) {
+      setHomepageModeError(err.message)
+    } finally {
+      setHomepageModeSaving(false)
+    }
+  }
+
   const fetchMarketTrends = useCallback(async () => {
     setMarketLoading(true)
     setMarketError('')
@@ -452,8 +489,9 @@ export default function AdminPage() {
       fetchCourses()
       fetchMarketTrends()
       fetchTestMode()
+      fetchHomepageMode()
     }
-  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode])
+  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -1443,6 +1481,13 @@ export default function AdminPage() {
             {testModeEnabled && (
               <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">ON</span>
             )}
+          </button>
+          <button
+            onClick={() => { setActiveTab('homepage'); fetchHomepageMode() }}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'homepage' ? 'bg-fuchsia-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Homepage
+            <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full capitalize">{homepageMode}</span>
           </button>
         </div>
       </div>
@@ -2494,6 +2539,51 @@ export default function AdminPage() {
               </button>
             </div>
             {testModeError && <p className="text-xs text-red-500 mt-3">{testModeError}</p>}
+          </div>
+        </div>
+      )}
+
+      {/* ── Homepage Tab ── */}
+      {activeTab === 'homepage' && (
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <h2 className="text-xl font-bold text-slate-800 mb-1">Homepage</h2>
+          <p className="text-sm text-slate-400 mb-6">
+            Choose which page visitors land on at the site root ("/"). Both pages stay live regardless —
+            the landing page is always reachable at <span className="font-mono">/landing</span> and the waitlist at{' '}
+            <span className="font-mono">/waitlist</span> — this just picks which one owns "/".
+          </p>
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <div className="flex items-center justify-between gap-4 mb-1">
+              <div>
+                <p className="font-semibold text-slate-800">
+                  Currently serving{' '}
+                  <span className="text-fuchsia-600 capitalize">{homepageMode}</span>{' '}
+                  at "/"
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5">Affects production immediately for every visitor.</p>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                disabled={homepageModeLoading || homepageModeSaving}
+                onClick={() => toggleHomepageMode('landing')}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+                  homepageMode === 'landing' ? 'bg-fuchsia-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Landing Page
+              </button>
+              <button
+                disabled={homepageModeLoading || homepageModeSaving}
+                onClick={() => toggleHomepageMode('waitlist')}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+                  homepageMode === 'waitlist' ? 'bg-fuchsia-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Waitlist Page
+              </button>
+            </div>
+            {homepageModeError && <p className="text-xs text-red-500 mt-3">{homepageModeError}</p>}
           </div>
         </div>
       )}

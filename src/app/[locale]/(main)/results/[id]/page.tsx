@@ -148,12 +148,12 @@ export default function ResultsPage() {
       : { preparing: 'Preparing your report…', recent: (n: number) => `${n} ${n === 1 ? 'person' : 'people'} completed their assessment in the last hour` }
     return (
       <div className="min-h-screen brand-hero flex items-center justify-center px-6">
-        <div className="text-center space-y-4 max-w-sm">
+        <div className="text-center space-y-5 max-w-md">
           <div className="report-loading-logo inline-flex"><Logomark size={44} tone="dark" glow /></div>
-          <p className="text-white/70 text-sm">{t.preparing}</p>
-          <p className="text-white/50 text-xs leading-relaxed min-h-[2.5rem]">{LOADING_MESSAGES[locale][messageIndex]}</p>
+          <p className="text-white/80 text-xl font-semibold">{t.preparing}</p>
+          <p className="text-white/55 text-base leading-relaxed min-h-[4.5rem]">{LOADING_MESSAGES[locale][messageIndex]}</p>
           {!!recentCompletions && (
-            <p className="text-teal text-xs font-medium">✦ {t.recent(recentCompletions)}</p>
+            <p className="text-teal text-sm font-medium">✦ {t.recent(recentCompletions)}</p>
           )}
         </div>
       </div>
