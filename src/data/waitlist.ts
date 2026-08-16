@@ -8,7 +8,7 @@ export const W = {
       eyebrow: 'Beta Opening Soon',
       headline: ['Be the first to', 'find your direction.'],
       hl: 'find your direction',
-      sub: 'Etijahi is your future personal career guide — built on 15 years of real coaching across the Gulf, and enhanced with AI to show you how each path is already changing. We’re testing it with an early group before opening it up to everyone. Leave your details for a shot at free beta access.',
+      sub: 'Etijahi is your future personal career guide — built on 15 years of real coaching across the Gulf, and enhanced with AI to show you how each path is already changing. We’re testing it with an early group before opening it up to everyone. Leave your details for a shot at complementary beta access.',
       formLabel: 'Email address',
       placeholder: 'you@example.com',
       namePlaceholder: 'Full name',
@@ -34,7 +34,7 @@ export const W = {
       ],
       cta: 'Join the Beta Waitlist',
       ctaLoading: 'Joining…',
-      trust: 'No spam, ever. Just a note when free beta access opens.',
+      trust: 'No spam, ever. Just a note when complementary beta access opens.',
       stats: [
         { num: '15+', label: 'Years of GCC Coaching' },
         { num: '88,500+', label: 'Lives Impacted' },
@@ -43,7 +43,7 @@ export const W = {
     },
     success: {
       headline: 'You’re on the list.',
-      body: 'We’ll email you the moment free beta access opens — and we’ll keep you posted along the way. In the meantime, here’s exactly what you signed up for.',
+      body: 'We’ll email you the moment complementary beta access opens — and we’ll keep you posted along the way. In the meantime, here’s exactly what you signed up for.',
     },
     whatIsIt: {
       label: 'What is Etijahi?',
@@ -145,7 +145,7 @@ export const W = {
       headline: 'Questions people ask us.',
       hl: 'ask',
       items: [
-        { q: 'When do I get access, and will I be notified?', a: 'We’re in the final stretch of building and testing. Everyone on the waiting list gets one email the moment free beta access opens, plus occasional short updates before then — nothing else, no spam.' },
+        { q: 'When do I get access, and will I be notified?', a: 'We’re in the final stretch of building and testing. Everyone on the waiting list gets one email the moment complementary beta access opens, plus occasional short updates before then — nothing else, no spam.' },
         { q: 'Is it free?', a: 'Yes, to start. Explorer — our core assessment and report — is completely free, always. Paid tiers add deeper AI-impact analysis, course recommendations, and ongoing job matching for people who want more.' },
         { q: 'Is Etijahi the same as Etijah?', a: 'Etijahi is Etijah’s digital career platform. For 15 years, Etijah has guided organisations, communities, and individuals across the GCC; Etijahi brings that same guidance expertise directly to you.' },
         { q: 'Is everything available in Arabic?', a: 'Fully. Etijahi is available in Arabic and English from day one — the platform, the assessment, and your report.' },
@@ -156,7 +156,7 @@ export const W = {
     },
     finalCta: {
       headline: 'Be first through the door.',
-      sub: 'Join the waiting list and get your direction the moment your free beta access opens.',
+      sub: 'Join the waiting list and get your direction the moment your complementary beta access opens.',
     },
     footer: {
       brandTagline: 'AI-powered career direction, grounded in 15 years of real GCC coaching.',
@@ -179,7 +179,7 @@ export const W = {
       eyebrow: 'الإطلاق التجريبي قريباً',
       headline: ['كن من أوائل من', 'يكتشف اتجاهه.'],
       hl: 'يكتشف اتجاهه',
-      sub: 'إتجاهي هو مرشدك المهني المستقبلي — مبني على ١٥ عاماً من الإرشاد الحقيقي في الخليج، ومُعَزَّز بالذكاء الاصطناعي ليريك كيف يتغيّر كل مسار بالفعل. نحن نختبره حالياً مع مجموعة مختارة قبل إتاحته للجميع. اترك بياناتك للحصول على فرصة التجربة المجانية.',
+      sub: 'إتجاهي هو مرشدك المهني المستقبلي — مبني على ١٥ عاماً من الإرشاد الحقيقي في الخليج، ومُعَزَّز بالذكاء الاصطناعي ليريك كيف يتغيّر كل مسار بالفعل. نحن نختبره حالياً مع مجموعة مختارة قبل إتاحته للجميع. اترك بياناتك للحصول على فرصة التجربة التكميلية.',
       formLabel: 'البريد الإلكتروني',
       placeholder: 'you@example.com',
       namePlaceholder: 'الاسم الكامل',
@@ -205,7 +205,7 @@ export const W = {
       ],
       cta: 'انضم لقائمة الانتظار التجريبية',
       ctaLoading: 'جارٍ الانضمام…',
-      trust: 'لا رسائل مزعجة أبداً. فقط إشعار عند فتح الوصول التجريبي المجاني.',
+      trust: 'لا رسائل مزعجة أبداً. فقط إشعار عند فتح الوصول التجريبي التكميلي.',
       stats: [
         { num: '+15', label: 'عاماً من الإرشاد في الخليج' },
         { num: '+88,500', label: 'حياة تأثرت' },
@@ -214,7 +214,7 @@ export const W = {
     },
     success: {
       headline: 'أنت الآن ضمن القائمة.',
-      body: 'سنراسلك فور فتح الوصول التجريبي المجاني، وسنبقيك على اطلاع في الطريق. في الأثناء، إليك بالضبط ما اشتركت من أجله.',
+      body: 'سنراسلك فور فتح الوصول التجريبي التكميلي، وسنبقيك على اطلاع في الطريق. في الأثناء، إليك بالضبط ما اشتركت من أجله.',
     },
     whatIsIt: {
       label: 'ما هو إتجاهي؟',
@@ -316,7 +316,7 @@ export const W = {
       headline: 'أسئلة يطرحها الناس علينا.',
       hl: 'يطرحها',
       items: [
-        { q: 'متى سأحصل على الوصول، وهل سأُخطر؟', a: 'نحن في المراحل الأخيرة من البناء والاختبار. سيصل بريد إلكتروني واحد لكل من في قائمة الانتظار فور فتح الوصول التجريبي المجاني، إضافة إلى تحديثات قصيرة بين الحين والآخر قبل ذلك — لا شيء آخر، بلا إزعاج.' },
+        { q: 'متى سأحصل على الوصول، وهل سأُخطر؟', a: 'نحن في المراحل الأخيرة من البناء والاختبار. سيصل بريد إلكتروني واحد لكل من في قائمة الانتظار فور فتح الوصول التجريبي التكميلي، إضافة إلى تحديثات قصيرة بين الحين والآخر قبل ذلك — لا شيء آخر، بلا إزعاج.' },
         { q: 'هل هو مجاني؟', a: 'نعم، للبداية. باقة «مستكشف» — التقييم والتقرير الأساسيان — مجانية دائماً. الباقات المدفوعة تضيف تحليلاً أعمق لتأثير الذكاء الاصطناعي، وتوصيات دورات، ومطابقة وظائف مستمرة لمن يريد المزيد.' },
         { q: 'هل اتجاهي هي نفسها اتجاه؟', a: 'اتجاهي هي المنصة المهنية الرقمية من اتجاه. على مدى ١٥ عاماً، قدّمت اتجاه الإرشاد والتوجيه المهني للمؤسسات والمجتمعات والأفراد في الخليج؛ أما اتجاهي فتقدّم هذه الخبرة نفسها مباشرة إليك.' },
         { q: 'هل كل شيء متاح باللغة العربية؟', a: 'بالكامل. اتجاهي متاحة بالعربية والإنجليزية منذ اليوم الأول — المنصة والتقييم وتقريرك، جميعها.' },
@@ -327,7 +327,7 @@ export const W = {
     },
     finalCta: {
       headline: 'كن أول من يدخل.',
-      sub: 'انضم لقائمة الانتظار واحصل على اتجاهك فور فتح وصولك التجريبي المجاني.',
+      sub: 'انضم لقائمة الانتظار واحصل على اتجاهك فور فتح وصولك التجريبي التكميلي.',
     },
     footer: {
       brandTagline: 'اتجاه مهني مدعوم بالذكاء الاصطناعي، متجذر في ١٥ عاماً من الإرشاد الخليجي الحقيقي.',

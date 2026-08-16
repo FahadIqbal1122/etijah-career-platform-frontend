@@ -129,13 +129,24 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
   const [status, setStatus] = useState('')
   const [age, setAge] = useState('')
   const [state, setState] = useState<FormState>('idle')
+  const [errors, setErrors] = useState<Record<string, boolean>>({})
 
   const countryOptions = useMemo(() => getCountryOptions(locale), [locale])
+  const errCls = (key: string) => (errors[key] ? ' !border-red-500' : '')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-    if (!emailValid || !name.trim() || !country || !status || !age || !nationality) {
+    const nextErrors = {
+      email: !emailValid,
+      name: !name.trim(),
+      country: !country,
+      status: !status,
+      nationality: !nationality,
+      age: !age,
+    }
+    setErrors(nextErrors)
+    if (Object.values(nextErrors).some(Boolean)) {
       setState('error')
       return
     }
@@ -190,9 +201,9 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
         <input
           type="email"
           value={email}
-          onChange={(e) => { setEmail(e.target.value); if (state === 'error') setState('idle') }}
+          onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: false })) }}
           placeholder={c.placeholder}
-          className={fieldCls}
+          className={fieldCls + errCls('email')}
         />
       </div>
       <div>
@@ -200,24 +211,24 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
         <input
           type="text"
           value={name}
-          onChange={(e) => { setName(e.target.value); if (state === 'error') setState('idle') }}
+          onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: false })) }}
           placeholder={c.namePlaceholder}
-          className={fieldCls}
+          className={fieldCls + errCls('name')}
         />
       </div>
       <div className="flex flex-col sm:flex-row gap-3">
         <SearchableSelect
           options={countryOptions}
           value={country}
-          onChange={(v) => { setCountry(v); if (state === 'error') setState('idle') }}
+          onChange={(v) => { setCountry(v); setErrors((p) => ({ ...p, country: false })) }}
           placeholder={c.countryPlaceholder}
-          className={`${fieldCls} flex-1`}
+          className={`${fieldCls} flex-1${errCls('country')}`}
         />
         <div className="relative flex-1">
           <select
             value={status}
-            onChange={(e) => { setStatus(e.target.value); if (state === 'error') setState('idle') }}
-            className={`${selectCls} w-full`}
+            onChange={(e) => { setStatus(e.target.value); setErrors((p) => ({ ...p, status: false })) }}
+            className={`${selectCls} w-full${errCls('status')}`}
           >
             <option value="" disabled>{c.statusPlaceholder}</option>
             {c.statuses.map((opt: any) => (
@@ -233,16 +244,16 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
         <SearchableSelect
           options={countryOptions}
           value={nationality}
-          onChange={(v) => { setNationality(v); if (state === 'error') setState('idle') }}
+          onChange={(v) => { setNationality(v); setErrors((p) => ({ ...p, nationality: false })) }}
           placeholder={c.nationalityPlaceholder}
-          className={`${fieldCls} flex-1`}
+          className={`${fieldCls} flex-1${errCls('nationality')}`}
         />
         <div className="relative flex-1">
           <label className="sr-only">{c.agePlaceholder}</label>
           <select
             value={age}
-            onChange={(e) => { setAge(e.target.value); if (state === 'error') setState('idle') }}
-            className={`${selectCls} w-full`}
+            onChange={(e) => { setAge(e.target.value); setErrors((p) => ({ ...p, age: false })) }}
+            className={`${selectCls} w-full${errCls('age')}`}
           >
             <option value="" disabled>{c.agePlaceholder}</option>
             {c.ages.map((opt: any) => (
@@ -276,7 +287,27 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
       </button>
       {state === 'error' && (
         <p className={`text-xs ${light ? 'text-red-500' : 'text-red-200'}`}>
-          {locale === 'ar' ? 'يرجى تعبئة جميع الحقول ببريد إلكتروني صحيح.' : 'Please fill in all fields with a valid email.'}
+          {locale === 'ar'
+            ? `يرجى تصحيح الحقول التالية: ${
+                [
+                  errors.email && 'البريد الإلكتروني',
+                  errors.name && 'الاسم',
+                  errors.country && c.countryPlaceholder,
+                  errors.status && c.statusPlaceholder,
+                  errors.nationality && c.nationalityPlaceholder,
+                  errors.age && c.agePlaceholder,
+                ].filter(Boolean).join('، ')
+              }`
+            : `Please fix the following: ${
+                [
+                  errors.email && 'Email',
+                  errors.name && 'Name',
+                  errors.country && c.countryPlaceholder,
+                  errors.status && c.statusPlaceholder,
+                  errors.nationality && c.nationalityPlaceholder,
+                  errors.age && c.agePlaceholder,
+                ].filter(Boolean).join(', ')
+              }`}
         </p>
       )}
     </form>

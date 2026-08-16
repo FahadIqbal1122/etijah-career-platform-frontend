@@ -63,8 +63,8 @@ export default function SearchableSelect({
         onFocus={() => setOpen(true)}
         onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
         onBlur={() => {
-          // let a click on an option register before we collapse + commit
-          setTimeout(() => { commit(query); setOpen(false) }, 120)
+          commit(query)
+          setOpen(false)
         }}
         className={className}
       />
