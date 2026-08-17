@@ -34,12 +34,16 @@ export default function SearchableSelect({
     : options
 
   function commit(nextQuery: string) {
-    const exact = options.find((o) => o.label.toLowerCase() === nextQuery.trim().toLowerCase())
+    const trimmed = nextQuery.trim()
+    const exact = options.find((o) => o.label.toLowerCase() === trimmed.toLowerCase())
+    // Guards against browser autofill dropping a phone number into this field
+    // instead of the country/nationality the user actually typed.
+    const looksLikePhoneNumber = /^\+?[\d\s()-]{6,}$/.test(trimmed)
     if (exact) {
       onChange(exact.value)
       setQuery(exact.label)
-    } else if (allowCustom && nextQuery.trim()) {
-      onChange(nextQuery.trim())
+    } else if (allowCustom && trimmed && !looksLikePhoneNumber) {
+      onChange(trimmed)
     } else {
       onChange('')
       setQuery('')
@@ -58,6 +62,7 @@ export default function SearchableSelect({
         type="text"
         role="combobox"
         aria-expanded={open}
+        autoComplete="off"
         value={query}
         placeholder={placeholder}
         onFocus={() => setOpen(true)}
