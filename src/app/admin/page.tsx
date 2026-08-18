@@ -1459,99 +1459,83 @@ export default function AdminPage() {
             </button>
           </div>
         </div>
-        <div className="flex gap-1 flex-wrap">
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'dashboard' ? 'bg-sky-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Dashboard
-          </button>
-          <button
-            onClick={() => setActiveTab('submissions')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'submissions' ? 'bg-primary text-white' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Submissions
-            {submissions.length > 0 && (
-              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{submissions.length}</span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('onet')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'onet' ? 'bg-orange-500 text-white' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            O*NET Links
-            {onetLinks.length > 0 && (
-              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{onetLinks.length}</span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('feedback')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'feedback' ? 'bg-teal-700 text-white' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Feedback
-            {feedbackList.length > 0 && (
-              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{feedbackList.length}</span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('waitlist')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'waitlist' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Waitlist
-            {waitlistList.length > 0 && (
-              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{waitlistList.length}</span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('coaching')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'coaching' ? 'bg-rose-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Coaching Sessions
-            {coachingSessions.length > 0 && (
-              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{coachingSessions.length}</span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('country')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'country' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Country Profiles
-            {countryProfiles.length > 0 && (
-              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{countryProfiles.length}</span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('courses')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'courses' ? 'bg-violet-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Courses
-            {courses.length > 0 && (
-              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">{courses.length}</span>
-            )}
-          </button>
-          <button
-            onClick={() => { setActiveTab('market'); fetchMarketTrends() }}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'market' ? 'bg-amber-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Market Analysis
-          </button>
-          <button
-            onClick={() => { setActiveTab('testmode'); fetchTestMode() }}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'testmode' ? 'bg-cyan-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Test Mode
-            {testModeEnabled && (
-              <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full">ON</span>
-            )}
-          </button>
-          <button
-            onClick={() => { setActiveTab('homepage'); fetchHomepageMode() }}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'homepage' ? 'bg-fuchsia-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Homepage
-            <span className="ml-1.5 text-xs bg-white/30 px-1.5 py-0.5 rounded-full capitalize">{homepageMode}</span>
-          </button>
-        </div>
+        {(() => {
+          const TAB_GROUPS: {
+            key: 'dashboard' | 'content' | 'lists' | 'settings'
+            label: string
+            color: string
+            tabs: { key: typeof activeTab; label: string; color: string; badge?: string | number; onSelect?: () => void }[]
+          }[] = [
+            {
+              key: 'dashboard', label: 'Dashboard', color: 'bg-sky-600',
+              tabs: [{ key: 'dashboard', label: 'Dashboard', color: 'bg-sky-600' }],
+            },
+            {
+              key: 'content', label: 'Content & AI Data', color: 'bg-violet-600',
+              tabs: [
+                { key: 'coaching', label: 'Coaching Sessions', color: 'bg-rose-600', badge: coachingSessions.length > 0 ? coachingSessions.length : undefined },
+                { key: 'courses', label: 'Courses', color: 'bg-violet-600', badge: courses.length > 0 ? courses.length : undefined },
+                { key: 'country', label: 'Country Profiles', color: 'bg-emerald-600', badge: countryProfiles.length > 0 ? countryProfiles.length : undefined },
+                { key: 'market', label: 'Market Analysis', color: 'bg-amber-600', onSelect: fetchMarketTrends },
+                { key: 'onet', label: 'O*NET Links', color: 'bg-orange-500', badge: onetLinks.length > 0 ? onetLinks.length : undefined },
+              ],
+            },
+            {
+              key: 'lists', label: 'Lists', color: 'bg-indigo-600',
+              tabs: [
+                { key: 'submissions', label: 'Submissions', color: 'bg-primary', badge: submissions.length > 0 ? submissions.length : undefined },
+                { key: 'waitlist', label: 'Waitlist', color: 'bg-indigo-600', badge: waitlistList.length > 0 ? waitlistList.length : undefined },
+                { key: 'feedback', label: 'Feedback', color: 'bg-teal-700', badge: feedbackList.length > 0 ? feedbackList.length : undefined },
+              ],
+            },
+            {
+              key: 'settings', label: 'Settings', color: 'bg-cyan-600',
+              tabs: [
+                { key: 'testmode', label: 'Test Mode', color: 'bg-cyan-600', badge: testModeEnabled ? 'ON' : undefined, onSelect: fetchTestMode },
+                { key: 'homepage', label: 'Homepage', color: 'bg-fuchsia-600', badge: homepageMode, onSelect: fetchHomepageMode },
+              ],
+            },
+          ]
+
+          const activeGroup = TAB_GROUPS.find(g => g.tabs.some(t => t.key === activeTab)) ?? TAB_GROUPS[0]
+
+          const selectTab = (tabKey: typeof activeTab) => {
+            setActiveTab(tabKey)
+            TAB_GROUPS.flatMap(g => g.tabs).find(t => t.key === tabKey)?.onSelect?.()
+          }
+
+          return (
+            <>
+              <div className="flex gap-1 flex-wrap">
+                {TAB_GROUPS.map(group => (
+                  <button
+                    key={group.key}
+                    onClick={() => selectTab(group.tabs[0].key)}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeGroup.key === group.key ? `${group.color} text-white` : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    {group.label}
+                  </button>
+                ))}
+              </div>
+              {activeGroup.tabs.length > 1 && (
+                <div className="flex gap-1 flex-wrap mt-2 pt-2 border-t border-slate-100">
+                  {activeGroup.tabs.map(tab => (
+                    <button
+                      key={tab.key}
+                      onClick={() => selectTab(tab.key)}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${activeTab === tab.key ? `${tab.color} text-white` : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                      {tab.label}
+                      {tab.badge !== undefined && (
+                        <span className="ml-1.5 text-[10px] bg-white/30 px-1.5 py-0.5 rounded-full capitalize">{tab.badge}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )
+        })()}
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-8">
