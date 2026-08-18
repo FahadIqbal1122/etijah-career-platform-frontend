@@ -6,7 +6,7 @@ const intlMiddleware = createMiddleware(routing)
 
 export function proxy(request: Parameters<typeof intlMiddleware>[0]) {
     const { pathname } = request.nextUrl
-    if (pathname.startsWith('/admin') || pathname.startsWith('/api/')) {
+    if (pathname.startsWith('/admin') || pathname.startsWith('/api/') || pathname.startsWith('/stats/')) {
         return NextResponse.next()
     }
     return intlMiddleware(request)
