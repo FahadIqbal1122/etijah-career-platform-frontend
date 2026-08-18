@@ -16,6 +16,19 @@ import Logomark, { Wordmark } from '@/components/brand/Logomark'
 import LandingConstellation from '@/components/brand/LandingConstellation'
 import SearchableSelect from '@/components/waitlist/SearchableSelect'
 
+// Fire-and-forget page-view/click tracking for the waitlist page — never
+// awaited, never blocks the UI, and swallows failures.
+function trackEvent(eventType: 'page_view' | 'click', label: string | undefined, locale: string) {
+  try {
+    fetch('/api/waitlist-events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_type: eventType, label, locale, source: 'waitlist_page' }),
+      keepalive: true,
+    }).catch(() => {})
+  } catch {}
+}
+
 function Highlight({ text, hl }: { text: string; hl?: string }) {
   const i = hl ? text.indexOf(hl) : -1
   if (!hl || i === -1) return <>{text}</>
@@ -115,11 +128,12 @@ type FormState = 'idle' | 'submitting' | 'done' | 'error'
 
 // Shared email-capture form, used in the hero and the closing CTA. Each
 // instance owns its own state so submitting one doesn't affect the other.
-function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
+function WaitlistForm({ c, locale, onJoined, tone = 'light', location = 'hero' }: {
   c: any
   locale: string
   onJoined: () => void
   tone?: 'light' | 'onteal'
+  location?: 'hero' | 'final'
 }) {
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
@@ -280,6 +294,7 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light' }: {
       <button
         type="submit"
         disabled={state === 'submitting'}
+        onClick={() => trackEvent('click', `waitlist_submit_${location}`, locale)}
         className={light ? 'cta cta-teal justify-center' : 'cta cta-onteal justify-center'}
         style={{ padding: '13px 24px', fontSize: 14, borderRadius: 999 }}
       >
@@ -322,6 +337,11 @@ export default function Waitlist() {
   const c = (W as any)[locale] ?? W.en
   const [joined, setJoined] = useState(false)
 
+  useEffect(() => {
+    trackEvent('page_view', undefined, locale)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
     <div className="brand-surface text-charcoal" dir={dir}>
 
@@ -330,7 +350,7 @@ export default function Waitlist() {
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between gap-4">
           <Wordmark size={30} />
           <button
-            onClick={() => router.replace(pathname, { locale: locale === 'en' ? 'ar' : 'en' })}
+            onClick={() => { trackEvent('click', 'lang_toggle', locale); router.replace(pathname, { locale: locale === 'en' ? 'ar' : 'en' }) }}
             className="text-xs font-medium text-charcoal/60 hover:text-teal border border-[var(--line-strong)] rounded-full px-3 py-1.5"
           >
             {locale === 'en' ? 'العربية' : 'English'}
@@ -541,7 +561,7 @@ export default function Waitlist() {
             <p className="eyebrow mb-3">{c.institutions.label}</p>
             <h2 className="section-h max-w-2xl mx-auto">{c.institutions.headline}</h2>
             <p className="mt-4 text-charcoal/70 leading-relaxed max-w-2xl mx-auto">{c.institutions.body}</p>
-            <a href="/contact" className="cta cta-outline mt-7 inline-flex">{c.institutions.cta}</a>
+            <a href="/contact" onClick={() => trackEvent('click', 'institutions_cta', locale)} className="cta cta-outline mt-7 inline-flex">{c.institutions.cta}</a>
           </Reveal>
         </div>
       </section>
@@ -550,7 +570,7 @@ export default function Waitlist() {
       <Section eyebrow={locale === 'ar' ? 'الأسئلة الشائعة' : 'FAQ'} center>
         <Reveal><h2 className="section-h"><Highlight text={c.faq.headline} hl={c.faq.hl} /></h2></Reveal>
         <Reveal className="mt-8 max-w-3xl mx-auto border-t border-[var(--line)]">
-          <FaqList items={c.faq.items} />
+          <FaqList items={c.faq.items} locale={locale} />
         </Reveal>
       </Section>
 
@@ -569,7 +589,7 @@ export default function Waitlist() {
             {joined ? (
               <p className="text-white font-semibold">{c.success.headline}</p>
             ) : (
-              <WaitlistForm c={c.hero} locale={locale} onJoined={() => setJoined(true)} tone="onteal" />
+              <WaitlistForm c={c.hero} locale={locale} onJoined={() => setJoined(true)} tone="onteal" location="final" />
             )}
           </Reveal>
         </div>
@@ -584,12 +604,12 @@ export default function Waitlist() {
             <p className="mt-3 text-xs text-white/45">{c.footer.brandPowered}</p>
             <div className="mt-5">
               <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.contactHead}</p>
-              <a href="tel:+97335082446" dir="ltr" className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.phone}</a>
-              <a href={`mailto:${c.footer.email}`} className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.email}</a>
+              <a href="tel:+97335082446" dir="ltr" onClick={() => trackEvent('click', 'footer_phone', locale)} className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.phone}</a>
+              <a href={`mailto:${c.footer.email}`} onClick={() => trackEvent('click', 'footer_email', locale)} className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.email}</a>
             </div>
           </div>
-          <FooterCol head={c.footer.colPlatform.head} links={c.footer.colPlatform.links} hrefs={['#how', '#report']} />
-          <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about']} />
+          <FooterCol head={c.footer.colPlatform.head} links={c.footer.colPlatform.links} hrefs={['#how', '#report']} locale={locale} />
+          <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about']} locale={locale} />
           <div>
             <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.colLegal.head}</p>
             <p className="text-sm text-white/85 font-semibold mb-2">{c.footer.copyright}</p>
@@ -608,19 +628,20 @@ export default function Waitlist() {
   )
 }
 
-function FooterCol({ head, links, hrefs }: { head: string; links: string[]; hrefs?: string[] }) {
+function FooterCol({ head, links, hrefs, locale }: { head: string; links: string[]; hrefs?: string[]; locale: string }) {
   return (
     <div>
       <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{head}</p>
       <ul className="space-y-2.5">
         {links.map((l, i) => {
           const href = hrefs?.[i]
+          const onClick = () => trackEvent('click', `footer_link:${l}`, locale)
           return (
             <li key={l} className="text-sm text-white/75">
               {href
                 ? href.startsWith('/')
-                  ? <Link href={href} className="hover:text-white">{l}</Link>
-                  : <a href={href} className="hover:text-white">{l}</a>
+                  ? <Link href={href} onClick={onClick} className="hover:text-white">{l}</Link>
+                  : <a href={href} onClick={onClick} className="hover:text-white">{l}</a>
                 : <span className="cursor-default">{l}</span>}
             </li>
           )
@@ -630,7 +651,7 @@ function FooterCol({ head, links, hrefs }: { head: string; links: string[]; href
   )
 }
 
-function FaqList({ items }: { items: { q: string; a: string }[] }) {
+function FaqList({ items, locale }: { items: { q: string; a: string }[]; locale: string }) {
   const [open, setOpen] = useState(-1)
   return (
     <>
@@ -638,7 +659,7 @@ function FaqList({ items }: { items: { q: string; a: string }[] }) {
         <div key={it.q} className={`faq-item border-b border-[var(--line)] ${open === i ? 'open' : ''}`}>
           <button
             className="w-full flex items-center gap-4 text-start py-5 font-extrabold text-charcoal hover:text-teal transition-colors"
-            onClick={() => setOpen(open === i ? -1 : i)}
+            onClick={() => { trackEvent('click', `faq_toggle:${it.q}`, locale); setOpen(open === i ? -1 : i) }}
             aria-expanded={open === i}
           >
             <span className="flex-1">{it.q}</span>

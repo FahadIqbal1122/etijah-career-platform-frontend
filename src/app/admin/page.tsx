@@ -109,6 +109,7 @@ type DashboardStats = {
   paid_plans: number
   courses: number
   country_profiles: number
+  waitlist_page: { page_views: number; clicks: number; top_clicks: { label: string; count: number }[] }
 }
 
 const WAITLIST_STATUS_LABELS: Record<string, string> = {
@@ -506,7 +507,14 @@ export default function AdminPage() {
       for (let i = 0; i < 90; i++) { // poll for up to ~15 minutes (6 countries x 25 roles x 2 sources can take a while)
         await new Promise(r => setTimeout(r, 10000))
         const statusRes = await fetch('/api/admin/market-analysis/fetch-status')
-        const status = await statusRes.json()
+        const statusText = await statusRes.text()
+        let status: any
+        try {
+          status = statusText ? JSON.parse(statusText) : { error: 'Empty response from server' }
+        } catch {
+          setMarketFetchResult({ error: `Server returned a non-JSON response (likely a gateway timeout): ${statusText.slice(0, 100)}` })
+          return
+        }
         if (status.status === 'done') {
           setMarketFetchResult(status)
           fetchMarketTrends()
@@ -1562,6 +1570,41 @@ export default function AdminPage() {
                     <span><span className="font-semibold text-slate-700">{dashboardStats.waitlist_signups.today.toLocaleString()}</span> today</span>
                     <span><span className="font-semibold text-slate-700">{dashboardStats.waitlist_signups.this_week.toLocaleString()}</span> last 7 days</span>
                   </div>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+                  <p className="text-sm font-medium text-slate-500 mb-3">Waitlist page activity</p>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-2xl font-semibold text-slate-800">{dashboardStats.waitlist_page.page_views.toLocaleString()}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">Page views</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-semibold text-slate-800">{dashboardStats.waitlist_page.clicks.toLocaleString()}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">Clicks</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-semibold text-slate-800">
+                        {dashboardStats.waitlist_page.page_views > 0
+                          ? `${((dashboardStats.waitlist_signups.total / dashboardStats.waitlist_page.page_views) * 100).toFixed(1)}%`
+                          : '—'}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-0.5">View → signup rate</p>
+                    </div>
+                  </div>
+                  {dashboardStats.waitlist_page.top_clicks.length > 0 && (
+                    <div className="mt-5 pt-4 border-t border-slate-100">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Most-clicked elements</p>
+                      <div className="space-y-1.5">
+                        {dashboardStats.waitlist_page.top_clicks.map((c) => (
+                          <div key={c.label} className="flex justify-between text-sm">
+                            <span className="text-slate-600">{c.label}</span>
+                            <span className="font-medium text-slate-800">{c.count.toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
