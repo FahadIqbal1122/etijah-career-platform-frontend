@@ -101,6 +101,16 @@ type WaitlistEntry = {
   created_at: string
 }
 
+type DashboardStats = {
+  waitlist_signups: { total: number; today: number; this_week: number }
+  assessment_responses: { total: number; completed: number }
+  feedback_responses: number
+  applications: number
+  paid_plans: number
+  courses: number
+  country_profiles: number
+}
+
 const WAITLIST_STATUS_LABELS: Record<string, string> = {
   high_school: 'High School Student',
   university: 'University Student',
@@ -165,7 +175,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'submissions' | 'onet' | 'feedback' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage'>('submissions')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage'>('dashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -188,6 +198,10 @@ export default function AdminPage() {
   const [waitlistList, setWaitlistList] = useState<WaitlistEntry[]>([])
   const [waitlistLoading, setWaitlistLoading] = useState(false)
   const [waitlistError, setWaitlistError] = useState('')
+
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
+  const [dashboardLoading, setDashboardLoading] = useState(false)
+  const [dashboardError, setDashboardError] = useState('')
 
   const [onetLinks, setOnetLinks] = useState<OnetLink[]>([])
   const [onetLoading, setOnetLoading] = useState(false)
@@ -326,6 +340,20 @@ export default function AdminPage() {
       setWaitlistError(err.message)
     } finally {
       setWaitlistLoading(false)
+    }
+  }, [])
+
+  const fetchDashboardStats = useCallback(async () => {
+    setDashboardLoading(true)
+    setDashboardError('')
+    try {
+      const res = await fetch('/api/admin/dashboard-stats')
+      if (!res.ok) throw new Error('Failed to load dashboard stats')
+      setDashboardStats(await res.json())
+    } catch (err: any) {
+      setDashboardError(err.message)
+    } finally {
+      setDashboardLoading(false)
     }
   }, [])
 
@@ -495,6 +523,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (authed) {
+      fetchDashboardStats()
       fetchSubmissions()
       fetchOnetLinks()
       fetchFeedback()
@@ -506,7 +535,7 @@ export default function AdminPage() {
       fetchTestMode()
       fetchHomepageMode()
     }
-  }, [authed, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode])
+  }, [authed, fetchDashboardStats, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -1405,7 +1434,7 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
+              onClick={() => { fetchDashboardStats(); fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
               className="text-sm text-primary hover:underline"
             >
               Refresh
@@ -1419,6 +1448,12 @@ export default function AdminPage() {
           </div>
         </div>
         <div className="flex gap-1 flex-wrap">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'dashboard' ? 'bg-sky-600 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Dashboard
+          </button>
           <button
             onClick={() => setActiveTab('submissions')}
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'submissions' ? 'bg-primary text-white' : 'text-slate-500 hover:text-slate-700'}`}
@@ -1508,6 +1543,61 @@ export default function AdminPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-8">
+
+        {/* ── Dashboard Tab ── */}
+        {activeTab === 'dashboard' && (
+          <>
+            {dashboardLoading && !dashboardStats && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-sky-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {dashboardError && <p className="text-red-500 text-sm text-center py-8">{dashboardError}</p>}
+            {dashboardStats && (
+              <>
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+                  <p className="text-sm font-medium text-slate-500">Waitlist signups</p>
+                  <p className="text-5xl font-semibold text-slate-800 mt-1">{dashboardStats.waitlist_signups.total.toLocaleString()}</p>
+                  <div className="flex gap-6 mt-3 text-sm text-slate-500">
+                    <span><span className="font-semibold text-slate-700">{dashboardStats.waitlist_signups.today.toLocaleString()}</span> today</span>
+                    <span><span className="font-semibold text-slate-700">{dashboardStats.waitlist_signups.this_week.toLocaleString()}</span> last 7 days</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Assessments started</p>
+                    <p className="text-3xl font-semibold text-slate-800 mt-1">{dashboardStats.assessment_responses.total.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Assessments completed</p>
+                    <p className="text-3xl font-semibold text-slate-800 mt-1">{dashboardStats.assessment_responses.completed.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Feedback responses</p>
+                    <p className="text-3xl font-semibold text-slate-800 mt-1">{dashboardStats.feedback_responses.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Job applications</p>
+                    <p className="text-3xl font-semibold text-slate-800 mt-1">{dashboardStats.applications.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Paid plans</p>
+                    <p className="text-3xl font-semibold text-slate-800 mt-1">{dashboardStats.paid_plans.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Courses</p>
+                    <p className="text-3xl font-semibold text-slate-800 mt-1">{dashboardStats.courses.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Country profiles</p>
+                    <p className="text-3xl font-semibold text-slate-800 mt-1">{dashboardStats.country_profiles.toLocaleString()}</p>
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
 
         {/* ── Submissions Tab ── */}
         {activeTab === 'submissions' && (
