@@ -15,6 +15,7 @@ import { getCountryOptions } from '@/data/countryCodes'
 import Logomark, { Wordmark } from '@/components/brand/Logomark'
 import LandingConstellation from '@/components/brand/LandingConstellation'
 import SearchableSelect from '@/components/waitlist/SearchableSelect'
+import PartnerModal from '@/components/shared/PartnerModal'
 
 // Fire-and-forget page-view/click tracking for the waitlist page — never
 // awaited, never blocks the UI, and swallows failures.
@@ -336,6 +337,7 @@ export default function Waitlist() {
   const pathname = usePathname()
   const c = (W as any)[locale] ?? W.en
   const [joined, setJoined] = useState(false)
+  const [showPartnerModal, setShowPartnerModal] = useState(false)
 
   useEffect(() => {
     trackEvent('page_view', undefined, locale)
@@ -537,6 +539,7 @@ export default function Waitlist() {
           <div className="mt-8 space-y-3 max-w-3xl text-white/80 leading-relaxed">
             {c.heritage.body.map((p: string) => <p key={p.slice(0, 24)}>{p}</p>)}
           </div>
+          {/* Testimonials hidden for now — placeholder content
           <div className="mt-8 grid md:grid-cols-2 gap-5">
             {c.heritage.testimonials.map((t: any, i: number) => (
               <Reveal key={t.role} className="bg-white/10 border border-white/15 rounded-2xl p-6 backdrop-blur-sm" style={{ transitionDelay: `${i * 90}ms` }}>
@@ -551,6 +554,7 @@ export default function Waitlist() {
               </Reveal>
             ))}
           </div>
+          */}
         </div>
       </section>
 
@@ -561,10 +565,12 @@ export default function Waitlist() {
             <p className="eyebrow mb-3">{c.institutions.label}</p>
             <h2 className="section-h max-w-2xl mx-auto">{c.institutions.headline}</h2>
             <p className="mt-4 text-charcoal/70 leading-relaxed max-w-2xl mx-auto">{c.institutions.body}</p>
-            <a href="/contact" onClick={() => trackEvent('click', 'institutions_cta', locale)} className="cta cta-outline mt-7 inline-flex">{c.institutions.cta}</a>
+            <button onClick={() => { trackEvent('click', 'institutions_cta', locale); setShowPartnerModal(true) }} className="cta cta-outline mt-7 inline-flex">{c.institutions.cta}</button>
           </Reveal>
         </div>
       </section>
+
+      <PartnerModal open={showPartnerModal} onClose={() => setShowPartnerModal(false)} locale={locale} source="waitlist_page" />
 
       {/* ── FAQ ──────────────────────────────────────────────────────── */}
       <Section eyebrow={locale === 'ar' ? 'الأسئلة الشائعة' : 'FAQ'} center>

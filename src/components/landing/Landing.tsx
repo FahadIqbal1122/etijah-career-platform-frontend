@@ -12,6 +12,7 @@ import Logomark, { Wordmark } from '@/components/brand/Logomark'
 import LandingConstellation from '@/components/brand/LandingConstellation'
 import { supabase } from '@/lib/supabase'
 import { startCheckout, type PlanCode } from '@/lib/api'
+import PartnerModal from '@/components/shared/PartnerModal'
 
 // Render a headline, tealing the `hl` phrase inside it. Uses indexOf so text
 // after a repeated phrase is never dropped.
@@ -102,6 +103,7 @@ export default function Landing() {
   const arrow = dir === 'rtl' ? '←' : '→'
   const [loggedIn, setLoggedIn] = useState(false)
   const [checkingOut, setCheckingOut] = useState<PlanCode | null>(null)
+  const [showPartnerModal, setShowPartnerModal] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setLoggedIn(!!session))
@@ -354,6 +356,7 @@ export default function Landing() {
               ))}
             </Reveal>
           )}
+          {/* Testimonials hidden for now — placeholder content
           <div className="mt-8 grid md:grid-cols-2 gap-5">
             {c.heritage.testimonials.map((t: any, i: number) => (
               <Reveal key={t.role} className="bg-white/10 border border-white/15 rounded-2xl p-6 backdrop-blur-sm" style={{ transitionDelay: `${i * 90}ms` }}>
@@ -368,6 +371,7 @@ export default function Landing() {
               </Reveal>
             ))}
           </div>
+          */}
         </div>
       </section>
 
@@ -463,10 +467,12 @@ export default function Landing() {
             <p className="eyebrow mb-3">{c.institutions.label}</p>
             <h2 className="section-h max-w-2xl mx-auto">{c.institutions.headline}</h2>
             <p className="mt-4 text-charcoal/70 leading-relaxed max-w-2xl mx-auto">{c.institutions.body}</p>
-            <a href="/contact" className="cta cta-outline mt-7 inline-flex">{c.institutions.cta}</a>
+            <button onClick={() => setShowPartnerModal(true)} className="cta cta-outline mt-7 inline-flex">{c.institutions.cta}</button>
           </Reveal>
         </div>
       </section>
+
+      <PartnerModal open={showPartnerModal} onClose={() => setShowPartnerModal(false)} locale={locale} source="landing_page" />
 
       {/* ── FAQ ──────────────────────────────────────────────────────── */}
       <Section eyebrow={locale === 'ar' ? 'الأسئلة الشائعة' : 'FAQ'} center>
