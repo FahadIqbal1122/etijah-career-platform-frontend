@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 import DashboardStatsView, { type DashboardStats } from '@/components/admin/DashboardStatsView'
+import EmailTemplatesTab from '@/components/admin/EmailTemplatesTab'
 
 const levelToWidth: Record<string, string> = {
   low: '20%',
@@ -166,7 +167,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'templates'>('dashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -1493,6 +1494,7 @@ export default function AdminPage() {
               tabs: [
                 { key: 'testmode', label: 'Test Mode', color: 'bg-cyan-600', badge: testModeEnabled ? 'ON' : undefined, onSelect: fetchTestMode },
                 { key: 'homepage', label: 'Homepage', color: 'bg-fuchsia-600', badge: homepageMode, onSelect: fetchHomepageMode },
+                { key: 'templates', label: 'Email Templates', color: 'bg-pink-600' },
               ],
             },
           ]
@@ -2672,6 +2674,12 @@ export default function AdminPage() {
             </div>
             {homepageModeError && <p className="text-xs text-red-500 mt-3">{homepageModeError}</p>}
           </div>
+        </div>
+      )}
+
+      {activeTab === 'templates' && (
+        <div className="px-4 py-8">
+          <EmailTemplatesTab />
         </div>
       )}
 
