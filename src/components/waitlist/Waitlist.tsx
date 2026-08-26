@@ -238,6 +238,7 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light', location = 'hero' }
           onChange={(v) => { setCountry(v); setErrors((p) => ({ ...p, country: false })) }}
           placeholder={c.countryPlaceholder}
           className={`${fieldCls} flex-1${errCls('country')}`}
+          allowCustom={false}
         />
         <div className="relative flex-1">
           <select
@@ -262,6 +263,7 @@ function WaitlistForm({ c, locale, onJoined, tone = 'light', location = 'hero' }
           onChange={(v) => { setNationality(v); setErrors((p) => ({ ...p, nationality: false })) }}
           placeholder={c.nationalityPlaceholder}
           className={`${fieldCls} flex-1${errCls('nationality')}`}
+          allowCustom={false}
         />
         <div className="relative flex-1">
           <label className="sr-only">{c.agePlaceholder}</label>
