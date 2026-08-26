@@ -22,6 +22,25 @@ export default function DashboardStatsView({ stats }: { stats: DashboardStats })
         </div>
       </div>
 
+      {stats.waitlist_age_breakdown.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+          <p className="text-sm font-medium text-slate-500 mb-3">Waitlist age groups</p>
+          <div className="space-y-2">
+            {stats.waitlist_age_breakdown.map((a) => (
+              <div key={a.label}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-slate-600">{a.label}</span>
+                  <span className="font-medium text-slate-800">{a.pct}% <span className="text-slate-400">({a.count})</span></span>
+                </div>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-slate-700 rounded-full" style={{ width: `${a.pct}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
         <p className="text-sm font-medium text-slate-500 mb-3">Waitlist page activity</p>
         <div className="grid grid-cols-3 gap-4">
@@ -56,25 +75,6 @@ export default function DashboardStatsView({ stats }: { stats: DashboardStats })
           </div>
         )}
       </div>
-
-      {stats.waitlist_age_breakdown.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
-          <p className="text-sm font-medium text-slate-500 mb-3">Waitlist age groups</p>
-          <div className="space-y-2">
-            {stats.waitlist_age_breakdown.map((a) => (
-              <div key={a.label}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-600">{a.label}</span>
-                  <span className="font-medium text-slate-800">{a.pct}% <span className="text-slate-400">({a.count})</span></span>
-                </div>
-                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-slate-700 rounded-full" style={{ width: `${a.pct}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
