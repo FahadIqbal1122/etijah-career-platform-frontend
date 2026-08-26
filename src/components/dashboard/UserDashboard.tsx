@@ -12,7 +12,7 @@ import { useRouter as useNavRouter, useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useRouter, usePathname, Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
-import { apiAuthGet, apiAuthGetBlob, apiAuthPost, apiAuthPatch, apiAuthDelete, apiGet, startCheckout, type PlanCode } from '@/lib/api'
+import { apiAuthGet, apiAuthGetBlob, apiAuthPost, apiAuthPatch, apiAuthDelete, startCheckout, type PlanCode } from '@/lib/api'
 import Logomark from '@/components/brand/Logomark'
 import { LockedSection } from '@/components/shared/LockedSection'
 
@@ -217,7 +217,7 @@ export default function UserDashboard() {
         setAssessments(sorted)
         const latest = sorted[0]
         if (latest) {
-          apiGet<any>(`/assessment/${latest.id}/career-suggestions`)
+          apiAuthGet<any>(`/assessment/${latest.id}/career-suggestions`)
             .then(d => setTopMatch(d.suggestions?.[0]?.title ?? null)).catch(() => {})
         }
       })

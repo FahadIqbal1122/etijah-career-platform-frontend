@@ -32,7 +32,13 @@ function LoginForm() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    // A dropped packet to Supabase's auth server surfaces as a raw network
+    // error with no retry built in (unlike every call through lib/api.ts) —
+    // retry once before giving up so a single blip doesn't fail the login.
+    let { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error && /fetch/i.test(error.message)) {
+      ;({ error } = await supabase.auth.signInWithPassword({ email, password }))
+    }
     if (error) {
       setError(error.message)
       setLoading(false)
