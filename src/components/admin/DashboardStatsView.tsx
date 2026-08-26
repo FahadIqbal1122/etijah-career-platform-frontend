@@ -8,6 +8,29 @@ export type DashboardStats = {
   country_profiles: number
   waitlist_page: { page_views: number; clicks: number; top_clicks: { label: string; count: number }[] }
   waitlist_age_breakdown: { label: string; count: number; pct: number }[]
+  waitlist_country_breakdown: { label: string; count: number; pct: number }[]
+}
+
+function BreakdownCard({ title, items }: { title: string; items: { label: string; count: number; pct: number }[] }) {
+  if (items.length === 0) return null
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+      <p className="text-sm font-medium text-slate-500 mb-3">{title}</p>
+      <div className="space-y-2">
+        {items.map((item) => (
+          <div key={item.label}>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="text-slate-600">{item.label}</span>
+              <span className="font-medium text-slate-800">{item.pct}% <span className="text-slate-400">({item.count})</span></span>
+            </div>
+            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-slate-700 rounded-full" style={{ width: `${item.pct}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export default function DashboardStatsView({ stats }: { stats: DashboardStats }) {
@@ -22,24 +45,8 @@ export default function DashboardStatsView({ stats }: { stats: DashboardStats })
         </div>
       </div>
 
-      {stats.waitlist_age_breakdown.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
-          <p className="text-sm font-medium text-slate-500 mb-3">Waitlist age groups</p>
-          <div className="space-y-2">
-            {stats.waitlist_age_breakdown.map((a) => (
-              <div key={a.label}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-600">{a.label}</span>
-                  <span className="font-medium text-slate-800">{a.pct}% <span className="text-slate-400">({a.count})</span></span>
-                </div>
-                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-slate-700 rounded-full" style={{ width: `${a.pct}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <BreakdownCard title="Waitlist age groups" items={stats.waitlist_age_breakdown} />
+      <BreakdownCard title="Waitlist by country" items={stats.waitlist_country_breakdown} />
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
         <p className="text-sm font-medium text-slate-500 mb-3">Waitlist page activity</p>
