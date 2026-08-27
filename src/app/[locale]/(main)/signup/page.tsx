@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useLocale } from 'next-intl'
 import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 
@@ -10,6 +11,7 @@ const field =
 
 export default function SignupPage() {
   const searchParams = useSearchParams()
+  const locale = useLocale()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState(searchParams.get('email') || '')
   const [password, setPassword] = useState('')
@@ -25,7 +27,7 @@ export default function SignupPage() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName }, emailRedirectTo: `${window.location.origin}/en/dashboard` },
+      options: { data: { full_name: fullName }, emailRedirectTo: `${window.location.origin}/${locale}/dashboard` },
     })
     if (error) {
       setError(error.message)
@@ -48,7 +50,7 @@ export default function SignupPage() {
           <p className="text-sm text-charcoal/60">
             We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.
           </p>
-          <a href="/en/login" className="inline-block mt-6 text-sm text-primary font-medium hover:underline">
+          <a href={`/${locale}/login`} className="inline-block mt-6 text-sm text-primary font-medium hover:underline">
             Back to sign in
           </a>
         </div>
@@ -119,7 +121,7 @@ export default function SignupPage() {
           </button>
           <p className="text-center text-sm text-charcoal/40">
             Already have an account?{' '}
-            <a href="/en/login" className="text-primary font-medium hover:underline">Sign in</a>
+            <a href={`/${locale}/login`} className="text-primary font-medium hover:underline">Sign in</a>
           </p>
         </form>
       </div>

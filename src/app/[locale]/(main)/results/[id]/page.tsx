@@ -75,6 +75,7 @@ export default function ResultsPage() {
   const [downloadingReport, setDownloadingReport] = useState(false)
   const [downloadError, setDownloadError] = useState('')
   const [reportLocale, setReportLocale] = useState<'en' | 'ar'>('en')
+  const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -111,7 +112,12 @@ export default function ResultsPage() {
       .then(data => setCourses(data || []))
       .catch(() => {})
       .finally(() => setCoursesLoading(false))
-  }, [id])
+  }, [id, retryKey])
+
+  function retry() {
+    setError('')
+    setRetryKey(k => k + 1)
+  }
 
   useEffect(() => {
     apiGet<{ count: number }>('/stats/recent-completions')
@@ -130,7 +136,12 @@ export default function ResultsPage() {
   if (error) {
     return (
       <div className="min-h-screen brand-surface flex items-center justify-center px-4">
-        <p className="text-rose-500 text-sm">{error}</p>
+        <div className="text-center">
+          <p className="text-rose-500 text-sm mb-4">{error}</p>
+          <button onClick={retry} className="cta" style={{ padding: '10px 20px', fontSize: 14, borderRadius: 12 }}>
+            Try again
+          </button>
+        </div>
       </div>
     )
   }
@@ -199,6 +210,12 @@ export default function ResultsPage() {
   }
 
   async function saveJob(job: any, index: number) {
+    // Mark saved (and the button disabled) before the request lands, not after —
+    // otherwise a fast double-click/slow network fires two POSTs for the same
+    // job before the first response comes back, creating duplicate tracked
+    // applications. Roll back on failure.
+    if (savedJobs.has(index)) return
+    setSavedJobs(prev => new Set(prev).add(index))
     try {
       await apiAuthPost('/applications', {
         response_id: id,
@@ -209,8 +226,8 @@ export default function ResultsPage() {
         url: job.url,
         matched_career: job.matched_career,
       })
-      setSavedJobs(prev => new Set(prev).add(index))
     } catch {
+      setSavedJobs(prev => { const next = new Set(prev); next.delete(index); return next })
       setSaveError('Sign in to save jobs to your tracker')
     }
   }

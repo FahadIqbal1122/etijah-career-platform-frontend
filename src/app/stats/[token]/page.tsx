@@ -5,7 +5,19 @@ const BACKEND = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
 
 export default async function PublicDashboardPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
-  const res = await fetch(`${BACKEND}/public/dashboard-stats?token=${encodeURIComponent(token)}`, { cache: 'no-store' })
+  let res: Response
+  try {
+    res = await fetch(`${BACKEND}/public/dashboard-stats?token=${encodeURIComponent(token)}`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
+    })
+  } catch {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+        <p className="text-slate-400 text-sm">This link is temporarily unavailable. Please try again shortly.</p>
+      </div>
+    )
+  }
 
   if (!res.ok) {
     return (

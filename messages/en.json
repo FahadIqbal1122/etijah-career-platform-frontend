@@ -7,6 +7,7 @@
     "submitting": "Submitting...",
     "selectUpTo": "Select up to {max}",
     "placeholder": "Your answer",
+    "otherPlaceholder": "Please specify",
     "thankYou": "Thank you!",
     "thankYouMessage": "Your responses have been saved. We will be in touch soon.",
     "ofTotal": "{current} of {total}",

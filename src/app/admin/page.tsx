@@ -197,6 +197,7 @@ export default function AdminPage() {
   const [dashboardError, setDashboardError] = useState('')
   const [shareToken, setShareToken] = useState('')
   const [shareLinkCopied, setShareLinkCopied] = useState(false)
+  const [regeneratingShareLink, setRegeneratingShareLink] = useState(false)
 
   const [onetLinks, setOnetLinks] = useState<OnetLink[]>([])
   const [onetLoading, setOnetLoading] = useState(false)
@@ -362,6 +363,21 @@ export default function AdminPage() {
       // non-critical — the copy-link box just won't render
     }
   }, [])
+
+  async function handleRegenerateShareLink() {
+    if (!confirm('Regenerate the share link? The old link will stop working immediately.')) return
+    setRegeneratingShareLink(true)
+    try {
+      const res = await fetch('/api/admin/dashboard-share-link', { method: 'POST' })
+      if (!res.ok) { alert('Failed to regenerate share link'); return }
+      const data = await res.json()
+      setShareToken(data.token || '')
+    } catch {
+      alert('Failed to regenerate share link')
+    } finally {
+      setRegeneratingShareLink(false)
+    }
+  }
 
   const fetchOnetLinks = useCallback(async () => {
     setOnetLoading(true)
@@ -620,7 +636,8 @@ export default function AdminPage() {
 
   async function handleDeleteSubmission(id: string) {
     if (!confirm('Delete this submission and all its data?')) return
-    await fetch(`/api/admin/submissions/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/admin/submissions/${id}`, { method: 'DELETE' })
+    if (!res.ok) { alert('Failed to delete submission'); return }
     setSubmissions(prev => prev.filter(s => s.id !== id))
   }
 
@@ -647,11 +664,12 @@ export default function AdminPage() {
 
   async function handleDeleteOnet(id: string) {
     try {
-      await fetch(`/api/admin/onet/${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/admin/onet/${id}`, { method: 'DELETE' })
+      if (!res.ok) { alert('Failed to delete O*NET link'); return }
       setOnetLinks(prev => prev.filter(l => l.id !== id))
       if (selectedOnet?.id === id) setSelectedOnet(null)
     } catch {
-      // silent
+      alert('Failed to delete O*NET link')
     }
   }
 
@@ -687,7 +705,8 @@ export default function AdminPage() {
 
   async function handleDeleteCountry(code: string){
     if (!confirm('Delete this country profile?')) return
-    await fetch(`/api/admin/country-profiles/${code}`, { method: 'DELETE' })
+    const res = await fetch(`/api/admin/country-profiles/${code}`, { method: 'DELETE' })
+    if (!res.ok) { alert('Failed to delete country profile'); return }
     setCountryProfiles(prev => prev.filter(c => c.country_code !== code))
   }
 
@@ -750,7 +769,8 @@ export default function AdminPage() {
 
   async function handleDeleteCourse(id: string) {
     if (!confirm('Delete this course?')) return
-    await fetch(`/api/admin/courses/${id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/admin/courses/${id}`, { method: 'DELETE' })
+    if (!res.ok) { alert('Failed to delete course'); return }
     setCourses(prev => prev.filter(c => c.id !== id))
   }
 
@@ -1561,13 +1581,22 @@ export default function AdminPage() {
                 </p>
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/stats/${shareToken}`)
-                    setShareLinkCopied(true)
-                    setTimeout(() => setShareLinkCopied(false), 2000)
+                    navigator.clipboard.writeText(`${window.location.origin}/stats/${shareToken}`).then(() => {
+                      setShareLinkCopied(true)
+                      setTimeout(() => setShareLinkCopied(false), 2000)
+                    }).catch(() => {})
                   }}
                   className="text-xs font-medium bg-sky-600 text-white px-3 py-1.5 rounded-lg hover:bg-sky-700 transition-colors flex-none"
                 >
                   {shareLinkCopied ? 'Copied' : 'Copy link'}
+                </button>
+                <button
+                  onClick={handleRegenerateShareLink}
+                  disabled={regeneratingShareLink}
+                  title="Invalidates the current link and issues a new one"
+                  className="text-xs font-medium bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors flex-none disabled:opacity-50"
+                >
+                  {regeneratingShareLink ? '…' : 'Regenerate'}
                 </button>
               </div>
             )}

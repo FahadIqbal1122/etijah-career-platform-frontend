@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { backendJsonResponse } from '@/lib/adminProxy';
 const BACKEND = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ code: string }> }) {
@@ -11,7 +12,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ code
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     })
-    return NextResponse.json(await res.json(), { status: res.status })
+    return backendJsonResponse(res)
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ code: string }> }) {
@@ -22,5 +23,5 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ c
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
     })
-    return NextResponse.json(await res.json(), { status: res.status })
+    return backendJsonResponse(res)
 }

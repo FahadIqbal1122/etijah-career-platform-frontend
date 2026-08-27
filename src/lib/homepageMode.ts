@@ -1,4 +1,4 @@
-const BACKEND = (process.env.NEXT_PUBLIC_BACKEND_URL || '').replace(/\/$/, '')
+const BACKEND = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
 
 // Admin-togglable via /admin → Homepage tab (app_settings.homepage_mode).
 // Revalidated every 30s so the toggle takes effect quickly without hitting

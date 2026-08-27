@@ -101,16 +101,16 @@ export default function Landing() {
   const pathname = usePathname()
   const c = (L as any)[locale] ?? L.en
   const arrow = dir === 'rtl' ? '←' : '→'
-  const [loggedIn, setLoggedIn] = useState(false)
   const [checkingOut, setCheckingOut] = useState<PlanCode | null>(null)
   const [showPartnerModal, setShowPartnerModal] = useState(false)
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setLoggedIn(!!session))
-  }, [])
-
   async function handlePlanCta(planCode: PlanCode) {
-    if (!loggedIn) {
+    // Re-check the session fresh at click time rather than trusting `loggedIn`
+    // — in the brief window right after mount before getSession() resolves,
+    // the stale `false` default would wrongly send an actually-logged-in user
+    // to /login instead of starting checkout.
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
       router.push(`/login?next=${encodeURIComponent(`/dashboard?buy=${planCode}`)}`)
       return
     }

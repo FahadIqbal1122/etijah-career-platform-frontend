@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-const BACKEND = (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+const BACKEND = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get('admin_session')?.value

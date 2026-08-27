@@ -44,7 +44,10 @@ function LoginForm() {
       setLoading(false)
       return
     }
-    apiAuthPost('/assessment/link-by-email', {}).catch(() => {})
+    // Await this so the dashboard's own fetch (fired right after navigation)
+    // doesn't race it and show "no report yet" for a user whose prior
+    // anonymous assessment hasn't been linked to their account yet.
+    await apiAuthPost('/assessment/link-by-email', {}).catch(() => {})
     const next = searchParams.get('next')
     // Only follow `next` if it's a same-app relative path — a leading "//" (or "/\") is
     // protocol-relative and would silently redirect off-site after a real login.
@@ -116,7 +119,7 @@ function LoginForm() {
           </button>
           <p className="text-center text-sm text-charcoal/40">
             No account?{' '}
-            <a href="/en/signup" className="text-primary font-medium hover:underline">Sign up</a>
+            <a href={`/${locale}/signup`} className="text-primary font-medium hover:underline">Sign up</a>
           </p>
         </form>
       </div>

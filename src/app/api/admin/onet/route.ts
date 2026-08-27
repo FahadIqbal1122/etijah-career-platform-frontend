@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { backendJsonResponse } from '@/lib/adminProxy'
 
 const BACKEND = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
 
@@ -9,8 +10,7 @@ export async function GET(req: NextRequest) {
   const res = await fetch(`${BACKEND}/onet`, {
     headers: { Authorization: `Bearer ${token}` },
   })
-  const data = await res.json()
-  return NextResponse.json(data, { status: res.status })
+  return backendJsonResponse(res)
 }
 
 export async function POST(req: NextRequest) {
@@ -23,6 +23,5 @@ export async function POST(req: NextRequest) {
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  const data = await res.json()
-  return NextResponse.json(data, { status: res.status })
+  return backendJsonResponse(res)
 }

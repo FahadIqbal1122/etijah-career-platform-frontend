@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { backendJsonResponse } from '@/lib/adminProxy'
 
 const BACKEND = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
 
@@ -14,6 +15,6 @@ export async function DELETE(
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
   })
-  if (!res.ok) return NextResponse.json(await res.json(), { status: res.status })
+  if (!res.ok) return backendJsonResponse(res)
   return new NextResponse(null, { status: 204 })
 }

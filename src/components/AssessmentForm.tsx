@@ -183,6 +183,7 @@ export default function AssessmentForm() {
   const [confirming, setConfirming] = useState(false)
   const [revealMsg, setRevealMsg] = useState<{ head: string; body: string } | null>(null)
   const [rippleKey, setRippleKey] = useState(0)
+  const [maxSelectHit, setMaxSelectHit] = useState(false)
   const [enterKey, setEnterKey] = useState(0)
   const [checking, setChecking] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -246,6 +247,19 @@ export default function AssessmentForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- setAnswer is a stable helper closing over refs, safe to omit
   }, [])
 
+  // Continuous autosave (debounced) — the manual "Save & exit" button was the
+  // only thing persisting a draft, so a real browser back-button/gesture (not
+  // the in-app arrow) or an accidental tab close mid-assessment lost every
+  // answer with no recovery. This keeps a draft current without the user
+  // having to remember to save.
+  useEffect(() => {
+    if (Object.keys(answers).length === 0) return
+    const id = window.setTimeout(() => {
+      saveDraft(answersRef.current, index, revealedRef.current)
+    }, 1000)
+    return () => clearTimeout(id)
+  }, [answers, index])
+
   function resumeDraft() {
     if (!draft) return
     answersRef.current = draft.answers
@@ -272,7 +286,9 @@ export default function AssessmentForm() {
   const total = visibleQuestions.length
   const q = visibleQuestions[Math.min(index, total - 1)]
 
-  const progress = phase === 'finish' ? 1 : total ? index / total : 0
+  // clamped to 1 — if skip-logic shrinks `total` below `index` mid-session
+  // (editing an earlier answer while ahead of it), the raw ratio can exceed 1
+  const progress = phase === 'finish' ? 1 : total ? Math.min(1, index / total) : 0
   const litCount = phase === 'finish'
     ? TOTAL_NODES
     : Math.max(1, Math.min(TOTAL_NODES, Math.round(progress * (TOTAL_NODES - 1)) + 1))
@@ -280,13 +296,25 @@ export default function AssessmentForm() {
   const avgMsPerQ = paceRef.current.count >= 3 ? paceRef.current.sum / paceRef.current.count : FALLBACK_MS_PER_Q
   const progressMsg = buildProgressMessage(index, total, avgMsPerQ, locale)
 
+  // "Other" needs its free-text field filled before the answer counts —
+  // applies whether "other" is a lone value (single_select) or one entry in
+  // a multi_select array.
+  function otherTextFilled(questionId: string): boolean {
+    return String(answers[`${questionId}_other`] || '').trim().length > 0
+  }
+
   function isAnswerValid(question: Question): boolean {
     const a = answers[question.id]
     if (a === undefined || a === null || a === '') return false
-    if (Array.isArray(a)) return a.length > 0
+    if (Array.isArray(a)) {
+      if (a.length === 0) return false
+      if (a.includes('other') && !otherTextFilled(question.id)) return false
+      return true
+    }
     if (question.type === 'phone_input') return String(a).replace(/\D/g, '').length >= 7
     if (question.type === 'email_input') return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(a))
     if (question.type === 'text_input') return String(a).trim().length >= 2
+    if (a === 'other' && !otherTextFilled(question.id)) return false
     return true
   }
 
@@ -343,9 +371,13 @@ export default function AssessmentForm() {
   }
 
   // re-advance to the furthest point already reached, without re-answering
-  // the question currently shown (only available after goBack()).
+  // the question currently shown (only available after goBack()). Blocked on
+  // an unanswered current question — if editing an earlier answer changed
+  // the skip-logic list, a position that used to be answered can now hold a
+  // different, newly-required question that the maxIndex bookmark knows
+  // nothing about; without this check, forward would step past it unanswered.
   function goForward() {
-    if (confirming || checking || index >= maxIndex) return
+    if (confirming || checking || index >= maxIndex || !isAnswerValid(q)) return
     setPicked(null)
     setIndex(i => Math.min(maxIndex, i + 1))
     setPhase('question')
@@ -375,11 +407,14 @@ export default function AssessmentForm() {
     doAdvance()
   }
 
-  // auto-advance types (scale / forced_choice / single_select) — tap commits
+  // auto-advance types (scale / forced_choice / single_select) — tap commits.
+  // Picking "other" is the one exception: it needs a free-text field filled
+  // in first, so it waits for the explicit Continue button instead.
   function pick(value: any) {
     if (confirming || checking) return
     setPicked(value)
     setAnswer(q.id, value)
+    if (value === 'other') return
     setConfirming(true)
     after(CONFIRM_MS, () => {
       setConfirming(false)
@@ -388,12 +423,13 @@ export default function AssessmentForm() {
     })
   }
 
-  // manual types (multi-select / inputs) — explicit Continue
+  // manual types (multi-select / inputs / "other") — explicit Continue
   function proceedManual() {
     if (confirming || checking || !isAnswerValid(q)) return
     setConfirming(true)
     after(CONFIRM_MS, () => {
       setConfirming(false)
+      setPicked(null)
       handleProceed()
     })
   }
@@ -403,18 +439,26 @@ export default function AssessmentForm() {
   function handleStageKeyDown(e: React.KeyboardEvent) {
     if (e.key !== 'Enter') return
     if ((e.target as HTMLElement).tagName === 'BUTTON') return
-    if (!q || !MANUAL_TYPES.has(q.type)) return
+    if (!q || !(MANUAL_TYPES.has(q.type) || sel === 'other')) return
     e.preventDefault()
     proceedManual()
   }
 
   function toggleMulti(value: string, maxSelect?: number) {
     const current: string[] = answersRef.current[q.id] || []
-    let nextArr: string[]
-    if (current.includes(value)) nextArr = current.filter(v => v !== value)
-    else if (maxSelect && current.length >= maxSelect) nextArr = current
-    else nextArr = [...current, value]
-    setAnswer(q.id, nextArr)
+    if (current.includes(value)) {
+      setAnswer(q.id, current.filter(v => v !== value))
+      return
+    }
+    if (maxSelect && current.length >= maxSelect) {
+      // tapping a new option at the cap previously did nothing visible at
+      // all — briefly flash the "Select up to N" label so it's clear the
+      // tap registered but was rejected, not just unresponsive.
+      setMaxSelectHit(true)
+      after(400, () => setMaxSelectHit(false))
+      return
+    }
+    setAnswer(q.id, [...current, value])
   }
 
   function continueFromReveal() {
@@ -549,25 +593,47 @@ export default function AssessmentForm() {
                     </button>
                   ))}
                 </div>
+                {sel === 'other' && (
+                  <input
+                    className="qinput"
+                    style={{ marginTop: 12 }}
+                    type="text"
+                    value={answers[`${q.id}_other`] || ''}
+                    onChange={e => setAnswer(`${q.id}_other`, e.target.value)}
+                    placeholder={tForm('otherPlaceholder')}
+                    autoFocus
+                  />
+                )}
               </>
             )}
 
             {q.type === 'multi_select' && (
               <>
                 <div className="qcard"><p className="qtext">{tQ(`${q.id}.text`)}</p></div>
-                {q.maxSelect && <p className="qsection" style={{ marginBottom: 12 }}>{tForm('selectUpTo', { max: q.maxSelect })}</p>}
+                {q.maxSelect && <p className={`qsection ${maxSelectHit ? 'shake' : ''}`} style={{ marginBottom: 12 }}>{tForm('selectUpTo', { max: q.maxSelect })}</p>}
                 <div className="pills">
                   {q.options?.map(opt => {
                     const selected: string[] = answers[q.id] || []
                     const on = selected.includes(opt.value)
                     return (
                       <button key={opt.value} className={`pill ${on ? 'sel' : ''}`} onClick={() => toggleMulti(opt.value, q.maxSelect)}>
-                        <span className="pill-dot" />
+                        <span className="pill-check">{on && '✓'}</span>
                         <span className="pill-label">{tQ(`${q.id}.options.${opt.value}`)}</span>
                       </button>
                     )
                   })}
                 </div>
+                {(answers[q.id] || []).includes('other') && (
+                  <input
+                    className="qinput"
+                    style={{ marginTop: 12 }}
+                    type="text"
+                    value={answers[`${q.id}_other`] || ''}
+                    onChange={e => setAnswer(`${q.id}_other`, e.target.value)}
+                    placeholder={tForm('otherPlaceholder')}
+                    autoFocus
+                  />
+                )}
               </>
             )}
 
@@ -601,7 +667,7 @@ export default function AssessmentForm() {
 
             {/* footer: Continue (manual types) + save & exit */}
             <div style={{ marginTop: 'auto', paddingTop: 18 }}>
-              {MANUAL_TYPES.has(q.type) && (
+              {(MANUAL_TYPES.has(q.type) || sel === 'other') && (
                 <button
                   className="cta"
                   style={{ width: '100%' }}
@@ -619,11 +685,10 @@ export default function AssessmentForm() {
                 <button
                   type="button"
                   className="step-arrow"
-                  aria-label={tForm('back')}
                   disabled={index === 0}
                   onClick={goBack}
                 >
-                  {dir === 'rtl' ? '→' : '←'}
+                  {tForm('back')}
                 </button>
                 <button
                   className="save-exit"
@@ -638,10 +703,9 @@ export default function AssessmentForm() {
                   <button
                     type="button"
                     className="step-arrow"
-                    aria-label={tForm('forward')}
                     onClick={goForward}
                   >
-                    {dir === 'rtl' ? '←' : '→'}
+                    {tForm('forward')}
                   </button>
                 ) : (
                   <span className="step-arrow-spacer" />

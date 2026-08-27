@@ -8,6 +8,7 @@ async function authHeader(): Promise<Record<string, string>> {
 }
 
 const RETRY_DELAY_MS = 800
+const MAX_AUTH_RETRIES = 2
 
 function wait(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms))
@@ -18,6 +19,11 @@ function wait(ms: number): Promise<void> {
 // call fires, producing a network error or a 401 that has nothing to do with
 // the request itself. `getHeaders` is called fresh on each attempt so a retry
 // picks up a session that's since settled, rather than reusing stale headers.
+// A single 800ms retry wasn't always enough (a real token refresh round-trip
+// to Supabase Auth can take longer), so a 401 gets a couple of tries with
+// backoff before giving up — capped at 2 (not more) since every one of these
+// also runs for a *genuinely* expired session, where retrying can't help and
+// just adds latency before the real error/redirect-to-login surfaces.
 async function requestWithRetry(path: string, init: RequestInit, getHeaders: () => Promise<Record<string, string>>): Promise<Response> {
     async function attempt(): Promise<Response> {
         const headers = { ...init.headers, ...(await getHeaders()) }
@@ -31,8 +37,8 @@ async function requestWithRetry(path: string, init: RequestInit, getHeaders: () 
         await wait(RETRY_DELAY_MS)
         res = await attempt()
     }
-    if (res.status === 401) {
-        await wait(RETRY_DELAY_MS)
+    for (let i = 0; i < MAX_AUTH_RETRIES && res.status === 401; i++) {
+        await wait(RETRY_DELAY_MS * (i + 1))
         res = await attempt()
     }
     return res

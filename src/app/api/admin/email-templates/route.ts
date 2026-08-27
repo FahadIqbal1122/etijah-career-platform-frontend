@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { backendJsonResponse } from '@/lib/adminProxy';
 const BACKEND = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
 
 export async function GET(req: NextRequest) {
@@ -7,5 +8,5 @@ export async function GET(req: NextRequest) {
     const res = await fetch(`${BACKEND}/admin/email-templates`, {
         headers: { Authorization: `Bearer ${token}` },
     })
-    return NextResponse.json(await res.json(), { status: res.status })
+    return backendJsonResponse(res)
 }

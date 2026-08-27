@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-const BACKEND = (process.env.NEXT_PUBLIC_BACKEND_URL || '').replace(/\/$/, '')
+import { backendJsonResponse } from '@/lib/adminProxy'
+const BACKEND = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '')
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const token = req.cookies.get('admin_session')?.value
@@ -9,5 +10,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
     })
-    return NextResponse.json(await res.json(), { status: res.status })
+    if (!res.ok) return backendJsonResponse(res)
+    return new NextResponse(null, { status: 204 })
 }

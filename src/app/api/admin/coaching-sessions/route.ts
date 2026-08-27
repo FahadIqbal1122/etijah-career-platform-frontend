@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-const BACKEND = (process.env.NEXT_PUBLIC_BACKEND_URL || '').replace(/\/$/, '');
+import { backendJsonResponse } from '@/lib/adminProxy';
+const BACKEND = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 
 export async function GET(req: NextRequest) {
     const token = req.cookies.get('admin_session')?.value
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
             Authorization: `Bearer ${token}`
         },
     })
-    return NextResponse.json(await res.json(), { status: res.status })
+    return backendJsonResponse(res)
 }
 
 export async function POST(req: NextRequest) {
@@ -21,5 +22,5 @@ export async function POST(req: NextRequest) {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     })
-    return NextResponse.json(await res.json(), { status: res.status })
+    return backendJsonResponse(res)
 }

@@ -185,10 +185,14 @@ export default function UserDashboard() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [assessments, setAssessments] = useState<AssessmentSummary[]>([])
+  const [assessmentsLoading, setAssessmentsLoading] = useState(true)
   const [applications, setApplications] = useState<Application[]>([])
+  const [applicationsLoading, setApplicationsLoading] = useState(true)
   const [plan, setPlan] = useState<Plan | null>(null)
+  const [planLoading, setPlanLoading] = useState(true)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [jobMatches, setJobMatches] = useState<JobMatch[]>([])
+  const [jobMatchesLoading, setJobMatchesLoading] = useState(true)
   const [buying, setBuying] = useState(false)
   const [topMatch, setTopMatch] = useState<string | null>(null)
   const [notifs, setNotifs] = useState(NOTIF.map(n => n.on))
@@ -207,21 +211,30 @@ export default function UserDashboard() {
 
   useEffect(() => {
     if (!user) return
-    apiAuthGet<Application[]>('/applications').then(setApplications).catch(() => {})
-    apiAuthGet<Plan>('/billing/plan').then(setPlan).catch(() => {})
+    apiAuthGet<Application[]>('/applications').then(setApplications).catch(() => {}).finally(() => setApplicationsLoading(false))
+    apiAuthGet<Plan>('/billing/plan').then(setPlan).catch(() => {}).finally(() => setPlanLoading(false))
     apiAuthGet<Transaction[]>('/billing/transaction').then(setTransactions).catch(() => {})
-    apiAuthGet<JobMatch[]>('/jobs/my-matches').then(setJobMatches).catch(() => {})
-    apiAuthGet<AssessmentSummary[]>('/assessment/my-assessments')
-      .then(list => {
-        const sorted = [...list].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
-        setAssessments(sorted)
-        const latest = sorted[0]
-        if (latest) {
-          apiAuthGet<any>(`/assessment/${latest.id}/career-suggestions`)
-            .then(d => setTopMatch(d.suggestions?.[0]?.title ?? null)).catch(() => {})
-        }
-      })
-      .catch(() => {})
+    apiAuthGet<JobMatch[]>('/jobs/my-matches').then(setJobMatches).catch(() => {}).finally(() => setJobMatchesLoading(false))
+    // Link any prior anonymous assessment (matched by email) to this account
+    // before checking what assessments the user has. login/page.tsx already
+    // does this before navigating here, but that only covers the plain-login
+    // path — landing here via a signup email-confirmation link (no explicit
+    // "login" step happens) needs its own linking too, or that user's
+    // pre-signup assessment never surfaces.
+    apiAuthPost('/assessment/link-by-email', {}).catch(() => {}).finally(() => {
+      apiAuthGet<AssessmentSummary[]>('/assessment/my-assessments')
+        .then(list => {
+          const sorted = [...list].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
+          setAssessments(sorted)
+          const latest = sorted[0]
+          if (latest) {
+            apiAuthGet<any>(`/assessment/${latest.id}/career-suggestions`)
+              .then(d => setTopMatch(d.suggestions?.[0]?.title ?? null)).catch(() => {})
+          }
+        })
+        .catch(() => {})
+        .finally(() => setAssessmentsLoading(false))
+    })
   }, [user])
 
   async function moveStage(id: string, status: Application['status']) {
@@ -330,7 +343,20 @@ export default function UserDashboard() {
 
           {/* report status */}
           <section id="sec-report" className="card p-6 scroll-mt-4">
-            {latest ? (
+            {assessmentsLoading ? (
+              <div className="animate-pulse">
+                <div className="flex items-center justify-between">
+                  <div className="h-3 w-24 bg-lightblue rounded" />
+                  <Logomark size={34} />
+                </div>
+                <div className="h-6 w-2/3 bg-lightblue rounded mt-3" />
+                <div className="h-4 w-1/2 bg-lightblue rounded mt-3" />
+                <div className="flex gap-3 mt-5">
+                  <div className="h-10 w-36 bg-lightblue rounded-xl" />
+                  <div className="h-10 w-32 bg-lightblue rounded-xl" />
+                </div>
+              </div>
+            ) : latest ? (
               <>
                 <div className="flex items-center justify-between">
                   <span className="eyebrow">{t.reportReadyEyebrow}</span>
@@ -382,11 +408,18 @@ export default function UserDashboard() {
 
           {/* job matches: real for Launchpad, locked preview otherwise */}
           <section id="sec-jobs" className="space-y-4 scroll-mt-4">
-            {plan?.tier === 'launchpad' ? (
+            {planLoading ? (
+              <div className="card p-5 animate-pulse">
+                <div className="h-3 w-24 bg-lightblue rounded mb-3" />
+                <div className="h-16 bg-lightblue rounded-xl" />
+              </div>
+            ) : plan?.tier === 'launchpad' ? (
               <div className="card p-5">
                 <div className="flex items-center gap-2 mb-1"><span className="eyebrow !text-primary">{t.jobsHead}</span></div>
                 <p className="text-xs text-charcoal/45 mb-4">Refreshed daily from live GCC openings matched to your top careers.</p>
-                {jobMatches.length === 0 ? (
+                {jobMatchesLoading ? (
+                  <div className="h-16 bg-lightblue rounded-xl animate-pulse" />
+                ) : jobMatches.length === 0 ? (
                   <p className="text-sm text-charcoal/50 py-4 text-center">No matches yet — check back after the next daily refresh.</p>
                 ) : (
                   <div className="space-y-2">
@@ -422,7 +455,9 @@ export default function UserDashboard() {
               <h3 className="font-bold text-charcoal">{t.trackerHead}</h3>
               <p className="text-xs text-charcoal/45 mb-4">{t.trackerSub}</p>
               {error && <p className="text-rose-500 text-sm mb-3">{error}</p>}
-              {applications.length === 0 ? (
+              {applicationsLoading ? (
+                <div className="h-16 bg-lightblue rounded-xl animate-pulse" />
+              ) : applications.length === 0 ? (
                 <p className="text-sm text-charcoal/50 py-4 text-center">{t.trackerEmpty}</p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
@@ -491,34 +526,41 @@ export default function UserDashboard() {
 
           <section id="sec-billing" className="card p-6">
             <div className="flex items-center gap-2 mb-4"><h3 className="font-bold text-charcoal">{t.billingHead}</h3></div>
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div>
-                <p className="font-bold text-charcoal">
-                  {t.currentPlan}: {plan?.tier === 'launchpad' ? 'Launchpad' : plan?.tier === 'pathfinder' ? 'Pathfinder' : t.explorer}
-                </p>
-                <p className="text-2xl font-extrabold text-primary mt-1">
-                  {plan?.tier === 'launchpad' && plan.subscription_current_period_end
-                    ? <span className="text-sm font-medium text-charcoal/60">Renews {new Date(plan.subscription_current_period_end).toLocaleDateString()}</span>
-                    : plan?.tier === 'pathfinder'
-                      ? <span className="text-sm font-medium text-charcoal/60">Unlocked for life</span>
-                      : <>{t.free}<span className="text-xs font-medium text-charcoal/40 ms-1">{t.always}</span></>}
-                </p>
+            {planLoading ? (
+              <div className="animate-pulse">
+                <div className="h-4 w-32 bg-lightblue rounded" />
+                <div className="h-7 w-24 bg-lightblue rounded mt-2" />
               </div>
-              <div className="flex gap-2 flex-wrap">
-                {plan?.tier === 'free' && (
-                  <button onClick={() => handleBuyPlan('pathfinder')} disabled={buying}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary text-primary text-sm font-medium disabled:opacity-50">
-                    {buying ? '…' : 'Unlock Full Report — 149 SAR'}
-                  </button>
-                )}
-                {plan?.tier !== 'launchpad' && (
-                  <button onClick={() => handleBuyPlan('launchpad_monthly')} disabled={buying}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-50">
-                    {buying ? '…' : 'Subscribe to Launchpad — 99 SAR/mo'}
-                  </button>
-                )}
+            ) : (
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <p className="font-bold text-charcoal">
+                    {t.currentPlan}: {plan?.tier === 'launchpad' ? 'Launchpad' : plan?.tier === 'pathfinder' ? 'Pathfinder' : t.explorer}
+                  </p>
+                  <p className="text-2xl font-extrabold text-primary mt-1">
+                    {plan?.tier === 'launchpad' && plan.subscription_current_period_end
+                      ? <span className="text-sm font-medium text-charcoal/60">Renews {new Date(plan.subscription_current_period_end).toLocaleDateString()}</span>
+                      : plan?.tier === 'pathfinder'
+                        ? <span className="text-sm font-medium text-charcoal/60">Unlocked for life</span>
+                        : <>{t.free}<span className="text-xs font-medium text-charcoal/40 ms-1">{t.always}</span></>}
+                  </p>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {plan?.tier === 'free' && (
+                    <button onClick={() => handleBuyPlan('pathfinder')} disabled={buying}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary text-primary text-sm font-medium disabled:opacity-50">
+                      {buying ? '…' : 'Unlock Full Report — 149 SAR'}
+                    </button>
+                  )}
+                  {plan?.tier !== 'launchpad' && (
+                    <button onClick={() => handleBuyPlan('launchpad_monthly')} disabled={buying}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-50">
+                      {buying ? '…' : 'Subscribe to Launchpad — 99 SAR/mo'}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
             {transactions.length > 0 && (
               <div className="mt-4 pt-4 border-t border-[var(--line)]">
                 <p className="text-xs text-charcoal/45 mb-2">Payment history</p>
