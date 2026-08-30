@@ -35,6 +35,14 @@ export const W = {
       cta: 'Join the Beta Waitlist',
       ctaLoading: 'Joining…',
       trust: 'No spam, ever. Just a note when complementary beta access opens.',
+      countdown: {
+        label: 'Beta access opens in',
+        days: 'Days',
+        hours: 'Hours',
+        minutes: 'Minutes',
+        seconds: 'Seconds',
+        ended: 'Beta access is opening now.',
+      },
       stats: [
         { num: '15+', label: 'Years of GCC Coaching' },
         { num: '88,500+', label: 'Lives Impacted' },
@@ -206,6 +214,14 @@ export const W = {
       cta: 'انضم لقائمة الانتظار التجريبية',
       ctaLoading: 'جارٍ الانضمام…',
       trust: 'لا رسائل مزعجة أبداً. فقط إشعار عند فتح الوصول التجريبي التكميلي.',
+      countdown: {
+        label: 'الوصول التجريبي يبدأ خلال',
+        days: 'يوم',
+        hours: 'ساعة',
+        minutes: 'دقيقة',
+        seconds: 'ثانية',
+        ended: 'الوصول التجريبي يبدأ الآن.',
+      },
       stats: [
         { num: '+15', label: 'عاماً من الإرشاد في الخليج' },
         { num: '+88,500', label: 'حياة تأثرت' },

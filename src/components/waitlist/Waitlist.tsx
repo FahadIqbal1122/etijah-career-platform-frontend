@@ -16,6 +16,7 @@ import Logomark, { Wordmark } from '@/components/brand/Logomark'
 import LandingConstellation from '@/components/brand/LandingConstellation'
 import SearchableSelect from '@/components/waitlist/SearchableSelect'
 import PartnerModal from '@/components/shared/PartnerModal'
+import CountdownTimer from '@/components/waitlist/CountdownTimer'
 
 // Fire-and-forget page-view/click tracking for the waitlist page — never
 // awaited, never blocks the UI, and swallows failures.
@@ -378,6 +379,11 @@ export default function Waitlist() {
               <Highlight text={c.hero.headline[1]} hl={c.hero.hl} />
             </h1>
             <p className="mt-6 text-lg text-charcoal/70 leading-relaxed max-w-xl mx-auto">{c.hero.sub}</p>
+          </Reveal>
+
+          <Reveal className="mt-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-charcoal/50 mb-3">{c.hero.countdown.label}</p>
+            <CountdownTimer target="2026-09-06T00:00:00+03:00" labels={c.hero.countdown} />
           </Reveal>
 
           <Reveal className="mt-8 flex flex-col items-center gap-3">
