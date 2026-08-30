@@ -114,7 +114,7 @@ type Msg = { head: string; body: string }
 const NEUTRAL: Record<FrameworkKey, Record<string, Msg>> = {
   riasec: {
     en: { head: 'You’re a genuine mix.', body: 'So far no single interest dominates — you’re pulling from a few directions at once. Keep going.' },
-    ar: { head: 'أنت مزيج حقيقي.', body: 'حتى الآن لا يهيمن اتجاه واحد — تجمع بين عدة ميول في آن. أكمل.' },
+    ar: { head: 'أنت مزيج حقيقي.', body: 'حتى الآن لا يهيمن اتجاه واحد — تجمع بين عدة ميول في آن واحد' },
   },
   values: {
     en: { head: 'You value more than one thing at once.', body: 'So far a few things matter to you fairly equally — there’s no single value pulling ahead yet. Keep going.' },
