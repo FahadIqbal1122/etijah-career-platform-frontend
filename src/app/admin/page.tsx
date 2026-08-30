@@ -342,15 +342,19 @@ export default function AdminPage() {
   const fetchDashboardStats = useCallback(async () => {
     setDashboardLoading(true)
     setDashboardError('')
-    try {
-      const res = await fetch('/api/admin/dashboard-stats')
-      if (!res.ok) throw new Error('Failed to load dashboard stats')
-      setDashboardStats(await res.json())
-    } catch (err: any) {
-      setDashboardError(err.message)
-    } finally {
-      setDashboardLoading(false)
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch('/api/admin/dashboard-stats')
+        if (!res.ok) throw new Error('Failed to load dashboard stats')
+        setDashboardStats(await res.json())
+        setDashboardLoading(false)
+        return
+      } catch (err: any) {
+        if (attempt === 0) { await new Promise(r => setTimeout(r, 1200)); continue }
+        setDashboardError(err.message)
+      }
     }
+    setDashboardLoading(false)
   }, [])
 
   const fetchShareToken = useCallback(async () => {
