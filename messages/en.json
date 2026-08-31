@@ -445,5 +445,163 @@
     "Q73": {
       "text": "The idea of building something of my own — whether as my main career or alongside a stable job — energizes me, even if it means working harder."
     }
+  },
+  "results": {
+    "loading": {
+      "preparing": "Preparing your report…",
+      "messages": [
+        "Built on 15 years of real GCC career coaching experience.",
+        "You're not just getting a personality quiz — this is matched against real regional job market data.",
+        "Every recommendation is tailored to your answers, not a generic template."
+      ],
+      "recentCompletions": "{count, plural, one {# person} other {# people}} completed their assessment in the last hour"
+    },
+    "error": {
+      "loadFailed": "Failed to load results",
+      "tryAgain": "Try again",
+      "refreshFailed": "Failed to refresh — try again shortly",
+      "downloadFailed": "Failed to download report",
+      "signInToSave": "Sign in to save jobs to your tracker"
+    },
+    "hero": {
+      "eyebrow": "Career Assessment Results",
+      "title": "Your Career Profile",
+      "subtitle": "Personalised breakdown based on your responses",
+      "typeLabel": "{type} type",
+      "riasecCode": "RIASEC: {code}",
+      "downloadPdf": "Download PDF Report",
+      "downloading": "Downloading…",
+      "downloadEnglish": "Download English PDF",
+      "downloadArabic": "Download Arabic PDF"
+    },
+    "signup": {
+      "title": "Save your results & track job applications",
+      "subtitle": "Create a free account to keep this report and use the job tracker",
+      "cta": "Create account"
+    },
+    "quickCards": {
+      "careerType": "Career Type",
+      "topValue": "Top Value",
+      "topStrength": "Top Strength"
+    },
+    "careerTypes": { "title": "Career Types", "subtitle": "RIASEC profile" },
+    "coreValues": { "title": "Core Values", "subtitle": "What drives you" },
+    "topStrengths": { "title": "Top Strengths", "subtitle": "Natural advantages" },
+    "personality": { "title": "Personality", "subtitle": "Big Five traits" },
+    "workStyle": {
+      "title": "Work Style & Resilience",
+      "subtitle": "How you work best",
+      "pace": "Pace",
+      "environment": "Environment",
+      "sector": "Sector",
+      "mobility": "Mobility",
+      "longTermFocus": "Long-term focus",
+      "resilience": "Resilience",
+      "steady": "Steady",
+      "fastPaced": "Fast-paced",
+      "largeOrg": "Large org",
+      "startup": "Startup",
+      "public": "Public",
+      "private": "Private",
+      "local": "Local",
+      "openToRelocate": "Open to relocate",
+      "shortTerm": "Short-term",
+      "longTerm": "Long-term",
+      "needsSupport": "Needs support",
+      "bouncesBack": "Bounces back"
+    },
+    "suggestedCareers": { "title": "Suggested Careers", "subtitle": "Matched across your full profile" },
+    "liveJobs": {
+      "title": "Live Job Postings",
+      "subtitle": "Current openings matched to your careers",
+      "for": "for",
+      "save": "Save to tracker",
+      "saved": "Saved ✓",
+      "signupTitle": "Sign up to see live job postings",
+      "signupBody": "Create a free account to unlock current openings matched to your top career matches.",
+      "lockedTag": "Launchpad",
+      "lockedTitle": "Unlock live job postings",
+      "lockedBody": "See current openings matched to your top career matches, updated daily.",
+      "lockedCta": "Unlock Full Report"
+    },
+    "aiImpact": {
+      "title": "AI Impact on Your Careers",
+      "subtitle": "How automation affects your top matches",
+      "riskSuffix": "RISK",
+      "signupTitle": "Sign up to see your full AI-impact breakdown",
+      "signupBody": "Create a free account, then unlock the full deep dive — all 5 top matches, a 1–3 year outlook, and which human skills gain value.",
+      "lockedTag": "Pathfinder",
+      "lockedTitle": "Unlock the full AI-impact deep dive",
+      "lockedBody": "See all 5 of your top matches, a 1–3 year outlook for your market, and which human skills gain value as AI changes these roles.",
+      "lockedCta": "Unlock Full Report",
+      "placeholderTitle": "Career match",
+      "placeholderRisk": "LOW RISK",
+      "placeholderOutlook": "1–3 year outlook for this role",
+      "placeholderSkill": "Skill"
+    },
+    "courses": {
+      "title": "Recommended Courses",
+      "subtitle": "Matched to your strengths and career paths",
+      "free": "Free",
+      "paid": "Paid",
+      "signupTitle": "Sign up to see your course recommendations",
+      "signupBody": "Create a free account to unlock certification and course picks matched to your strengths and target careers.",
+      "lockedTag": "Pathfinder",
+      "lockedTitle": "Unlock personalised course recommendations",
+      "lockedBody": "Get certification and course picks matched to your strengths and target careers, not just the generic report.",
+      "lockedCta": "Unlock Full Report",
+      "placeholderTitle": "Recommended course title",
+      "placeholderMeta": "Provider · Level · 6h"
+    },
+    "companies": {
+      "title": "Companies to Target",
+      "subtitle": "Hiring in your sector and country",
+      "government": "Government",
+      "view": "View",
+      "signupTitle": "Sign up to see companies hiring in your sector",
+      "signupBody": "Create a free account to unlock a list of companies hiring in your sector and country, matched to your profile.",
+      "lockedTag": "Pathfinder",
+      "lockedTitle": "Unlock your target company list",
+      "lockedBody": "Get a list of companies hiring in your sector and country, matched to your profile.",
+      "lockedCta": "Unlock Full Report",
+      "placeholderName": "Company name",
+      "placeholderSector": "Sector"
+    },
+    "share": "Share your results",
+    "levels": { "high": "High", "medium": "Medium", "low": "Low" },
+    "riasecTypes": {
+      "realistic": "Realistic",
+      "investigative": "Investigative",
+      "artistic": "Artistic",
+      "social": "Social",
+      "enterprising": "Enterprising",
+      "conventional": "Conventional"
+    },
+    "valueNames": {
+      "security": "Security",
+      "freedom": "Freedom",
+      "impact": "Impact",
+      "status": "Status",
+      "family": "Family",
+      "creativity": "Creativity",
+      "wealth": "Wealth",
+      "national_contribution": "National Contribution",
+      "reputation": "Reputation"
+    },
+    "strengthNames": {
+      "strategic": "Strategic Thinking",
+      "leadership": "Leadership",
+      "relationships": "Relationships",
+      "execution": "Execution",
+      "communication": "Communication",
+      "learning": "Learning"
+    },
+    "bigFiveTraits": {
+      "openness": "Openness",
+      "conscientiousness": "Conscientiousness",
+      "extraversion": "Extraversion",
+      "agreeableness": "Agreeableness",
+      "stability": "Stability"
+    }
   }
 }

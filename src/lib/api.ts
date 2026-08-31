@@ -44,10 +44,21 @@ async function requestWithRetry(path: string, init: RequestInit, getHeaders: () 
     return res
 }
 
+// FastAPI error bodies are `{"detail": "..."}` — pull that out so callers (and
+// any UI that renders err.message directly) show the human-readable message
+// instead of the raw JSON string.
+async function errorMessage(res: Response): Promise<string> {
+    const text = await res.text()
+    try {
+        const body = JSON.parse(text)
+        if (typeof body?.detail === 'string') return body.detail
+    } catch {}
+    return text || `Request failed: ${res.status}`
+}
+
 async function asJson<T>(res: Response): Promise<T> {
     if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || `Request failed: ${res.status}`)
+        throw new Error(await errorMessage(res))
     }
     return res.json()
 }
@@ -77,8 +88,7 @@ export async function apiAuthGet<T>(path: string): Promise<T> {
 export async function apiAuthGetBlob(path: string): Promise<{ blob: Blob; filename: string | null }> {
     const res = await requestWithRetry(path, {}, authHeader)
     if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || `Request failed: ${res.status}`)
+        throw new Error(await errorMessage(res))
     }
     const disposition = res.headers.get('Content-Disposition') || ''
     const match = disposition.match(/filename="?([^"]+)"?/)
