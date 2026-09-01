@@ -8,7 +8,7 @@ async function authHeader(): Promise<Record<string, string>> {
 }
 
 const RETRY_DELAY_MS = 800
-const MAX_AUTH_RETRIES = 2
+const MAX_AUTH_RETRIES = 4
 
 function wait(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms))

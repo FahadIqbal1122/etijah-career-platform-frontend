@@ -135,34 +135,44 @@ export default function ResultsPage() {
   }, [])
 
   useEffect(() => {
-    apiAuthGet<any>(`/assessment/${id}/results`)
-      .then(data => {
-        setSummary(data.summary)
-        setEmail(data.email || '')
-        if (data.tier === 'free' || data.tier === 'pathfinder' || data.tier === 'launchpad') setTier(data.tier)
-        if (data.locale === 'ar' || data.locale === 'en') setReportLocale(data.locale)
-      })
-      .catch(err => setError(err.message || t('error.loadFailed')))
-    apiAuthGet<any>(`/assessment/${id}/career-suggestions`)
-      .then(data => setJobs(data.suggestions))
-      .catch(() => {})
-      .finally(() => setJobsSuggestionsLoading(false))
-    apiAuthGet<any>(`/assessment/${id}/ai-impact`)
-      .then(data => setAiImpact(data))
-      .catch(() => {})
-      .finally(() => setAiLoading(false))
-    apiAuthGet<any>(`/assessment/${id}/job-listings`)
-      .then(data => setJobListings(data.jobs || []))
-      .catch(() => {})
-      .finally(() => setJobsLoading(false))
-    apiAuthGet<any[]>(`/assessment/${id}/companies`)
-      .then(data => setCompanies(data || []))
-      .catch(() => {})
-      .finally(() => setCompaniesLoading(false))
-    apiAuthGet<any[]>(`/assessment/${id}/courses`)
-      .then(data => setCourses(data || []))
-      .catch(() => {})
-      .finally(() => setCoursesLoading(false))
+    // Right after the assessment-submit redirect (or a fresh page load), the
+    // Supabase client can still be hydrating its session when this effect
+    // fires. Waiting on getSession() first means the very first request for
+    // an owned response already carries a token, instead of relying solely
+    // on lib/api.ts's post-401 retry to recover it.
+    let cancelled = false
+    supabase.auth.getSession().then(() => {
+      if (cancelled) return
+      apiAuthGet<any>(`/assessment/${id}/results`)
+        .then(data => {
+          setSummary(data.summary)
+          setEmail(data.email || '')
+          if (data.tier === 'free' || data.tier === 'pathfinder' || data.tier === 'launchpad') setTier(data.tier)
+          if (data.locale === 'ar' || data.locale === 'en') setReportLocale(data.locale)
+        })
+        .catch(err => setError(err.message || t('error.loadFailed')))
+      apiAuthGet<any>(`/assessment/${id}/career-suggestions`)
+        .then(data => setJobs(data.suggestions))
+        .catch(() => {})
+        .finally(() => setJobsSuggestionsLoading(false))
+      apiAuthGet<any>(`/assessment/${id}/ai-impact`)
+        .then(data => setAiImpact(data))
+        .catch(() => {})
+        .finally(() => setAiLoading(false))
+      apiAuthGet<any>(`/assessment/${id}/job-listings`)
+        .then(data => setJobListings(data.jobs || []))
+        .catch(() => {})
+        .finally(() => setJobsLoading(false))
+      apiAuthGet<any[]>(`/assessment/${id}/companies`)
+        .then(data => setCompanies(data || []))
+        .catch(() => {})
+        .finally(() => setCompaniesLoading(false))
+      apiAuthGet<any[]>(`/assessment/${id}/courses`)
+        .then(data => setCourses(data || []))
+        .catch(() => {})
+        .finally(() => setCoursesLoading(false))
+    })
+    return () => { cancelled = true }
   }, [id, retryKey, t])
 
   function retry() {

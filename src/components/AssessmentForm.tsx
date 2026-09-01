@@ -11,7 +11,7 @@ import { useRouter, usePathname } from '@/i18n/navigation'
 import { questions, BEHAVIORAL_SCALE, Question } from '@/data/questions'
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
-import { apiPost, apiAuthPost } from '@/lib/api'
+import { apiAuthPost } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 import Constellation, { CONSTELLATION } from '@/components/brand/Constellation'
@@ -319,7 +319,10 @@ export default function AssessmentForm() {
   }
 
   async function checkExistingUser(email: string, phone: string) {
-    return apiPost<{ id: string | null; claimed?: boolean } | null>('/assessment/check-existing', { email, phone })
+    // Authenticated so the backend can tell "someone else's claimed account"
+    // apart from "the logged-in user's own prior response" — see main.py's
+    // check_existing.
+    return apiAuthPost<{ id: string | null; claimed?: boolean } | null>('/assessment/check-existing', { email, phone })
   }
 
   // single source of truth for answers — keep the ref in sync so reveals can
