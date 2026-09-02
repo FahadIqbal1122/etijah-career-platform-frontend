@@ -383,7 +383,7 @@ export default function Waitlist() {
 
           <Reveal className="mt-8">
             <p className="text-xs font-semibold uppercase tracking-[0.15em] text-charcoal/50 mb-3">{c.hero.countdown.label}</p>
-            <CountdownTimer target="2026-09-06T00:00:00+03:00" labels={c.hero.countdown} />
+            <CountdownTimer target="2026-09-06T10:00:00+03:00" labels={c.hero.countdown} />
           </Reveal>
 
           <Reveal className="mt-8 flex flex-col items-center gap-3">

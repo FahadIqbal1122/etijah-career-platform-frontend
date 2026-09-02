@@ -80,8 +80,6 @@ function clearDraft() {
 }
 
 const CONFIRM_MS = 560
-const FALLBACK_MS_PER_Q = 11000 // ~11s/question, matched to the "12–15 min" marketing estimate
-const MAX_QUESTION_DWELL_MS = 90_000 // cap a single question's dwell time when averaging pace
 const TOTAL_NODES = CONSTELLATION.nodes.length
 const CHROME: Record<string, Record<string, string>> = {
   en: {
@@ -118,22 +116,16 @@ const CHROME: Record<string, Record<string, string>> = {
   },
 }
 
-function arQuestionsLeft(n: number): string {
-  if (n === 1) return 'سؤال واحد متبقٍ'
-  if (n === 2) return 'سؤالان متبقيان'
-  if (n >= 3 && n <= 10) return `${n} أسئلة متبقية`
-  return `${n} سؤالاً متبقياً`
+// Rotating pure-encouragement copy — no raw question counts or time
+// estimates, which tended to alarm test users ("80 questions left") or read
+// as a broken promise when the pace estimate was off. Milestones (halfway,
+// last question) stay since they're reassuring rather than daunting.
+const ENCOURAGEMENT: Record<'en' | 'ar', string[]> = {
+  en: ['You’re doing great', 'Keep going', 'Nice pace', 'Making great progress', 'You’ve got this'],
+  ar: ['أنت تبلي بلاءً حسناً', 'استمر', 'وتيرة رائعة', 'تقدّم ممتاز', 'أنت قادر على ذلك'],
 }
 
-// Pluralsight-style rotating progress copy — alternates framing (count / time /
-// encouragement) so it doesn't repeat itself every screen, with dedicated
-// beats at the halfway point and the final question.
-function buildProgressMessage(
-  index: number,
-  total: number,
-  avgMsPerQ: number,
-  locale: string
-): string {
+function buildProgressMessage(index: number, total: number, locale: string): string {
   if (!total) return ''
   // clamp to >=1 rather than >=0 — if skip-logic ever shrinks `total` below
   // `index` mid-session, fall back to the "last question" copy instead of a
@@ -144,19 +136,10 @@ function buildProgressMessage(
 
   if (remaining === 1) return isAr ? 'سؤال أخير!' : 'Last question!'
   if (pct >= 0.48 && pct < 0.52) return isAr ? 'منتصف الطريق! استمر' : 'Halfway there — keep going'
+  if (remaining <= 5) return isAr ? 'أنت على وشك الانتهاء' : 'So close — almost done'
 
-  const minsLeft = Math.max(1, Math.round((avgMsPerQ * remaining) / 60000))
-
-  if (remaining <= 5) {
-    return index % 2 === 0
-      ? (isAr ? arQuestionsLeft(remaining) : `${remaining} question${remaining === 1 ? '' : 's'} left`)
-      : (isAr ? 'أنت على وشك الانتهاء' : 'So close — almost done')
-  }
-
-  const style = index % 3
-  if (style === 0) return isAr ? arQuestionsLeft(remaining) : `${remaining} questions left`
-  if (style === 1) return isAr ? `${minsLeft} دقيقة تقريباً متبقية` : `About ${minsLeft} min left`
-  return isAr ? 'أنت تبلي بلاءً حسناً' : 'You’re doing great'
+  const pool = ENCOURAGEMENT[isAr ? 'ar' : 'en']
+  return pool[index % pool.length]
 }
 
 const MANUAL_TYPES = new Set(['multi_select', 'text_input', 'email_input', 'phone_input'])
@@ -195,13 +178,6 @@ export default function AssessmentForm() {
   const [draft, setDraft] = useState<Draft | null>(null)
 
   const pendingRef = useRef(0)
-  // rolling pace tracker for the "About N min left" progress copy — dwell
-  // time per question is capped (MAX_QUESTION_DWELL_MS) so a long real-world
-  // pause (phone call, stepping away) doesn't permanently inflate the
-  // estimate for the rest of the session
-  const paceRef = useRef({ sum: 0, count: 0 })
-  const lastQuestionAtRef = useRef(Date.now())
-  const prevIndexRef = useRef<number | null>(null)
   const answersRef = useRef<Record<string, any>>({}) // latest answers, for choice-based reveals
   const revealedRef = useRef<Set<string>>(new Set())  // frameworks already revealed
   const timers = useRef<number[]>([])
@@ -220,19 +196,6 @@ export default function AssessmentForm() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of an external (browser-only) store, not a derived/cascading update
     if (found) setDraft(found)
   }, [])
-
-  // record dwell time on the question we just left, capped, into the rolling
-  // pace average — skips the very first mount so we don't count "time since
-  // page load" as time spent on question 1
-  useEffect(() => {
-    const now = Date.now()
-    if (prevIndexRef.current !== null) {
-      const dwell = Math.min(now - lastQuestionAtRef.current, MAX_QUESTION_DWELL_MS)
-      paceRef.current = { sum: paceRef.current.sum + dwell, count: paceRef.current.count + 1 }
-    }
-    lastQuestionAtRef.current = now
-    prevIndexRef.current = index
-  }, [index])
 
   // Logged-in users shouldn't have to retype their name/email — pre-fill QD1/QD2
   // from the Supabase session, without clobbering anything already answered
@@ -269,9 +232,6 @@ export default function AssessmentForm() {
     setMaxIndex(draft.index)
     setPhase('question')
     setDraft(null)
-    paceRef.current = { sum: 0, count: 0 }
-    lastQuestionAtRef.current = Date.now()
-    prevIndexRef.current = draft.index
   }
 
   function discardDraft() {
@@ -293,8 +253,7 @@ export default function AssessmentForm() {
     ? TOTAL_NODES
     : Math.max(1, Math.min(TOTAL_NODES, Math.round(progress * (TOTAL_NODES - 1)) + 1))
 
-  const avgMsPerQ = paceRef.current.count >= 3 ? paceRef.current.sum / paceRef.current.count : FALLBACK_MS_PER_Q
-  const progressMsg = buildProgressMessage(index, total, avgMsPerQ, locale)
+  const progressMsg = buildProgressMessage(index, total, locale)
 
   // "Other" needs its free-text field filled before the answer counts —
   // applies whether "other" is a lone value (single_select) or one entry in
