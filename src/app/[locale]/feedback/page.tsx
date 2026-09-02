@@ -126,7 +126,7 @@ export default function FeedbackPage() {
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 text-xs text-primary tracking-widest mb-5">
             <span className="w-2 h-2 rounded-full bg-primary inline-block" />
-            Etijah · AI Career Compass
+            Etijahi
           </div>
           <h1 className="text-2xl font-semibold text-primary mb-2">Assessment feedback</h1>
           <p className="text-sm text-slate-500 leading-relaxed">Help us improve the tool. This takes about 3 minutes.</p>

@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
 
 export const metadata: Metadata = {
-  title: 'Etijahi — Career Compass',
+  title: 'Etijahi',
   description: 'The GCC’s AI-powered career coaching platform. Discover who you are, where you belong, and exactly how to get there.',
 }
 
