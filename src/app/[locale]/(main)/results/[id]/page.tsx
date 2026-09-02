@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { apiGet, apiAuthGet, apiAuthPost, apiAuthGetBlob } from '@/lib/api'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { Link } from '@/i18n/navigation'
@@ -10,6 +10,8 @@ import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 import { LockedSection } from '@/components/shared/LockedSection'
 import { BlurGate } from '@/components/shared/BlurGate'
+import BetaFeedbackStage1 from '@/components/beta-feedback/BetaFeedbackStage1'
+import BetaFeedbackStage2 from '@/components/beta-feedback/BetaFeedbackStage2'
 
 const levelToWidth: Record<string, string> = {
   low: '20%',
@@ -94,6 +96,7 @@ function AiImpactDeepDivePlaceholder() {
 export default function ResultsPage() {
   const params = useParams()
   const id = params.id as string
+  const locale = useLocale() as 'en' | 'ar'
   const t = useTranslations('results')
   const loadingMessages = t.raw('loading.messages') as string[]
   const riasecLabel = (type: string) => t.has(`riasecTypes.${type}`) ? t(`riasecTypes.${type}` as any) : type
@@ -106,6 +109,8 @@ export default function ResultsPage() {
   const [recentCompletions, setRecentCompletions] = useState<number | null>(null)
   const [messageIndex, setMessageIndex] = useState(0)
   const [tier, setTier] = useState<'free' | 'pathfinder' | 'launchpad'>('launchpad')
+  const [betaMode, setBetaMode] = useState(false)
+  const [stage1AnsweredCount, setStage1AnsweredCount] = useState(0)
   const [error, setError] = useState('')
   const [jobs, setJobs] = useState<any[]>([])
   const [jobsSuggestionsLoading, setJobsSuggestionsLoading] = useState(true)
@@ -149,6 +154,7 @@ export default function ResultsPage() {
           setEmail(data.email || '')
           if (data.tier === 'free' || data.tier === 'pathfinder' || data.tier === 'launchpad') setTier(data.tier)
           if (data.locale === 'ar' || data.locale === 'en') setReportLocale(data.locale)
+          setBetaMode(!!data.beta_mode)
         })
         .catch(err => setError(err.message || t('error.loadFailed')))
       apiAuthGet<any>(`/assessment/${id}/career-suggestions`)
@@ -222,6 +228,9 @@ export default function ResultsPage() {
           <p className="text-white/55 text-base leading-relaxed min-h-[4.5rem]">{loadingMessages[messageIndex]}</p>
           {!!recentCompletions && (
             <p className="text-teal text-sm font-medium">✦ {t('loading.recentCompletions', { count: recentCompletions })}</p>
+          )}
+          {betaMode && (
+            <BetaFeedbackStage1 responseId={id} locale={locale} onAnswered={setStage1AnsweredCount} />
           )}
         </div>
       </div>
@@ -756,6 +765,16 @@ export default function ResultsPage() {
           {reassessError && <p className="text-xs text-rose-500">{reassessError}</p>}
         </div>
         */}
+
+        {/* Beta feedback */}
+        {betaMode && (
+          <BetaFeedbackStage2
+            responseId={id}
+            locale={locale}
+            stage1AnsweredCount={stage1AnsweredCount}
+            personalityTypeLabel={riasecLabel(topType)}
+          />
+        )}
 
         {/* Share */}
         <div className="flex flex-col items-center gap-2 pt-2 pb-4">
