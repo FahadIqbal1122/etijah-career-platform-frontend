@@ -27,7 +27,10 @@ export default function SignupPage() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName }, emailRedirectTo: `${window.location.origin}/${locale}/dashboard` },
+      // Hardcoded rather than window.location.origin — a stale bookmark/link to a
+      // decommissioned domain (e.g. the old careercompass.etijahcoaching.com) would
+      // otherwise bake that dead domain into the verification email itself.
+      options: { data: { full_name: fullName }, emailRedirectTo: `https://myetijahi.com/${locale}/dashboard` },
     })
     if (error) {
       setError(error.message)
