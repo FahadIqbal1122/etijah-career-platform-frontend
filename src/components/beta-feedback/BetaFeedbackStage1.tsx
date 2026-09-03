@@ -1,10 +1,14 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { apiAuthPost } from '@/lib/api'
 import { stage1Intro, stage1Questions, type Locale } from './content'
 
 type Answers = Partial<Record<'s1_clarity' | 's1_feeling' | 's1_understood', number>>
+
+function stage1DoneKey(responseId: string) {
+  return `betaStage1Done:${responseId}`
+}
 
 export default function BetaFeedbackStage1({ responseId, locale, onAnswered }: {
   responseId: string
@@ -12,17 +16,25 @@ export default function BetaFeedbackStage1({ responseId, locale, onAnswered }: {
   onAnswered?: (count: number) => void
 }) {
   const [answers, setAnswers] = useState<Answers>({})
-  const submittedOnce = useRef(false)
+  const [done, setDone] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.localStorage.getItem(stage1DoneKey(responseId)) === '1'
+  })
 
   function answer(key: keyof Answers, value: number) {
     const next = { ...answers, [key]: value }
     setAnswers(next)
     onAnswered?.(Object.keys(next).length)
-    submittedOnce.current = true
     // Fire-and-forget upsert on every tap — non-blocking, so a user who
     // never finishes still has whatever partial answers they gave saved.
     apiAuthPost('/beta-feedback/stage1', { response_id: responseId, locale, ...next }).catch(() => {})
+    if (Object.keys(next).length >= stage1Questions.length) {
+      window.localStorage.setItem(stage1DoneKey(responseId), '1')
+      setDone(true)
+    }
   }
+
+  if (done) return null
 
   return (
     <div className="mt-8 bg-white/10 border border-white/20 rounded-2xl p-5 max-w-sm mx-auto text-start" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
