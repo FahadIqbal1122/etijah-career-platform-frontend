@@ -90,6 +90,48 @@ type FeedbackEntry = {
   created_at: string
 }
 
+type BetaFeedbackEntry = {
+  id: string
+  response_id: string
+  user_id: string | null
+  cohort: string
+  locale: string | null
+  s1_clarity: number | null
+  s1_feeling: number | null
+  s1_understood: number | null
+  stage1_completed_at: string | null
+  language_used: string | null
+  understood_after: number | null
+  personality_accuracy: string | null
+  values_accuracy: string | null
+  strengths_accuracy: string | null
+  career_matches_accuracy: string | null
+  wrong_career_text: string | null
+  missing_career_text: string | null
+  ai_impact_useful: number | null
+  ai_impact_credible: number | null
+  ai_impact_changed_thinking: string | null
+  jobs_relevant: number | null
+  companies_fit: number | null
+  courses_useful: number | null
+  plan_would_follow: string | null
+  clear_next_step: string | null
+  arabic_natural: string | null
+  overall_value: number | null
+  most_valuable_parts: string[] | null
+  would_pay: string | null
+  would_recommend: string | null
+  device: string | null
+  had_issues: string | null
+  issue_detail: string | null
+  surprised_text: string | null
+  not_me_text: string | null
+  other_text: string | null
+  stage2_completed_at: string | null
+  created_at: string
+  assessment_responses: { full_name: string | null; email: string | null; locale: string | null } | null
+}
+
 type WaitlistEntry = {
   id: string
   email: string
@@ -187,6 +229,12 @@ export default function AdminPage() {
   const [feedbackLoading, setFeedbackLoading] = useState(false)
   const [feedbackError, setFeedbackError] = useState('')
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackEntry | null>(null)
+  const [feedbackSubTab, setFeedbackSubTab] = useState<'general' | 'beta'>('general')
+
+  const [betaFeedbackList, setBetaFeedbackList] = useState<BetaFeedbackEntry[]>([])
+  const [betaFeedbackLoading, setBetaFeedbackLoading] = useState(false)
+  const [betaFeedbackError, setBetaFeedbackError] = useState('')
+  const [selectedBetaFeedback, setSelectedBetaFeedback] = useState<BetaFeedbackEntry | null>(null)
 
   const [waitlistList, setWaitlistList] = useState<WaitlistEntry[]>([])
   const [waitlistLoading, setWaitlistLoading] = useState(false)
@@ -327,6 +375,20 @@ export default function AdminPage() {
       setFeedbackError(err.message)
     } finally {
       setFeedbackLoading(false)
+    }
+  }, [])
+
+  const fetchBetaFeedback = useCallback(async () => {
+    setBetaFeedbackLoading(true)
+    setBetaFeedbackError('')
+    try {
+      const res = await fetch('/api/admin/beta-feedback')
+      if (!res.ok) throw new Error('Failed to load beta feedback')
+      setBetaFeedbackList(await res.json())
+    } catch (err: any) {
+      setBetaFeedbackError(err.message)
+    } finally {
+      setBetaFeedbackLoading(false)
     }
   }, [])
 
@@ -598,6 +660,7 @@ export default function AdminPage() {
       fetchSubmissions()
       fetchOnetLinks()
       fetchFeedback()
+      fetchBetaFeedback()
       fetchWaitlist()
       fetchCoachingSessions()
       fetchCountryProfiles()
@@ -607,7 +670,7 @@ export default function AdminPage() {
       fetchHomepageMode()
       fetchAiProvider()
     }
-  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchAiProvider])
+  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchBetaFeedback, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchAiProvider])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -650,6 +713,8 @@ export default function AdminPage() {
     setSelectedOnet(null)
     setFeedbackList([])
     setSelectedFeedback(null)
+    setBetaFeedbackList([])
+    setSelectedBetaFeedback(null)
     setWaitlistList([])
     setCoachingSessions([])
   }
@@ -1222,6 +1287,145 @@ export default function AdminPage() {
     )
   }
 
+  // ── Beta feedback detail panel ────────────────────────
+  if (selectedBetaFeedback) {
+    const bf = selectedBetaFeedback
+    const ratingLabel = (v: number | null) => v ? `${v} / 6` : '—'
+    return (
+      <div className="min-h-screen brand-surface">
+        <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center gap-4">
+          <button
+            onClick={() => setSelectedBetaFeedback(null)}
+            className="text-sm text-primary hover:underline flex items-center gap-1"
+          >
+            ← Back
+          </button>
+          <div>
+            <h2 className="font-semibold text-slate-800">{bf.assessment_responses?.full_name || 'Unknown'}</h2>
+            <p className="text-xs text-slate-400">{bf.assessment_responses?.email || '—'}</p>
+          </div>
+        </div>
+
+        <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">About</h3>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              {[
+                ['Name', bf.assessment_responses?.full_name],
+                ['Email', bf.assessment_responses?.email],
+                ['Locale', bf.locale || bf.assessment_responses?.locale],
+                ['Device', bf.device],
+                ['Stage 1 completed', bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : null],
+                ['Stage 2 completed', bf.stage2_completed_at ? new Date(bf.stage2_completed_at).toLocaleString() : null],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-slate-400">{label}</dt>
+                  <dd className="text-slate-800 font-medium">{value || '—'}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Stage 1 · Quick Pulse</h3>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              {[
+                ['Clarity', ratingLabel(bf.s1_clarity)],
+                ['Feeling', ratingLabel(bf.s1_feeling)],
+                ['Understood', ratingLabel(bf.s1_understood)],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-slate-400">{label}</dt>
+                  <dd className="text-slate-800 font-medium">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Accuracy</h3>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              {[
+                ['Understood after', ratingLabel(bf.understood_after)],
+                ['Personality', bf.personality_accuracy],
+                ['Values', bf.values_accuracy],
+                ['Strengths', bf.strengths_accuracy],
+                ['Career matches', bf.career_matches_accuracy],
+                ['Arabic natural', bf.arabic_natural],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-slate-400">{label}</dt>
+                  <dd className="text-slate-800 font-medium capitalize">{value || '—'}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">AI Impact &amp; Recommendations</h3>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              {[
+                ['AI impact useful', ratingLabel(bf.ai_impact_useful)],
+                ['AI impact credible', ratingLabel(bf.ai_impact_credible)],
+                ['Jobs relevant', ratingLabel(bf.jobs_relevant)],
+                ['Companies fit', ratingLabel(bf.companies_fit)],
+                ['Courses useful', ratingLabel(bf.courses_useful)],
+                ['Overall value', ratingLabel(bf.overall_value)],
+                ['Would pay', bf.would_pay],
+                ['Would recommend', bf.would_recommend],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-slate-400">{label}</dt>
+                  <dd className="text-slate-800 font-medium capitalize">{(value as string)?.replace(/_/g, ' ') || value || '—'}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          {bf.most_valuable_parts && bf.most_valuable_parts.length > 0 && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+              <h3 className="font-semibold text-slate-700 mb-2 text-sm uppercase tracking-wide">Most Valuable Parts</h3>
+              <div className="flex flex-wrap gap-2">
+                {bf.most_valuable_parts.map(part => (
+                  <span key={part} className="text-xs font-medium px-2 py-1 rounded-full bg-teal-50 text-teal-700 capitalize">{part.replace(/_/g, ' ')}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(bf.had_issues || bf.issue_detail) && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+              <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Issues</h3>
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm mb-2">
+                <div>
+                  <dt className="text-slate-400">Had issues</dt>
+                  <dd className="text-slate-800 font-medium capitalize">{bf.had_issues || '—'}</dd>
+                </div>
+              </dl>
+              {bf.issue_detail && <p className="text-sm text-slate-700 leading-relaxed">{bf.issue_detail}</p>}
+            </div>
+          )}
+
+          {[
+            ['Plan they would follow', bf.plan_would_follow],
+            ['Clear next step', bf.clear_next_step],
+            ['AI impact changed thinking', bf.ai_impact_changed_thinking],
+            ['Wrong career suggestions', bf.wrong_career_text],
+            ['Missing careers', bf.missing_career_text],
+            ['Surprised by results', bf.surprised_text],
+            ['"Not me" feedback', bf.not_me_text],
+            ['Other comments', bf.other_text],
+          ].filter(([, value]) => value).map(([label, value]) => (
+            <div key={label as string} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+              <h3 className="font-semibold text-slate-700 mb-2 text-sm uppercase tracking-wide">{label}</h3>
+              <p className="text-sm text-slate-700 leading-relaxed">{value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   // ── O*NET detail panel + comparison view ─────────────
   if (selectedOnet) {
     const matchedSubmission = submissions.find(
@@ -1510,7 +1714,7 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { fetchDashboardStats(); fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
+              onClick={() => { fetchDashboardStats(); fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchBetaFeedback(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
               className="text-sm text-primary hover:underline"
             >
               Refresh
@@ -1549,7 +1753,7 @@ export default function AdminPage() {
               tabs: [
                 { key: 'submissions', label: 'Submissions', color: 'bg-primary', badge: submissions.length > 0 ? submissions.length : undefined },
                 { key: 'waitlist', label: 'Waitlist', color: 'bg-indigo-600', badge: waitlistList.length > 0 ? waitlistList.length : undefined },
-                { key: 'feedback', label: 'Feedback', color: 'bg-teal-700', badge: feedbackList.length > 0 ? feedbackList.length : undefined },
+                { key: 'feedback', label: 'Feedback', color: 'bg-teal-700', badge: (feedbackList.length + betaFeedbackList.length) > 0 ? feedbackList.length + betaFeedbackList.length : undefined },
               ],
             },
             {
@@ -1731,69 +1935,159 @@ export default function AdminPage() {
         {/* ── Feedback Tab ── */}
         {activeTab === 'feedback' && (
           <>
-            {feedbackLoading && (
-              <div className="flex justify-center py-16">
-                <div className="w-7 h-7 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
-              </div>
-            )}
-            {feedbackError && <p className="text-red-500 text-sm text-center py-8">{feedbackError}</p>}
-            {!feedbackLoading && !feedbackError && (
+            <div className="flex gap-2 mb-5">
+              {([
+                ['general', `General${feedbackList.length ? ` (${feedbackList.length})` : ''}`],
+                ['beta', `Beta${betaFeedbackList.length ? ` (${betaFeedbackList.length})` : ''}`],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setFeedbackSubTab(key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    feedbackSubTab === key ? 'bg-teal-700 text-white' : 'bg-white text-slate-400 border border-slate-100 hover:text-slate-600'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {feedbackSubTab === 'general' && (
               <>
-                <p className="text-sm text-slate-400 mb-4">{feedbackList.length} response{feedbackList.length !== 1 ? 's' : ''}</p>
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50">
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Age</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Accurate?</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Overall</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
-                        <th className="px-4 py-3" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {feedbackList.map((fb, i) => (
-                        <tr key={fb.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
-                          <td className="px-4 py-3 font-medium text-slate-800">{fb.fname}</td>
-                          <td className="px-4 py-3 text-slate-500">{fb.email}</td>
-                          <td className="px-4 py-3 text-slate-500">{fb.age}</td>
-                          <td className="px-4 py-3 text-slate-500">{fb.country || '—'}</td>
-                          <td className="px-4 py-3">
-                            {fb.accurate ? (
-                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${
-                                fb.accurate === 'yes' ? 'bg-green-50 text-green-700' :
-                                fb.accurate === 'partially' ? 'bg-amber-50 text-amber-600' :
-                                'bg-red-50 text-red-600'
-                              }`}>{fb.accurate}</span>
-                            ) : '—'}
-                          </td>
-                          <td className="px-4 py-3 text-slate-500">
-                            {fb.rating_overall ? (
-                              <span className="font-semibold text-slate-700">{fb.rating_overall}<span className="text-slate-400 font-normal">/6</span></span>
-                            ) : '—'}
-                          </td>
-                          <td className="px-4 py-3 text-slate-400 text-xs">{new Date(fb.created_at).toLocaleDateString()}</td>
-                          <td className="px-4 py-3">
-                            <button
-                              onClick={() => setSelectedFeedback(fb)}
-                              className="text-xs text-primary hover:underline font-medium"
-                            >
-                              View →
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {feedbackList.length === 0 && (
-                        <tr>
-                          <td colSpan={8} className="px-4 py-12 text-center text-slate-400">No feedback responses yet</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                {feedbackLoading && (
+                  <div className="flex justify-center py-16">
+                    <div className="w-7 h-7 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+                {feedbackError && <p className="text-red-500 text-sm text-center py-8">{feedbackError}</p>}
+                {!feedbackLoading && !feedbackError && (
+                  <>
+                    <p className="text-sm text-slate-400 mb-4">{feedbackList.length} response{feedbackList.length !== 1 ? 's' : ''}</p>
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-100 bg-slate-50">
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Age</th>
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Accurate?</th>
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Overall</th>
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
+                            <th className="px-4 py-3" />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {feedbackList.map((fb, i) => (
+                            <tr key={fb.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                              <td className="px-4 py-3 font-medium text-slate-800">{fb.fname}</td>
+                              <td className="px-4 py-3 text-slate-500">{fb.email}</td>
+                              <td className="px-4 py-3 text-slate-500">{fb.age}</td>
+                              <td className="px-4 py-3 text-slate-500">{fb.country || '—'}</td>
+                              <td className="px-4 py-3">
+                                {fb.accurate ? (
+                                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${
+                                    fb.accurate === 'yes' ? 'bg-green-50 text-green-700' :
+                                    fb.accurate === 'partially' ? 'bg-amber-50 text-amber-600' :
+                                    'bg-red-50 text-red-600'
+                                  }`}>{fb.accurate}</span>
+                                ) : '—'}
+                              </td>
+                              <td className="px-4 py-3 text-slate-500">
+                                {fb.rating_overall ? (
+                                  <span className="font-semibold text-slate-700">{fb.rating_overall}<span className="text-slate-400 font-normal">/6</span></span>
+                                ) : '—'}
+                              </td>
+                              <td className="px-4 py-3 text-slate-400 text-xs">{new Date(fb.created_at).toLocaleDateString()}</td>
+                              <td className="px-4 py-3">
+                                <button
+                                  onClick={() => setSelectedFeedback(fb)}
+                                  className="text-xs text-primary hover:underline font-medium"
+                                >
+                                  View →
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {feedbackList.length === 0 && (
+                            <tr>
+                              <td colSpan={8} className="px-4 py-12 text-center text-slate-400">No feedback responses yet</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
+            {feedbackSubTab === 'beta' && (
+              <>
+                {betaFeedbackLoading && (
+                  <div className="flex justify-center py-16">
+                    <div className="w-7 h-7 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+                {betaFeedbackError && <p className="text-red-500 text-sm text-center py-8">{betaFeedbackError}</p>}
+                {!betaFeedbackLoading && !betaFeedbackError && (
+                  <>
+                    <p className="text-sm text-slate-400 mb-4">{betaFeedbackList.length} response{betaFeedbackList.length !== 1 ? 's' : ''}</p>
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-100 bg-slate-50">
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Stage</th>
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Overall</th>
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Would recommend</th>
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
+                            <th className="px-4 py-3" />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {betaFeedbackList.map((bf, i) => {
+                            const stage = bf.stage2_completed_at ? 'Stage 2' : bf.stage1_completed_at ? 'Stage 1' : 'Started'
+                            return (
+                              <tr key={bf.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                                <td className="px-4 py-3 font-medium text-slate-800">{bf.assessment_responses?.full_name || '—'}</td>
+                                <td className="px-4 py-3 text-slate-500">{bf.assessment_responses?.email || '—'}</td>
+                                <td className="px-4 py-3">
+                                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                    stage === 'Stage 2' ? 'bg-green-50 text-green-700' :
+                                    stage === 'Stage 1' ? 'bg-amber-50 text-amber-600' :
+                                    'bg-slate-100 text-slate-500'
+                                  }`}>{stage}</span>
+                                </td>
+                                <td className="px-4 py-3 text-slate-500">
+                                  {bf.overall_value ? (
+                                    <span className="font-semibold text-slate-700">{bf.overall_value}<span className="text-slate-400 font-normal">/6</span></span>
+                                  ) : '—'}
+                                </td>
+                                <td className="px-4 py-3 text-slate-500 capitalize">{bf.would_recommend?.replace(/_/g, ' ') || '—'}</td>
+                                <td className="px-4 py-3 text-slate-400 text-xs">{new Date(bf.created_at).toLocaleDateString()}</td>
+                                <td className="px-4 py-3">
+                                  <button
+                                    onClick={() => setSelectedBetaFeedback(bf)}
+                                    className="text-xs text-primary hover:underline font-medium"
+                                  >
+                                    View →
+                                  </button>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                          {betaFeedbackList.length === 0 && (
+                            <tr>
+                              <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No beta feedback yet</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
               </>
             )}
           </>
