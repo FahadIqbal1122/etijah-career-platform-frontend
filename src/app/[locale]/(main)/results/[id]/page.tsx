@@ -11,7 +11,6 @@ import Logomark from '@/components/brand/Logomark'
 import { LockedSection } from '@/components/shared/LockedSection'
 import { BlurGate } from '@/components/shared/BlurGate'
 import BetaFeedbackStage1 from '@/components/beta-feedback/BetaFeedbackStage1'
-import BetaFeedbackStage2 from '@/components/beta-feedback/BetaFeedbackStage2'
 
 const levelToWidth: Record<string, string> = {
   low: '20%',
@@ -110,7 +109,6 @@ export default function ResultsPage() {
   const [messageIndex, setMessageIndex] = useState(0)
   const [tier, setTier] = useState<'free' | 'pathfinder' | 'launchpad'>('launchpad')
   const [betaMode, setBetaMode] = useState(false)
-  const [stage1AnsweredCount, setStage1AnsweredCount] = useState(0)
   const [error, setError] = useState('')
   const [jobs, setJobs] = useState<any[]>([])
   const [jobsSuggestionsLoading, setJobsSuggestionsLoading] = useState(true)
@@ -230,7 +228,7 @@ export default function ResultsPage() {
             <p className="text-teal text-sm font-medium">✦ {t('loading.recentCompletions', { count: recentCompletions })}</p>
           )}
           {betaMode && (
-            <BetaFeedbackStage1 responseId={id} locale={locale} onAnswered={setStage1AnsweredCount} />
+            <BetaFeedbackStage1 responseId={id} locale={locale} />
           )}
         </div>
       </div>
@@ -765,16 +763,6 @@ export default function ResultsPage() {
           {reassessError && <p className="text-xs text-rose-500">{reassessError}</p>}
         </div>
         */}
-
-        {/* Beta feedback */}
-        {betaMode && (
-          <BetaFeedbackStage2
-            responseId={id}
-            locale={locale}
-            stage1AnsweredCount={stage1AnsweredCount}
-            personalityTypeLabel={riasecLabel(topType)}
-          />
-        )}
 
         {/* Share */}
         <div className="flex flex-col items-center gap-2 pt-2 pb-4">
