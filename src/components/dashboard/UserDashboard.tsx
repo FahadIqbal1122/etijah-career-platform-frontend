@@ -281,9 +281,14 @@ export default function UserDashboard() {
   useEffect(() => {
     if (!user) return
     const buy = searchParams.get('buy')
-    if (buy === 'pathfinder' || buy === 'launchpad_monthly' || buy === 'launchpad_yearly') {
+    // Launchpad isn't purchasable yet (backend rejects it with 400 regardless) — drop a
+    // stale/bookmarked ?buy=launchpad_* link instead of firing checkout and surfacing that
+    // as a raw error.
+    if (buy === 'pathfinder') {
       navRouter.replace(`/${locale}/dashboard`)
       handleBuyPlan(buy)
+    } else if (buy === 'launchpad_monthly' || buy === 'launchpad_yearly') {
+      navRouter.replace(`/${locale}/dashboard`)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
@@ -444,9 +449,9 @@ export default function UserDashboard() {
                 <ul className="mt-3 space-y-1.5">
                   {t.jobsBullets.map(b => <li key={b} className="flex items-start gap-2 text-sm text-charcoal/70"><span className="text-teal mt-0.5"><Icon name="check" size={14} /></span>{b}</li>)}
                 </ul>
-                <button onClick={() => handleBuyPlan('launchpad_monthly')} disabled={buying}
-                  className="cta cta-teal inline-flex mt-4" style={{ padding: '9px 16px', fontSize: 13, borderRadius: 999 }}>
-                  {buying ? '…' : 'Subscribe to Launchpad'}
+                <button disabled
+                  className="cta cta-teal inline-flex mt-4 opacity-50 cursor-not-allowed" style={{ padding: '9px 16px', fontSize: 13, borderRadius: 999 }}>
+                  Launchpad — Coming Soon
                 </button>
               </div>
             )}
@@ -553,9 +558,9 @@ export default function UserDashboard() {
                     </button>
                   )}
                   {plan?.tier !== 'launchpad' && (
-                    <button onClick={() => handleBuyPlan('launchpad_monthly')} disabled={buying}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-50">
-                      {buying ? '…' : 'Subscribe to Launchpad — 99 SAR/mo'}
+                    <button disabled
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium opacity-50 cursor-not-allowed">
+                      Launchpad — Coming Soon
                     </button>
                   )}
                 </div>

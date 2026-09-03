@@ -422,18 +422,16 @@ export default function Landing() {
               {checkingOut === c.pricing.paid.code ? '…' : c.pricing.paid.cta}
             </button>
           </Reveal>
-          <Reveal className="card p-7 relative" style={{ transitionDelay: '150ms' }}>
+          <Reveal className="card p-7 relative opacity-70" style={{ transitionDelay: '150ms' }}>
+            <span className="absolute -top-3.5 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 rounded-full bg-charcoal/80 text-white text-[11px] font-bold uppercase tracking-widest px-3 py-1">
+              Coming Soon
+            </span>
             <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.subscription.label}</p>
             <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-extrabold text-charcoal">{c.pricing.subscription.price}</span>
               <span className="text-xs text-charcoal/45">{c.pricing.subscription.priceSub}</span>
             </div>
-            <button
-              onClick={() => handlePlanCta(c.pricing.subscription.yearlyCode)}
-              className="mt-1 text-xs text-charcoal/45 hover:text-teal underline-offset-2 hover:underline text-start"
-            >
-              {c.pricing.subscription.priceAlt}
-            </button>
+            <p className="mt-1 text-xs text-charcoal/45">{c.pricing.subscription.priceAlt}</p>
             <p className="mt-3 text-sm text-charcoal/65 leading-relaxed">{c.pricing.subscription.for}</p>
             <div className="h-px bg-[var(--line)] my-6" />
             <ul className="space-y-3.5 flex-1">
@@ -444,12 +442,8 @@ export default function Landing() {
                 </li>
               ))}
             </ul>
-            <button
-              onClick={() => handlePlanCta(c.pricing.subscription.code)}
-              disabled={checkingOut === c.pricing.subscription.code}
-              className="cta cta-outline mt-7 w-full"
-            >
-              {checkingOut === c.pricing.subscription.code ? '…' : c.pricing.subscription.cta}
+            <button disabled className="cta cta-outline mt-7 w-full opacity-50 cursor-not-allowed">
+              Coming Soon
             </button>
           </Reveal>
         </div>
