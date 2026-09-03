@@ -168,7 +168,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'templates' | 'smtp'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'templates' | 'smtp' | 'aiprovider'>('dashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -257,6 +257,11 @@ export default function AdminPage() {
   const [homepageModeLoading, setHomepageModeLoading] = useState(false)
   const [homepageModeSaving, setHomepageModeSaving] = useState(false)
   const [homepageModeError, setHomepageModeError] = useState('')
+
+  const [aiProvider, setAiProvider] = useState<'gemini' | 'claude'>('gemini')
+  const [aiProviderLoading, setAiProviderLoading] = useState(false)
+  const [aiProviderSaving, setAiProviderSaving] = useState(false)
+  const [aiProviderError, setAiProviderError] = useState('')
 
   useEffect(() => {
     fetch('/api/admin/session').then(res => {
@@ -503,6 +508,38 @@ export default function AdminPage() {
     }
   }
 
+  const fetchAiProvider = useCallback(async () => {
+    setAiProviderLoading(true)
+    setAiProviderError('')
+    try {
+      const res = await fetch('/api/admin/ai-provider')
+      if (!res.ok) throw new Error('Failed to load AI provider')
+      setAiProvider((await res.json()).provider)
+    } catch (err: any) {
+      setAiProviderError(err.message)
+    } finally {
+      setAiProviderLoading(false)
+    }
+  }, [])
+
+  async function toggleAiProvider(provider: 'gemini' | 'claude') {
+    setAiProviderSaving(true)
+    setAiProviderError('')
+    try {
+      const res = await fetch('/api/admin/ai-provider', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider }),
+      })
+      if (!res.ok) throw new Error('Failed to save AI provider')
+      setAiProvider((await res.json()).provider)
+    } catch (err: any) {
+      setAiProviderError(err.message)
+    } finally {
+      setAiProviderSaving(false)
+    }
+  }
+
   const fetchMarketTrends = useCallback(async () => {
     setMarketLoading(true)
     setMarketError('')
@@ -568,8 +605,9 @@ export default function AdminPage() {
       fetchMarketTrends()
       fetchTestMode()
       fetchHomepageMode()
+      fetchAiProvider()
     }
-  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode])
+  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchAiProvider])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -1521,6 +1559,7 @@ export default function AdminPage() {
                 { key: 'homepage', label: 'Homepage', color: 'bg-fuchsia-600', badge: homepageMode, onSelect: fetchHomepageMode },
                 { key: 'templates', label: 'Email Templates', color: 'bg-pink-600' },
                 { key: 'smtp', label: 'SMTP Settings', color: 'bg-cyan-700' },
+                { key: 'aiprovider', label: 'AI Provider', color: 'bg-orange-600', badge: aiProvider, onSelect: fetchAiProvider },
               ],
             },
           ]
@@ -2708,6 +2747,53 @@ export default function AdminPage() {
               </button>
             </div>
             {homepageModeError && <p className="text-xs text-red-500 mt-3">{homepageModeError}</p>}
+          </div>
+        </div>
+      )}
+
+      {/* ── AI Provider Tab ── */}
+      {activeTab === 'aiprovider' && (
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <h2 className="text-xl font-bold text-slate-800 mb-1">AI Provider</h2>
+          <p className="text-sm text-slate-400 mb-6">
+            Chooses which LLM writes report narratives, the AI-impact analysis, and Arabic
+            translations. Affects new report generations immediately — already-generated
+            reports are unchanged. Career-matching search (embeddings) always uses Gemini
+            regardless of this setting, since Claude has no embeddings API; the AI coaching
+            chat already runs on Claude and isn&apos;t affected either.
+          </p>
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <div className="flex items-center justify-between gap-4 mb-1">
+              <div>
+                <p className="font-semibold text-slate-800">
+                  Currently using{' '}
+                  <span className="text-orange-600 capitalize">{aiProvider}</span>{' '}
+                  for reports
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5">Affects production immediately for every new report.</p>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                disabled={aiProviderLoading || aiProviderSaving}
+                onClick={() => toggleAiProvider('gemini')}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+                  aiProvider === 'gemini' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Gemini
+              </button>
+              <button
+                disabled={aiProviderLoading || aiProviderSaving}
+                onClick={() => toggleAiProvider('claude')}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+                  aiProvider === 'claude' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Claude
+              </button>
+            </div>
+            {aiProviderError && <p className="text-xs text-red-500 mt-3">{aiProviderError}</p>}
           </div>
         </div>
       )}
