@@ -147,7 +147,7 @@ type BetaFeedbackEntry = {
   other_text: string | null
   stage2_completed_at: string | null
   created_at: string
-  assessment_responses: { full_name: string | null; email: string | null; locale: string | null } | null
+  assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null } | null
 }
 
 type WaitlistEntry = {
@@ -1333,6 +1333,7 @@ export default function AdminPage() {
               {[
                 ['Name', bf.assessment_responses?.full_name],
                 ['Email', bf.assessment_responses?.email],
+                ['Country', bf.assessment_responses?.country],
                 ['Locale', bf.locale || bf.assessment_responses?.locale],
                 ['Device', bf.device],
                 ['Stage 1 completed', bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : null],
@@ -2098,6 +2099,7 @@ export default function AdminPage() {
                           <tr className="border-b border-slate-100 bg-slate-50">
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Stage</th>
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Overall</th>
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Would recommend</th>
@@ -2113,6 +2115,7 @@ export default function AdminPage() {
                               <tr key={bf.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
                                 <td className="px-4 py-3 font-medium text-slate-800">{bf.assessment_responses?.full_name || '—'}</td>
                                 <td className="px-4 py-3 text-slate-500">{bf.assessment_responses?.email || '—'}</td>
+                                <td className="px-4 py-3 text-slate-500">{bf.assessment_responses?.country || '—'}</td>
                                 <td className="px-4 py-3">
                                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                                     stageKey === 'stage2' ? 'bg-green-50 text-green-700' :
@@ -2140,7 +2143,7 @@ export default function AdminPage() {
                           })}
                           {visibleBetaFeedback.length === 0 && (
                             <tr>
-                              <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No beta feedback yet</td>
+                              <td colSpan={8} className="px-4 py-12 text-center text-slate-400">No beta feedback yet</td>
                             </tr>
                           )}
                         </tbody>
