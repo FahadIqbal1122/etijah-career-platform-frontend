@@ -87,6 +87,14 @@ const BETA_FEEDBACK_STAGE_LABELS: Record<BetaFeedbackStage, string> = {
   stage2: 'Stage 2',
 }
 
+function formatUnderscored(value: string | null | undefined): string {
+  return value ? value.replace(/_/g, ' ') : '—'
+}
+
+function distinctValues(values: (string | null | undefined)[]): string[] {
+  return Array.from(new Set(values.filter((v): v is string => !!v))).sort()
+}
+
 type FeedbackEntry = {
   id: string
   fname: string
@@ -147,7 +155,7 @@ type BetaFeedbackEntry = {
   other_text: string | null
   stage2_completed_at: string | null
   created_at: string
-  assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null } | null
+  assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null; age_bracket: string | null; current_stage: string | null } | null
 }
 
 type WaitlistEntry = {
@@ -255,6 +263,8 @@ export default function AdminPage() {
   const [betaFeedbackError, setBetaFeedbackError] = useState('')
   const [selectedBetaFeedback, setSelectedBetaFeedback] = useState<BetaFeedbackEntry | null>(null)
   const [betaFeedbackStageFilter, setBetaFeedbackStageFilter] = useState<'all' | BetaFeedbackStage>('all')
+  const [betaFeedbackStatusFilter, setBetaFeedbackStatusFilter] = useState('all')
+  const [betaFeedbackAgeFilter, setBetaFeedbackAgeFilter] = useState('all')
 
   const [waitlistList, setWaitlistList] = useState<WaitlistEntry[]>([])
   const [waitlistLoading, setWaitlistLoading] = useState(false)
@@ -1334,6 +1344,8 @@ export default function AdminPage() {
                 ['Name', bf.assessment_responses?.full_name],
                 ['Email', bf.assessment_responses?.email],
                 ['Country', bf.assessment_responses?.country],
+                ['Status', formatUnderscored(bf.assessment_responses?.current_stage)],
+                ['Age', formatUnderscored(bf.assessment_responses?.age_bracket)],
                 ['Locale', bf.locale || bf.assessment_responses?.locale],
                 ['Device', bf.device],
                 ['Stage 1 completed', bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : null],
@@ -2072,14 +2084,17 @@ export default function AdminPage() {
                 )}
                 {betaFeedbackError && <p className="text-red-500 text-sm text-center py-8">{betaFeedbackError}</p>}
                 {!betaFeedbackLoading && !betaFeedbackError && (() => {
-                  const visibleBetaFeedback = betaFeedbackStageFilter === 'all'
-                    ? betaFeedbackList
-                    : betaFeedbackList.filter(bf => betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
+                  const statusOptions = distinctValues(betaFeedbackList.map(bf => bf.assessment_responses?.current_stage))
+                  const ageOptions = distinctValues(betaFeedbackList.map(bf => bf.assessment_responses?.age_bracket))
+                  const visibleBetaFeedback = betaFeedbackList
+                    .filter(bf => betaFeedbackStageFilter === 'all' || betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
+                    .filter(bf => betaFeedbackStatusFilter === 'all' || bf.assessment_responses?.current_stage === betaFeedbackStatusFilter)
+                    .filter(bf => betaFeedbackAgeFilter === 'all' || bf.assessment_responses?.age_bracket === betaFeedbackAgeFilter)
                   return (
                   <>
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                       <p className="text-sm text-slate-400">{visibleBetaFeedback.length} response{visibleBetaFeedback.length !== 1 ? 's' : ''}</p>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         {(['all', 'started', 'stage1', 'stage2'] as const).map(key => (
                           <button
                             key={key}
@@ -2091,6 +2106,26 @@ export default function AdminPage() {
                             {key === 'all' ? 'All' : BETA_FEEDBACK_STAGE_LABELS[key]}
                           </button>
                         ))}
+                        <select
+                          value={betaFeedbackStatusFilter}
+                          onChange={e => setBetaFeedbackStatusFilter(e.target.value)}
+                          className="text-xs font-medium rounded-lg border border-slate-100 bg-white text-slate-600 px-2 py-1.5 capitalize"
+                        >
+                          <option value="all">All statuses</option>
+                          {statusOptions.map(v => (
+                            <option key={v} value={v} className="capitalize">{formatUnderscored(v)}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={betaFeedbackAgeFilter}
+                          onChange={e => setBetaFeedbackAgeFilter(e.target.value)}
+                          className="text-xs font-medium rounded-lg border border-slate-100 bg-white text-slate-600 px-2 py-1.5"
+                        >
+                          <option value="all">All ages</option>
+                          {ageOptions.map(v => (
+                            <option key={v} value={v}>{formatUnderscored(v)}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -2100,6 +2135,8 @@ export default function AdminPage() {
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Age</th>
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Stage</th>
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Overall</th>
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Would recommend</th>
@@ -2116,6 +2153,8 @@ export default function AdminPage() {
                                 <td className="px-4 py-3 font-medium text-slate-800">{bf.assessment_responses?.full_name || '—'}</td>
                                 <td className="px-4 py-3 text-slate-500">{bf.assessment_responses?.email || '—'}</td>
                                 <td className="px-4 py-3 text-slate-500">{bf.assessment_responses?.country || '—'}</td>
+                                <td className="px-4 py-3 text-slate-500 capitalize">{formatUnderscored(bf.assessment_responses?.current_stage)}</td>
+                                <td className="px-4 py-3 text-slate-500">{formatUnderscored(bf.assessment_responses?.age_bracket)}</td>
                                 <td className="px-4 py-3">
                                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                                     stageKey === 'stage2' ? 'bg-green-50 text-green-700' :
@@ -2143,7 +2182,7 @@ export default function AdminPage() {
                           })}
                           {visibleBetaFeedback.length === 0 && (
                             <tr>
-                              <td colSpan={8} className="px-4 py-12 text-center text-slate-400">No beta feedback yet</td>
+                              <td colSpan={10} className="px-4 py-12 text-center text-slate-400">No beta feedback yet</td>
                             </tr>
                           )}
                         </tbody>
