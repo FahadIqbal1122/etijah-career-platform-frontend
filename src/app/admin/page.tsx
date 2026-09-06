@@ -69,6 +69,24 @@ type Submission = {
   created_at: string
 }
 
+// Beta cohort = everyone who took the assessment from the day the beta invite
+// went out onward (previously this badge was labeled "v2" and anchored to an
+// unrelated redesign date).
+const BETA_COHORT_START = new Date('2026-09-06')
+function isBetaSubmission(sub: Pick<Submission, 'created_at'>) {
+  return new Date(sub.created_at) >= BETA_COHORT_START
+}
+
+type BetaFeedbackStage = 'started' | 'stage1' | 'stage2'
+function betaFeedbackStageOf(bf: Pick<BetaFeedbackEntry, 'stage1_completed_at' | 'stage2_completed_at'>): BetaFeedbackStage {
+  return bf.stage2_completed_at ? 'stage2' : bf.stage1_completed_at ? 'stage1' : 'started'
+}
+const BETA_FEEDBACK_STAGE_LABELS: Record<BetaFeedbackStage, string> = {
+  started: 'Started',
+  stage1: 'Stage 1',
+  stage2: 'Stage 2',
+}
+
 type FeedbackEntry = {
   id: string
   fname: string
@@ -215,6 +233,7 @@ export default function AdminPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
   const [fetchError, setFetchError] = useState('')
+  const [submissionCohortFilter, setSubmissionCohortFilter] = useState<'all' | 'beta'>('all')
 
   const [selected, setSelected] = useState<Submission | null>(null)
   const [results, setResults] = useState<any>(null)
@@ -235,6 +254,7 @@ export default function AdminPage() {
   const [betaFeedbackLoading, setBetaFeedbackLoading] = useState(false)
   const [betaFeedbackError, setBetaFeedbackError] = useState('')
   const [selectedBetaFeedback, setSelectedBetaFeedback] = useState<BetaFeedbackEntry | null>(null)
+  const [betaFeedbackStageFilter, setBetaFeedbackStageFilter] = useState<'all' | BetaFeedbackStage>('all')
 
   const [waitlistList, setWaitlistList] = useState<WaitlistEntry[]>([])
   const [waitlistLoading, setWaitlistLoading] = useState(false)
@@ -1860,9 +1880,28 @@ export default function AdminPage() {
               </div>
             )}
             {fetchError && <p className="text-red-500 text-sm text-center py-8">{fetchError}</p>}
-            {!loading && !fetchError && (
+            {!loading && !fetchError && (() => {
+              const visibleSubmissions = submissionCohortFilter === 'beta'
+                ? submissions.filter(isBetaSubmission)
+                : submissions
+              return (
               <>
-                <p className="text-sm text-slate-400 mb-4">{submissions.length} submission{submissions.length !== 1 ? 's' : ''}</p>
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-sm text-slate-400">{visibleSubmissions.length} submission{visibleSubmissions.length !== 1 ? 's' : ''}</p>
+                  <div className="flex gap-2">
+                    {(['all', 'beta'] as const).map(key => (
+                      <button
+                        key={key}
+                        onClick={() => setSubmissionCohortFilter(key)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${
+                          submissionCohortFilter === key ? 'bg-primary text-white' : 'bg-white text-slate-400 border border-slate-100 hover:text-slate-600'
+                        }`}
+                      >
+                        {key === 'all' ? 'All' : 'Beta'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                   <table className="w-full text-sm">
                     <thead>
@@ -1877,7 +1916,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {submissions.map((sub, i) => {
+                      {visibleSubmissions.map((sub, i) => {
                         const hasOnet = !!onetLinkForEmail(sub.email)
                         return (
                           <tr key={sub.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
@@ -1886,8 +1925,8 @@ export default function AdminPage() {
                               {hasOnet && (
                                 <span className="ml-2 text-xs font-semibold bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">O*NET</span>
                               )}
-                              {new Date(sub.created_at) >= new Date('2026-06-10') && (
-                                <span className="ml-2 text-xs font-semibold bg-lightblue text-primary px-1.5 py-0.5 rounded-full">v2</span>
+                              {isBetaSubmission(sub) && (
+                                <span className="ml-2 text-xs font-semibold bg-lightblue text-primary px-1.5 py-0.5 rounded-full">beta</span>
                               )}
                             </td>
                             <td className="px-4 py-3">
@@ -1919,7 +1958,7 @@ export default function AdminPage() {
                           </tr>
                         )
                       })}
-                      {submissions.length === 0 && (
+                      {visibleSubmissions.length === 0 && (
                         <tr>
                           <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No submissions yet</td>
                         </tr>
@@ -1928,7 +1967,8 @@ export default function AdminPage() {
                   </table>
                 </div>
               </>
-            )}
+              )
+            })()}
           </>
         )}
 
@@ -2030,9 +2070,28 @@ export default function AdminPage() {
                   </div>
                 )}
                 {betaFeedbackError && <p className="text-red-500 text-sm text-center py-8">{betaFeedbackError}</p>}
-                {!betaFeedbackLoading && !betaFeedbackError && (
+                {!betaFeedbackLoading && !betaFeedbackError && (() => {
+                  const visibleBetaFeedback = betaFeedbackStageFilter === 'all'
+                    ? betaFeedbackList
+                    : betaFeedbackList.filter(bf => betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
+                  return (
                   <>
-                    <p className="text-sm text-slate-400 mb-4">{betaFeedbackList.length} response{betaFeedbackList.length !== 1 ? 's' : ''}</p>
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-sm text-slate-400">{visibleBetaFeedback.length} response{visibleBetaFeedback.length !== 1 ? 's' : ''}</p>
+                      <div className="flex gap-2">
+                        {(['all', 'started', 'stage1', 'stage2'] as const).map(key => (
+                          <button
+                            key={key}
+                            onClick={() => setBetaFeedbackStageFilter(key)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              betaFeedbackStageFilter === key ? 'bg-teal-700 text-white' : 'bg-white text-slate-400 border border-slate-100 hover:text-slate-600'
+                            }`}
+                          >
+                            {key === 'all' ? 'All' : BETA_FEEDBACK_STAGE_LABELS[key]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                       <table className="w-full text-sm">
                         <thead>
@@ -2047,16 +2106,17 @@ export default function AdminPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {betaFeedbackList.map((bf, i) => {
-                            const stage = bf.stage2_completed_at ? 'Stage 2' : bf.stage1_completed_at ? 'Stage 1' : 'Started'
+                          {visibleBetaFeedback.map((bf, i) => {
+                            const stageKey = betaFeedbackStageOf(bf)
+                            const stage = BETA_FEEDBACK_STAGE_LABELS[stageKey]
                             return (
                               <tr key={bf.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
                                 <td className="px-4 py-3 font-medium text-slate-800">{bf.assessment_responses?.full_name || '—'}</td>
                                 <td className="px-4 py-3 text-slate-500">{bf.assessment_responses?.email || '—'}</td>
                                 <td className="px-4 py-3">
                                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                                    stage === 'Stage 2' ? 'bg-green-50 text-green-700' :
-                                    stage === 'Stage 1' ? 'bg-amber-50 text-amber-600' :
+                                    stageKey === 'stage2' ? 'bg-green-50 text-green-700' :
+                                    stageKey === 'stage1' ? 'bg-amber-50 text-amber-600' :
                                     'bg-slate-100 text-slate-500'
                                   }`}>{stage}</span>
                                 </td>
@@ -2078,7 +2138,7 @@ export default function AdminPage() {
                               </tr>
                             )
                           })}
-                          {betaFeedbackList.length === 0 && (
+                          {visibleBetaFeedback.length === 0 && (
                             <tr>
                               <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No beta feedback yet</td>
                             </tr>
@@ -2087,7 +2147,8 @@ export default function AdminPage() {
                       </table>
                     </div>
                   </>
-                )}
+                  )
+                })()}
               </>
             )}
           </>
