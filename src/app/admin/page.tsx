@@ -122,13 +122,17 @@ const SENTIMENT_LABEL: Record<string, string> = {
   spot_on: 'Spot on', mostly_right: 'Mostly right', off: 'Off', somewhat: 'Somewhat',
 }
 
-function BetaStatTile({ label, value, sublabel }: { label: string; value: string; sublabel?: string }) {
+function BetaStatTile({ label, value, sublabel, onClick }: { label: string; value: string; sublabel?: string; onClick?: () => void }) {
+  const Tag = onClick ? 'button' : 'div'
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+    <Tag
+      onClick={onClick}
+      className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-4 text-left w-full ${onClick ? 'hover:border-primary/40 hover:shadow-md transition-all cursor-pointer' : ''}`}
+    >
       <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{label}</p>
       <p className="text-2xl font-bold text-slate-800 tabular-nums">{value}</p>
       {sublabel && <p className="text-xs text-slate-400 mt-0.5">{sublabel}</p>}
-    </div>
+    </Tag>
   )
 }
 
@@ -450,6 +454,7 @@ export default function AdminPage() {
   const [betaFeedbackLoading, setBetaFeedbackLoading] = useState(false)
   const [betaFeedbackError, setBetaFeedbackError] = useState('')
   const [selectedBetaFeedback, setSelectedBetaFeedback] = useState<BetaFeedbackEntry | null>(null)
+  const [betaStatDrilldown, setBetaStatDrilldown] = useState<{ title: string; rows: { bf: BetaFeedbackEntry; note: string }[] } | null>(null)
   const [betaFeedbackStageFilter, setBetaFeedbackStageFilter] = useState<'all' | BetaFeedbackStage>('all')
   const [betaFeedbackStatusFilter, setBetaFeedbackStatusFilter] = useState('all')
   const [betaFeedbackAgeFilter, setBetaFeedbackAgeFilter] = useState('all')
@@ -2298,21 +2303,71 @@ export default function AdminPage() {
                             label="Would recommend"
                             value={`${Math.round(((countBy(stage2Responses, bf => bf.would_recommend).yes || 0) / stage2Total) * 100)}%`}
                             sublabel="answered “yes”"
+                            onClick={() => setBetaStatDrilldown({
+                              title: 'Would recommend to a friend',
+                              rows: stage2Responses.filter(bf => bf.would_recommend === 'yes').map(bf => ({ bf, note: 'Yes' })),
+                            })}
                           />
                           <BetaStatTile
                             label="Would pay for it"
                             value={`${Math.round((((countBy(stage2Responses, bf => bf.would_pay).definitely || 0) + (countBy(stage2Responses, bf => bf.would_pay).maybe || 0)) / stage2Total) * 100)}%`}
                             sublabel="“definitely” or “maybe”"
+                            onClick={() => setBetaStatDrilldown({
+                              title: 'Would pay for the full report',
+                              rows: stage2Responses
+                                .filter(bf => bf.would_pay === 'definitely' || bf.would_pay === 'maybe')
+                                .map(bf => ({ bf, note: SENTIMENT_LABEL[bf.would_pay || ''] || bf.would_pay || '' })),
+                            })}
                           />
                           <BetaStatTile
                             label="Overall value"
                             value={`${(stage2Responses.reduce((sum, bf) => sum + (bf.overall_value || 0), 0) / Math.max(1, stage2Responses.filter(bf => bf.overall_value != null).length)).toFixed(1)}/6`}
                             sublabel="average rating"
+                            onClick={() => setBetaStatDrilldown({
+                              title: 'Overall value ratings',
+                              rows: stage2Responses
+                                .filter(bf => bf.overall_value != null)
+                                .sort((a, b) => (b.overall_value || 0) - (a.overall_value || 0))
+                                .map(bf => ({ bf, note: `${bf.overall_value}/6` })),
+                            })}
                           />
                           <BetaStatTile
                             label="Hit an issue"
                             value={`${Math.round(((countBy(stage2Responses, bf => bf.had_issues).yes || 0) / stage2Total) * 100)}%`}
                             sublabel="errors or glitches"
+                            onClick={() => setBetaStatDrilldown({
+                              title: 'Hit an error, glitch, or confusing moment',
+                              rows: stage2Responses.filter(bf => bf.had_issues === 'yes').map(bf => ({ bf, note: bf.issue_detail || 'No details given' })),
+                            })}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                          <BetaStatTile
+                            label="Took it in English"
+                            value={`${Math.round(((countBy(stage2Responses, bf => bf.language_used).en || 0) / stage2Total) * 100)}%`}
+                            sublabel={`${countBy(stage2Responses, bf => bf.language_used).en || 0} people`}
+                            onClick={() => setBetaStatDrilldown({
+                              title: 'Took the assessment in English',
+                              rows: stage2Responses.filter(bf => bf.language_used === 'en').map(bf => ({ bf, note: 'English' })),
+                            })}
+                          />
+                          <BetaStatTile
+                            label="Took it in Arabic"
+                            value={`${Math.round(((countBy(stage2Responses, bf => bf.language_used).ar || 0) / stage2Total) * 100)}%`}
+                            sublabel={`${countBy(stage2Responses, bf => bf.language_used).ar || 0} people`}
+                            onClick={() => setBetaStatDrilldown({
+                              title: 'Took the assessment in Arabic',
+                              rows: stage2Responses.filter(bf => bf.language_used === 'ar').map(bf => ({ bf, note: 'Arabic' })),
+                            })}
+                          />
+                          <BetaStatTile
+                            label="Used both languages"
+                            value={`${Math.round(((countBy(stage2Responses, bf => bf.language_used).both || 0) / stage2Total) * 100)}%`}
+                            sublabel={`${countBy(stage2Responses, bf => bf.language_used).both || 0} people`}
+                            onClick={() => setBetaStatDrilldown({
+                              title: 'Used both languages',
+                              rows: stage2Responses.filter(bf => bf.language_used === 'both').map(bf => ({ bf, note: 'Both' })),
+                            })}
                           />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -2351,6 +2406,40 @@ export default function AdminPage() {
                             { label: 'Career matches', values: stage2Responses.map(bf => bf.career_matches_accuracy) },
                           ]}
                         />
+                      </div>
+                    )}
+                    {betaStatDrilldown && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setBetaStatDrilldown(null)}>
+                        <div className="absolute inset-0 bg-slate-900/40" />
+                        <div
+                          className="relative bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-md max-h-[80vh] flex flex-col"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                            <div>
+                              <h3 className="text-sm font-semibold text-slate-800">{betaStatDrilldown.title}</h3>
+                              <p className="text-xs text-slate-400">{betaStatDrilldown.rows.length} {betaStatDrilldown.rows.length === 1 ? 'person' : 'people'}</p>
+                            </div>
+                            <button onClick={() => setBetaStatDrilldown(null)} className="text-slate-400 hover:text-slate-600 text-xl leading-none px-1">×</button>
+                          </div>
+                          <div className="overflow-y-auto divide-y divide-slate-50">
+                            {betaStatDrilldown.rows.length === 0 ? (
+                              <p className="text-sm text-slate-400 text-center py-10">No one matches this yet.</p>
+                            ) : betaStatDrilldown.rows.map(({ bf, note }) => (
+                              <button
+                                key={bf.id}
+                                onClick={() => { setSelectedBetaFeedback(bf); setBetaStatDrilldown(null) }}
+                                className="w-full flex items-center justify-between gap-3 px-5 py-3 text-left hover:bg-slate-50 transition-colors"
+                              >
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-slate-800 truncate">{bf.assessment_responses?.full_name || 'Unknown'}</p>
+                                  <p className="text-xs text-slate-400 truncate">{bf.assessment_responses?.email || '—'}</p>
+                                </div>
+                                <span className="shrink-0 text-xs font-medium text-primary bg-lightblue px-2 py-1 rounded-full max-w-[45%] truncate">{note}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     )}
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
