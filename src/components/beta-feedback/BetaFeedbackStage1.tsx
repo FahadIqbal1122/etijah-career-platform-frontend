@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { apiAuthPost } from '@/lib/api'
 import { stage1Intro, stage1Questions, type Locale } from './content'
 
@@ -10,10 +10,11 @@ function stage1DoneKey(responseId: string) {
   return `betaStage1Done:${responseId}`
 }
 
-export default function BetaFeedbackStage1({ responseId, locale, onAnswered }: {
+export default function BetaFeedbackStage1({ responseId, locale, onAnswered, onComplete }: {
   responseId: string
   locale: Locale
   onAnswered?: (count: number) => void
+  onComplete?: () => void
 }) {
   const [answers, setAnswers] = useState<Answers>({})
   const [done, setDone] = useState(() => {
@@ -21,16 +22,27 @@ export default function BetaFeedbackStage1({ responseId, locale, onAnswered }: {
     return window.localStorage.getItem(stage1DoneKey(responseId)) === '1'
   })
 
+  useEffect(() => {
+    if (done) onComplete?.()
+  }, [done])
+
   function answer(key: keyof Answers, value: number) {
     const next = { ...answers, [key]: value }
     setAnswers(next)
     onAnswered?.(Object.keys(next).length)
-    // Fire-and-forget upsert on every tap — non-blocking, so a user who
-    // never finishes still has whatever partial answers they gave saved.
-    apiAuthPost('/beta-feedback/stage1', { response_id: responseId, locale, ...next }).catch(() => {})
-    if (Object.keys(next).length >= stage1Questions.length) {
-      window.localStorage.setItem(stage1DoneKey(responseId), '1')
-      setDone(true)
+    const save = apiAuthPost('/beta-feedback/stage1', { response_id: responseId, locale, ...next })
+    const isLast = Object.keys(next).length >= stage1Questions.length
+    if (isLast) {
+      // Await the final upsert so the server has recorded stage1_completed_at
+      // before we tell the parent stage 1 is done and it unlocks stage 2.
+      save.finally(() => {
+        window.localStorage.setItem(stage1DoneKey(responseId), '1')
+        setDone(true)
+      })
+    } else {
+      // Non-final answers are fire-and-forget — non-blocking, so a user who
+      // never finishes still has whatever partial answers they gave saved.
+      save.catch(() => {})
     }
   }
 

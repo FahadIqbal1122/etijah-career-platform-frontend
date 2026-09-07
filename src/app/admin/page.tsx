@@ -1897,6 +1897,7 @@ export default function AdminPage() {
               const visibleSubmissions = submissionCohortFilter === 'beta'
                 ? submissions.filter(isBetaSubmission)
                 : submissions
+              const feedbackSubmittedIds = new Set(betaFeedbackList.map(bf => bf.response_id))
               return (
               <>
                 <div className="flex items-center justify-between mb-4">
@@ -1915,8 +1916,8 @@ export default function AdminPage() {
                     ))}
                   </div>
                 </div>
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                  <table className="w-full text-sm">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
+                  <table className="w-full text-sm min-w-[900px]">
                     <thead>
                       <tr className="border-b border-slate-100 bg-slate-50">
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
@@ -1925,12 +1926,14 @@ export default function AdminPage() {
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Stage</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Feedback</th>
                         <th className="px-4 py-3" />
                       </tr>
                     </thead>
                     <tbody>
                       {visibleSubmissions.map((sub, i) => {
                         const hasOnet = !!onetLinkForEmail(sub.email)
+                        const hasFeedback = feedbackSubmittedIds.has(sub.id)
                         return (
                           <tr key={sub.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
                             <td className="px-4 py-3 font-medium text-slate-800">
@@ -1954,6 +1957,11 @@ export default function AdminPage() {
                                 {sub.completed ? 'Complete' : 'Incomplete'}
                               </span>
                             </td>
+                            <td className="px-4 py-3">
+                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${hasFeedback ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                                {hasFeedback ? 'Yes' : 'No'}
+                              </span>
+                            </td>
                             <td className="px-4 py-3 flex items-center gap-3">
                               <button
                                 onClick={() => handleViewResults(sub)}
@@ -1973,7 +1981,7 @@ export default function AdminPage() {
                       })}
                       {visibleSubmissions.length === 0 && (
                         <tr>
-                          <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No submissions yet</td>
+                          <td colSpan={8} className="px-4 py-12 text-center text-slate-400">No submissions yet</td>
                         </tr>
                       )}
                     </tbody>
@@ -2128,8 +2136,8 @@ export default function AdminPage() {
                         </select>
                       </div>
                     </div>
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                      <table className="w-full text-sm">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
+                      <table className="w-full text-sm min-w-[900px]">
                         <thead>
                           <tr className="border-b border-slate-100 bg-slate-50">
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
