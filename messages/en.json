@@ -461,7 +461,9 @@
       "tryAgain": "Try again",
       "refreshFailed": "Failed to refresh — try again shortly",
       "downloadFailed": "Failed to download report",
-      "signInToSave": "Sign in to save jobs to your tracker"
+      "signInToSave": "Sign in to save jobs to your tracker",
+      "coursesLoadFailed": "Couldn't load course recommendations.",
+      "companiesLoadFailed": "Couldn't load company suggestions."
     },
     "hero": {
       "eyebrow": "Career Assessment Results",

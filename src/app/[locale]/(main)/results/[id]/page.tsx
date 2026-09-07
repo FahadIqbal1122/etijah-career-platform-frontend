@@ -132,8 +132,10 @@ export default function ResultsPage() {
   const [jobsLoading, setJobsLoading] = useState(true)
   const [companies, setCompanies] = useState<any[]>([])
   const [companiesLoading, setCompaniesLoading] = useState(true)
+  const [companiesError, setCompaniesError] = useState(false)
   const [courses, setCourses] = useState<any[]>([])
   const [coursesLoading, setCoursesLoading] = useState(true)
+  const [coursesError, setCoursesError] = useState(false)
   const [savedJobs, setSavedJobs] = useState<Set<number>>(new Set())
   const [saveError, setSaveError] = useState('')
   const [email, setEmail] = useState('')
@@ -182,12 +184,12 @@ export default function ResultsPage() {
         .catch(() => {})
         .finally(() => setJobsLoading(false))
       apiAuthGet<any[]>(`/assessment/${id}/companies`)
-        .then(data => setCompanies(data || []))
-        .catch(() => {})
+        .then(data => { setCompanies(data || []); setCompaniesError(false) })
+        .catch(() => setCompaniesError(true))
         .finally(() => setCompaniesLoading(false))
       apiAuthGet<any[]>(`/assessment/${id}/courses`)
-        .then(data => setCourses(data || []))
-        .catch(() => {})
+        .then(data => { setCourses(data || []); setCoursesError(false) })
+        .catch(() => setCoursesError(true))
         .finally(() => setCoursesLoading(false))
     })
     return () => { cancelled = true }
@@ -708,6 +710,11 @@ export default function ResultsPage() {
             ctaLabel={t('courses.lockedCta')}
             ctaHref="/#pricing"
           />
+        ) : coursesError ? (
+          <div className="card p-5 text-center">
+            <p className="text-sm text-charcoal/60 mb-2">{t('error.coursesLoadFailed')}</p>
+            <button onClick={retry} className="text-sm text-primary hover:underline font-medium">{t('error.tryAgain')}</button>
+          </div>
         ) : null}
 
         {/* Company Target List */}
@@ -758,6 +765,11 @@ export default function ResultsPage() {
             ctaLabel={t('companies.lockedCta')}
             ctaHref="/#pricing"
           />
+        ) : companiesError ? (
+          <div className="card p-5 text-center">
+            <p className="text-sm text-charcoal/60 mb-2">{t('error.companiesLoadFailed')}</p>
+            <button onClick={retry} className="text-sm text-primary hover:underline font-medium">{t('error.tryAgain')}</button>
+          </div>
         ) : null}
 
         {/* Reassess */}
