@@ -87,6 +87,190 @@ const BETA_FEEDBACK_STAGE_LABELS: Record<BetaFeedbackStage, string> = {
   stage2: 'Stage 2',
 }
 
+// ─── Beta feedback analytics (charts) ──────────────────────────────────────
+// Small, dependency-free primitives built from the app's own design tokens
+// (--primary, --teal, and the green/amber/rose badge colors already used
+// elsewhere in this dashboard) rather than a charting library — the data
+// here is a handful of categorical breakdowns and one 1-6 scale, well within
+// what plain divs/SVG can express cleanly.
+
+function countBy<T>(items: T[], getKey: (item: T) => string | null | undefined): Record<string, number> {
+  const counts: Record<string, number> = {}
+  for (const item of items) {
+    const key = getKey(item)
+    if (!key) continue
+    counts[key] = (counts[key] || 0) + 1
+  }
+  return counts
+}
+
+// Ordered so bars render in a consistent, meaningful sequence (positive → negative)
+// rather than whatever order values happen to appear in the data.
+const SENTIMENT_ORDER: Record<string, string[]> = {
+  would_recommend: ['yes', 'maybe', 'no'],
+  would_pay: ['definitely', 'maybe', 'no'],
+  accuracy: ['spot_on', 'mostly_right', 'off'],
+  yes_somewhat_no: ['yes', 'somewhat', 'no'],
+}
+const SENTIMENT_COLOR: Record<string, string> = {
+  yes: '#00C9A7', definitely: '#00C9A7', spot_on: '#00C9A7',
+  maybe: '#F59E0B', mostly_right: '#F59E0B', somewhat: '#F59E0B',
+  no: '#FB7185', off: '#FB7185',
+}
+const SENTIMENT_LABEL: Record<string, string> = {
+  yes: 'Yes', maybe: 'Maybe', no: 'No', definitely: 'Definitely',
+  spot_on: 'Spot on', mostly_right: 'Mostly right', off: 'Off', somewhat: 'Somewhat',
+}
+
+function BetaStatTile({ label, value, sublabel }: { label: string; value: string; sublabel?: string }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{label}</p>
+      <p className="text-2xl font-bold text-slate-800 tabular-nums">{value}</p>
+      {sublabel && <p className="text-xs text-slate-400 mt-0.5">{sublabel}</p>}
+    </div>
+  )
+}
+
+// One labeled horizontal bar — `total` is the denominator (usually all stage2
+// respondents), so an unanswered field still reads as a share of the whole
+// rather than silently renormalizing over just the people who answered it.
+function BetaBarRow({ valueKey, count, total }: { valueKey: string; count: number; total: number }) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-24 shrink-0 text-xs text-slate-500">{SENTIMENT_LABEL[valueKey] || formatUnderscored(valueKey)}</span>
+      <div className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
+        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: SENTIMENT_COLOR[valueKey] || '#0770BA' }} />
+      </div>
+      <span className="w-20 shrink-0 text-right text-xs font-semibold text-slate-700 tabular-nums">
+        {pct}% <span className="text-slate-400 font-normal">({count})</span>
+      </span>
+    </div>
+  )
+}
+
+function BetaSentimentChart({ title, orderKey, counts, total }: { title: string; orderKey: keyof typeof SENTIMENT_ORDER; counts: Record<string, number>; total: number }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+      <p className="text-sm font-semibold text-slate-700 mb-4">{title}</p>
+      <div className="space-y-2.5">
+        {SENTIMENT_ORDER[orderKey].map(key => (
+          <BetaBarRow key={key} valueKey={key} count={counts[key] || 0} total={total} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// 1-6 scale distribution — reuses the sequential teal ramp (lighter = lower
+// score) since this is a magnitude, not a categorical identity.
+function BetaScaleChart({ title, values }: { title: string; values: (number | null)[] }) {
+  const answered = values.filter((v): v is number => v != null)
+  const total = answered.length
+  const avg = total > 0 ? (answered.reduce((a, b) => a + b, 0) / total) : 0
+  const counts = countBy(answered, v => String(v))
+  const max = Math.max(1, ...[1, 2, 3, 4, 5, 6].map(n => counts[String(n)] || 0))
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+      <div className="flex items-baseline justify-between mb-4">
+        <p className="text-sm font-semibold text-slate-700">{title}</p>
+        <p className="text-xs text-slate-400">avg <span className="font-semibold text-slate-600">{avg.toFixed(1)}</span>/6</p>
+      </div>
+      <div className="flex items-end gap-2 h-24">
+        {[1, 2, 3, 4, 5, 6].map(n => {
+          const c = counts[String(n)] || 0
+          const h = Math.max(4, (c / max) * 100)
+          return (
+            <div key={n} className="flex-1 flex flex-col items-center justify-end gap-1.5">
+              <span className="text-[10px] text-slate-400 tabular-nums">{c}</span>
+              <div className="w-full rounded-t-md" style={{ height: `${h}%`, background: `rgba(0, 201, 167, ${0.35 + (n / 6) * 0.55})` }} />
+              <span className="text-[10px] text-slate-400">{n}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// Ranked horizontal bars for a multi-select field (respondents can pick more
+// than one, so percentages don't sum to 100 — sorted descending so the most
+// commonly picked value reads first).
+function BetaRankedMultiChart({ title, lists, labels, total }: { title: string; lists: (string[] | null)[]; labels: Record<string, string>; total: number }) {
+  const counts: Record<string, number> = {}
+  for (const list of lists) {
+    for (const v of list || []) counts[v] = (counts[v] || 0) + 1
+  }
+  const rows = Object.entries(counts).sort((a, b) => b[1] - a[1])
+  const max = Math.max(1, ...rows.map(([, c]) => c))
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+      <p className="text-sm font-semibold text-slate-700 mb-4">{title}</p>
+      {rows.length === 0 ? (
+        <p className="text-xs text-slate-400">No answers yet.</p>
+      ) : (
+        <div className="space-y-2.5">
+          {rows.map(([key, count]) => {
+            const pct = total > 0 ? Math.round((count / total) * 100) : 0
+            return (
+              <div key={key} className="flex items-center gap-3">
+                <span className="w-32 shrink-0 text-xs text-slate-500 truncate">{labels[key] || formatUnderscored(key)}</span>
+                <div className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                  <div className="h-full rounded-full bg-primary" style={{ width: `${(count / max) * 100}%` }} />
+                </div>
+                <span className="w-20 shrink-0 text-right text-xs font-semibold text-slate-700 tabular-nums">
+                  {pct}% <span className="text-slate-400 font-normal">({count})</span>
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// 100%-stacked bar per report-accuracy dimension (personality/values/strengths/
+// career matches) — one bar per dimension makes it easy to spot which specific
+// part of the report people trust least, instead of one blended accuracy number.
+function BetaAccuracyChart({ title, dimensions }: { title: string; dimensions: { label: string; values: (string | null)[] }[] }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm font-semibold text-slate-700">{title}</p>
+        <div className="flex items-center gap-3 text-[10px] text-slate-400">
+          {SENTIMENT_ORDER.accuracy.map(k => (
+            <span key={k} className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full inline-block" style={{ background: SENTIMENT_COLOR[k] }} />
+              {SENTIMENT_LABEL[k]}
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3">
+        {dimensions.map(dim => {
+          const counts = countBy(dim.values, v => v)
+          const total = dim.values.filter(Boolean).length
+          return (
+            <div key={dim.label} className="flex items-center gap-3">
+              <span className="w-32 shrink-0 text-xs text-slate-500">{dim.label}</span>
+              <div className="flex-1 h-3 rounded-full bg-slate-100 overflow-hidden flex">
+                {total === 0 ? null : SENTIMENT_ORDER.accuracy.map(key => {
+                  const c = counts[key] || 0
+                  if (c === 0) return null
+                  return <div key={key} style={{ width: `${(c / total) * 100}%`, background: SENTIMENT_COLOR[key] }} />
+                })}
+              </div>
+              <span className="w-10 shrink-0 text-right text-xs text-slate-400 tabular-nums">n={total}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function formatUnderscored(value: string | null | undefined): string {
   return value ? value.replace(/_/g, ' ') : '—'
 }
@@ -2098,8 +2282,73 @@ export default function AdminPage() {
                     .filter(bf => betaFeedbackStageFilter === 'all' || betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
                     .filter(bf => betaFeedbackStatusFilter === 'all' || bf.assessment_responses?.current_stage === betaFeedbackStatusFilter)
                     .filter(bf => betaFeedbackAgeFilter === 'all' || bf.assessment_responses?.age_bracket === betaFeedbackAgeFilter)
+                  const stage2Responses = betaFeedbackList.filter(bf => bf.stage2_completed_at)
+                  const stage2Total = stage2Responses.length
                   return (
                   <>
+                    {stage2Total > 0 && (
+                      <div className="mb-6">
+                        <p className="text-sm font-semibold text-slate-700 mb-3">Feedback analytics <span className="text-slate-400 font-normal">— from {stage2Total} completed survey{stage2Total !== 1 ? 's' : ''}</span></p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                          <BetaStatTile
+                            label="Would recommend"
+                            value={`${Math.round(((countBy(stage2Responses, bf => bf.would_recommend).yes || 0) / stage2Total) * 100)}%`}
+                            sublabel="answered “yes”"
+                          />
+                          <BetaStatTile
+                            label="Would pay for it"
+                            value={`${Math.round((((countBy(stage2Responses, bf => bf.would_pay).definitely || 0) + (countBy(stage2Responses, bf => bf.would_pay).maybe || 0)) / stage2Total) * 100)}%`}
+                            sublabel="“definitely” or “maybe”"
+                          />
+                          <BetaStatTile
+                            label="Overall value"
+                            value={`${(stage2Responses.reduce((sum, bf) => sum + (bf.overall_value || 0), 0) / Math.max(1, stage2Responses.filter(bf => bf.overall_value != null).length)).toFixed(1)}/6`}
+                            sublabel="average rating"
+                          />
+                          <BetaStatTile
+                            label="Hit an issue"
+                            value={`${Math.round(((countBy(stage2Responses, bf => bf.had_issues).yes || 0) / stage2Total) * 100)}%`}
+                            sublabel="errors or glitches"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <BetaSentimentChart
+                            title="Would recommend this to a friend?"
+                            orderKey="would_recommend"
+                            counts={countBy(stage2Responses, bf => bf.would_recommend)}
+                            total={stage2Total}
+                          />
+                          <BetaSentimentChart
+                            title="Would pay for the full report?"
+                            orderKey="would_pay"
+                            counts={countBy(stage2Responses, bf => bf.would_pay)}
+                            total={stage2Total}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <BetaScaleChart title="Overall value (1-6)" values={stage2Responses.map(bf => bf.overall_value)} />
+                          <BetaRankedMultiChart
+                            title="Most valuable parts of the report"
+                            lists={stage2Responses.map(bf => bf.most_valuable_parts)}
+                            labels={{
+                              personality: 'Personality profile', values: 'Values', strengths: 'Strengths',
+                              careers: 'Career matches', ai_impact: 'AI Impact', jobs: 'Job listings',
+                              companies: 'Target companies', courses: 'Courses', plan: '90-day plan',
+                            }}
+                            total={stage2Total}
+                          />
+                        </div>
+                        <BetaAccuracyChart
+                          title="Report accuracy by section"
+                          dimensions={[
+                            { label: 'Personality type', values: stage2Responses.map(bf => bf.personality_accuracy) },
+                            { label: 'Core values', values: stage2Responses.map(bf => bf.values_accuracy) },
+                            { label: 'Strengths', values: stage2Responses.map(bf => bf.strengths_accuracy) },
+                            { label: 'Career matches', values: stage2Responses.map(bf => bf.career_matches_accuracy) },
+                          ]}
+                        />
+                      </div>
+                    )}
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                       <p className="text-sm text-slate-400">{visibleBetaFeedback.length} response{visibleBetaFeedback.length !== 1 ? 's' : ''}</p>
                       <div className="flex flex-wrap gap-2">
