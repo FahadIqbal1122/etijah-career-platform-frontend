@@ -180,11 +180,15 @@ function BetaScaleChart({ title, values }: { title: string; values: (number | nu
       <div className="flex items-end gap-2 h-24">
         {[1, 2, 3, 4, 5, 6].map(n => {
           const c = counts[String(n)] || 0
-          const h = Math.max(4, (c / max) * 100)
+          // Pixels, not %: the column div's height is auto (hugs its content,
+          // since the row uses items-end rather than stretch), so a percentage
+          // height here has no defined containing block to resolve against and
+          // silently computes to 0 — the bars never rendered, only the labels.
+          const barPx = Math.max(4, Math.round((c / max) * 72))
           return (
             <div key={n} className="flex-1 flex flex-col items-center justify-end gap-1.5">
               <span className="text-[10px] text-slate-400 tabular-nums">{c}</span>
-              <div className="w-full rounded-t-md" style={{ height: `${h}%`, background: `rgba(0, 201, 167, ${0.35 + (n / 6) * 0.55})` }} />
+              <div className="w-full rounded-t-md" style={{ height: `${barPx}px`, background: `rgba(0, 201, 167, ${0.35 + (n / 6) * 0.55})` }} />
               <span className="text-[10px] text-slate-400">{n}</span>
             </div>
           )
