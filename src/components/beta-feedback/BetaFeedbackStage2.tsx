@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { apiAuthPost } from '@/lib/api'
+import { useEffect, useMemo, useState } from 'react'
+import { apiAuthGet, apiAuthPost } from '@/lib/api'
 import {
   personalHook, stage2CoCreator, stage2Hook, stage2ProgressCarry, stage2Reward, stage2Sections,
   type Locale,
@@ -9,10 +9,6 @@ import {
 import { FaceScale, MultiPillSelect, PillSelect, Scale6, TextField } from './shared'
 
 type Answers = Record<string, any>
-
-function betaDoneKey(responseId: string) {
-  return `betaFeedbackDone:${responseId}`
-}
 
 export default function BetaFeedbackStage2({ responseId, locale, stage1AnsweredCount, personalityTypeLabel }: {
   responseId: string
@@ -22,11 +18,18 @@ export default function BetaFeedbackStage2({ responseId, locale, stage1AnsweredC
 }) {
   const [answers, setAnswers] = useState<Answers>({})
   const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return window.localStorage.getItem(betaDoneKey(responseId)) === '1'
-  })
+  const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+
+  // Pre-fill with any previously submitted answers so revisiting this link
+  // (e.g. from a re-notify email) lets someone edit instead of starting over.
+  useEffect(() => {
+    apiAuthGet<Answers>(`/beta-feedback/${responseId}/stage2`)
+      .then(existing => {
+        if (Object.keys(existing).length) setAnswers(existing)
+      })
+      .catch(() => {})
+  }, [responseId])
 
   const visibleSections = useMemo(
     () => stage2Sections.map(s => ({ ...s, fields: s.fields.filter(f => !f.showIf || f.showIf(answers)) })),
@@ -56,7 +59,6 @@ export default function BetaFeedbackStage2({ responseId, locale, stage1AnsweredC
     setSubmitting(true)
     try {
       await apiAuthPost('/beta-feedback/stage2', { response_id: responseId, locale, ...answers })
-      window.localStorage.setItem(betaDoneKey(responseId), '1')
       setSubmitted(true)
     } catch {
       setError(locale === 'ar' ? 'حدث خطأ ما. يرجى المحاولة مرة أخرى.' : 'Something went wrong. Please try again.')
@@ -71,7 +73,14 @@ export default function BetaFeedbackStage2({ responseId, locale, stage1AnsweredC
         <p className="text-sm font-semibold text-charcoal mb-1">
           {locale === 'ar' ? 'شكرًا لك!' : 'Thank you!'}
         </p>
-        <p className="text-xs text-charcoal/50">{stage2Reward[locale]}</p>
+        <p className="text-xs text-charcoal/50 mb-4">{stage2Reward[locale]}</p>
+        <button
+          type="button"
+          onClick={() => setSubmitted(false)}
+          className="text-xs font-semibold text-primary hover:underline"
+        >
+          {locale === 'ar' ? 'تعديل إجاباتك' : 'Edit your answers'}
+        </button>
       </div>
     )
   }
