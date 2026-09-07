@@ -109,6 +109,20 @@ export default function ResultsPage() {
   const [messageIndex, setMessageIndex] = useState(0)
   const [tier, setTier] = useState<'free' | 'pathfinder' | 'launchpad'>('launchpad')
   const [betaMode, setBetaMode] = useState(false)
+  // Only true right after AssessmentForm's submit redirect sets this flag — a
+  // revisit of the same results link (bookmark, email) later should not show
+  // the inline beta feedback survey again.
+  const [justCompleted] = useState(() => {
+    if (typeof window === 'undefined') return false
+    try {
+      const key = `justCompleted:${id}`
+      const flag = sessionStorage.getItem(key) === '1'
+      if (flag) sessionStorage.removeItem(key)
+      return flag
+    } catch {
+      return false
+    }
+  })
   const [error, setError] = useState('')
   const [jobs, setJobs] = useState<any[]>([])
   const [jobsSuggestionsLoading, setJobsSuggestionsLoading] = useState(true)
@@ -227,7 +241,7 @@ export default function ResultsPage() {
           {!!recentCompletions && (
             <p className="text-teal text-sm font-medium">✦ {t('loading.recentCompletions', { count: recentCompletions })}</p>
           )}
-          {betaMode && (
+          {betaMode && justCompleted && (
             <BetaFeedbackStage1 responseId={id} locale={locale} />
           )}
         </div>

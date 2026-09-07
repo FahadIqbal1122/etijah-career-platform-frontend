@@ -460,6 +460,10 @@ export default function AssessmentForm() {
       })
       clearDraft()
       setLeaving(true)
+      // Marks this as a fresh completion so the results page shows the inline
+      // beta feedback survey — a bookmarked/emailed link back to the same
+      // results page later should not re-trigger it.
+      try { sessionStorage.setItem(`justCompleted:${result.response_id}`, '1') } catch {}
       // navigate once the .leaving fade (500ms, see .assess-screen in globals.css)
       // has actually finished, instead of cutting it off mid-transition
       after(520, () => router.push(`/results/${result.response_id}`))
