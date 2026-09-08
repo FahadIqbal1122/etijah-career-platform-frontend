@@ -80,6 +80,15 @@ function isBetaSubmission(sub: Pick<Submission, 'created_at'>) {
   return new Date(sub.created_at) >= BETA_COHORT_START
 }
 
+// Second wave of the same beta cohort, starting once the round of fixes/
+// features shipped on 2026-09-08 went live — lets us compare behavior
+// before/after that batch of changes without touching anything already
+// tagged plain "beta".
+const BETA_V2_START = new Date('2026-09-08T11:37:56Z')
+function isBetaV2(createdAt: string) {
+  return new Date(createdAt) >= BETA_V2_START
+}
+
 type BetaFeedbackStage = 'started' | 'stage1' | 'stage2'
 function betaFeedbackStageOf(bf: Pick<BetaFeedbackEntry, 'stage1_completed_at' | 'stage2_completed_at'>): BetaFeedbackStage {
   return bf.stage2_completed_at ? 'stage2' : bf.stage1_completed_at ? 'stage1' : 'started'
@@ -1542,6 +1551,7 @@ export default function AdminPage() {
                 ['Age bracket', selected.age_bracket],
                 ['Education field', selected.education_field],
                 ['Current stage', selected.current_stage],
+                ...(isBetaSubmission(selected) ? [['Cohort', isBetaV2(selected.created_at) ? 'beta v2' : 'beta']] : []),
                 ['Submitted', new Date(selected.created_at).toLocaleString()],
                 ['Completed', selected.completed ? 'Yes' : 'No'],
               ].map(([label, value]) => (
@@ -1840,6 +1850,7 @@ export default function AdminPage() {
                 ['Email', bf.assessment_responses?.email],
                 ['Country', bf.assessment_responses?.country],
                 ['Status', formatUnderscored(bf.assessment_responses?.current_stage)],
+                ['Cohort', isBetaV2(bf.created_at) ? 'beta v2' : 'beta'],
                 ['Age', formatUnderscored(bf.assessment_responses?.age_bracket)],
                 ['Locale', bf.locale || bf.assessment_responses?.locale],
                 ['Device', bf.device],
@@ -2288,7 +2299,9 @@ export default function AdminPage() {
                         <span className="ml-2 text-xs font-semibold bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">O*NET</span>
                       )}
                       {isBetaSubmission(sub) && (
-                        <span className="ml-2 text-xs font-semibold bg-lightblue text-primary px-1.5 py-0.5 rounded-full">beta</span>
+                        <span className="ml-2 text-xs font-semibold bg-lightblue text-primary px-1.5 py-0.5 rounded-full">
+                          {isBetaV2(sub.created_at) ? 'beta v2' : 'beta'}
+                        </span>
                       )}
                     </td>
                     <td className="px-3 py-3">
@@ -2895,7 +2908,12 @@ export default function AdminPage() {
                             const stage = BETA_FEEDBACK_STAGE_LABELS[stageKey]
                             return (
                               <tr key={bf.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
-                                <td className="px-4 py-3 font-medium text-slate-800">{bf.assessment_responses?.full_name || '—'}</td>
+                                <td className="px-4 py-3 font-medium text-slate-800">
+                                  <span>{bf.assessment_responses?.full_name || '—'}</span>
+                                  {isBetaV2(bf.created_at) && (
+                                    <span className="ml-2 text-xs font-semibold bg-lightblue text-primary px-1.5 py-0.5 rounded-full">beta v2</span>
+                                  )}
+                                </td>
                                 <td className="px-4 py-3 text-slate-500">{bf.assessment_responses?.email || '—'}</td>
                                 <td className="px-4 py-3 text-slate-500">{bf.assessment_responses?.country || '—'}</td>
                                 <td className="px-4 py-3 text-slate-500 capitalize">{formatUnderscored(bf.assessment_responses?.current_stage)}</td>
