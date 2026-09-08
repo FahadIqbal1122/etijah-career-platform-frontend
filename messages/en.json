@@ -275,7 +275,7 @@
       "text": "Knowing my work makes a real, visible difference to others gives me deep meaning and motivation."
     },
     "Q29": {
-      "text": "The reputation and prestige of the organization I work for matters a great deal to me."
+      "text": "The reputation of the organization I work for matters a lot to me."
     },
     "Q30": {
       "text": "Being publicly recognized as an expert, leader, or high achiever in my field is one of my key motivations."
@@ -374,7 +374,7 @@
       "text": "Finishing what I start — even when it becomes tedious, difficult, or takes longer than expected — is something I pride myself on."
     },
     "Q58": {
-      "text": "When I fail at something important, my instinct is to understand what went wrong and try a different approach rather than moving on."
+      "text": "When I fail at something important, I try to understand what went wrong and try again a different way, instead of giving up."
     },
     "Q59": {
       "text": "Three months into a job, your manager tells you firmly that a project you worked hard on needs to be redone. Which feels most like you?",
@@ -392,12 +392,12 @@
       }
     },
     "Q61": {
-      "text": "Your first or next full-time job, six months in. The work has turned out to be harder and less interesting than you expected. Which is most like you?",
+      "text": "Six months into your first (or next) full-time job, the work is harder and less interesting than you expected. What would you most likely do?",
       "options": {
         "A": "Start looking for something new immediately.",
         "B": "Give it 6–12 more months to build skills and network before deciding.",
         "C": "Try to renegotiate my role with my manager first.",
-        "D": "Stick with it for at least 2 years for the experience value."
+        "D": "Stay for at least 2 years to gain the experience."
       }
     },
     "Q64": {
@@ -416,10 +416,10 @@
       }
     },
     "Q66": {
-      "text": "Where would you most thrive professionally?",
+      "text": "Which work environment would you enjoy more?",
       "options": {
-        "A": "A large, established organization with clear structure, established processes, and a recognizable name.",
-        "B": "A small, scrappy organization where everyone wears many hats and you can shape how things work."
+        "A": "A large, well-known organization with clear structure and set processes.",
+        "B": "A small, fast-moving organization where everyone does a bit of everything and you help shape how things work."
       }
     },
     "Q67": {
@@ -512,7 +512,7 @@
       "needsSupport": "Needs support",
       "bouncesBack": "Bounces back"
     },
-    "suggestedCareers": { "title": "Suggested Careers", "subtitle": "Matched across your full profile" },
+    "suggestedCareers": { "title": "Suggested Careers", "subtitle": "Matched across your full profile", "matchLabel": "match" },
     "liveJobs": {
       "title": "Live Job Postings",
       "subtitle": "Current openings matched to your careers",
@@ -530,6 +530,8 @@
       "title": "AI Impact on Your Careers",
       "subtitle": "How automation affects your top matches",
       "riskSuffix": "RISK",
+      "protectedSkillsLabel": "Human skills that stay valuable",
+      "upskillingLabel": "How to prepare",
       "signupTitle": "Sign up to see your full AI-impact breakdown",
       "signupBody": "Create a free account, then unlock the full deep dive — all 5 top matches, a 1–3 year outlook, and which human skills gain value.",
       "lockedTag": "Pathfinder",

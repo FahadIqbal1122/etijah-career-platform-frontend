@@ -171,8 +171,8 @@ export default function ResultsPage() {
           setBetaMode(!!data.beta_mode)
         })
         .catch(err => setError(err.message || t('error.loadFailed')))
-      apiAuthGet<any>(`/assessment/${id}/career-suggestions`)
-        .then(data => setJobs(data.suggestions))
+      apiAuthGet<any>(`/assessment/${id}/career-recommendations`)
+        .then(data => setJobs(data.career_recommendations || []))
         .catch(() => {})
         .finally(() => setJobsSuggestionsLoading(false))
       apiAuthGet<any>(`/assessment/${id}/ai-impact`)
@@ -509,16 +509,25 @@ export default function ResultsPage() {
               subtitle={t('suggestedCareers.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.07A2.25 2.25 0 0118 20.47H6a2.25 2.25 0 01-2.25-2.25v-4.07M15.75 9.75V6a3.75 3.75 0 00-7.5 0v3.75M3.75 9.75h16.5" /></svg>}
             />
-            <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2.5">
               {jobs.map((job: any, i: number) => (
                 <div
                   key={job.title}
-                  className={`rounded-xl px-3 py-2.5 text-xs font-semibold capitalize flex items-center gap-2 ${
-                    i === 0 ? 'bg-primary text-white col-span-2' : 'bg-lightblue text-primary border border-[var(--line)]'
+                  className={`rounded-xl px-3.5 py-3 ${
+                    i === 0 ? 'bg-primary text-white' : 'bg-lightblue/50 border border-[var(--line)]'
                   }`}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${i === 0 ? 'bg-white' : 'bg-teal'}`} />
-                  {job.title}
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`text-sm font-bold capitalize ${i === 0 ? 'text-white' : 'text-charcoal'}`}>{job.title}</p>
+                    {typeof job.match_score === 'number' && (
+                      <span className={`text-xs font-semibold shrink-0 ${i === 0 ? 'text-white/90' : 'text-teal'}`}>
+                        {job.match_score}% {t('suggestedCareers.matchLabel')}
+                      </span>
+                    )}
+                  </div>
+                  {job.fit_summary && (
+                    <p className={`text-xs mt-1 ${i === 0 ? 'text-white/80' : 'text-charcoal/60'}`}>{job.fit_summary}</p>
+                  )}
                 </div>
               ))}
             </div>
@@ -621,20 +630,30 @@ export default function ResultsPage() {
                       {c.ai_risk_level ? levelLabel(c.ai_risk_level).toUpperCase() : ''} {t('aiImpact.riskSuffix')}
                     </span>
                   </div>
-                  <p className="text-xs text-charcoal/50 mb-2">{c.gcc_outlook}</p>
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {c.protected_skills?.map((s: string) => (
-                      <span key={s} className="chip chip-teal !py-0.5 !text-[11px]">{s}</span>
-                    ))}
-                  </div>
-                  <ul className="space-y-1">
-                    {c.upskilling?.map((tip: string) => (
-                      <li key={tip} className="text-xs text-charcoal/50 flex gap-1.5">
-                        <span className="text-primary mt-0.5">→</span>
-                        {tip}
-                      </li>
-                    ))}
-                  </ul>
+                  <p className="text-xs text-charcoal/50 mb-3">{c.gcc_outlook}</p>
+                  {c.protected_skills?.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-[11px] font-semibold text-charcoal/40 uppercase tracking-wide mb-1.5">{t('aiImpact.protectedSkillsLabel')}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {c.protected_skills.map((s: string) => (
+                          <span key={s} className="chip chip-teal !py-0.5 !text-[11px]">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {c.upskilling?.length > 0 && (
+                    <div>
+                      <p className="text-[11px] font-semibold text-charcoal/40 uppercase tracking-wide mb-1.5">{t('aiImpact.upskillingLabel')}</p>
+                      <ul className="space-y-1">
+                        {c.upskilling.map((tip: string) => (
+                          <li key={tip} className="text-xs text-charcoal/50 flex gap-1.5">
+                            <span className="text-primary mt-0.5">→</span>
+                            {tip}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
