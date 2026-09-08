@@ -64,7 +64,9 @@ type Submission = {
   email: string
   phone: string
   country: string
+  nationality: string
   age_bracket: string
+  education_field: string
   current_stage: string
   completed: boolean
   created_at: string
@@ -1536,7 +1538,9 @@ export default function AdminPage() {
                 ['Email', selected.email],
                 ['Phone', selected.phone],
                 ['Country', selected.country],
+                ['Nationality', selected.nationality],
                 ['Age bracket', selected.age_bracket],
+                ['Education field', selected.education_field],
                 ['Current stage', selected.current_stage],
                 ['Submitted', new Date(selected.created_at).toLocaleString()],
                 ['Completed', selected.completed ? 'Yes' : 'No'],
@@ -2253,19 +2257,22 @@ export default function AdminPage() {
       <>
         <p className="text-sm text-slate-400 mb-4">{list.length} submission{list.length !== 1 ? 's' : ''}</p>
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
-          <table className="w-full text-sm min-w-[1100px]">
+          <table className="w-full text-sm min-w-[1400px]">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Contact</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Stage</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Device</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Games played</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Feedback</th>
-                <th className="px-4 py-3" />
+                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Contact</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Nationality</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Age group</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Education</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Stage</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Device</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Games played</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Feedback</th>
+                <th className="px-3 py-3" />
               </tr>
             </thead>
             <tbody>
@@ -2275,7 +2282,7 @@ export default function AdminPage() {
                 const session = telemetryByResponseId.get(sub.id)
                 return (
                   <tr key={sub.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
-                    <td className="px-4 py-3 font-medium text-slate-800">
+                    <td className="px-3 py-3 font-medium text-slate-800">
                       <span>{sub.full_name || '—'}</span>
                       {hasOnet && (
                         <span className="ml-2 text-xs font-semibold bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">O*NET</span>
@@ -2284,20 +2291,23 @@ export default function AdminPage() {
                         <span className="ml-2 text-xs font-semibold bg-lightblue text-primary px-1.5 py-0.5 rounded-full">beta</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3">
                       <div className="text-slate-500">{sub.email || '—'}</div>
                       {sub.phone && <div className="text-slate-400 text-xs">{sub.phone}</div>}
                     </td>
-                    <td className="px-4 py-3 text-slate-500">{sub.country || '—'}</td>
-                    <td className="px-4 py-3 text-slate-500 capitalize">{sub.current_stage?.replace(/_/g, ' ') || '—'}</td>
-                    <td className="px-4 py-3 text-slate-400 text-xs">{new Date(sub.created_at).toLocaleDateString()}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3 text-slate-500">{sub.country || '—'}</td>
+                    <td className="px-3 py-3 text-slate-500">{sub.nationality || '—'}</td>
+                    <td className="px-3 py-3 text-slate-500">{sub.age_bracket || '—'}</td>
+                    <td className="px-3 py-3 text-slate-500 capitalize">{sub.education_field?.replace(/_/g, ' ') || '—'}</td>
+                    <td className="px-3 py-3 text-slate-500 capitalize">{sub.current_stage?.replace(/_/g, ' ') || '—'}</td>
+                    <td className="px-3 py-3 text-slate-400 text-xs">{new Date(sub.created_at).toLocaleDateString()}</td>
+                    <td className="px-3 py-3">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sub.completed ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-600'}`}>
                         {sub.completed ? 'Complete' : 'Incomplete'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-500 capitalize">{session?.device_type || '—'}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3 text-slate-500 capitalize">{session?.device_type || '—'}</td>
+                    <td className="px-3 py-3">
                       {session && session.activities.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {session.activities.map(kind => (
@@ -2314,12 +2324,12 @@ export default function AdminPage() {
                         <span className="text-slate-300">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${hasFeedback ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
                         {hasFeedback ? 'Yes' : 'No'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 flex items-center gap-3">
+                    <td className="px-3 py-3 flex items-center gap-3">
                       <button
                         onClick={() => handleViewResults(sub)}
                         className="text-xs text-primary hover:underline font-medium"
@@ -2338,7 +2348,7 @@ export default function AdminPage() {
               })}
               {list.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-slate-400">{emptyMessage}</td>
+                  <td colSpan={13} className="px-4 py-12 text-center text-slate-400">{emptyMessage}</td>
                 </tr>
               )}
             </tbody>
@@ -2467,7 +2477,7 @@ export default function AdminPage() {
         })()}
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
 
         {/* ── Dashboard Tab ── */}
         {activeTab === 'dashboard' && (
