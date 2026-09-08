@@ -459,7 +459,7 @@ export const questions: Question[] = [
     id: 'Q29',
     section: 'Values',
     framework: 'Values',
-    text: 'The reputation and prestige of the organization I work for matters a great deal to me.',
+    text: 'The reputation of the organization I work for matters a lot to me.',
     type: 'behavioral_scale',
   },
   {
@@ -678,7 +678,7 @@ export const questions: Question[] = [
     id: 'Q58',
     section: 'Resilience',
     framework: 'Resilience & Workplace Mindset',
-    text: 'When I fail at something important, my instinct is to understand what went wrong and try a different approach rather than moving on.',
+    text: 'When I fail at something important, I try to understand what went wrong and try again a different way, instead of giving up.',
     type: 'behavioral_scale',
   },
   {
@@ -708,13 +708,13 @@ export const questions: Question[] = [
     id: 'Q61',
     section: 'Resilience',
     framework: 'Resilience & Workplace Mindset',
-    text: 'Your first or next full-time job, six months in. The work has turned out to be harder and less interesting than you expected. Which is most like you?',
+    text: 'Six months into your first (or next) full-time job, the work is harder and less interesting than you expected. What would you most likely do?',
     type: 'forced_choice',
     options: [
       { value: 'A', label: 'Start looking for something new immediately.' },
       { value: 'B', label: 'Give it 6–12 more months to build skills and network before deciding.' },
       { value: 'C', label: 'Try to renegotiate my role with my manager first.' },
-      { value: 'D', label: 'Stick with it for at least 2 years for the experience value.' },
+      { value: 'D', label: 'Stay for at least 2 years to gain the experience.' },
     ],
   },
   {
@@ -746,11 +746,11 @@ export const questions: Question[] = [
     id: 'Q66',
     section: 'Work Style',
     framework: 'Work Style',
-    text: 'Where would you most thrive professionally?',
+    text: 'Which work environment would you enjoy more?',
     type: 'forced_choice',
     options: [
-      { value: 'A', label: 'A large, established organization with clear structure, established processes, and a recognizable name.' },
-      { value: 'B', label: 'A small, scrappy organization where everyone wears many hats and you can shape how things work.' },
+      { value: 'A', label: 'A large, well-known organization with clear structure and set processes.' },
+      { value: 'B', label: 'A small, fast-moving organization where everyone does a bit of everything and you help shape how things work.' },
     ],
   },
   {
