@@ -485,6 +485,14 @@ export default function AssessmentForm() {
   return (
     <div className={`assess-screen ${phase === 'reveal' ? 'is-reveal' : ''} ${leaving ? 'leaving' : ''}`} dir={dir} lang={locale}>
       <div className="prog"><div className="prog-fill" style={{ width: `${progress * 100}%` }} /></div>
+
+      <div className="assess-topbar">
+        <Logomark size={30} tone="dark" />
+        <button className="assess-lang" onClick={() => switchLocale(locale === 'en' ? 'ar' : 'en')}>
+          {locale === 'en' ? 'العربية' : 'English'}
+        </button>
+      </div>
+
       {phase === 'question' && (
         <>
           <div className="assess-progress-label">{progressMsg}</div>
@@ -493,13 +501,6 @@ export default function AssessmentForm() {
           </div>
         </>
       )}
-
-      <div className="assess-topbar">
-        <Logomark size={30} tone="dark" />
-        <button className="assess-lang" onClick={() => switchLocale(locale === 'en' ? 'ar' : 'en')}>
-          {locale === 'en' ? 'العربية' : 'English'}
-        </button>
-      </div>
 
       {/* ── main: ambient panel (left on desktop) + question column (right) ── */}
       <div className="assess-main">
