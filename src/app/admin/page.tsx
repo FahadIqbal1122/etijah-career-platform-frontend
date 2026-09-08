@@ -300,6 +300,28 @@ function formatSeconds(ms: number): string {
   return `${(ms / 1000).toFixed(1)}s`
 }
 
+// Beta cohort for behavior data: date-based like isBetaSubmission, but keyed
+// off when the attempt *started* rather than a submission's created_at — an
+// abandoned attempt has no submission at all, and dropped-off behavior during
+// the beta window is exactly the kind of thing worth seeing, not just
+// completions.
+function isBetaSession(s: Pick<TelemetrySession, 'started_at'>) {
+  return new Date(s.started_at) >= BETA_COHORT_START
+}
+
+function summarizeTelemetry(events: TelemetryEvent[]) {
+  const sessions = buildTelemetrySessions(events)
+  return {
+    sessions,
+    sessionCount: sessions.length,
+    completedCount: sessions.filter(s => s.completed).length,
+    deviceCounts: countBy(sessions, s => s.device_type),
+    activityCounts: countBy(events.filter(e => e.event_type === 'break_open'), e => e.activity_kind),
+    sessionsThatPlayed: sessions.filter(s => s.activities.length > 0).length,
+    pacing: buildQuestionPacing(events),
+  }
+}
+
 const DEVICE_COLOR: Record<string, string> = { mobile: '#0770BA', desktop: '#00C9A7' }
 const ACTIVITY_COLOR: Record<string, string> = { riddle: '#F59E0B', tic_tac_toe: '#0770BA', rps: '#8B5CF6', memory_match: '#00C9A7' }
 const ACTIVITY_LABEL: Record<string, string> = { riddle: 'Riddle', tic_tac_toe: 'Tic-tac-toe', rps: 'Rock-Paper-Scissors', memory_match: 'Memory match' }
@@ -318,6 +340,144 @@ function TelemetryBarRow({ label, count, total, color }: { label: string; count:
         {pct}% <span className="text-slate-400 font-normal">({count})</span>
       </span>
     </div>
+  )
+}
+
+// Full behavior view (stat tiles, device/game charts, pacing table, and its
+// drilldown modal) — parameterized so the same rendering serves both the
+// all-users Behavior tab and the beta-filtered one.
+function TelemetryBehaviorView({
+  summary, drilldown, onDrilldown, onCloseDrilldown,
+}: {
+  summary: ReturnType<typeof summarizeTelemetry>
+  drilldown: { title: string; rows: { session: TelemetrySession; note: string }[] } | null
+  onDrilldown: (d: { title: string; rows: { session: TelemetrySession; note: string }[] }) => void
+  onCloseDrilldown: () => void
+}) {
+  const { sessions, sessionCount, completedCount, deviceCounts, activityCounts, sessionsThatPlayed, pacing } = summary
+  return (
+    <>
+      <p className="text-sm text-slate-400 mb-4">
+        {sessionCount} assessment attempt{sessionCount !== 1 ? 's' : ''} tracked
+      </p>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <BetaStatTile label="Attempts tracked" value={String(sessionCount)} />
+        <BetaStatTile
+          label="Completed"
+          value={sessionCount > 0 ? `${Math.round((completedCount / sessionCount) * 100)}%` : '—'}
+          sublabel={`${completedCount} of ${sessionCount}`}
+        />
+        <BetaStatTile
+          label="Played a game or riddle"
+          value={sessionCount > 0 ? `${Math.round((sessionsThatPlayed / sessionCount) * 100)}%` : '—'}
+          sublabel={`${sessionsThatPlayed} of ${sessionCount}`}
+          onClick={() => onDrilldown({
+            title: 'Played a game or riddle',
+            rows: sessions.filter(s => s.activities.length > 0).map(s => ({ session: s, note: s.activities.map(a => ACTIVITY_LABEL[a] || a).join(', ') })),
+          })}
+        />
+        <BetaStatTile
+          label="Mobile vs desktop"
+          value={`${deviceCounts.mobile || 0} / ${deviceCounts.desktop || 0}`}
+          sublabel="mobile / desktop"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+          <p className="text-sm font-semibold text-slate-700 mb-4">Device</p>
+          <div className="space-y-2.5">
+            {(['mobile', 'desktop'] as const).map(key => (
+              <TelemetryBarRow
+                key={key}
+                label={key === 'mobile' ? 'Mobile' : 'Desktop'}
+                count={deviceCounts[key] || 0}
+                total={sessionCount}
+                color={DEVICE_COLOR[key]}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+          <p className="text-sm font-semibold text-slate-700 mb-4">Games &amp; riddles opened</p>
+          <div className="space-y-2.5">
+            {(['riddle', 'tic_tac_toe', 'rps', 'memory_match'] as const).map(kind => (
+              <TelemetryBarRow
+                key={kind}
+                label={ACTIVITY_LABEL[kind]}
+                count={activityCounts[kind] || 0}
+                total={sessionCount}
+                color={ACTIVITY_COLOR[kind]}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-4">
+        <p className="text-sm font-semibold text-slate-700 mb-1">Pacing per question</p>
+        <p className="text-xs text-slate-400 mb-4">Ordered by the actual question flow — sorted by average time, slowest first, so confusing or heavy questions stand out.</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[560px]">
+            <thead>
+              <tr className="border-b border-slate-100">
+                <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Section</th>
+                <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Question</th>
+                <th className="text-right px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Reached</th>
+                <th className="text-right px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Avg</th>
+                <th className="text-right px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Median</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...pacing].sort((a, b) => b.avgMs - a.avgMs).map((row, i) => (
+                <tr key={row.question_id} className={`border-b border-slate-50 ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                  <td className="px-3 py-2 text-slate-400 text-xs">{row.section}</td>
+                  <td className="px-3 py-2 text-slate-700 font-medium">{row.question_id}</td>
+                  <td className="px-3 py-2 text-right text-slate-500 tabular-nums">{row.reached}</td>
+                  <td className="px-3 py-2 text-right text-slate-700 font-semibold tabular-nums">{formatSeconds(row.avgMs)}</td>
+                  <td className="px-3 py-2 text-right text-slate-500 tabular-nums">{formatSeconds(row.medianMs)}</td>
+                </tr>
+              ))}
+              {pacing.length === 0 && (
+                <tr><td colSpan={5} className="px-3 py-10 text-center text-slate-400">No pacing data yet</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {drilldown && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onCloseDrilldown}>
+          <div className="absolute inset-0 bg-slate-900/40" />
+          <div
+            className="relative bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-md max-h-[80vh] flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-800">{drilldown.title}</h3>
+                <p className="text-xs text-slate-400">{drilldown.rows.length} {drilldown.rows.length === 1 ? 'person' : 'people'}</p>
+              </div>
+              <button onClick={onCloseDrilldown} className="text-slate-400 hover:text-slate-600 text-xl leading-none px-1">×</button>
+            </div>
+            <div className="overflow-y-auto divide-y divide-slate-50">
+              {drilldown.rows.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-10">No one matches this yet.</p>
+              ) : drilldown.rows.map(({ session, note }) => (
+                <div key={session.session_id} className="w-full flex items-center justify-between gap-3 px-5 py-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-800 truncate">{session.full_name || (session.completed ? 'Unknown' : 'Abandoned attempt')}</p>
+                    <p className="text-xs text-slate-400 truncate">{session.email || '—'} · <span className="capitalize">{session.device_type || 'unknown device'}</span></p>
+                  </div>
+                  <span className="shrink-0 text-xs font-medium text-primary bg-lightblue px-2 py-1 rounded-full max-w-[45%] truncate">{note}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -548,12 +708,11 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'templates' | 'smtp' | 'aiprovider'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaFeedback' | 'betaBehavior' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'templates' | 'smtp' | 'aiprovider'>('dashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
   const [fetchError, setFetchError] = useState('')
-  const [submissionCohortFilter, setSubmissionCohortFilter] = useState<'all' | 'beta'>('all')
 
   const [selected, setSelected] = useState<Submission | null>(null)
   const [results, setResults] = useState<any>(null)
@@ -568,7 +727,6 @@ export default function AdminPage() {
   const [feedbackLoading, setFeedbackLoading] = useState(false)
   const [feedbackError, setFeedbackError] = useState('')
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackEntry | null>(null)
-  const [feedbackSubTab, setFeedbackSubTab] = useState<'general' | 'beta'>('general')
 
   const [betaFeedbackList, setBetaFeedbackList] = useState<BetaFeedbackEntry[]>([])
   const [betaFeedbackLoading, setBetaFeedbackLoading] = useState(false)
@@ -2071,18 +2229,124 @@ export default function AdminPage() {
   // assessment attempt — cheap enough to recompute per render at this data
   // volume (matches how the beta feedback stats above are all computed
   // client-side from the raw list, no server-side aggregation endpoint).
-  const telemetrySessions = buildTelemetrySessions(telemetryList)
-  const telemetrySessionCount = telemetrySessions.length
-  const telemetryCompletedCount = telemetrySessions.filter(s => s.completed).length
-  const telemetryDeviceCounts = countBy(telemetrySessions, s => s.device_type)
-  const telemetryActivityCounts = countBy(
-    telemetryList.filter(e => e.event_type === 'break_open'),
-    e => e.activity_kind
-  )
-  const telemetrySessionsThatPlayed = telemetrySessions.filter(s => s.activities.length > 0).length
-  const telemetryQuestionPacing = buildQuestionPacing(telemetryList)
+  const telemetrySummary = summarizeTelemetry(telemetryList)
+  const {
+    sessions: telemetrySessions,
+    sessionCount: telemetrySessionCount,
+  } = telemetrySummary
   // response_id -> session, for the Submissions table's Device/Games columns
   const telemetryByResponseId = new Map(telemetrySessions.filter(s => s.response_id).map(s => [s.response_id as string, s]))
+
+  // Same telemetry, restricted to attempts started during the beta window —
+  // feeds the Beta Testing tab's Behavior sub-tab.
+  const betaSessionIds = new Set(telemetrySessions.filter(isBetaSession).map(s => s.session_id))
+  const betaTelemetryEvents = telemetryList.filter(e => betaSessionIds.has(e.session_id))
+  const betaTelemetrySummary = summarizeTelemetry(betaTelemetryEvents)
+
+  const betaSubmissions = submissions.filter(isBetaSubmission)
+  const feedbackSubmittedIds = new Set(betaFeedbackList.map(bf => bf.response_id))
+
+  // Shared by the general Submissions tab and the Beta Testing > Submissions
+  // sub-tab — same columns, just a different (optionally pre-filtered) list.
+  function renderSubmissionsTable(list: Submission[], emptyMessage: string) {
+    return (
+      <>
+        <p className="text-sm text-slate-400 mb-4">{list.length} submission{list.length !== 1 ? 's' : ''}</p>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
+          <table className="w-full text-sm min-w-[1100px]">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Contact</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Stage</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Device</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Games played</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Feedback</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((sub, i) => {
+                const hasOnet = !!onetLinkForEmail(sub.email)
+                const hasFeedback = feedbackSubmittedIds.has(sub.id)
+                const session = telemetryByResponseId.get(sub.id)
+                return (
+                  <tr key={sub.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                    <td className="px-4 py-3 font-medium text-slate-800">
+                      <span>{sub.full_name || '—'}</span>
+                      {hasOnet && (
+                        <span className="ml-2 text-xs font-semibold bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">O*NET</span>
+                      )}
+                      {isBetaSubmission(sub) && (
+                        <span className="ml-2 text-xs font-semibold bg-lightblue text-primary px-1.5 py-0.5 rounded-full">beta</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-slate-500">{sub.email || '—'}</div>
+                      {sub.phone && <div className="text-slate-400 text-xs">{sub.phone}</div>}
+                    </td>
+                    <td className="px-4 py-3 text-slate-500">{sub.country || '—'}</td>
+                    <td className="px-4 py-3 text-slate-500 capitalize">{sub.current_stage?.replace(/_/g, ' ') || '—'}</td>
+                    <td className="px-4 py-3 text-slate-400 text-xs">{new Date(sub.created_at).toLocaleDateString()}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sub.completed ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-600'}`}>
+                        {sub.completed ? 'Complete' : 'Incomplete'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-500 capitalize">{session?.device_type || '—'}</td>
+                    <td className="px-4 py-3">
+                      {session && session.activities.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {session.activities.map(kind => (
+                            <span
+                              key={kind}
+                              className="text-xs font-medium px-1.5 py-0.5 rounded-full text-white"
+                              style={{ background: ACTIVITY_COLOR[kind] || '#64748B' }}
+                            >
+                              {ACTIVITY_LABEL[kind] || kind}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${hasFeedback ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                        {hasFeedback ? 'Yes' : 'No'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 flex items-center gap-3">
+                      <button
+                        onClick={() => handleViewResults(sub)}
+                        className="text-xs text-primary hover:underline font-medium"
+                      >
+                        View results →
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSubmission(sub.id)}
+                        className="text-xs text-red-400 hover:text-red-600 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+              {list.length === 0 && (
+                <tr>
+                  <td colSpan={10} className="px-4 py-12 text-center text-slate-400">{emptyMessage}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </>
+    )
+  }
 
   // ── Main panel ────────────────────────────────────────
   return (
@@ -2113,7 +2377,7 @@ export default function AdminPage() {
         </div>
         {(() => {
           const TAB_GROUPS: {
-            key: 'dashboard' | 'content' | 'lists' | 'settings'
+            key: 'dashboard' | 'beta' | 'content' | 'lists' | 'settings'
             label: string
             color: string
             tabs: { key: typeof activeTab; label: string; color: string; badge?: string | number; onSelect?: () => void }[]
@@ -2121,6 +2385,15 @@ export default function AdminPage() {
             {
               key: 'dashboard', label: 'Dashboard', color: 'bg-sky-600',
               tabs: [{ key: 'dashboard', label: 'Dashboard', color: 'bg-sky-600' }],
+            },
+            {
+              key: 'beta', label: 'Beta Testing', color: 'bg-fuchsia-700',
+              tabs: [
+                { key: 'betaDashboard', label: 'Dashboard', color: 'bg-fuchsia-700' },
+                { key: 'betaSubmissions', label: 'Submissions', color: 'bg-fuchsia-600', badge: betaSubmissions.length > 0 ? betaSubmissions.length : undefined },
+                { key: 'betaFeedback', label: 'Feedback', color: 'bg-fuchsia-500', badge: betaFeedbackList.length > 0 ? betaFeedbackList.length : undefined },
+                { key: 'betaBehavior', label: 'Behavior', color: 'bg-purple-600', badge: betaTelemetrySummary.sessionCount > 0 ? betaTelemetrySummary.sessionCount : undefined },
+              ],
             },
             {
               key: 'content', label: 'Content & AI Data', color: 'bg-violet-600',
@@ -2138,7 +2411,7 @@ export default function AdminPage() {
                 { key: 'submissions', label: 'Submissions', color: 'bg-primary', badge: submissions.length > 0 ? submissions.length : undefined },
                 { key: 'telemetry', label: 'Behavior', color: 'bg-purple-600', badge: telemetrySessionCount > 0 ? telemetrySessionCount : undefined },
                 { key: 'waitlist', label: 'Waitlist', color: 'bg-indigo-600', badge: waitlistList.length > 0 ? waitlistList.length : undefined },
-                { key: 'feedback', label: 'Feedback', color: 'bg-teal-700', badge: (feedbackList.length + betaFeedbackList.length) > 0 ? feedbackList.length + betaFeedbackList.length : undefined },
+                { key: 'feedback', label: 'Feedback', color: 'bg-teal-700', badge: feedbackList.length > 0 ? feedbackList.length : undefined },
               ],
             },
             {
@@ -2245,124 +2518,7 @@ export default function AdminPage() {
               </div>
             )}
             {fetchError && <p className="text-red-500 text-sm text-center py-8">{fetchError}</p>}
-            {!loading && !fetchError && (() => {
-              const visibleSubmissions = submissionCohortFilter === 'beta'
-                ? submissions.filter(isBetaSubmission)
-                : submissions
-              const feedbackSubmittedIds = new Set(betaFeedbackList.map(bf => bf.response_id))
-              return (
-              <>
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm text-slate-400">{visibleSubmissions.length} submission{visibleSubmissions.length !== 1 ? 's' : ''}</p>
-                  <div className="flex gap-2">
-                    {(['all', 'beta'] as const).map(key => (
-                      <button
-                        key={key}
-                        onClick={() => setSubmissionCohortFilter(key)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${
-                          submissionCohortFilter === key ? 'bg-primary text-white' : 'bg-white text-slate-400 border border-slate-100 hover:text-slate-600'
-                        }`}
-                      >
-                        {key === 'all' ? 'All' : 'Beta'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
-                  <table className="w-full text-sm min-w-[1100px]">
-                    <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50">
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Contact</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Stage</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Device</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Games played</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Feedback</th>
-                        <th className="px-4 py-3" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleSubmissions.map((sub, i) => {
-                        const hasOnet = !!onetLinkForEmail(sub.email)
-                        const hasFeedback = feedbackSubmittedIds.has(sub.id)
-                        const session = telemetryByResponseId.get(sub.id)
-                        return (
-                          <tr key={sub.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
-                            <td className="px-4 py-3 font-medium text-slate-800">
-                              <span>{sub.full_name || '—'}</span>
-                              {hasOnet && (
-                                <span className="ml-2 text-xs font-semibold bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">O*NET</span>
-                              )}
-                              {isBetaSubmission(sub) && (
-                                <span className="ml-2 text-xs font-semibold bg-lightblue text-primary px-1.5 py-0.5 rounded-full">beta</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="text-slate-500">{sub.email || '—'}</div>
-                              {sub.phone && <div className="text-slate-400 text-xs">{sub.phone}</div>}
-                            </td>
-                            <td className="px-4 py-3 text-slate-500">{sub.country || '—'}</td>
-                            <td className="px-4 py-3 text-slate-500 capitalize">{sub.current_stage?.replace(/_/g, ' ') || '—'}</td>
-                            <td className="px-4 py-3 text-slate-400 text-xs">{new Date(sub.created_at).toLocaleDateString()}</td>
-                            <td className="px-4 py-3">
-                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sub.completed ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-600'}`}>
-                                {sub.completed ? 'Complete' : 'Incomplete'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-slate-500 capitalize">{session?.device_type || '—'}</td>
-                            <td className="px-4 py-3">
-                              {session && session.activities.length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {session.activities.map(kind => (
-                                    <span
-                                      key={kind}
-                                      className="text-xs font-medium px-1.5 py-0.5 rounded-full text-white"
-                                      style={{ background: ACTIVITY_COLOR[kind] || '#64748B' }}
-                                    >
-                                      {ACTIVITY_LABEL[kind] || kind}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-slate-300">—</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${hasFeedback ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                                {hasFeedback ? 'Yes' : 'No'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 flex items-center gap-3">
-                              <button
-                                onClick={() => handleViewResults(sub)}
-                                className="text-xs text-primary hover:underline font-medium"
-                              >
-                                View results →
-                              </button>
-                              <button
-                                onClick={() => handleDeleteSubmission(sub.id)}
-                                className="text-xs text-red-400 hover:text-red-600 hover:underline"
-                              >
-                                Delete
-                              </button>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                      {visibleSubmissions.length === 0 && (
-                        <tr>
-                          <td colSpan={10} className="px-4 py-12 text-center text-slate-400">No submissions yet</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-              )
-            })()}
+            {!loading && !fetchError && renderSubmissionsTable(submissions, 'No submissions yet')}
           </>
         )}
 
@@ -2376,128 +2532,12 @@ export default function AdminPage() {
             )}
             {telemetryError && <p className="text-red-500 text-sm text-center py-8">{telemetryError}</p>}
             {!telemetryLoading && !telemetryError && (
-              <>
-                <p className="text-sm text-slate-400 mb-4">
-                  {telemetrySessionCount} assessment attempt{telemetrySessionCount !== 1 ? 's' : ''} tracked
-                </p>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                  <BetaStatTile label="Attempts tracked" value={String(telemetrySessionCount)} />
-                  <BetaStatTile
-                    label="Completed"
-                    value={telemetrySessionCount > 0 ? `${Math.round((telemetryCompletedCount / telemetrySessionCount) * 100)}%` : '—'}
-                    sublabel={`${telemetryCompletedCount} of ${telemetrySessionCount}`}
-                  />
-                  <BetaStatTile
-                    label="Played a game or riddle"
-                    value={telemetrySessionCount > 0 ? `${Math.round((telemetrySessionsThatPlayed / telemetrySessionCount) * 100)}%` : '—'}
-                    sublabel={`${telemetrySessionsThatPlayed} of ${telemetrySessionCount}`}
-                    onClick={() => setTelemetryDrilldown({
-                      title: 'Played a game or riddle',
-                      rows: telemetrySessions.filter(s => s.activities.length > 0).map(s => ({ session: s, note: s.activities.map(a => ACTIVITY_LABEL[a] || a).join(', ') })),
-                    })}
-                  />
-                  <BetaStatTile
-                    label="Mobile vs desktop"
-                    value={`${telemetryDeviceCounts.mobile || 0} / ${telemetryDeviceCounts.desktop || 0}`}
-                    sublabel="mobile / desktop"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-                    <p className="text-sm font-semibold text-slate-700 mb-4">Device</p>
-                    <div className="space-y-2.5">
-                      {(['mobile', 'desktop'] as const).map(key => (
-                        <TelemetryBarRow
-                          key={key}
-                          label={key === 'mobile' ? 'Mobile' : 'Desktop'}
-                          count={telemetryDeviceCounts[key] || 0}
-                          total={telemetrySessionCount}
-                          color={DEVICE_COLOR[key]}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-                    <p className="text-sm font-semibold text-slate-700 mb-4">Games &amp; riddles opened</p>
-                    <div className="space-y-2.5">
-                      {(['riddle', 'tic_tac_toe', 'rps', 'memory_match'] as const).map(kind => (
-                        <TelemetryBarRow
-                          key={kind}
-                          label={ACTIVITY_LABEL[kind]}
-                          count={telemetryActivityCounts[kind] || 0}
-                          total={telemetrySessionCount}
-                          color={ACTIVITY_COLOR[kind]}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-4">
-                  <p className="text-sm font-semibold text-slate-700 mb-1">Pacing per question</p>
-                  <p className="text-xs text-slate-400 mb-4">Ordered by the actual question flow — sorted by average time, slowest first, so confusing or heavy questions stand out.</p>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm min-w-[560px]">
-                      <thead>
-                        <tr className="border-b border-slate-100">
-                          <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Section</th>
-                          <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Question</th>
-                          <th className="text-right px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Reached</th>
-                          <th className="text-right px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Avg</th>
-                          <th className="text-right px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Median</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[...telemetryQuestionPacing].sort((a, b) => b.avgMs - a.avgMs).map((row, i) => (
-                          <tr key={row.question_id} className={`border-b border-slate-50 ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
-                            <td className="px-3 py-2 text-slate-400 text-xs">{row.section}</td>
-                            <td className="px-3 py-2 text-slate-700 font-medium">{row.question_id}</td>
-                            <td className="px-3 py-2 text-right text-slate-500 tabular-nums">{row.reached}</td>
-                            <td className="px-3 py-2 text-right text-slate-700 font-semibold tabular-nums">{formatSeconds(row.avgMs)}</td>
-                            <td className="px-3 py-2 text-right text-slate-500 tabular-nums">{formatSeconds(row.medianMs)}</td>
-                          </tr>
-                        ))}
-                        {telemetryQuestionPacing.length === 0 && (
-                          <tr><td colSpan={5} className="px-3 py-10 text-center text-slate-400">No pacing data yet</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {telemetryDrilldown && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setTelemetryDrilldown(null)}>
-                <div className="absolute inset-0 bg-slate-900/40" />
-                <div
-                  className="relative bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-md max-h-[80vh] flex flex-col"
-                  onClick={e => e.stopPropagation()}
-                >
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-800">{telemetryDrilldown.title}</h3>
-                      <p className="text-xs text-slate-400">{telemetryDrilldown.rows.length} {telemetryDrilldown.rows.length === 1 ? 'person' : 'people'}</p>
-                    </div>
-                    <button onClick={() => setTelemetryDrilldown(null)} className="text-slate-400 hover:text-slate-600 text-xl leading-none px-1">×</button>
-                  </div>
-                  <div className="overflow-y-auto divide-y divide-slate-50">
-                    {telemetryDrilldown.rows.length === 0 ? (
-                      <p className="text-sm text-slate-400 text-center py-10">No one matches this yet.</p>
-                    ) : telemetryDrilldown.rows.map(({ session, note }) => (
-                      <div key={session.session_id} className="w-full flex items-center justify-between gap-3 px-5 py-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-slate-800 truncate">{session.full_name || (session.completed ? 'Unknown' : 'Abandoned attempt')}</p>
-                          <p className="text-xs text-slate-400 truncate">{session.email || '—'} · <span className="capitalize">{session.device_type || 'unknown device'}</span></p>
-                        </div>
-                        <span className="shrink-0 text-xs font-medium text-primary bg-lightblue px-2 py-1 rounded-full max-w-[45%] truncate">{note}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <TelemetryBehaviorView
+                summary={telemetrySummary}
+                drilldown={telemetryDrilldown}
+                onDrilldown={setTelemetryDrilldown}
+                onCloseDrilldown={() => setTelemetryDrilldown(null)}
+              />
             )}
           </>
         )}
@@ -2505,25 +2545,6 @@ export default function AdminPage() {
         {/* ── Feedback Tab ── */}
         {activeTab === 'feedback' && (
           <>
-            <div className="flex gap-2 mb-5">
-              {([
-                ['general', `General${feedbackList.length ? ` (${feedbackList.length})` : ''}`],
-                ['beta', `Beta${betaFeedbackList.length ? ` (${betaFeedbackList.length})` : ''}`],
-              ] as const).map(([key, label]) => (
-                <button
-                  key={key}
-                  onClick={() => setFeedbackSubTab(key)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    feedbackSubTab === key ? 'bg-teal-700 text-white' : 'bg-white text-slate-400 border border-slate-100 hover:text-slate-600'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            {feedbackSubTab === 'general' && (
-              <>
                 {feedbackLoading && (
                   <div className="flex justify-center py-16">
                     <div className="w-7 h-7 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
@@ -2589,29 +2610,27 @@ export default function AdminPage() {
                     </div>
                   </>
                 )}
-              </>
-            )}
+          </>
+        )}
 
-            {feedbackSubTab === 'beta' && (
-              <>
-                {betaFeedbackLoading && (
-                  <div className="flex justify-center py-16">
-                    <div className="w-7 h-7 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
-                  </div>
-                )}
-                {betaFeedbackError && <p className="text-red-500 text-sm text-center py-8">{betaFeedbackError}</p>}
-                {!betaFeedbackLoading && !betaFeedbackError && (() => {
-                  const statusOptions = distinctValues(betaFeedbackList.map(bf => bf.assessment_responses?.current_stage))
-                  const ageOptions = distinctValues(betaFeedbackList.map(bf => bf.assessment_responses?.age_bracket))
-                  const visibleBetaFeedback = betaFeedbackList
-                    .filter(bf => betaFeedbackStageFilter === 'all' || betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
-                    .filter(bf => betaFeedbackStatusFilter === 'all' || bf.assessment_responses?.current_stage === betaFeedbackStatusFilter)
-                    .filter(bf => betaFeedbackAgeFilter === 'all' || bf.assessment_responses?.age_bracket === betaFeedbackAgeFilter)
-                  const stage2Responses = betaFeedbackList.filter(bf => bf.stage2_completed_at)
-                  const stage2Total = stage2Responses.length
-                  return (
-                  <>
-                    {stage2Total > 0 && (
+        {/* ── Beta Testing Tab ── */}
+        {activeTab === 'betaDashboard' && (
+          <>
+            {betaFeedbackLoading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {betaFeedbackError && <p className="text-red-500 text-sm text-center py-8">{betaFeedbackError}</p>}
+            {!betaFeedbackLoading && !betaFeedbackError && (() => {
+              const stage2Responses = betaFeedbackList.filter(bf => bf.stage2_completed_at)
+              const stage2Total = stage2Responses.length
+              return (
+                <>
+                  {stage2Total === 0 && (
+                    <p className="text-sm text-slate-400 text-center py-12">No completed beta surveys yet</p>
+                  )}
+                  {stage2Total > 0 && (
                       <div className="mb-6">
                         <p className="text-sm font-semibold text-slate-700 mb-3">Feedback analytics <span className="text-slate-400 font-normal">— from {stage2Total} completed survey{stage2Total !== 1 ? 's' : ''}</span></p>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -2773,6 +2792,41 @@ export default function AdminPage() {
                         </div>
                       </div>
                     )}
+                </>
+              )
+            })()}
+          </>
+        )}
+
+        {activeTab === 'betaSubmissions' && (
+          <>
+            {loading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {fetchError && <p className="text-red-500 text-sm text-center py-8">{fetchError}</p>}
+            {!loading && !fetchError && renderSubmissionsTable(betaSubmissions, 'No beta submissions yet')}
+          </>
+        )}
+
+        {activeTab === 'betaFeedback' && (
+          <>
+            {betaFeedbackLoading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {betaFeedbackError && <p className="text-red-500 text-sm text-center py-8">{betaFeedbackError}</p>}
+            {!betaFeedbackLoading && !betaFeedbackError && (() => {
+              const statusOptions = distinctValues(betaFeedbackList.map(bf => bf.assessment_responses?.current_stage))
+              const ageOptions = distinctValues(betaFeedbackList.map(bf => bf.assessment_responses?.age_bracket))
+              const visibleBetaFeedback = betaFeedbackList
+                .filter(bf => betaFeedbackStageFilter === 'all' || betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
+                .filter(bf => betaFeedbackStatusFilter === 'all' || bf.assessment_responses?.current_stage === betaFeedbackStatusFilter)
+                .filter(bf => betaFeedbackAgeFilter === 'all' || bf.assessment_responses?.age_bracket === betaFeedbackAgeFilter)
+              return (
+              <>
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                       <p className="text-sm text-slate-400">{visibleBetaFeedback.length} response{visibleBetaFeedback.length !== 1 ? 's' : ''}</p>
                       <div className="flex flex-wrap gap-2">
@@ -2872,7 +2926,24 @@ export default function AdminPage() {
                   </>
                   )
                 })()}
-              </>
+          </>
+        )}
+
+        {activeTab === 'betaBehavior' && (
+          <>
+            {telemetryLoading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {telemetryError && <p className="text-red-500 text-sm text-center py-8">{telemetryError}</p>}
+            {!telemetryLoading && !telemetryError && (
+              <TelemetryBehaviorView
+                summary={betaTelemetrySummary}
+                drilldown={telemetryDrilldown}
+                onDrilldown={setTelemetryDrilldown}
+                onCloseDrilldown={() => setTelemetryDrilldown(null)}
+              />
             )}
           </>
         )}
