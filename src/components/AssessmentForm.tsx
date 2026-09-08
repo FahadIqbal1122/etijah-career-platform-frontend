@@ -15,6 +15,7 @@ import { apiAuthPost } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 import Constellation, { CONSTELLATION } from '@/components/brand/Constellation'
+import BreakPanel from '@/components/BreakPanel'
 import { frameworkOf, buildReveal, REVEAL_FRAMEWORKS } from '@/data/revealScoring'
 
 // ── skip / auto-fill rules (identical to the original form) ──────────────────
@@ -484,7 +485,14 @@ export default function AssessmentForm() {
   return (
     <div className={`assess-screen ${phase === 'reveal' ? 'is-reveal' : ''} ${leaving ? 'leaving' : ''}`} dir={dir} lang={locale}>
       <div className="prog"><div className="prog-fill" style={{ width: `${progress * 100}%` }} /></div>
-      {phase === 'question' && <div className="assess-progress-label">{progressMsg}</div>}
+      {phase === 'question' && (
+        <>
+          <div className="assess-progress-label">{progressMsg}</div>
+          <div className="assess-break-mobile-slot">
+            <BreakPanel locale={locale as 'en' | 'ar'} eyebrow={chrome.asideEyebrow} progressMsg={progressMsg} questionIndex={index} compact />
+          </div>
+        </>
+      )}
 
       <div className="assess-topbar">
         <Logomark size={30} tone="dark" />
@@ -501,8 +509,11 @@ export default function AssessmentForm() {
           </div>
           {/* desktop-only progress context beneath the constellation */}
           <div className="assess-aside-context">
-            <div className="assess-aside-eyebrow">{chrome.asideEyebrow}</div>
-            {phase === 'question' && <div className="assess-aside-progress-msg">{progressMsg}</div>}
+            {phase === 'question' ? (
+              <BreakPanel locale={locale as 'en' | 'ar'} eyebrow={chrome.asideEyebrow} progressMsg={progressMsg} questionIndex={index} />
+            ) : (
+              <div className="assess-aside-eyebrow">{chrome.asideEyebrow}</div>
+            )}
           </div>
         </aside>
 

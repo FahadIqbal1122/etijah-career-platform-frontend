@@ -134,16 +134,16 @@ html { scroll-behavior: smooth; }
   padding: 0 20px 28px;
 }
 
-/* progress — thin journey bar pinned to top of the viewport */
-.prog { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.18); z-index: 6; }
+/* progress — journey bar pinned to top of the viewport */
+.prog { position: absolute; top: 0; left: 0; right: 0; height: 6px; background: rgba(255,255,255,0.22); z-index: 6; }
 .prog-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--teal), color-mix(in oklch, var(--teal), #fff 25%));
-  box-shadow: 0 0 12px color-mix(in srgb, var(--teal) calc(var(--glow) * 100%), transparent);
-  border-radius: 0 3px 3px 0;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--teal) calc(var(--glow) * 100%), transparent);
+  border-radius: 0 4px 4px 0;
   transition: width calc(0.7s / var(--motion)) cubic-bezier(.4, .8, .3, 1);
 }
-[dir="rtl"] .prog-fill { border-radius: 3px 0 0 3px; }
+[dir="rtl"] .prog-fill { border-radius: 4px 0 0 4px; }
 
 /* mobile-only rotating progress copy under the top bar */
 .assess-progress-label {
@@ -154,6 +154,84 @@ html { scroll-behavior: smooth; }
 }
 [dir="rtl"] .assess-progress-label { font-family: var(--font-tajawal), sans-serif; letter-spacing: 0; text-transform: none; font-size: 13px; }
 @media (min-width: 900px) { .assess-progress-label { display: none; } }
+
+/* opt-in "take a break" trigger + panel (riddle / tic-tac-toe / RPS / memory
+   match). Used in two spots: a mobile-only slot under the progress label
+   above, and (desktop, ≥900px — see that media query) inside the aside next
+   to the constellation. Base rules here are mobile-first: the active card
+   takes over the full screen since a phone has no room to spare; the
+   desktop media query below resets it back to a small inline card. */
+.assess-break-trigger {
+  appearance: none; border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.85);
+  font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: .08em;
+  text-transform: uppercase; padding: 7px 16px; border-radius: 999px;
+  cursor: pointer; transition: all .2s;
+}
+.assess-break-trigger:hover { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.18); }
+[dir="rtl"] .assess-break-trigger { font-family: var(--font-tajawal), sans-serif; letter-spacing: 0; text-transform: none; font-size: 13px; }
+
+.assess-break-mobile-slot { position: relative; z-index: 5; text-align: center; padding: 10px 20px 0; }
+@media (min-width: 900px) { .assess-break-mobile-slot { display: none; } }
+
+.assess-break {
+  position: fixed; inset: 0; z-index: 20;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  padding: 24px 28px; text-align: center;
+  background: radial-gradient(120% 70% at 50% -10%, #188BDC 0%, var(--primary) 45%, var(--primary-deep) 100%);
+  animation: enterUp calc(.42s / var(--motion)) cubic-bezier(.2, .7, .3, 1) both;
+}
+.assess-break-eyebrow {
+  font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: .28em;
+  text-transform: uppercase; color: color-mix(in srgb, #fff 82%, transparent);
+}
+[dir="rtl"] .assess-break-eyebrow { font-family: var(--font-tajawal), sans-serif; letter-spacing: 0; font-size: 14px; text-transform: none; font-weight: 500; }
+.assess-break-prompt { margin-top: 14px; color: #fff; font-weight: 600; font-size: 18px; line-height: 1.4; max-width: 320px; }
+[dir="rtl"] .assess-break-prompt { font-family: var(--font-tajawal), sans-serif; font-weight: 500; line-height: 1.6; }
+.assess-break-answer { margin-top: 14px; color: var(--teal); font-weight: 700; font-size: 18px; }
+.assess-break-action {
+  margin-top: 16px; appearance: none; border: none; border-radius: 999px;
+  background: var(--teal); color: #05221c; font-weight: 700; font-size: 13px;
+  padding: 9px 20px; cursor: pointer; transition: transform .15s;
+}
+.assess-break-action:hover { transform: translateY(-1px); }
+.assess-break-action.ghost { background: rgba(255,255,255,0.12); color: #fff; }
+.assess-break-row { margin-top: 10px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.assess-break-back {
+  margin-top: 14px; appearance: none; background: none; border: none;
+  color: rgba(255,255,255,0.6); font-size: 12px; text-decoration: underline;
+  cursor: pointer;
+}
+.assess-break-status { margin-top: 12px; color: #fff; font-weight: 600; font-size: 14px; }
+
+.ttt-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 180px; margin: 14px auto 0; }
+.ttt-cell {
+  aspect-ratio: 1; appearance: none; background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; color: #fff; cursor: pointer; transition: background .15s;
+}
+.ttt-cell:not(:disabled):hover { background: rgba(255,255,255,0.2); }
+.ttt-cell:disabled { cursor: default; }
+
+.rps-choices { display: flex; gap: 10px; justify-content: center; margin-top: 14px; }
+.rps-choice {
+  appearance: none; font-size: 26px; background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25); border-radius: 12px;
+  width: 52px; height: 52px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background .15s;
+}
+.rps-choice:hover { background: rgba(255,255,255,0.2); }
+.rps-vs { margin-top: 14px; font-size: 26px; }
+
+.mm-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 220px; margin: 14px auto 0; }
+.mm-card {
+  aspect-ratio: 1; appearance: none; background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; cursor: pointer; transition: background .15s;
+}
+.mm-card.flipped, .mm-card.matched { background: rgba(255,255,255,0.25); }
 
 /* topbar: brand + language toggle */
 .assess-topbar {
@@ -385,6 +463,16 @@ html { scroll-behavior: smooth; }
     font-size: clamp(20px, 2.2vw, 26px); max-width: 260px; margin-inline: auto;
   }
   [dir="rtl"] .assess-aside-progress-msg { font-family: var(--font-tajawal), sans-serif; font-weight: 600; }
+
+  /* opt-in "take a break" panel — on mobile (see base rules above) the active
+     card is a full-screen overlay since the aside has no room to spare on a
+     phone; here there's a whole side column for it, so it reverts to an
+     inline card next to the constellation instead. */
+  .assess-break-trigger { margin-top: 18px; }
+  .assess-break {
+    position: static; inset: auto; z-index: auto; display: block; padding: 0; background: none;
+    text-align: center; max-width: 280px; margin-inline: auto;
+  }
 
   /* right: the question card, vertically centered and a touch wider */
   .assess-content { flex: 1 1 56%; justify-content: center; }
