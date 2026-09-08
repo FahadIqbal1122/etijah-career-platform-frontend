@@ -17,6 +17,7 @@ import Logomark from '@/components/brand/Logomark'
 import Constellation, { CONSTELLATION } from '@/components/brand/Constellation'
 import BreakPanel from '@/components/BreakPanel'
 import { frameworkOf, buildReveal, REVEAL_FRAMEWORKS } from '@/data/revealScoring'
+import { initTelemetry, pushTelemetry, getTelemetrySessionId, rotateTelemetrySession, flush as flushTelemetry } from '@/lib/telemetry'
 
 // ── skip / auto-fill rules (identical to the original form) ──────────────────
 const SKIP_RULES: { condition: (a: Record<string, any>) => boolean; ids: Record<string, any> }[] = [
@@ -238,7 +239,27 @@ export default function AssessmentForm() {
   function discardDraft() {
     clearDraft()
     setDraft(null)
+    rotateTelemetrySession() // starting over — don't conflate with the abandoned attempt
   }
+
+  // Behavioral telemetry (device type, break-panel plays, per-question
+  // pacing) for the admin "Behavior" dashboard — see src/lib/telemetry.ts.
+  // Runs once on mount; locale is re-synced separately below since the
+  // in-page language toggle can change it without remounting.
+  useEffect(() => {
+    pushTelemetry({ event_type: 'session_start', payload: { user_agent: navigator.userAgent } })
+    // best-effort flush when the tab is hidden/closed — an in-flight fetch
+    // would otherwise get cancelled before an ordinary POST completes.
+    const onHide = () => { if (document.visibilityState === 'hidden') flushTelemetry(true) }
+    document.addEventListener('visibilitychange', onHide)
+    window.addEventListener('pagehide', onHide)
+    return () => {
+      document.removeEventListener('visibilitychange', onHide)
+      window.removeEventListener('pagehide', onHide)
+    }
+  }, [])
+
+  useEffect(() => { initTelemetry(locale) }, [locale])
 
   // Effective (non-skipped) question list — recomputed as answers change.
   const autoFills = getAutoFills(answers)
@@ -246,6 +267,18 @@ export default function AssessmentForm() {
   const visibleQuestions = questions.filter(q => !skipped.has(q.id))
   const total = visibleQuestions.length
   const q = visibleQuestions[Math.min(index, total - 1)]
+
+  // Per-question pacing — the cleanup fires exactly when `q.id`/`phase`
+  // changes (next question, back, a reveal takeover, finish) or on unmount
+  // (closing the tab mid-question), so this needs no manual ref bookkeeping.
+  useEffect(() => {
+    if (phase !== 'question' || !q) return
+    const startedAt = Date.now()
+    const questionId = q.id
+    return () => {
+      pushTelemetry({ event_type: 'question_view', question_id: questionId, duration_ms: Date.now() - startedAt })
+    }
+  }, [phase, q])
 
   // clamped to 1 — if skip-logic shrinks `total` below `index` mid-session
   // (editing an earlier answer while ahead of it), the raw ratio can exceed 1
@@ -458,8 +491,13 @@ export default function AssessmentForm() {
         answers: finalAnswers,
         completed: true,
         locale,
+        telemetry_session_id: getTelemetrySessionId(),
       })
       clearDraft()
+      // this attempt is done — flush what's queued so it isn't lost, then
+      // start a fresh session id for any future retake.
+      flushTelemetry()
+      rotateTelemetrySession()
       setLeaving(true)
       // Marks this as a fresh completion so the results page shows the inline
       // beta feedback survey — a bookmarked/emailed link back to the same

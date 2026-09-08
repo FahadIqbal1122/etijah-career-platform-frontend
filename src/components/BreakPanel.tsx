@@ -2,11 +2,14 @@
 
 // Opt-in "break" panel — lives in the assessment's desktop-only aside,
 // swapping the ambient eyebrow/progress text for a random riddle or mini
-// game on request. Entirely local UI state: never touches answers, drafts,
-// or scoring.
+// game on request. Local UI state only — never touches answers, drafts, or
+// scoring — with one deliberate exception: which activity gets opened/played
+// is reported to the behavioral-telemetry queue (src/lib/telemetry.ts) for
+// the admin dashboard. That's engagement analytics, not assessment data.
 
 import { useRef, useState } from 'react'
 import { RIDDLES, breakCopy, ACTIVITY_LABELS, BreakActivity, Bi } from '@/data/breakActivities'
+import { pushTelemetry } from '@/lib/telemetry'
 import TicTacToeGame from '@/components/TicTacToeGame'
 import RockPaperScissors from '@/components/RockPaperScissors'
 import MemoryMatch from '@/components/MemoryMatch'
@@ -75,6 +78,7 @@ export default function BreakPanel({ locale, eyebrow, progressMsg, questionIndex
     lastKindRef.current = next
     if (next === 'riddle') pickRiddle()
     setActiveKind(next)
+    pushTelemetry({ event_type: 'break_open', activity_kind: next })
   }
 
   function closeBreak() {
@@ -111,7 +115,14 @@ export default function BreakPanel({ locale, eyebrow, progressMsg, questionIndex
         <>
           <div className="assess-break-prompt">{t(riddle.prompt, locale)}</div>
           {!revealed ? (
-            <button type="button" className="assess-break-action" onClick={() => setRevealed(true)}>
+            <button
+              type="button"
+              className="assess-break-action"
+              onClick={() => {
+                setRevealed(true)
+                pushTelemetry({ event_type: 'break_activity', activity_kind: 'riddle', payload: { riddle_id: riddle.id } })
+              }}
+            >
               {t(breakCopy.reveal, locale)}
             </button>
           ) : (

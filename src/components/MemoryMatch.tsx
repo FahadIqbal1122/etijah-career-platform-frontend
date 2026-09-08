@@ -2,8 +2,9 @@
 
 // Small flip-card pairs game — one of the break-panel activities.
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { breakCopy, MEMORY_SYMBOLS, Bi } from '@/data/breakActivities'
+import { pushTelemetry } from '@/lib/telemetry'
 
 function t(bi: Bi, locale: 'en' | 'ar'): string {
   return locale === 'ar' ? bi.ar : bi.en
@@ -27,6 +28,10 @@ export default function MemoryMatch({ locale }: Props) {
   const [busy, setBusy] = useState(false)
 
   const allMatched = matched.length === deck.length
+
+  useEffect(() => {
+    if (allMatched) pushTelemetry({ event_type: 'break_activity', activity_kind: 'memory_match', payload: { result: 'completed' } })
+  }, [allMatched])
 
   function flip(i: number) {
     if (busy || open.includes(i) || matched.includes(i) || open.length === 2) return

@@ -4,6 +4,7 @@
 
 import { useState } from 'react'
 import { breakCopy, RPS_CHOICES, Bi } from '@/data/breakActivities'
+import { pushTelemetry } from '@/lib/telemetry'
 
 function t(bi: Bi, locale: 'en' | 'ar'): string {
   return locale === 'ar' ? bi.ar : bi.en
@@ -27,7 +28,10 @@ export default function RockPaperScissors({ locale }: Props) {
   const [result, setResult] = useState<{ user: Choice; bot: Choice } | null>(null)
 
   function play(choice: Choice) {
-    setResult({ user: choice, bot: randomBotChoice() })
+    const bot = randomBotChoice()
+    const outcome = choice === bot ? 'draw' : beats(choice, bot) ? 'win' : 'lose'
+    pushTelemetry({ event_type: 'break_activity', activity_kind: 'rps', payload: { result: outcome } })
+    setResult({ user: choice, bot })
   }
 
   function reset() { setResult(null) }

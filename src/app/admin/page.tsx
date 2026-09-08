@@ -6,6 +6,7 @@ import Logomark from '@/components/brand/Logomark'
 import DashboardStatsView, { type DashboardStats } from '@/components/admin/DashboardStatsView'
 import EmailTemplatesTab from '@/components/admin/EmailTemplatesTab'
 import SmtpSettingsTab from '@/components/admin/SmtpSettingsTab'
+import { questions } from '@/data/questions'
 
 const levelToWidth: Record<string, string> = {
   low: '20%',
@@ -198,6 +199,124 @@ function BetaScaleChart({ title, values }: { title: string; values: (number | nu
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// ─── Assessment behavior telemetry (device type, break-panel games, pacing) ─
+// Raw event log -> one row per assessment attempt. Mirrors the beta feedback
+// analytics above: fetched once as a flat list, aggregated client-side.
+
+type TelemetryEvent = {
+  id: string
+  session_id: string
+  response_id: string | null
+  event_type: 'session_start' | 'question_view' | 'break_open' | 'break_activity'
+  question_id: string | null
+  activity_kind: string | null
+  duration_ms: number | null
+  device_type: string | null
+  locale: string | null
+  payload: Record<string, any> | null
+  created_at: string
+  assessment_responses: { full_name: string | null; email: string | null } | null
+}
+
+type TelemetrySession = {
+  session_id: string
+  response_id: string | null
+  device_type: string | null
+  locale: string | null
+  activities: string[]
+  completed: boolean
+  full_name: string | null
+  email: string | null
+  started_at: string
+}
+
+function buildTelemetrySessions(events: TelemetryEvent[]): TelemetrySession[] {
+  const bySession = new Map<string, TelemetrySession>()
+  for (const e of events) {
+    let s = bySession.get(e.session_id)
+    if (!s) {
+      s = { session_id: e.session_id, response_id: null, device_type: null, locale: null, activities: [], completed: false, full_name: null, email: null, started_at: e.created_at }
+      bySession.set(e.session_id, s)
+    }
+    if (e.device_type) s.device_type = e.device_type
+    if (e.locale) s.locale = e.locale
+    if (e.response_id) {
+      s.response_id = e.response_id
+      s.completed = true
+      if (e.assessment_responses) {
+        s.full_name = e.assessment_responses.full_name
+        s.email = e.assessment_responses.email
+      }
+    }
+    if (e.event_type === 'break_open' && e.activity_kind && !s.activities.includes(e.activity_kind)) {
+      s.activities.push(e.activity_kind)
+    }
+    if (e.created_at < s.started_at) s.started_at = e.created_at
+  }
+  return [...bySession.values()]
+}
+
+function median(nums: number[]): number {
+  if (nums.length === 0) return 0
+  const sorted = [...nums].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+}
+
+type QuestionPacing = { question_id: string; section: string; reached: number; avgMs: number; medianMs: number }
+
+function buildQuestionPacing(events: TelemetryEvent[]): QuestionPacing[] {
+  const byQuestion = new Map<string, number[]>()
+  for (const e of events) {
+    if (e.event_type !== 'question_view' || !e.question_id || e.duration_ms == null) continue
+    // A tab left open for hours (then closed) would otherwise blow out the
+    // average for whatever question was on screen — cap at 10 minutes.
+    if (e.duration_ms > 10 * 60 * 1000) continue
+    const arr = byQuestion.get(e.question_id) || []
+    arr.push(e.duration_ms)
+    byQuestion.set(e.question_id, arr)
+  }
+  // Ordered by the real question flow (not alphabetically by id) so slow/fast
+  // spots read in the order a person actually experiences them.
+  return questions
+    .filter(q => byQuestion.has(q.id))
+    .map(q => {
+      const durations = byQuestion.get(q.id)!
+      return {
+        question_id: q.id,
+        section: q.section,
+        reached: durations.length,
+        avgMs: durations.reduce((a, b) => a + b, 0) / durations.length,
+        medianMs: median(durations),
+      }
+    })
+}
+
+function formatSeconds(ms: number): string {
+  return `${(ms / 1000).toFixed(1)}s`
+}
+
+const DEVICE_COLOR: Record<string, string> = { mobile: '#0770BA', desktop: '#00C9A7' }
+const ACTIVITY_COLOR: Record<string, string> = { riddle: '#F59E0B', tic_tac_toe: '#0770BA', rps: '#8B5CF6', memory_match: '#00C9A7' }
+const ACTIVITY_LABEL: Record<string, string> = { riddle: 'Riddle', tic_tac_toe: 'Tic-tac-toe', rps: 'Rock-Paper-Scissors', memory_match: 'Memory match' }
+
+// Generic labeled horizontal bar (same visual language as BetaBarRow, but for
+// arbitrary categories/colors rather than the fixed sentiment keys).
+function TelemetryBarRow({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-36 shrink-0 text-xs text-slate-500">{label}</span>
+      <div className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
+        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+      </div>
+      <span className="w-20 shrink-0 text-right text-xs font-semibold text-slate-700 tabular-nums">
+        {pct}% <span className="text-slate-400 font-normal">({count})</span>
+      </span>
     </div>
   )
 }
@@ -429,7 +548,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'templates' | 'smtp' | 'aiprovider'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'templates' | 'smtp' | 'aiprovider'>('dashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -459,6 +578,11 @@ export default function AdminPage() {
   const [betaFeedbackStageFilter, setBetaFeedbackStageFilter] = useState<'all' | BetaFeedbackStage>('all')
   const [betaFeedbackStatusFilter, setBetaFeedbackStatusFilter] = useState('all')
   const [betaFeedbackAgeFilter, setBetaFeedbackAgeFilter] = useState('all')
+
+  const [telemetryList, setTelemetryList] = useState<TelemetryEvent[]>([])
+  const [telemetryLoading, setTelemetryLoading] = useState(false)
+  const [telemetryError, setTelemetryError] = useState('')
+  const [telemetryDrilldown, setTelemetryDrilldown] = useState<{ title: string; rows: { session: TelemetrySession; note: string }[] } | null>(null)
 
   const [waitlistList, setWaitlistList] = useState<WaitlistEntry[]>([])
   const [waitlistLoading, setWaitlistLoading] = useState(false)
@@ -613,6 +737,20 @@ export default function AdminPage() {
       setBetaFeedbackError(err.message)
     } finally {
       setBetaFeedbackLoading(false)
+    }
+  }, [])
+
+  const fetchTelemetry = useCallback(async () => {
+    setTelemetryLoading(true)
+    setTelemetryError('')
+    try {
+      const res = await fetch('/api/admin/telemetry-events')
+      if (!res.ok) throw new Error('Failed to load behavior telemetry')
+      setTelemetryList(await res.json())
+    } catch (err: any) {
+      setTelemetryError(err.message)
+    } finally {
+      setTelemetryLoading(false)
     }
   }, [])
 
@@ -885,6 +1023,7 @@ export default function AdminPage() {
       fetchOnetLinks()
       fetchFeedback()
       fetchBetaFeedback()
+      fetchTelemetry()
       fetchWaitlist()
       fetchCoachingSessions()
       fetchCountryProfiles()
@@ -894,7 +1033,7 @@ export default function AdminPage() {
       fetchHomepageMode()
       fetchAiProvider()
     }
-  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchBetaFeedback, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchAiProvider])
+  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchBetaFeedback, fetchTelemetry, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchAiProvider])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -1928,6 +2067,23 @@ export default function AdminPage() {
     )
   }
 
+  // Behavioral telemetry, grouped from the raw event stream into one row per
+  // assessment attempt — cheap enough to recompute per render at this data
+  // volume (matches how the beta feedback stats above are all computed
+  // client-side from the raw list, no server-side aggregation endpoint).
+  const telemetrySessions = buildTelemetrySessions(telemetryList)
+  const telemetrySessionCount = telemetrySessions.length
+  const telemetryCompletedCount = telemetrySessions.filter(s => s.completed).length
+  const telemetryDeviceCounts = countBy(telemetrySessions, s => s.device_type)
+  const telemetryActivityCounts = countBy(
+    telemetryList.filter(e => e.event_type === 'break_open'),
+    e => e.activity_kind
+  )
+  const telemetrySessionsThatPlayed = telemetrySessions.filter(s => s.activities.length > 0).length
+  const telemetryQuestionPacing = buildQuestionPacing(telemetryList)
+  // response_id -> session, for the Submissions table's Device/Games columns
+  const telemetryByResponseId = new Map(telemetrySessions.filter(s => s.response_id).map(s => [s.response_id as string, s]))
+
   // ── Main panel ────────────────────────────────────────
   return (
     <div className="min-h-screen brand-surface">
@@ -1942,7 +2098,7 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { fetchDashboardStats(); fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchBetaFeedback(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
+              onClick={() => { fetchDashboardStats(); fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchBetaFeedback(); fetchTelemetry(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
               className="text-sm text-primary hover:underline"
             >
               Refresh
@@ -1980,6 +2136,7 @@ export default function AdminPage() {
               key: 'lists', label: 'Lists', color: 'bg-indigo-600',
               tabs: [
                 { key: 'submissions', label: 'Submissions', color: 'bg-primary', badge: submissions.length > 0 ? submissions.length : undefined },
+                { key: 'telemetry', label: 'Behavior', color: 'bg-purple-600', badge: telemetrySessionCount > 0 ? telemetrySessionCount : undefined },
                 { key: 'waitlist', label: 'Waitlist', color: 'bg-indigo-600', badge: waitlistList.length > 0 ? waitlistList.length : undefined },
                 { key: 'feedback', label: 'Feedback', color: 'bg-teal-700', badge: (feedbackList.length + betaFeedbackList.length) > 0 ? feedbackList.length + betaFeedbackList.length : undefined },
               ],
@@ -2112,7 +2269,7 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
-                  <table className="w-full text-sm min-w-[900px]">
+                  <table className="w-full text-sm min-w-[1100px]">
                     <thead>
                       <tr className="border-b border-slate-100 bg-slate-50">
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
@@ -2121,6 +2278,8 @@ export default function AdminPage() {
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Stage</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Device</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Games played</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Feedback</th>
                         <th className="px-4 py-3" />
                       </tr>
@@ -2129,6 +2288,7 @@ export default function AdminPage() {
                       {visibleSubmissions.map((sub, i) => {
                         const hasOnet = !!onetLinkForEmail(sub.email)
                         const hasFeedback = feedbackSubmittedIds.has(sub.id)
+                        const session = telemetryByResponseId.get(sub.id)
                         return (
                           <tr key={sub.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
                             <td className="px-4 py-3 font-medium text-slate-800">
@@ -2151,6 +2311,24 @@ export default function AdminPage() {
                               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sub.completed ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-600'}`}>
                                 {sub.completed ? 'Complete' : 'Incomplete'}
                               </span>
+                            </td>
+                            <td className="px-4 py-3 text-slate-500 capitalize">{session?.device_type || '—'}</td>
+                            <td className="px-4 py-3">
+                              {session && session.activities.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {session.activities.map(kind => (
+                                    <span
+                                      key={kind}
+                                      className="text-xs font-medium px-1.5 py-0.5 rounded-full text-white"
+                                      style={{ background: ACTIVITY_COLOR[kind] || '#64748B' }}
+                                    >
+                                      {ACTIVITY_LABEL[kind] || kind}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-slate-300">—</span>
+                              )}
                             </td>
                             <td className="px-4 py-3">
                               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${hasFeedback ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
@@ -2176,7 +2354,7 @@ export default function AdminPage() {
                       })}
                       {visibleSubmissions.length === 0 && (
                         <tr>
-                          <td colSpan={8} className="px-4 py-12 text-center text-slate-400">No submissions yet</td>
+                          <td colSpan={10} className="px-4 py-12 text-center text-slate-400">No submissions yet</td>
                         </tr>
                       )}
                     </tbody>
@@ -2185,6 +2363,142 @@ export default function AdminPage() {
               </>
               )
             })()}
+          </>
+        )}
+
+        {/* ── Behavior (assessment telemetry) Tab ── */}
+        {activeTab === 'telemetry' && (
+          <>
+            {telemetryLoading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {telemetryError && <p className="text-red-500 text-sm text-center py-8">{telemetryError}</p>}
+            {!telemetryLoading && !telemetryError && (
+              <>
+                <p className="text-sm text-slate-400 mb-4">
+                  {telemetrySessionCount} assessment attempt{telemetrySessionCount !== 1 ? 's' : ''} tracked
+                </p>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  <BetaStatTile label="Attempts tracked" value={String(telemetrySessionCount)} />
+                  <BetaStatTile
+                    label="Completed"
+                    value={telemetrySessionCount > 0 ? `${Math.round((telemetryCompletedCount / telemetrySessionCount) * 100)}%` : '—'}
+                    sublabel={`${telemetryCompletedCount} of ${telemetrySessionCount}`}
+                  />
+                  <BetaStatTile
+                    label="Played a game or riddle"
+                    value={telemetrySessionCount > 0 ? `${Math.round((telemetrySessionsThatPlayed / telemetrySessionCount) * 100)}%` : '—'}
+                    sublabel={`${telemetrySessionsThatPlayed} of ${telemetrySessionCount}`}
+                    onClick={() => setTelemetryDrilldown({
+                      title: 'Played a game or riddle',
+                      rows: telemetrySessions.filter(s => s.activities.length > 0).map(s => ({ session: s, note: s.activities.map(a => ACTIVITY_LABEL[a] || a).join(', ') })),
+                    })}
+                  />
+                  <BetaStatTile
+                    label="Mobile vs desktop"
+                    value={`${telemetryDeviceCounts.mobile || 0} / ${telemetryDeviceCounts.desktop || 0}`}
+                    sublabel="mobile / desktop"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <p className="text-sm font-semibold text-slate-700 mb-4">Device</p>
+                    <div className="space-y-2.5">
+                      {(['mobile', 'desktop'] as const).map(key => (
+                        <TelemetryBarRow
+                          key={key}
+                          label={key === 'mobile' ? 'Mobile' : 'Desktop'}
+                          count={telemetryDeviceCounts[key] || 0}
+                          total={telemetrySessionCount}
+                          color={DEVICE_COLOR[key]}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <p className="text-sm font-semibold text-slate-700 mb-4">Games &amp; riddles opened</p>
+                    <div className="space-y-2.5">
+                      {(['riddle', 'tic_tac_toe', 'rps', 'memory_match'] as const).map(kind => (
+                        <TelemetryBarRow
+                          key={kind}
+                          label={ACTIVITY_LABEL[kind]}
+                          count={telemetryActivityCounts[kind] || 0}
+                          total={telemetrySessionCount}
+                          color={ACTIVITY_COLOR[kind]}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-4">
+                  <p className="text-sm font-semibold text-slate-700 mb-1">Pacing per question</p>
+                  <p className="text-xs text-slate-400 mb-4">Ordered by the actual question flow — sorted by average time, slowest first, so confusing or heavy questions stand out.</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm min-w-[560px]">
+                      <thead>
+                        <tr className="border-b border-slate-100">
+                          <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Section</th>
+                          <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Question</th>
+                          <th className="text-right px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Reached</th>
+                          <th className="text-right px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Avg</th>
+                          <th className="text-right px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Median</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...telemetryQuestionPacing].sort((a, b) => b.avgMs - a.avgMs).map((row, i) => (
+                          <tr key={row.question_id} className={`border-b border-slate-50 ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                            <td className="px-3 py-2 text-slate-400 text-xs">{row.section}</td>
+                            <td className="px-3 py-2 text-slate-700 font-medium">{row.question_id}</td>
+                            <td className="px-3 py-2 text-right text-slate-500 tabular-nums">{row.reached}</td>
+                            <td className="px-3 py-2 text-right text-slate-700 font-semibold tabular-nums">{formatSeconds(row.avgMs)}</td>
+                            <td className="px-3 py-2 text-right text-slate-500 tabular-nums">{formatSeconds(row.medianMs)}</td>
+                          </tr>
+                        ))}
+                        {telemetryQuestionPacing.length === 0 && (
+                          <tr><td colSpan={5} className="px-3 py-10 text-center text-slate-400">No pacing data yet</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {telemetryDrilldown && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setTelemetryDrilldown(null)}>
+                <div className="absolute inset-0 bg-slate-900/40" />
+                <div
+                  className="relative bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-md max-h-[80vh] flex flex-col"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-800">{telemetryDrilldown.title}</h3>
+                      <p className="text-xs text-slate-400">{telemetryDrilldown.rows.length} {telemetryDrilldown.rows.length === 1 ? 'person' : 'people'}</p>
+                    </div>
+                    <button onClick={() => setTelemetryDrilldown(null)} className="text-slate-400 hover:text-slate-600 text-xl leading-none px-1">×</button>
+                  </div>
+                  <div className="overflow-y-auto divide-y divide-slate-50">
+                    {telemetryDrilldown.rows.length === 0 ? (
+                      <p className="text-sm text-slate-400 text-center py-10">No one matches this yet.</p>
+                    ) : telemetryDrilldown.rows.map(({ session, note }) => (
+                      <div key={session.session_id} className="w-full flex items-center justify-between gap-3 px-5 py-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-slate-800 truncate">{session.full_name || (session.completed ? 'Unknown' : 'Abandoned attempt')}</p>
+                          <p className="text-xs text-slate-400 truncate">{session.email || '—'} · <span className="capitalize">{session.device_type || 'unknown device'}</span></p>
+                        </div>
+                        <span className="shrink-0 text-xs font-medium text-primary bg-lightblue px-2 py-1 rounded-full max-w-[45%] truncate">{note}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
 

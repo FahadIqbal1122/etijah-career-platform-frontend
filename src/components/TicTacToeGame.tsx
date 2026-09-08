@@ -4,8 +4,9 @@
 // contained: no scoring, no persistence, resets whenever it's unmounted
 // (BreakPanel remounts it fresh each time this activity is picked).
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { breakCopy, Bi } from '@/data/breakActivities'
+import { pushTelemetry } from '@/lib/telemetry'
 
 function t(bi: Bi, locale: 'en' | 'ar'): string {
   return locale === 'ar' ? bi.ar : bi.en
@@ -51,6 +52,11 @@ export default function TicTacToeGame({ locale }: Props) {
 
   const win = winnerOf(board)
   const full = board.every(c => c !== null)
+
+  useEffect(() => {
+    if (!win && !full) return
+    pushTelemetry({ event_type: 'break_activity', activity_kind: 'tic_tac_toe', payload: { result: win === 'X' ? 'win' : win === 'O' ? 'lose' : 'draw' } })
+  }, [win, full])
 
   function play(i: number) {
     if (board[i] || win || thinking) return
