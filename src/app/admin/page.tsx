@@ -70,6 +70,7 @@ type Submission = {
   current_stage: string
   completed: boolean
   created_at: string
+  cohort_override: 'beta' | 'beta_v2' | null
 }
 
 // Beta cohort = everyone who took the assessment from the day the beta invite
@@ -87,6 +88,15 @@ function isBetaSubmission(sub: Pick<Submission, 'created_at'>) {
 const BETA_V2_START = new Date('2026-09-08T11:37:56Z')
 function isBetaV2(createdAt: string) {
   return new Date(createdAt) >= BETA_V2_START
+}
+
+// Display label for the beta/beta-v2 badge — `cohort_override` (set by hand via
+// SQL for the rare case someone's timestamp landed on the wrong side of the
+// cutoff) always wins over the date-based default.
+function cohortLabel(row: { created_at: string; cohort_override?: 'beta' | 'beta_v2' | null }): 'beta' | 'beta v2' {
+  if (row.cohort_override === 'beta') return 'beta'
+  if (row.cohort_override === 'beta_v2') return 'beta v2'
+  return isBetaV2(row.created_at) ? 'beta v2' : 'beta'
 }
 
 type BetaFeedbackStage = 'started' | 'stage1' | 'stage2'
@@ -638,7 +648,7 @@ type BetaFeedbackEntry = {
   other_text: string | null
   stage2_completed_at: string | null
   created_at: string
-  assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null; age_bracket: string | null; current_stage: string | null } | null
+  assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null; age_bracket: string | null; current_stage: string | null; cohort_override: 'beta' | 'beta_v2' | null } | null
 }
 
 type BugReport = {
@@ -739,7 +749,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'templates' | 'smtp' | 'aiprovider'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'templates' | 'smtp' | 'aiprovider'>('dashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -751,6 +761,11 @@ export default function AdminPage() {
   const [adminJobs, setAdminJobs] = useState<any[]>([])
   const [adminAiImpact, setAdminAiImpact] = useState<any>(null)
   const [adminAiLoading, setAdminAiLoading] = useState(false)
+  const [adminCareerRecs, setAdminCareerRecs] = useState<any[]>([])
+  const [adminCareerRecsLoading, setAdminCareerRecsLoading] = useState(false)
+  const [allCareerRecs, setAllCareerRecs] = useState<any[]>([])
+  const [allCareerRecsLoading, setAllCareerRecsLoading] = useState(false)
+  const [allCareerRecsError, setAllCareerRecsError] = useState('')
   const [linkCopied, setLinkCopied] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -933,6 +948,20 @@ export default function AdminPage() {
       setBetaFeedbackError(err.message)
     } finally {
       setBetaFeedbackLoading(false)
+    }
+  }, [])
+
+  const fetchAllCareerRecs = useCallback(async () => {
+    setAllCareerRecsLoading(true)
+    setAllCareerRecsError('')
+    try {
+      const res = await fetch('/api/admin/career-recommendations')
+      if (!res.ok) throw new Error('Failed to load career recommendations')
+      setAllCareerRecs(await res.json())
+    } catch (err: any) {
+      setAllCareerRecsError(err.message)
+    } finally {
+      setAllCareerRecsLoading(false)
     }
   }, [])
 
@@ -1248,6 +1277,7 @@ export default function AdminPage() {
       fetchOnetLinks()
       fetchFeedback()
       fetchBetaFeedback()
+      fetchAllCareerRecs()
       fetchTelemetry()
       fetchBugReports()
       fetchWaitlist()
@@ -1259,7 +1289,7 @@ export default function AdminPage() {
       fetchHomepageMode()
       fetchAiProvider()
     }
-  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchBetaFeedback, fetchTelemetry, fetchBugReports, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchAiProvider])
+  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchBetaFeedback, fetchAllCareerRecs, fetchTelemetry, fetchBugReports, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchAiProvider])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -1313,8 +1343,10 @@ export default function AdminPage() {
     setResults(null)
     setAdminJobs([])
     setAdminAiImpact(null)
+    setAdminCareerRecs([])
     setResultsLoading(true)
     setAdminAiLoading(true)
+    setAdminCareerRecsLoading(true)
     try {
       const res = await fetch(`/api/admin/submissions/${sub.id}/results`)
       const data = await res.json()
@@ -1328,6 +1360,11 @@ export default function AdminPage() {
       .then(r => r.json()).then(d => setAdminJobs(d.suggestions || [])).catch(() => {})
     fetch(`/api/admin/submissions/${sub.id}/ai-impact`)
       .then(r => r.json()).then(d => setAdminAiImpact(d)).catch(() => {}).finally(() => setAdminAiLoading(false))
+    // AI-generated career_recommendations (match_score/fit_summary/growth_note) shown to
+    // the user in-app — surfaced here so an admin can spot-check the actual reasoning text
+    // a real user saw, not just the rule-based title list above.
+    fetch(`/api/admin/submissions/${sub.id}/career-recommendations`)
+      .then(r => r.json()).then(d => setAdminCareerRecs(d.career_recommendations || [])).catch(() => {}).finally(() => setAdminCareerRecsLoading(false))
   }
 
   async function handleDeleteSubmission(id: string) {
@@ -1563,36 +1600,53 @@ export default function AdminPage() {
               <p className="text-xs text-slate-400">{selected.email} · {selected.id}</p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              const url = `${window.location.origin}/en/results/${selected.id}`
-              navigator.clipboard.writeText(url)
-              setLinkCopied(true)
-              if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
-              copyTimerRef.current = setTimeout(() => setLinkCopied(false), 2000)
-            }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
-              linkCopied
-                ? 'border-green-300 bg-green-50 text-green-700'
-                : 'border-[var(--line-strong)] bg-white text-primary hover:bg-lightblue hover:border-primary'
-            }`}
-          >
-            {linkCopied ? (
-              <>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                Copied!
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-4 10h6a2 2 0 002-2v-8a2 2 0 00-2-2h-6a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                Copy Results Link
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            {(() => {
+              const feedback = betaFeedbackList.find(bf => bf.response_id === selected.id)
+              if (!feedback) return null
+              return (
+                <button
+                  onClick={() => { setSelected(null); setResults(null); setSelectedBetaFeedback(feedback) }}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[var(--line-strong)] bg-white text-fuchsia-700 hover:bg-fuchsia-50 hover:border-fuchsia-300 text-sm font-medium transition-all duration-200"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-6l-4 4v-4z" />
+                  </svg>
+                  View Feedback{feedback.stage2_completed_at ? '' : ' (partial)'}
+                </button>
+              )
+            })()}
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}/en/results/${selected.id}`
+                navigator.clipboard.writeText(url)
+                setLinkCopied(true)
+                if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+                copyTimerRef.current = setTimeout(() => setLinkCopied(false), 2000)
+              }}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
+                linkCopied
+                  ? 'border-green-300 bg-green-50 text-green-700'
+                  : 'border-[var(--line-strong)] bg-white text-primary hover:bg-lightblue hover:border-primary'
+              }`}
+            >
+              {linkCopied ? (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-4 10h6a2 2 0 002-2v-8a2 2 0 00-2-2h-6a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copy Results Link
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
@@ -1608,7 +1662,7 @@ export default function AdminPage() {
                 ['Age bracket', selected.age_bracket],
                 ['Education field', selected.education_field],
                 ['Current stage', selected.current_stage],
-                ...(isBetaSubmission(selected) ? [['Cohort', isBetaV2(selected.created_at) ? 'beta v2' : 'beta']] : []),
+                ...(isBetaSubmission(selected) ? [['Cohort', cohortLabel(selected)]] : []),
                 ['Submitted', new Date(selected.created_at).toLocaleString()],
                 ['Completed', selected.completed ? 'Yes' : 'No'],
               ].map(([label, value]) => (
@@ -1733,6 +1787,37 @@ export default function AdminPage() {
             </div>
           )}
 
+          {adminCareerRecsLoading && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 animate-pulse">
+              <div className="h-4 bg-slate-100 rounded w-1/3 mb-4" />
+              <div className="space-y-3">
+                {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl" />)}
+              </div>
+            </div>
+          )}
+
+          {!adminCareerRecsLoading && adminCareerRecs.length > 0 && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+              <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">AI Career Recommendations</h3>
+              <p className="text-xs text-slate-400 mb-3">Exact match_score/fit_summary/growth_note text shown to this user — review for accuracy and appropriateness.</p>
+              <div className="space-y-3">
+                {adminCareerRecs.map((c: any, i: number) => (
+                  <div key={c.title ?? i} className="border border-slate-100 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm font-semibold text-slate-800">{c.title}</span>
+                      {typeof c.match_score === 'number' && (
+                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700">{c.match_score}% match</span>
+                      )}
+                    </div>
+                    {c.sector && <p className="text-xs text-slate-400 mb-1.5">{c.sector}</p>}
+                    {c.fit_summary && <p className="text-xs text-slate-600 mb-1.5">{c.fit_summary}</p>}
+                    {c.growth_note && <p className="text-xs text-slate-500 italic">{c.growth_note}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {adminAiLoading && (
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 animate-pulse">
               <div className="h-4 bg-slate-100 rounded w-1/3 mb-4" />
@@ -1758,11 +1843,17 @@ export default function AdminPage() {
                       }`}>{c.ai_risk_level?.toUpperCase()} RISK</span>
                     </div>
                     <p className="text-xs text-slate-500 mb-2">{c.gcc_outlook}</p>
-                    <div className="flex flex-wrap gap-1.5 mb-2">
-                      {c.protected_skills?.map((s: string) => (
-                        <span key={s} className="text-xs bg-green-50 text-green-700 border border-green-100 px-2 py-0.5 rounded-full">{s}</span>
-                      ))}
-                    </div>
+                    {c.protected_skills?.length > 0 && (
+                      <div className="mb-2">
+                        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Human skills that stay valuable</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {c.protected_skills.map((s: string) => (
+                            <span key={s} className="text-xs bg-green-50 text-green-700 border border-green-100 px-2 py-0.5 rounded-full">{s}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {c.upskilling?.length > 0 && <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">How to prepare</p>}
                     <ul className="space-y-1">
                       {c.upskilling?.map((tip: string) => (
                         <li key={tip} className="text-xs text-slate-500 flex gap-1.5">
@@ -1907,7 +1998,7 @@ export default function AdminPage() {
                 ['Email', bf.assessment_responses?.email],
                 ['Country', bf.assessment_responses?.country],
                 ['Status', formatUnderscored(bf.assessment_responses?.current_stage)],
-                ['Cohort', isBetaV2(bf.created_at) ? 'beta v2' : 'beta'],
+                ['Cohort', cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override })],
                 ['Age', formatUnderscored(bf.assessment_responses?.age_bracket)],
                 ['Locale', bf.locale || bf.assessment_responses?.locale],
                 ['Device', bf.device],
@@ -2316,6 +2407,8 @@ export default function AdminPage() {
   const betaTelemetrySummary = summarizeTelemetry(betaTelemetryEvents)
 
   const betaSubmissions = submissions.filter(isBetaSubmission)
+  const betaCareerRecs = allCareerRecs.filter(isBetaSubmission)
+  const betaCareerRecsGenerated = betaCareerRecs.filter(r => r.career_recommendations?.length > 0)
   const feedbackSubmittedIds = new Set(betaFeedbackList.map(bf => bf.response_id))
 
   const openBugCount = bugReports.filter(b => b.status === 'open').length
@@ -2362,7 +2455,7 @@ export default function AdminPage() {
                       )}
                       {isBetaSubmission(sub) && (
                         <span className="ml-2 text-xs font-semibold bg-lightblue text-primary px-1.5 py-0.5 rounded-full">
-                          {isBetaV2(sub.created_at) ? 'beta v2' : 'beta'}
+                          {cohortLabel(sub)}
                         </span>
                       )}
                     </td>
@@ -2447,7 +2540,7 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { fetchDashboardStats(); fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchBetaFeedback(); fetchTelemetry(); fetchBugReports(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
+              onClick={() => { fetchDashboardStats(); fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchBetaFeedback(); fetchAllCareerRecs(); fetchTelemetry(); fetchBugReports(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
               className="text-sm text-primary hover:underline"
             >
               Refresh
@@ -2476,6 +2569,7 @@ export default function AdminPage() {
               tabs: [
                 { key: 'betaDashboard', label: 'Dashboard', color: 'bg-fuchsia-700' },
                 { key: 'betaSubmissions', label: 'Submissions', color: 'bg-fuchsia-600', badge: betaSubmissions.length > 0 ? betaSubmissions.length : undefined },
+                { key: 'betaCareerRecs', label: 'Career Recs', color: 'bg-teal-600', badge: betaCareerRecsGenerated.length > 0 ? betaCareerRecsGenerated.length : undefined },
                 { key: 'betaFeedback', label: 'Feedback', color: 'bg-fuchsia-500', badge: betaFeedbackList.length > 0 ? betaFeedbackList.length : undefined },
                 { key: 'betaBehavior', label: 'Behavior', color: 'bg-purple-600', badge: betaTelemetrySummary.sessionCount > 0 ? betaTelemetrySummary.sessionCount : undefined },
                 { key: 'betaBugs', label: 'Bugs', color: 'bg-red-600', badge: openBugCount > 0 ? openBugCount : undefined },
@@ -2896,6 +2990,50 @@ export default function AdminPage() {
           </>
         )}
 
+        {activeTab === 'betaCareerRecs' && (
+          <div className="max-w-3xl mx-auto px-4 py-8 space-y-4">
+            <p className="text-xs text-slate-400">
+              Every AI-generated career recommendation (title, match score, fit summary, growth note) shown to a beta
+              user so far, in one place — for reviewing accuracy and appropriateness without opening each submission.
+              Only submissions that have already generated this content (viewed results or downloaded a report) show up here.
+            </p>
+            {allCareerRecsLoading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {allCareerRecsError && <p className="text-red-500 text-sm text-center py-8">{allCareerRecsError}</p>}
+            {!allCareerRecsLoading && !allCareerRecsError && betaCareerRecsGenerated.length === 0 && (
+              <p className="text-slate-400 text-sm text-center py-8">No career recommendations generated yet for beta submissions</p>
+            )}
+            {betaCareerRecsGenerated.map(sub => (
+              <div key={sub.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{sub.full_name || 'Unnamed'}</p>
+                    <p className="text-xs text-slate-400">{sub.email} · {new Date(sub.created_at).toLocaleString()}</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {sub.career_recommendations.map((c: any, i: number) => (
+                    <div key={c.title ?? i} className="border border-slate-100 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-sm font-semibold text-slate-800">{c.title}</span>
+                        {typeof c.match_score === 'number' && (
+                          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700">{c.match_score}% match</span>
+                        )}
+                      </div>
+                      {c.sector && <p className="text-xs text-slate-400 mb-1.5">{c.sector}</p>}
+                      {c.fit_summary && <p className="text-xs text-slate-600 mb-1.5">{c.fit_summary}</p>}
+                      {c.growth_note && <p className="text-xs text-slate-500 italic">{c.growth_note}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {activeTab === 'betaFeedback' && (
           <>
             {betaFeedbackLoading && (
@@ -2973,7 +3111,7 @@ export default function AdminPage() {
                               <tr key={bf.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
                                 <td className="px-4 py-3 font-medium text-slate-800">
                                   <span>{bf.assessment_responses?.full_name || '—'}</span>
-                                  {isBetaV2(bf.created_at) && (
+                                  {cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }) === 'beta v2' && (
                                     <span className="ml-2 text-xs font-semibold bg-lightblue text-primary px-1.5 py-0.5 rounded-full">beta v2</span>
                                   )}
                                 </td>
