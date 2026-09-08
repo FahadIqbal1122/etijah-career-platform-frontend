@@ -123,6 +123,15 @@ export const stage2Sections: SectionDef[] = [
         note: { en: 'mirrors Stage 1 Q3', ar: 'يقابل السؤال ٣ في المرحلة الأولى' },
       },
       {
+        key: 'felt_like_mentor', type: 'single', required: true,
+        label: { en: 'Did it feel like a mentor who understands your context, or a generic quiz?', ar: 'هل شعرت أنه مرشد يفهم ظروفك، أم اختبار عام؟' },
+        options: [
+          { value: 'mentor', label: { en: 'Like a mentor who understands me', ar: 'كمرشد يفهمني' } },
+          { value: 'mixed', label: { en: 'Somewhere in between', ar: 'بين الاثنين' } },
+          { value: 'generic', label: { en: 'Like a generic quiz', ar: 'كاختبار عام' } },
+        ],
+      },
+      {
         key: 'personality_accuracy', type: 'single', required: true, options: ACCURACY,
         label: { en: 'Your personality type', ar: 'نمط شخصيتك' },
       },

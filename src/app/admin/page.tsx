@@ -320,6 +320,7 @@ type BetaFeedbackEntry = {
   stage1_completed_at: string | null
   language_used: string | null
   understood_after: number | null
+  felt_like_mentor: string | null
   personality_accuracy: string | null
   values_accuracy: string | null
   strengths_accuracy: string | null
@@ -1573,6 +1574,7 @@ export default function AdminPage() {
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
               {[
                 ['Understood after', ratingLabel(bf.understood_after)],
+                ['Felt like a mentor?', bf.felt_like_mentor],
                 ['Personality', bf.personality_accuracy],
                 ['Values', bf.values_accuracy],
                 ['Strengths', bf.strengths_accuracy],
@@ -2369,6 +2371,21 @@ export default function AdminPage() {
                               rows: stage2Responses.filter(bf => bf.language_used === 'both').map(bf => ({ bf, note: 'Both' })),
                             })}
                           />
+                          {(() => {
+                            const mentorAnswered = stage2Responses.filter(bf => bf.felt_like_mentor != null)
+                            const mentorCount = countBy(mentorAnswered, bf => bf.felt_like_mentor).mentor || 0
+                            return (
+                              <BetaStatTile
+                                label="Felt like a mentor"
+                                value={mentorAnswered.length > 0 ? `${Math.round((mentorCount / mentorAnswered.length) * 100)}%` : '—'}
+                                sublabel={mentorAnswered.length > 0 ? `${mentorAnswered.length} answered` : 'no answers yet'}
+                                onClick={mentorAnswered.length > 0 ? () => setBetaStatDrilldown({
+                                  title: 'Felt like a mentor who understands your context',
+                                  rows: mentorAnswered.filter(bf => bf.felt_like_mentor === 'mentor').map(bf => ({ bf, note: 'Mentor' })),
+                                }) : undefined}
+                              />
+                            )
+                          })()}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           <BetaSentimentChart
