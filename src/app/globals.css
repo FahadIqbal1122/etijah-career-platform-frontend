@@ -161,15 +161,24 @@ html { scroll-behavior: smooth; }
    to the constellation. Base rules here are mobile-first: the active card
    takes over the full screen since a phone has no room to spare; the
    desktop media query below resets it back to a small inline card. */
+/* deliberately a warm amber/coral — the only warm accent in an otherwise
+   all blue/teal screen — plus a slow pulsing glow, so this reads as a
+   distinct "extra" thing to try rather than blending into the ambient
+   progress copy around it (it went unnoticed at that low-contrast style). */
 .assess-break-trigger {
-  appearance: none; border: 1px solid rgba(255,255,255,0.35);
-  background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.85);
-  font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: .08em;
-  text-transform: uppercase; padding: 7px 16px; border-radius: 999px;
-  cursor: pointer; transition: all .2s;
+  appearance: none; border: none;
+  background: linear-gradient(135deg, #FFC24D, #FF8A3D);
+  color: #3A1B00; font-weight: 700; font-size: 13px;
+  padding: 9px 18px; border-radius: 999px;
+  cursor: pointer; transition: transform .2s;
+  animation: breakGlow 2.2s ease-in-out infinite;
 }
-.assess-break-trigger:hover { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.18); }
-[dir="rtl"] .assess-break-trigger { font-family: var(--font-tajawal), sans-serif; letter-spacing: 0; text-transform: none; font-size: 13px; }
+.assess-break-trigger:hover { transform: translateY(-1px) scale(1.03); }
+@keyframes breakGlow {
+  0%, 100% { box-shadow: 0 0 10px 0 rgba(255, 149, 45, 0.55); }
+  50% { box-shadow: 0 0 22px 6px rgba(255, 149, 45, 0.85); }
+}
+@media (prefers-reduced-motion: reduce) { .assess-break-trigger { animation: none; box-shadow: 0 0 14px 2px rgba(255, 149, 45, 0.7); } }
 
 .assess-break-mobile-slot { position: relative; z-index: 5; text-align: center; padding: 10px 20px 0; }
 @media (min-width: 900px) { .assess-break-mobile-slot { display: none; } }

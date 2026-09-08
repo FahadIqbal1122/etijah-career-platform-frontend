@@ -87,7 +87,7 @@ export const RIDDLES: Riddle[] = [
 ]
 
 export const breakCopy = {
-  trigger: { en: 'Take a break', ar: 'خذ استراحة' } as Bi,
+  trigger: { en: '🎲 Play a riddle or game', ar: '🎲 العب لغزاً أو لعبة' } as Bi,
   back: { en: 'Back to progress', ar: 'عودة إلى التقدّم' } as Bi,
   another: { en: 'Something else', ar: 'شيء آخر' } as Bi, // reroll to a different activity
   reveal: { en: 'Reveal answer', ar: 'اكشف الإجابة' } as Bi,
