@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 import Constellation, { CONSTELLATION } from '@/components/brand/Constellation'
 import BreakPanel from '@/components/BreakPanel'
+import BugReportModal from '@/components/BugReportModal'
 import { frameworkOf, buildReveal, REVEAL_FRAMEWORKS } from '@/data/revealScoring'
 import { initTelemetry, pushTelemetry, getTelemetrySessionId, rotateTelemetrySession, flush as flushTelemetry } from '@/lib/telemetry'
 
@@ -526,9 +527,12 @@ export default function AssessmentForm() {
 
       <div className="assess-topbar">
         <Logomark size={30} tone="dark" />
-        <button className="assess-lang" onClick={() => switchLocale(locale === 'en' ? 'ar' : 'en')}>
-          {locale === 'en' ? 'العربية' : 'English'}
-        </button>
+        <div className="assess-topbar-actions">
+          <BugReportModal locale={locale as 'en' | 'ar'} page={q ? `${phase}:${q.id}` : phase} />
+          <button className="assess-lang" onClick={() => switchLocale(locale === 'en' ? 'ar' : 'en')}>
+            {locale === 'en' ? 'العربية' : 'English'}
+          </button>
+        </div>
       </div>
 
       {phase === 'question' && (

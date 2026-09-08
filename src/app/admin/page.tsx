@@ -641,6 +641,26 @@ type BetaFeedbackEntry = {
   assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null; age_bracket: string | null; current_stage: string | null } | null
 }
 
+type BugReport = {
+  id: string
+  source: 'user' | 'system'
+  status: 'open' | 'resolved'
+  description: string | null
+  feature: string | null
+  error_type: string | null
+  error_message: string | null
+  stack_trace: string | null
+  response_id: string | null
+  full_name: string | null
+  email: string | null
+  locale: string | null
+  country: string | null
+  device_type: string | null
+  page: string | null
+  user_agent: string | null
+  created_at: string
+}
+
 type WaitlistEntry = {
   id: string
   email: string
@@ -719,7 +739,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaFeedback' | 'betaBehavior' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'templates' | 'smtp' | 'aiprovider'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'templates' | 'smtp' | 'aiprovider'>('dashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -751,6 +771,13 @@ export default function AdminPage() {
   const [telemetryList, setTelemetryList] = useState<TelemetryEvent[]>([])
   const [telemetryLoading, setTelemetryLoading] = useState(false)
   const [telemetryError, setTelemetryError] = useState('')
+
+  const [bugReports, setBugReports] = useState<BugReport[]>([])
+  const [bugReportsLoading, setBugReportsLoading] = useState(false)
+  const [bugReportsError, setBugReportsError] = useState('')
+  const [bugSourceFilter, setBugSourceFilter] = useState<'all' | 'user' | 'system'>('all')
+  const [bugStatusFilter, setBugStatusFilter] = useState<'all' | 'open' | 'resolved'>('open')
+  const [selectedBugReport, setSelectedBugReport] = useState<BugReport | null>(null)
   const [telemetryDrilldown, setTelemetryDrilldown] = useState<{ title: string; rows: { session: TelemetrySession; note: string }[] } | null>(null)
 
   const [waitlistList, setWaitlistList] = useState<WaitlistEntry[]>([])
@@ -922,6 +949,35 @@ export default function AdminPage() {
       setTelemetryLoading(false)
     }
   }, [])
+
+  const fetchBugReports = useCallback(async () => {
+    setBugReportsLoading(true)
+    setBugReportsError('')
+    try {
+      const res = await fetch('/api/admin/bug-reports')
+      if (!res.ok) throw new Error('Failed to load bug reports')
+      setBugReports(await res.json())
+    } catch (err: any) {
+      setBugReportsError(err.message)
+    } finally {
+      setBugReportsLoading(false)
+    }
+  }, [])
+
+  async function setBugReportStatus(id: string, status: 'open' | 'resolved') {
+    setBugReports(prev => prev.map(b => b.id === id ? { ...b, status } : b))
+    setSelectedBugReport(prev => prev && prev.id === id ? { ...prev, status } : prev)
+    try {
+      const res = await fetch(`/api/admin/bug-reports/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      if (!res.ok) throw new Error('failed')
+    } catch {
+      fetchBugReports() // best-effort optimistic update — resync on failure
+    }
+  }
 
   const fetchWaitlist = useCallback(async () => {
     setWaitlistLoading(true)
@@ -1193,6 +1249,7 @@ export default function AdminPage() {
       fetchFeedback()
       fetchBetaFeedback()
       fetchTelemetry()
+      fetchBugReports()
       fetchWaitlist()
       fetchCoachingSessions()
       fetchCountryProfiles()
@@ -1202,7 +1259,7 @@ export default function AdminPage() {
       fetchHomepageMode()
       fetchAiProvider()
     }
-  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchBetaFeedback, fetchTelemetry, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchAiProvider])
+  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchBetaFeedback, fetchTelemetry, fetchBugReports, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchAiProvider])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -2261,6 +2318,11 @@ export default function AdminPage() {
   const betaSubmissions = submissions.filter(isBetaSubmission)
   const feedbackSubmittedIds = new Set(betaFeedbackList.map(bf => bf.response_id))
 
+  const openBugCount = bugReports.filter(b => b.status === 'open').length
+  const visibleBugReports = bugReports
+    .filter(b => bugSourceFilter === 'all' || b.source === bugSourceFilter)
+    .filter(b => bugStatusFilter === 'all' || b.status === bugStatusFilter)
+
   // Shared by the general Submissions tab and the Beta Testing > Submissions
   // sub-tab — same columns, just a different (optionally pre-filtered) list.
   function renderSubmissionsTable(list: Submission[], emptyMessage: string) {
@@ -2385,7 +2447,7 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { fetchDashboardStats(); fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchBetaFeedback(); fetchTelemetry(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
+              onClick={() => { fetchDashboardStats(); fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchBetaFeedback(); fetchTelemetry(); fetchBugReports(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
               className="text-sm text-primary hover:underline"
             >
               Refresh
@@ -2416,6 +2478,7 @@ export default function AdminPage() {
                 { key: 'betaSubmissions', label: 'Submissions', color: 'bg-fuchsia-600', badge: betaSubmissions.length > 0 ? betaSubmissions.length : undefined },
                 { key: 'betaFeedback', label: 'Feedback', color: 'bg-fuchsia-500', badge: betaFeedbackList.length > 0 ? betaFeedbackList.length : undefined },
                 { key: 'betaBehavior', label: 'Behavior', color: 'bg-purple-600', badge: betaTelemetrySummary.sessionCount > 0 ? betaTelemetrySummary.sessionCount : undefined },
+                { key: 'betaBugs', label: 'Bugs', color: 'bg-red-600', badge: openBugCount > 0 ? openBugCount : undefined },
               ],
             },
             {
@@ -2972,6 +3035,163 @@ export default function AdminPage() {
                 onDrilldown={setTelemetryDrilldown}
                 onCloseDrilldown={() => setTelemetryDrilldown(null)}
               />
+            )}
+          </>
+        )}
+
+        {activeTab === 'betaBugs' && (
+          <>
+            {bugReportsLoading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {bugReportsError && <p className="text-red-500 text-sm text-center py-8">{bugReportsError}</p>}
+            {!bugReportsLoading && !bugReportsError && (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <p className="text-sm text-slate-400">{visibleBugReports.length} report{visibleBugReports.length !== 1 ? 's' : ''}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(['open', 'resolved', 'all'] as const).map(key => (
+                      <button
+                        key={key}
+                        onClick={() => setBugStatusFilter(key)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
+                          bugStatusFilter === key ? 'bg-red-600 text-white' : 'bg-white text-slate-400 border border-slate-100 hover:text-slate-600'
+                        }`}
+                      >
+                        {key}
+                      </button>
+                    ))}
+                    <select
+                      value={bugSourceFilter}
+                      onChange={e => setBugSourceFilter(e.target.value as 'all' | 'user' | 'system')}
+                      className="text-xs font-medium rounded-lg border border-slate-100 bg-white text-slate-600 px-2 py-1.5 capitalize"
+                    >
+                      <option value="all">All sources</option>
+                      <option value="user">Reported by users</option>
+                      <option value="system">Detected automatically</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
+                  <table className="w-full text-sm min-w-[1000px]">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50">
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Source</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Summary</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Who</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Page / Feature</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+                        <th className="px-4 py-3" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleBugReports.map((b, i) => (
+                        <tr key={b.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                          <td className="px-4 py-3">
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${b.source === 'user' ? 'bg-sky-50 text-sky-700' : 'bg-amber-50 text-amber-700'}`}>
+                              {b.source === 'user' ? 'User report' : 'System'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-600 max-w-[360px] truncate">
+                            {b.source === 'user' ? (b.description || '—') : `${b.error_type || 'Error'}: ${b.error_message || b.description || '—'}`}
+                          </td>
+                          <td className="px-4 py-3 text-slate-500">{b.full_name || b.email || '—'}</td>
+                          <td className="px-4 py-3 text-slate-500">{b.feature || b.page || '—'}</td>
+                          <td className="px-4 py-3 text-slate-400 text-xs">{new Date(b.created_at).toLocaleString()}</td>
+                          <td className="px-4 py-3">
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${b.status === 'open' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'}`}>
+                              {b.status === 'open' ? 'Open' : 'Resolved'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 flex items-center gap-3">
+                            <button
+                              onClick={() => setSelectedBugReport(b)}
+                              className="text-xs text-primary hover:underline font-medium"
+                            >
+                              View →
+                            </button>
+                            <button
+                              onClick={() => setBugReportStatus(b.id, b.status === 'open' ? 'resolved' : 'open')}
+                              className="text-xs text-slate-400 hover:text-slate-600 hover:underline"
+                            >
+                              {b.status === 'open' ? 'Resolve' : 'Reopen'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {visibleBugReports.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No bug reports here</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {selectedBugReport && (
+              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setSelectedBugReport(null)}>
+                <div
+                  className="relative bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-lg max-h-[80vh] flex flex-col"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                    <h3 className="font-semibold text-slate-800">Bug report</h3>
+                    <button onClick={() => setSelectedBugReport(null)} className="text-slate-400 hover:text-slate-600 text-sm">✕</button>
+                  </div>
+                  <div className="overflow-y-auto px-6 py-4 space-y-3 text-sm">
+                    <dl className="grid grid-cols-2 gap-x-6 gap-y-2">
+                      {[
+                        ['Source', selectedBugReport.source === 'user' ? 'User report' : 'System'],
+                        ['Status', selectedBugReport.status],
+                        ['Who', selectedBugReport.full_name || selectedBugReport.email],
+                        ['Email', selectedBugReport.email],
+                        ['Feature', selectedBugReport.feature],
+                        ['Page', selectedBugReport.page],
+                        ['Locale', selectedBugReport.locale],
+                        ['Device', selectedBugReport.device_type],
+                        ['Response ID', selectedBugReport.response_id],
+                        ['Date', new Date(selectedBugReport.created_at).toLocaleString()],
+                      ].map(([label, value]) => (
+                        <div key={label}>
+                          <dt className="text-slate-400 text-xs">{label}</dt>
+                          <dd className="text-slate-800 font-medium break-words">{value || '—'}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    {selectedBugReport.description && (
+                      <div>
+                        <dt className="text-slate-400 text-xs mb-1">Description</dt>
+                        <dd className="text-slate-800 whitespace-pre-wrap bg-slate-50 rounded-lg p-3">{selectedBugReport.description}</dd>
+                      </div>
+                    )}
+                    {selectedBugReport.error_message && (
+                      <div>
+                        <dt className="text-slate-400 text-xs mb-1">Error</dt>
+                        <dd className="text-slate-800 whitespace-pre-wrap bg-slate-50 rounded-lg p-3">{selectedBugReport.error_type}: {selectedBugReport.error_message}</dd>
+                      </div>
+                    )}
+                    {selectedBugReport.stack_trace && (
+                      <div>
+                        <dt className="text-slate-400 text-xs mb-1">Stack trace</dt>
+                        <dd className="text-slate-600 whitespace-pre-wrap font-mono text-[11px] bg-slate-900 text-slate-100 rounded-lg p-3 overflow-x-auto">{selectedBugReport.stack_trace}</dd>
+                      </div>
+                    )}
+                  </div>
+                  <div className="px-6 py-4 border-t border-slate-100 flex justify-end">
+                    <button
+                      onClick={() => setBugReportStatus(selectedBugReport.id, selectedBugReport.status === 'open' ? 'resolved' : 'open')}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    >
+                      {selectedBugReport.status === 'open' ? 'Mark resolved' : 'Reopen'}
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </>
         )}
