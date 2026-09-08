@@ -34,25 +34,32 @@ export default function MemoryMatch({ locale }: Props) {
   }, [allMatched])
 
   function flip(i: number) {
-    if (busy || open.includes(i) || matched.includes(i) || open.length === 2) return
-    const next = [...open, i]
-    setOpen(next)
-    if (next.length === 2) {
-      setBusy(true)
-      const [a, b] = next
-      if (deck[a] === deck[b]) {
-        window.setTimeout(() => {
-          setMatched(m => [...m, a, b])
-          setOpen([])
-          setBusy(false)
-        }, 300)
-      } else {
-        window.setTimeout(() => {
-          setOpen([])
-          setBusy(false)
-        }, 700)
+    if (busy || matched.includes(i)) return
+    // Functional update — two clicks landing in the same React batch (a fast
+    // double-click on two different cards) would otherwise both read the same
+    // stale `open`, and the second call's setOpen() would clobber the first's
+    // instead of accumulating, silently dropping a card from the pair.
+    setOpen(prev => {
+      if (prev.includes(i) || prev.length === 2) return prev
+      const next = [...prev, i]
+      if (next.length === 2) {
+        setBusy(true)
+        const [a, b] = next
+        if (deck[a] === deck[b]) {
+          window.setTimeout(() => {
+            setMatched(m => [...m, a, b])
+            setOpen([])
+            setBusy(false)
+          }, 300)
+        } else {
+          window.setTimeout(() => {
+            setOpen([])
+            setBusy(false)
+          }, 700)
+        }
       }
-    }
+      return next
+    })
   }
 
   function reset() {
@@ -73,6 +80,7 @@ export default function MemoryMatch({ locale }: Props) {
               type="button"
               className={`mm-card ${shown ? 'flipped' : ''} ${matched.includes(i) ? 'matched' : ''}`}
               onClick={() => flip(i)}
+              disabled={matched.includes(i) || busy}
             >
               {shown ? sym : ''}
             </button>

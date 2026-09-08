@@ -76,6 +76,14 @@ export function pushTelemetry(event: TelemetryEvent): void {
 // needed on page unload, where an in-flight fetch would otherwise get
 // cancelled before it reaches the server.
 export function flush(useBeacon = false): void {
+  // A manual flush (submit, tab-hide) can fire while a scheduled one is still
+  // pending — clear it so the next pushTelemetry() schedules a fresh timer
+  // instead of silently no-op'ing against this now-stale one for up to
+  // FLUSH_INTERVAL_MS (a delay, not data loss, but worth avoiding).
+  if (flushTimer !== null) {
+    window.clearTimeout(flushTimer)
+    flushTimer = null
+  }
   if (queue.length === 0) return
   const events = queue
   queue = []

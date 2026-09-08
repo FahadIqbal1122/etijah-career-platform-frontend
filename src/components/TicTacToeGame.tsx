@@ -48,37 +48,55 @@ interface Props { locale: 'en' | 'ar' }
 
 export default function TicTacToeGame({ locale }: Props) {
   const [board, setBoard] = useState<Cell[]>(Array(9).fill(null))
-  const [thinking, setThinking] = useState(false)
 
   const win = winnerOf(board)
   const full = board.every(c => c !== null)
+  // Whose turn it is is derived from the board itself (equal X/O counts ⇒
+  // your turn) rather than a separate imperative flag — bot's turn pending
+  // is exactly "one more X than O, game not over", so this can't drift out
+  // of sync with the actual board the way a manually-toggled flag could.
+  const thinking = !win && !full && board.filter(c => c === 'X').length > board.filter(c => c === 'O').length
 
   useEffect(() => {
     if (!win && !full) return
     pushTelemetry({ event_type: 'break_activity', activity_kind: 'tic_tac_toe', payload: { result: win === 'X' ? 'win' : win === 'O' ? 'lose' : 'draw' } })
   }, [win, full])
 
-  function play(i: number) {
-    if (board[i] || win || thinking) return
-    const next = [...board]
-    next[i] = 'X'
-    setBoard(next)
-    if (winnerOf(next) || next.every(c => c !== null)) return
-    setThinking(true)
-    window.setTimeout(() => {
+  useEffect(() => {
+    if (!thinking) return
+    const id = window.setTimeout(() => {
       setBoard(prev => {
         const idx = botMove(prev)
         const copy = [...prev]
         copy[idx] = 'O'
         return copy
       })
-      setThinking(false)
     }, 400)
+    return () => clearTimeout(id)
+  }, [thinking])
+
+  function play(i: number) {
+    if (win || thinking) return
+    // Functional update, re-deriving whose turn it is from `prev` rather than
+    // trusting the outer `thinking` — two clicks dispatched in the same React
+    // batch (a fast double-click on two different cells) both see the outer
+    // `thinking` as stale-false, so without this the second click could sneak
+    // in a second X before the bot ever moved. React applies queued updater
+    // functions in order, each against the previous one's result, so the
+    // second call here correctly sees the first move already applied.
+    setBoard(prev => {
+      const prevWin = winnerOf(prev)
+      const prevFull = prev.every(c => c !== null)
+      const isBotTurn = !prevWin && !prevFull && prev.filter(c => c === 'X').length > prev.filter(c => c === 'O').length
+      if (prev[i] || prevWin || prevFull || isBotTurn) return prev
+      const next = [...prev]
+      next[i] = 'X'
+      return next
+    })
   }
 
   function reset() {
     setBoard(Array(9).fill(null))
-    setThinking(false)
   }
 
   const status = win === 'X' ? t(breakCopy.youWin, locale)
