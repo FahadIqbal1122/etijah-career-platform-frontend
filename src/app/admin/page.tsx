@@ -162,6 +162,17 @@ const CURRENT_STAGE_LABEL: Record<string, string> = {
   working_exploring: 'Working, exploring', career_changer: 'Career changer',
   returning: 'Returning to work', between_roles: 'Between roles',
 }
+// Order/labels match QO1/QO2 in messages/en.json exactly.
+const COUNTRY_ORDER = ['saudi_arabia', 'bahrain', 'uae', 'kuwait', 'qatar', 'oman', 'other_gcc', 'other_middle_east', 'other']
+const COUNTRY_LABEL: Record<string, string> = {
+  saudi_arabia: 'Saudi Arabia', bahrain: 'Bahrain', uae: 'UAE', kuwait: 'Kuwait', qatar: 'Qatar',
+  oman: 'Oman', other_gcc: 'Other GCC', other_middle_east: 'Other Middle East', other: 'Other',
+}
+const NATIONALITY_ORDER = ['saudi', 'bahraini', 'emirati', 'kuwaiti', 'qatari', 'omani', 'other']
+const NATIONALITY_LABEL: Record<string, string> = {
+  saudi: 'Saudi', bahraini: 'Bahraini', emirati: 'Emirati', kuwaiti: 'Kuwaiti',
+  qatari: 'Qatari', omani: 'Omani', other: 'Other',
+}
 
 function BetaStatTile({ label, value, sublabel, onClick }: { label: string; value: string; sublabel?: string; onClick?: () => void }) {
   const Tag = onClick ? 'button' : 'div'
@@ -695,7 +706,7 @@ type BetaFeedbackEntry = {
   other_text: string | null
   stage2_completed_at: string | null
   created_at: string
-  assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null; age_bracket: string | null; current_stage: string | null; cohort_override: 'beta' | 'beta_v2' | null } | null
+  assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null; nationality: string | null; age_bracket: string | null; current_stage: string | null; cohort_override: 'beta' | 'beta_v2' | null } | null
 }
 
 type BugReport = {
@@ -2891,7 +2902,11 @@ export default function AdminPage() {
                 <>
                   {betaTotal > 0 && (
                     <div className="mb-6">
-                      <p className="text-sm font-semibold text-slate-700 mb-3">Who&apos;s testing <span className="text-slate-400 font-normal">— from {betaTotal} beta submission{betaTotal !== 1 ? 's' : ''}</span></p>
+                      <p className="text-sm font-semibold text-slate-700 mb-3">
+                        Who&apos;s testing <span className="text-slate-400 font-normal">
+                          — {betaTotal} who reached the feedback stage (not all beta submissions — see the Submissions tab for the full count)
+                        </span>
+                      </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <BetaCategoryChart
                           title="Age group"
@@ -2905,6 +2920,20 @@ export default function AdminPage() {
                           order={CURRENT_STAGE_ORDER}
                           labels={CURRENT_STAGE_LABEL}
                           counts={countBy(betaFeedbackList, bf => bf.assessment_responses?.current_stage)}
+                          total={betaTotal}
+                        />
+                        <BetaCategoryChart
+                          title="Country"
+                          order={COUNTRY_ORDER}
+                          labels={COUNTRY_LABEL}
+                          counts={countBy(betaFeedbackList, bf => bf.assessment_responses?.country)}
+                          total={betaTotal}
+                        />
+                        <BetaCategoryChart
+                          title="Nationality"
+                          order={NATIONALITY_ORDER}
+                          labels={NATIONALITY_LABEL}
+                          counts={countBy(betaFeedbackList, bf => bf.assessment_responses?.nationality)}
                           total={betaTotal}
                         />
                       </div>
