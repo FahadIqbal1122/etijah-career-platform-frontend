@@ -506,9 +506,9 @@ html { scroll-behavior: smooth; }
     max-width: 1180px; margin: 0 auto; padding: 8px clamp(20px, 4vw, 48px) 48px; }
 
   /* left: brand constellation grows big, with progress context beneath it */
-  .assess-aside { flex: 1 1 44%; max-width: 46%; justify-content: center; }
+  .assess-aside { flex: 1 1 44%; max-width: 46%; justify-content: center; margin-top: -32px; }
   .assess-aside .cst-wrap { height: clamp(240px, 34vh, 380px); max-width: 100%; margin: 0; padding: 0; }
-  .assess-aside-context { display: block; text-align: center; margin-top: 32px; }
+  .assess-aside-context { display: block; text-align: center; margin-top: 8px; }
   .assess-aside-eyebrow {
     font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: .28em;
     text-transform: uppercase; color: color-mix(in srgb, #fff 82%, transparent);
