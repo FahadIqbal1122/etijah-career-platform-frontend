@@ -144,6 +144,25 @@ const SENTIMENT_LABEL: Record<string, string> = {
   spot_on: 'Spot on', mostly_right: 'Mostly right', off: 'Off', somewhat: 'Somewhat',
 }
 
+// Demographic breakdowns (age_bracket, current_stage) come from the onboarding
+// questions on assessment_responses, not from beta_feedback itself — every
+// beta submission has them regardless of whether stage2 feedback was ever
+// completed, so these charts use the full beta_feedback list rather than the
+// stage2-only subset the survey charts above are filtered to.
+const AGE_BRACKET_ORDER = ['under_16', '16_18', '19_22', '23_26', '27_32', '33_40', '41_plus']
+const AGE_BRACKET_LABEL: Record<string, string> = {
+  under_16: 'Under 16', '16_18': '16–18', '19_22': '19–22', '23_26': '23–26',
+  '27_32': '27–32', '33_40': '33–40', '41_plus': '41+',
+}
+// "current_stage" is the closest proxy we collect to employment status — it's
+// an education/career-stage question, not a strict employed/unemployed flag.
+const CURRENT_STAGE_ORDER = ['high_school', 'university', 'recent_graduate', 'working_exploring', 'career_changer', 'returning', 'between_roles']
+const CURRENT_STAGE_LABEL: Record<string, string> = {
+  high_school: 'High school', university: 'University', recent_graduate: 'Recent graduate',
+  working_exploring: 'Working, exploring', career_changer: 'Career changer',
+  returning: 'Returning to work', between_roles: 'Between roles',
+}
+
 function BetaStatTile({ label, value, sublabel, onClick }: { label: string; value: string; sublabel?: string; onClick?: () => void }) {
   const Tag = onClick ? 'button' : 'div'
   return (
@@ -184,6 +203,34 @@ function BetaSentimentChart({ title, orderKey, counts, total }: { title: string;
         {SENTIMENT_ORDER[orderKey].map(key => (
           <BetaBarRow key={key} valueKey={key} count={counts[key] || 0} total={total} />
         ))}
+      </div>
+    </div>
+  )
+}
+
+// Generic categorical breakdown with an explicit display order and label map —
+// unlike BetaSentimentChart, these values (age bracket, career stage) have no
+// good/bad connotation, so every bar shares one neutral color.
+function BetaCategoryChart({ title, order, labels, counts, total }: { title: string; order: string[]; labels: Record<string, string>; counts: Record<string, number>; total: number }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+      <p className="text-sm font-semibold text-slate-700 mb-4">{title}</p>
+      <div className="space-y-2.5">
+        {order.map(key => {
+          const count = counts[key] || 0
+          const pct = total > 0 ? Math.round((count / total) * 100) : 0
+          return (
+            <div key={key} className="flex items-center gap-3">
+              <span className="w-24 shrink-0 text-xs text-slate-500">{labels[key] || formatUnderscored(key)}</span>
+              <div className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+              </div>
+              <span className="w-20 shrink-0 text-right text-xs font-semibold text-slate-700 tabular-nums">
+                {pct}% <span className="text-slate-400 font-normal">({count})</span>
+              </span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -2839,8 +2886,30 @@ export default function AdminPage() {
             {!betaFeedbackLoading && !betaFeedbackError && (() => {
               const stage2Responses = betaFeedbackList.filter(bf => bf.stage2_completed_at)
               const stage2Total = stage2Responses.length
+              const betaTotal = betaFeedbackList.length
               return (
                 <>
+                  {betaTotal > 0 && (
+                    <div className="mb-6">
+                      <p className="text-sm font-semibold text-slate-700 mb-3">Who&apos;s testing <span className="text-slate-400 font-normal">— from {betaTotal} beta submission{betaTotal !== 1 ? 's' : ''}</span></p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <BetaCategoryChart
+                          title="Age group"
+                          order={AGE_BRACKET_ORDER}
+                          labels={AGE_BRACKET_LABEL}
+                          counts={countBy(betaFeedbackList, bf => bf.assessment_responses?.age_bracket)}
+                          total={betaTotal}
+                        />
+                        <BetaCategoryChart
+                          title="Current stage"
+                          order={CURRENT_STAGE_ORDER}
+                          labels={CURRENT_STAGE_LABEL}
+                          counts={countBy(betaFeedbackList, bf => bf.assessment_responses?.current_stage)}
+                          total={betaTotal}
+                        />
+                      </div>
+                    </div>
+                  )}
                   {stage2Total === 0 && (
                     <p className="text-sm text-slate-400 text-center py-12">No completed beta surveys yet</p>
                   )}

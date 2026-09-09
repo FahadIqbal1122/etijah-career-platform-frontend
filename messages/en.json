@@ -449,6 +449,7 @@
   "results": {
     "loading": {
       "preparing": "Preparing your report…",
+      "readyAwaitingFeedback": "Your report is ready! Just answer 3 quick questions to unlock it:",
       "messages": [
         "Built on 15 years of real GCC career coaching experience.",
         "You're not just getting a personality quiz — this is matched against real regional job market data.",

@@ -109,6 +109,7 @@ export default function ResultsPage() {
   const [messageIndex, setMessageIndex] = useState(0)
   const [tier, setTier] = useState<'free' | 'pathfinder' | 'launchpad'>('launchpad')
   const [betaMode, setBetaMode] = useState(false)
+  const [stage1Done, setStage1Done] = useState(false)
   // Only true right after AssessmentForm's submit redirect sets this flag — a
   // revisit of the same results link (bookmark, email) later should not show
   // the inline beta feedback survey again.
@@ -171,6 +172,14 @@ export default function ResultsPage() {
           setBetaMode(!!data.beta_mode)
         })
         .catch(err => setError(err.message || t('error.loadFailed')))
+      if (justCompleted) {
+        // Server-truth check, not just the child's localStorage flag — covers
+        // a cleared/private-mode browser where the client-side "done" marker
+        // from a previous answer session wouldn't otherwise be seen.
+        apiAuthGet<{ stage1_completed: boolean }>(`/beta-feedback/${id}/status`)
+          .then(data => { if (data.stage1_completed) setStage1Done(true) })
+          .catch(() => {})
+      }
       apiAuthGet<any>(`/assessment/${id}/career-recommendations`)
         .then(data => setJobs(data.career_recommendations || []))
         .catch(() => {})
@@ -228,23 +237,38 @@ export default function ResultsPage() {
 
   const allLoaded = !!summary && !jobsSuggestionsLoading && !aiLoading && !jobsLoading && !companiesLoading && !coursesLoading
 
-  if (!allLoaded) {
+  // On a fresh completion (justCompleted), hold the report back until the
+  // user has answered the stage-1 feedback survey, even after the data
+  // itself is ready — this is the only time the survey shows, so it's also
+  // the only time we gate on it. A later revisit (justCompleted false)
+  // always falls straight through to the report once loaded.
+  const awaitingStage1 = betaMode && justCompleted && !stage1Done
+
+  if (!allLoaded || awaitingStage1) {
     // Match the assessment's blue gradient (brand-hero) instead of the light
     // brand-surface here — the assessment screen fades out on submit straight
     // into this screen, so a matching backdrop avoids a jarring color-flash
     // hand-off between the two pages. We hold the whole report back behind
-    // one loader so sections don't pop in piecemeal as each request resolves.
+    // one loader so sections don't pop in piecemeal as each request resolves,
+    // and (on first completion only) until feedback is given.
+    const reportReadyButAwaitingFeedback = allLoaded && awaitingStage1
     return (
       <div className="min-h-screen brand-hero flex items-center justify-center px-6">
         <div className="text-center space-y-5 max-w-md">
           <div className="report-loading-logo inline-flex"><Logomark size={44} tone="dark" glow /></div>
-          <p className="text-white/80 text-xl font-semibold">{t('loading.preparing')}</p>
-          <p className="text-white/55 text-base leading-relaxed min-h-[4.5rem]">{loadingMessages[messageIndex]}</p>
-          {!!recentCompletions && (
-            <p className="text-teal text-sm font-medium">✦ {t('loading.recentCompletions', { count: recentCompletions })}</p>
+          {reportReadyButAwaitingFeedback ? (
+            <p className="text-white/80 text-xl font-semibold">{t('loading.readyAwaitingFeedback')}</p>
+          ) : (
+            <>
+              <p className="text-white/80 text-xl font-semibold">{t('loading.preparing')}</p>
+              <p className="text-white/55 text-base leading-relaxed min-h-[4.5rem]">{loadingMessages[messageIndex]}</p>
+              {!!recentCompletions && (
+                <p className="text-teal text-sm font-medium">✦ {t('loading.recentCompletions', { count: recentCompletions })}</p>
+              )}
+            </>
           )}
           {betaMode && justCompleted && (
-            <BetaFeedbackStage1 responseId={id} locale={locale} />
+            <BetaFeedbackStage1 responseId={id} locale={locale} onComplete={() => setStage1Done(true)} />
           )}
         </div>
       </div>
