@@ -769,7 +769,7 @@ export default function AdminPage() {
   const [careersCatalog, setCareersCatalog] = useState<any[]>([])
   const [careersCatalogLoading, setCareersCatalogLoading] = useState(false)
   const [careersCatalogError, setCareersCatalogError] = useState('')
-  const [careersCatalogFilter, setCareersCatalogFilter] = useState<'all' | 'approved' | 'rejected'>('all')
+  const [careersCatalogFilter, setCareersCatalogFilter] = useState<'recommended' | 'all' | 'approved' | 'rejected'>('recommended')
   const [careersCatalogSearch, setCareersCatalogSearch] = useState('')
   const [linkCopied, setLinkCopied] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -3030,9 +3030,10 @@ export default function AdminPage() {
               <div>
                 <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Career Catalog</h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  Approve or reject each career in the catalog. A rejected career is immediately excluded from
-                  scoring and AI-generated recommendations for every future assessment — it won't be suggested
-                  to anyone until re-approved.
+                  Career suggestions are always shown to the user immediately — nothing here blocks that. This is
+                  a review queue: a career surfaces under &ldquo;Recommended&rdquo; once it's actually been suggested to
+                  someone, so you can review it after the fact. Reject it and it's immediately excluded from
+                  scoring and AI selection for every future report — it won't be suggested again until re-approved.
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -3044,7 +3045,7 @@ export default function AdminPage() {
                   className="px-3 py-1.5 rounded-lg text-xs border border-slate-200 flex-1 min-w-[180px]"
                 />
                 <div className="flex gap-2">
-                  {(['all', 'approved', 'rejected'] as const).map(key => (
+                  {(['recommended', 'all', 'approved', 'rejected'] as const).map(key => (
                     <button
                       key={key}
                       onClick={() => setCareersCatalogFilter(key)}
@@ -3064,41 +3065,75 @@ export default function AdminPage() {
               )}
               {careersCatalogError && <p className="text-red-500 text-xs text-center py-4">{careersCatalogError}</p>}
               {!careersCatalogLoading && !careersCatalogError && (() => {
+                // Every title an AI recommendation call has actually surfaced to a beta
+                // user, with how many times — the AI only ever picks from this catalog
+                // verbatim (see careers_prompt in report_generator.py), so a title match
+                // reliably identifies which catalog row was shown.
+                const recommendedCounts = new Map<string, number>()
+                for (const sub of betaCareerRecsGenerated) {
+                  for (const rec of sub.career_recommendations || []) {
+                    const key = (rec.title || '').trim().toLowerCase()
+                    if (key) recommendedCounts.set(key, (recommendedCounts.get(key) || 0) + 1)
+                  }
+                }
+
                 const q = careersCatalogSearch.trim().toLowerCase()
-                const visible = careersCatalog
-                  .filter(c => careersCatalogFilter === 'all' || (careersCatalogFilter === 'approved' ? c.is_approved : !c.is_approved))
+                let visible = careersCatalog
+                  .filter(c => {
+                    if (careersCatalogFilter === 'recommended') return recommendedCounts.has((c.title || '').trim().toLowerCase())
+                    if (careersCatalogFilter === 'approved') return c.is_approved
+                    if (careersCatalogFilter === 'rejected') return !c.is_approved
+                    return true
+                  })
                   .filter(c => !q || c.title?.toLowerCase().includes(q) || c.sector?.toLowerCase().includes(q))
+                if (careersCatalogFilter === 'recommended') {
+                  visible = [...visible].sort((a, b) =>
+                    (recommendedCounts.get((b.title || '').trim().toLowerCase()) || 0)
+                    - (recommendedCounts.get((a.title || '').trim().toLowerCase()) || 0))
+                }
                 if (visible.length === 0) {
-                  return <p className="text-slate-400 text-xs text-center py-6">No careers match this filter</p>
+                  return (
+                    <p className="text-slate-400 text-xs text-center py-6">
+                      {careersCatalogFilter === 'recommended'
+                        ? 'No careers have been recommended to a beta user yet'
+                        : 'No careers match this filter'}
+                    </p>
+                  )
                 }
                 return (
                   <div className="max-h-[28rem] overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-xl">
-                    {visible.map(c => (
-                      <div key={c.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                        <div className="min-w-0">
-                          <p className="text-sm text-slate-800 truncate">{c.title}</p>
-                          {c.sector && <p className="text-xs text-slate-400">{c.sector}</p>}
+                    {visible.map(c => {
+                      const count = recommendedCounts.get((c.title || '').trim().toLowerCase()) || 0
+                      return (
+                        <div key={c.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                          <div className="min-w-0">
+                            <p className="text-sm text-slate-800 truncate">{c.title}</p>
+                            <p className="text-xs text-slate-400">
+                              {c.sector}{c.sector && count > 0 ? ' · ' : ''}
+                              {count > 0 && `suggested ${count}×`}
+                            </p>
+                          </div>
+                          <div className="flex gap-1.5 shrink-0">
+                            <button
+                              onClick={() => setCareerApproval(c.id, true)}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                                c.is_approved ? 'bg-teal-700 text-white' : 'bg-slate-50 text-slate-400 hover:text-teal-700'
+                              }`}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => setCareerApproval(c.id, false)}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                                !c.is_approved ? 'bg-red-600 text-white' : 'bg-slate-50 text-slate-400 hover:text-red-600'
+                              }`}
+                            >
+                              Reject
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex gap-1.5 shrink-0">
-                          <button
-                            onClick={() => setCareerApproval(c.id, true)}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                              c.is_approved ? 'bg-teal-700 text-white' : 'bg-slate-50 text-slate-400 hover:text-teal-700'
-                            }`}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => setCareerApproval(c.id, false)}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                              !c.is_approved ? 'bg-red-600 text-white' : 'bg-slate-50 text-slate-400 hover:text-red-600'
-                            }`}
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )
               })()}
