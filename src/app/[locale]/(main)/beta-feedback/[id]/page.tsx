@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
-import { apiAuthGet } from '@/lib/api'
+import { apiGet } from '@/lib/api'
 import Logomark from '@/components/brand/Logomark'
 import BetaFeedbackStage2 from '@/components/beta-feedback/BetaFeedbackStage2'
 
@@ -17,8 +17,8 @@ export default function BetaFeedbackPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    apiAuthGet<any>(`/assessment/${id}/results`)
-      .then(data => setTopType(data.summary?.riasec?.top_types?.[0] || null))
+    apiGet<any>(`/beta-feedback/${id}/riasec-summary`)
+      .then(data => setTopType(data.top_type || null))
       .catch(err => setError(err.message || 'Could not load this response.'))
   }, [id])
 
