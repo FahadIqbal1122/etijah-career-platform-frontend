@@ -766,6 +766,11 @@ export default function AdminPage() {
   const [allCareerRecs, setAllCareerRecs] = useState<any[]>([])
   const [allCareerRecsLoading, setAllCareerRecsLoading] = useState(false)
   const [allCareerRecsError, setAllCareerRecsError] = useState('')
+  const [careersCatalog, setCareersCatalog] = useState<any[]>([])
+  const [careersCatalogLoading, setCareersCatalogLoading] = useState(false)
+  const [careersCatalogError, setCareersCatalogError] = useState('')
+  const [careersCatalogFilter, setCareersCatalogFilter] = useState<'all' | 'approved' | 'rejected'>('all')
+  const [careersCatalogSearch, setCareersCatalogSearch] = useState('')
   const [linkCopied, setLinkCopied] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -964,6 +969,34 @@ export default function AdminPage() {
       setAllCareerRecsLoading(false)
     }
   }, [])
+
+  const fetchCareersCatalog = useCallback(async () => {
+    setCareersCatalogLoading(true)
+    setCareersCatalogError('')
+    try {
+      const res = await fetch('/api/admin/careers')
+      if (!res.ok) throw new Error('Failed to load career catalog')
+      setCareersCatalog(await res.json())
+    } catch (err: any) {
+      setCareersCatalogError(err.message)
+    } finally {
+      setCareersCatalogLoading(false)
+    }
+  }, [])
+
+  async function setCareerApproval(id: string, is_approved: boolean) {
+    setCareersCatalog(prev => prev.map(c => c.id === id ? { ...c, is_approved } : c))
+    try {
+      const res = await fetch(`/api/admin/careers/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_approved }),
+      })
+      if (!res.ok) throw new Error('failed')
+    } catch {
+      fetchCareersCatalog() // best-effort optimistic update — resync on failure
+    }
+  }
 
   const fetchTelemetry = useCallback(async () => {
     setTelemetryLoading(true)
@@ -1278,6 +1311,7 @@ export default function AdminPage() {
       fetchFeedback()
       fetchBetaFeedback()
       fetchAllCareerRecs()
+      fetchCareersCatalog()
       fetchTelemetry()
       fetchBugReports()
       fetchWaitlist()
@@ -1289,7 +1323,7 @@ export default function AdminPage() {
       fetchHomepageMode()
       fetchAiProvider()
     }
-  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchBetaFeedback, fetchAllCareerRecs, fetchTelemetry, fetchBugReports, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchAiProvider])
+  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchBetaFeedback, fetchAllCareerRecs, fetchCareersCatalog, fetchTelemetry, fetchBugReports, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchAiProvider])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -2540,7 +2574,7 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { fetchDashboardStats(); fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchBetaFeedback(); fetchAllCareerRecs(); fetchTelemetry(); fetchBugReports(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
+              onClick={() => { fetchDashboardStats(); fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchBetaFeedback(); fetchAllCareerRecs(); fetchCareersCatalog(); fetchTelemetry(); fetchBugReports(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
               className="text-sm text-primary hover:underline"
             >
               Refresh
@@ -2992,6 +3026,84 @@ export default function AdminPage() {
 
         {activeTab === 'betaCareerRecs' && (
           <div className="max-w-3xl mx-auto px-4 py-8 space-y-4">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-4">
+              <div>
+                <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Career Catalog</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Approve or reject each career in the catalog. A rejected career is immediately excluded from
+                  scoring and AI-generated recommendations for every future assessment — it won't be suggested
+                  to anyone until re-approved.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <input
+                  type="text"
+                  value={careersCatalogSearch}
+                  onChange={e => setCareersCatalogSearch(e.target.value)}
+                  placeholder="Search by title or sector…"
+                  className="px-3 py-1.5 rounded-lg text-xs border border-slate-200 flex-1 min-w-[180px]"
+                />
+                <div className="flex gap-2">
+                  {(['all', 'approved', 'rejected'] as const).map(key => (
+                    <button
+                      key={key}
+                      onClick={() => setCareersCatalogFilter(key)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${
+                        careersCatalogFilter === key ? 'bg-teal-700 text-white' : 'bg-white text-slate-400 border border-slate-100 hover:text-slate-600'
+                      }`}
+                    >
+                      {key}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {careersCatalogLoading && (
+                <div className="flex justify-center py-10">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+              {careersCatalogError && <p className="text-red-500 text-xs text-center py-4">{careersCatalogError}</p>}
+              {!careersCatalogLoading && !careersCatalogError && (() => {
+                const q = careersCatalogSearch.trim().toLowerCase()
+                const visible = careersCatalog
+                  .filter(c => careersCatalogFilter === 'all' || (careersCatalogFilter === 'approved' ? c.is_approved : !c.is_approved))
+                  .filter(c => !q || c.title?.toLowerCase().includes(q) || c.sector?.toLowerCase().includes(q))
+                if (visible.length === 0) {
+                  return <p className="text-slate-400 text-xs text-center py-6">No careers match this filter</p>
+                }
+                return (
+                  <div className="max-h-[28rem] overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-xl">
+                    {visible.map(c => (
+                      <div key={c.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                        <div className="min-w-0">
+                          <p className="text-sm text-slate-800 truncate">{c.title}</p>
+                          {c.sector && <p className="text-xs text-slate-400">{c.sector}</p>}
+                        </div>
+                        <div className="flex gap-1.5 shrink-0">
+                          <button
+                            onClick={() => setCareerApproval(c.id, true)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                              c.is_approved ? 'bg-teal-700 text-white' : 'bg-slate-50 text-slate-400 hover:text-teal-700'
+                            }`}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => setCareerApproval(c.id, false)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                              !c.is_approved ? 'bg-red-600 text-white' : 'bg-slate-50 text-slate-400 hover:text-red-600'
+                            }`}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+            </div>
+
             <p className="text-xs text-slate-400">
               Every AI-generated career recommendation (title, match score, fit summary, growth note) shown to a beta
               user so far, in one place — for reviewing accuracy and appropriateness without opening each submission.
