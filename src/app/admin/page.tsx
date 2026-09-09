@@ -2898,13 +2898,36 @@ export default function AdminPage() {
               const stage2Responses = betaFeedbackList.filter(bf => bf.stage2_completed_at)
               const stage2Total = stage2Responses.length
               const betaTotal = betaFeedbackList.length
+              const totalSubmissions = betaSubmissions.length
               return (
                 <>
+                  {totalSubmissions > 0 && (
+                    <div className="mb-6">
+                      <p className="text-sm font-semibold text-slate-700 mb-3">Feedback funnel</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <BetaStatTile
+                          label="Total submissions"
+                          value={String(totalSubmissions)}
+                          sublabel="everyone who took the beta assessment"
+                        />
+                        <BetaStatTile
+                          label="Stage 1 — quick pulse"
+                          value={String(betaTotal)}
+                          sublabel="answered at least one of the 3 quick taps on the loading screen"
+                        />
+                        <BetaStatTile
+                          label="Stage 2 — full survey"
+                          value={String(stage2Total)}
+                          sublabel="completed the detailed post-report survey"
+                        />
+                      </div>
+                    </div>
+                  )}
                   {betaTotal > 0 && (
                     <div className="mb-6">
                       <p className="text-sm font-semibold text-slate-700 mb-3">
                         Who&apos;s testing <span className="text-slate-400 font-normal">
-                          — {betaTotal} who reached the feedback stage (not all beta submissions — see the Submissions tab for the full count)
+                          — {betaTotal} Stage 1 respondents (of {totalSubmissions} total beta submissions)
                         </span>
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2944,7 +2967,7 @@ export default function AdminPage() {
                   )}
                   {stage2Total > 0 && (
                       <div className="mb-6">
-                        <p className="text-sm font-semibold text-slate-700 mb-3">Feedback analytics <span className="text-slate-400 font-normal">— from {stage2Total} completed survey{stage2Total !== 1 ? 's' : ''}</span></p>
+                        <p className="text-sm font-semibold text-slate-700 mb-3">Feedback analytics <span className="text-slate-400 font-normal">— {stage2Total} Stage 2 respondents (of {betaTotal} who started Stage 1)</span></p>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                           <BetaStatTile
                             label="Would recommend"
