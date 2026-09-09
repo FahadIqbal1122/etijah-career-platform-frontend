@@ -3058,13 +3058,13 @@ export default function AdminPage() {
                   ))}
                 </div>
               </div>
-              {careersCatalogLoading && (
+              {(careersCatalogLoading || allCareerRecsLoading) && (
                 <div className="flex justify-center py-10">
                   <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
               {careersCatalogError && <p className="text-red-500 text-xs text-center py-4">{careersCatalogError}</p>}
-              {!careersCatalogLoading && !careersCatalogError && (() => {
+              {!careersCatalogLoading && !allCareerRecsLoading && !careersCatalogError && (() => {
                 // Every title an AI recommendation call has actually surfaced to a beta
                 // user, with how many times — the AI only ever picks from this catalog
                 // verbatim (see careers_prompt in report_generator.py), so a title match
