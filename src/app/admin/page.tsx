@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 import DashboardStatsView, { type DashboardStats } from '@/components/admin/DashboardStatsView'
 import EmailTemplatesTab from '@/components/admin/EmailTemplatesTab'
+import EmailSchedulerTab from '@/components/admin/EmailSchedulerTab'
 import SmtpSettingsTab from '@/components/admin/SmtpSettingsTab'
 import { questions } from '@/data/questions'
 
@@ -99,13 +100,14 @@ function cohortLabel(row: { created_at: string; cohort_override?: 'beta' | 'beta
   return isBetaV2(row.created_at) ? 'beta v2' : 'beta'
 }
 
-type BetaFeedbackStage = 'started' | 'stage1' | 'stage2'
-function betaFeedbackStageOf(bf: Pick<BetaFeedbackEntry, 'stage1_completed_at' | 'stage2_completed_at'>): BetaFeedbackStage {
-  return bf.stage2_completed_at ? 'stage2' : bf.stage1_completed_at ? 'stage1' : 'started'
+type BetaFeedbackStage = 'started' | 'stage1' | 'result' | 'stage2'
+function betaFeedbackStageOf(bf: Pick<BetaFeedbackEntry, 'stage1_completed_at' | 'result_stage_completed_at' | 'stage2_completed_at'>): BetaFeedbackStage {
+  return bf.stage2_completed_at ? 'stage2' : bf.result_stage_completed_at ? 'result' : bf.stage1_completed_at ? 'stage1' : 'started'
 }
 const BETA_FEEDBACK_STAGE_LABELS: Record<BetaFeedbackStage, string> = {
   started: 'Started',
   stage1: 'Stage 1',
+  result: 'Result Stage',
   stage2: 'Stage 2',
 }
 
@@ -704,6 +706,8 @@ type BetaFeedbackEntry = {
   surprised_text: string | null
   not_me_text: string | null
   other_text: string | null
+  result_accuracy: string | null
+  result_stage_completed_at: string | null
   stage2_completed_at: string | null
   created_at: string
   assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null; nationality: string | null; age_bracket: string | null; current_stage: string | null; cohort_override: 'beta' | 'beta_v2' | null } | null
@@ -807,7 +811,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'templates' | 'smtp' | 'aiprovider'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('dashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -2693,6 +2697,7 @@ export default function AdminPage() {
                 { key: 'testmode', label: 'Test Mode', color: 'bg-cyan-600', badge: testModeEnabled ? 'ON' : undefined, onSelect: fetchTestMode },
                 { key: 'homepage', label: 'Homepage', color: 'bg-fuchsia-600', badge: homepageMode, onSelect: fetchHomepageMode },
                 { key: 'templates', label: 'Email Templates', color: 'bg-pink-600' },
+                { key: 'emailScheduler', label: 'Email Scheduler', color: 'bg-rose-600' },
                 { key: 'smtp', label: 'SMTP Settings', color: 'bg-cyan-700' },
                 { key: 'aiprovider', label: 'AI Provider', color: 'bg-orange-600', badge: aiProvider, onSelect: fetchAiProvider },
               ],
@@ -2898,6 +2903,8 @@ export default function AdminPage() {
             {!betaFeedbackLoading && !betaFeedbackError && (() => {
               const stage2Responses = betaFeedbackList.filter(bf => bf.stage2_completed_at)
               const stage2Total = stage2Responses.length
+              const resultStageResponses = betaFeedbackList.filter(bf => bf.result_stage_completed_at)
+              const resultStageTotal = resultStageResponses.length
               const betaTotal = betaFeedbackList.length
               const totalSubmissions = betaSubmissions.length
               return (
@@ -2905,7 +2912,7 @@ export default function AdminPage() {
                   {totalSubmissions > 0 && (
                     <div className="mb-6">
                       <p className="text-sm font-semibold text-slate-700 mb-3">Feedback funnel</p>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                         <BetaStatTile
                           label="Total submissions"
                           value={String(totalSubmissions)}
@@ -2915,6 +2922,11 @@ export default function AdminPage() {
                           label="Stage 1 — quick pulse"
                           value={String(betaTotal)}
                           sublabel="answered at least one of the 3 quick taps on the loading screen"
+                        />
+                        <BetaStatTile
+                          label="Result Stage"
+                          value={String(resultStageTotal)}
+                          sublabel="rated accuracy/recommend/pay on the results page"
                         />
                         <BetaStatTile
                           label="Stage 2 — full survey"
@@ -3000,33 +3012,72 @@ export default function AdminPage() {
                       </div>
                     )
                   })()}
+                  {resultStageTotal === 0 && (
+                    <p className="text-sm text-slate-400 text-center py-6">No Result Stage responses yet</p>
+                  )}
+                  {resultStageTotal > 0 && (
+                    <div className="mb-6">
+                      <p className="text-sm font-semibold text-slate-700 mb-3">Result Stage analytics <span className="text-slate-400 font-normal">— {resultStageTotal} respondents (of {betaTotal} who started Stage 1)</span></p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                        <BetaStatTile
+                          label="Overall accuracy"
+                          value={`${Math.round(((countBy(resultStageResponses, bf => bf.result_accuracy).spot_on || 0) / resultStageTotal) * 100)}%`}
+                          sublabel="“spot on”"
+                          onClick={() => setBetaStatDrilldown({
+                            title: 'Rated the report "spot on" for accuracy',
+                            rows: resultStageResponses.filter(bf => bf.result_accuracy === 'spot_on').map(bf => ({ bf, note: 'Spot on' })),
+                          })}
+                        />
+                        <BetaStatTile
+                          label="Would recommend"
+                          value={`${Math.round(((countBy(resultStageResponses, bf => bf.would_recommend).yes || 0) / resultStageTotal) * 100)}%`}
+                          sublabel="answered “yes”"
+                          onClick={() => setBetaStatDrilldown({
+                            title: 'Would recommend to a friend',
+                            rows: resultStageResponses.filter(bf => bf.would_recommend === 'yes').map(bf => ({ bf, note: 'Yes' })),
+                          })}
+                        />
+                        <BetaStatTile
+                          label="Would pay for it"
+                          value={`${Math.round((((countBy(resultStageResponses, bf => bf.would_pay).definitely || 0) + (countBy(resultStageResponses, bf => bf.would_pay).maybe || 0)) / resultStageTotal) * 100)}%`}
+                          sublabel="“definitely” or “maybe”"
+                          onClick={() => setBetaStatDrilldown({
+                            title: 'Would pay for the full report',
+                            rows: resultStageResponses
+                              .filter(bf => bf.would_pay === 'definitely' || bf.would_pay === 'maybe')
+                              .map(bf => ({ bf, note: SENTIMENT_LABEL[bf.would_pay || ''] || bf.would_pay || '' })),
+                          })}
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <BetaSentimentChart
+                          title="How accurate was this?"
+                          orderKey="accuracy"
+                          counts={countBy(resultStageResponses, bf => bf.result_accuracy)}
+                          total={resultStageTotal}
+                        />
+                        <BetaSentimentChart
+                          title="Would recommend this to a friend?"
+                          orderKey="would_recommend"
+                          counts={countBy(resultStageResponses, bf => bf.would_recommend)}
+                          total={resultStageTotal}
+                        />
+                        <BetaSentimentChart
+                          title="Would pay for the full report?"
+                          orderKey="would_pay"
+                          counts={countBy(resultStageResponses, bf => bf.would_pay)}
+                          total={resultStageTotal}
+                        />
+                      </div>
+                    </div>
+                  )}
                   {stage2Total === 0 && (
                     <p className="text-sm text-slate-400 text-center py-12">No completed beta surveys yet</p>
                   )}
                   {stage2Total > 0 && (
                       <div className="mb-6">
                         <p className="text-sm font-semibold text-slate-700 mb-3">Feedback analytics <span className="text-slate-400 font-normal">— {stage2Total} Stage 2 respondents (of {betaTotal} who started Stage 1)</span></p>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                          <BetaStatTile
-                            label="Would recommend"
-                            value={`${Math.round(((countBy(stage2Responses, bf => bf.would_recommend).yes || 0) / stage2Total) * 100)}%`}
-                            sublabel="answered “yes”"
-                            onClick={() => setBetaStatDrilldown({
-                              title: 'Would recommend to a friend',
-                              rows: stage2Responses.filter(bf => bf.would_recommend === 'yes').map(bf => ({ bf, note: 'Yes' })),
-                            })}
-                          />
-                          <BetaStatTile
-                            label="Would pay for it"
-                            value={`${Math.round((((countBy(stage2Responses, bf => bf.would_pay).definitely || 0) + (countBy(stage2Responses, bf => bf.would_pay).maybe || 0)) / stage2Total) * 100)}%`}
-                            sublabel="“definitely” or “maybe”"
-                            onClick={() => setBetaStatDrilldown({
-                              title: 'Would pay for the full report',
-                              rows: stage2Responses
-                                .filter(bf => bf.would_pay === 'definitely' || bf.would_pay === 'maybe')
-                                .map(bf => ({ bf, note: SENTIMENT_LABEL[bf.would_pay || ''] || bf.would_pay || '' })),
-                            })}
-                          />
+                        <div className="grid grid-cols-2 gap-3 mb-4">
                           <BetaStatTile
                             label="Overall value"
                             value={`${(stage2Responses.reduce((sum, bf) => sum + (bf.overall_value || 0), 0) / Math.max(1, stage2Responses.filter(bf => bf.overall_value != null).length)).toFixed(1)}/6`}
@@ -3094,20 +3145,6 @@ export default function AdminPage() {
                             )
                           })()}
                           */}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <BetaSentimentChart
-                            title="Would recommend this to a friend?"
-                            orderKey="would_recommend"
-                            counts={countBy(stage2Responses, bf => bf.would_recommend)}
-                            total={stage2Total}
-                          />
-                          <BetaSentimentChart
-                            title="Would pay for the full report?"
-                            orderKey="would_pay"
-                            counts={countBy(stage2Responses, bf => bf.would_pay)}
-                            total={stage2Total}
-                          />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           <BetaScaleChart title="Overall value (1-6)" values={stage2Responses.map(bf => bf.overall_value)} />
@@ -3349,7 +3386,7 @@ export default function AdminPage() {
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                       <p className="text-sm text-slate-400">{visibleBetaFeedback.length} response{visibleBetaFeedback.length !== 1 ? 's' : ''}</p>
                       <div className="flex flex-wrap gap-2">
-                        {(['all', 'started', 'stage1', 'stage2'] as const).map(key => (
+                        {(['all', 'started', 'stage1', 'result', 'stage2'] as const).map(key => (
                           <button
                             key={key}
                             onClick={() => setBetaFeedbackStageFilter(key)}
@@ -3417,6 +3454,7 @@ export default function AdminPage() {
                                 <td className="px-4 py-3">
                                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                                     stageKey === 'stage2' ? 'bg-green-50 text-green-700' :
+                                    stageKey === 'result' ? 'bg-teal-50 text-teal-700' :
                                     stageKey === 'stage1' ? 'bg-amber-50 text-amber-600' :
                                     'bg-slate-100 text-slate-500'
                                   }`}>{stage}</span>
@@ -4631,6 +4669,12 @@ export default function AdminPage() {
       {activeTab === 'templates' && (
         <div className="px-4 py-8">
           <EmailTemplatesTab />
+        </div>
+      )}
+
+      {activeTab === 'emailScheduler' && (
+        <div className="px-4 py-8">
+          <EmailSchedulerTab />
         </div>
       )}
 

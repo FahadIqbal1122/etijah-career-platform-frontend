@@ -97,6 +97,47 @@ const ACCURACY: Option[] = [
   { value: 'off', label: { en: 'Off', ar: 'غير دقيق' } },
 ]
 
+// ---------------------------------------------------------------------------
+// Result Stage — shown on the results page itself (not gating, not the
+// loading screen). Sits between Stage 1 (pulse, while the report generates)
+// and Stage 2 (the full survey) — three questions asked right after someone
+// has actually seen their report: accuracy, would-recommend, would-pay.
+// would_recommend/would_pay are the same beta_feedback columns Section F below
+// also asks about — intentionally duplicated (not exclusive to either stage)
+// so it's still askable/editable there if someone skips or changes their mind.
+// ---------------------------------------------------------------------------
+
+export const resultStageIntro: Bi = {
+  en: 'Quick check before you go:',
+  ar: 'سؤال سريع قبل أن تُكمل:',
+}
+
+export const resultStageQuestions: { key: 'result_accuracy' | 'would_recommend' | 'would_pay'; label: Bi; options: Option[] }[] = [
+  {
+    key: 'result_accuracy',
+    label: { en: 'How accurate was this?', ar: 'ما مدى دقة هذا التقرير؟' },
+    options: ACCURACY,
+  },
+  {
+    key: 'would_recommend',
+    label: { en: 'Would you recommend this to a friend?', ar: 'هل توصي به صديقًا؟' },
+    options: [
+      { value: 'yes', label: { en: 'Yes', ar: 'نعم' } },
+      { value: 'maybe', label: { en: 'Maybe', ar: 'ربما' } },
+      { value: 'no', label: { en: 'No', ar: 'لا' } },
+    ],
+  },
+  {
+    key: 'would_pay',
+    label: { en: 'Would you pay for this?', ar: 'هل ستدفع مقابل هذا؟' },
+    options: [
+      { value: 'definitely', label: { en: 'Definitely', ar: 'بالتأكيد' } },
+      { value: 'maybe', label: { en: 'Maybe', ar: 'ربما' } },
+      { value: 'no', label: { en: 'No', ar: 'لا' } },
+    ],
+  },
+]
+
 export const stage2Sections: SectionDef[] = [
   {
     id: 'A',
@@ -246,6 +287,10 @@ export const stage2Sections: SectionDef[] = [
           { value: 'plan', label: { en: '90-day plan', ar: 'خطة الـ ٩٠ يومًا' } },
         ],
       },
+      // Also asked earlier by the Result Stage (see resultStageQuestions above) —
+      // same beta_feedback columns, so BetaFeedbackStage2's pre-fill (GET
+      // /beta-feedback/{id}/stage2) already shows whatever was answered there.
+      // Kept here too so it's still askable/editable if skipped or changed.
       {
         key: 'would_pay', type: 'single', required: true,
         label: { en: 'If the full report you just saw were a paid product, would it be worth it?', ar: 'لو كان التقرير الكامل الذي رأيته للتو منتجًا مدفوعًا، فهل يستحق ذلك؟' },

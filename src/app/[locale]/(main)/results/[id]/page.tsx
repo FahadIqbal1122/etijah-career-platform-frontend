@@ -11,6 +11,7 @@ import Logomark from '@/components/brand/Logomark'
 import { LockedSection } from '@/components/shared/LockedSection'
 import { BlurGate } from '@/components/shared/BlurGate'
 import BetaFeedbackStage1 from '@/components/beta-feedback/BetaFeedbackStage1'
+import BetaFeedbackResultStage from '@/components/beta-feedback/BetaFeedbackResultStage'
 
 const levelToWidth: Record<string, string> = {
   low: '20%',
@@ -110,6 +111,7 @@ export default function ResultsPage() {
   const [tier, setTier] = useState<'free' | 'pathfinder' | 'launchpad'>('launchpad')
   const [betaMode, setBetaMode] = useState(false)
   const [stage1Done, setStage1Done] = useState(false)
+  const [resultStageDone, setResultStageDone] = useState(false)
   // Only true right after AssessmentForm's submit redirect sets this flag — a
   // revisit of the same results link (bookmark, email) later should not show
   // the inline beta feedback survey again.
@@ -170,16 +172,23 @@ export default function ResultsPage() {
           if (data.tier === 'free' || data.tier === 'pathfinder' || data.tier === 'launchpad') setTier(data.tier)
           if (data.locale === 'ar' || data.locale === 'en') setReportLocale(data.locale)
           setBetaMode(!!data.beta_mode)
+          // Server-truth check, not just each child's localStorage flag — covers a
+          // cleared/private-mode browser where the client-side "done" marker from a
+          // previous answer session wouldn't otherwise be seen. Stage 1 only ever
+          // shows right after justCompleted, but the Result Stage widget below can
+          // show again on any later revisit, so its status is always worth knowing.
+          // Only worth asking at all for beta submissions — skip the round trip
+          // entirely for every other (permanent) results-page view.
+          if (data.beta_mode) {
+            apiAuthGet<{ stage1_completed: boolean; result_stage_completed: boolean }>(`/beta-feedback/${id}/status`)
+              .then(statusData => {
+                if (justCompleted && statusData.stage1_completed) setStage1Done(true)
+                if (statusData.result_stage_completed) setResultStageDone(true)
+              })
+              .catch(() => {})
+          }
         })
         .catch(err => setError(err.message || t('error.loadFailed')))
-      if (justCompleted) {
-        // Server-truth check, not just the child's localStorage flag — covers
-        // a cleared/private-mode browser where the client-side "done" marker
-        // from a previous answer session wouldn't otherwise be seen.
-        apiAuthGet<{ stage1_completed: boolean }>(`/beta-feedback/${id}/status`)
-          .then(data => { if (data.stage1_completed) setStage1Done(true) })
-          .catch(() => {})
-      }
       apiAuthGet<any>(`/assessment/${id}/career-recommendations`)
         .then(data => setJobs(data.career_recommendations || []))
         .catch(() => {})
@@ -392,6 +401,11 @@ export default function ResultsPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-6 mt-8 pb-16 space-y-4 relative z-10">
+
+        {/* Result Stage feedback — non-blocking, shows on every visit until answered */}
+        {betaMode && (
+          <BetaFeedbackResultStage responseId={id} locale={locale} initiallyDone={resultStageDone} />
+        )}
 
         {/* Signup CTA */}
         {!loggedIn && (
