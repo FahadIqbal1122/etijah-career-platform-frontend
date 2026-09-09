@@ -3064,23 +3064,31 @@ export default function AdminPage() {
                 </div>
               )}
               {careersCatalogError && <p className="text-red-500 text-xs text-center py-4">{careersCatalogError}</p>}
+              {allCareerRecsError && (
+                <p className="text-amber-600 text-xs text-center py-1">
+                  Couldn&rsquo;t load who&rsquo;s been recommended what ({allCareerRecsError}) — approve/reject still works, but &ldquo;Recommended to&rdquo; may be incomplete.
+                </p>
+              )}
               {!careersCatalogLoading && !allCareerRecsLoading && !careersCatalogError && (() => {
                 // Every title an AI recommendation call has actually surfaced to a beta
-                // user, with how many times — the AI only ever picks from this catalog
+                // user, with who received it — the AI only ever picks from this catalog
                 // verbatim (see careers_prompt in report_generator.py), so a title match
                 // reliably identifies which catalog row was shown.
-                const recommendedCounts = new Map<string, number>()
+                const recommendedTo = new Map<string, { full_name: string | null; email: string | null }[]>()
                 for (const sub of betaCareerRecsGenerated) {
                   for (const rec of sub.career_recommendations || []) {
                     const key = (rec.title || '').trim().toLowerCase()
-                    if (key) recommendedCounts.set(key, (recommendedCounts.get(key) || 0) + 1)
+                    if (!key) continue
+                    const list = recommendedTo.get(key) || []
+                    list.push({ full_name: sub.full_name, email: sub.email })
+                    recommendedTo.set(key, list)
                   }
                 }
 
                 const q = careersCatalogSearch.trim().toLowerCase()
                 let visible = careersCatalog
                   .filter(c => {
-                    if (careersCatalogFilter === 'recommended') return recommendedCounts.has((c.title || '').trim().toLowerCase())
+                    if (careersCatalogFilter === 'recommended') return recommendedTo.has((c.title || '').trim().toLowerCase())
                     if (careersCatalogFilter === 'approved') return c.is_approved
                     if (careersCatalogFilter === 'rejected') return !c.is_approved
                     return true
@@ -3088,8 +3096,8 @@ export default function AdminPage() {
                   .filter(c => !q || c.title?.toLowerCase().includes(q) || c.sector?.toLowerCase().includes(q))
                 if (careersCatalogFilter === 'recommended') {
                   visible = [...visible].sort((a, b) =>
-                    (recommendedCounts.get((b.title || '').trim().toLowerCase()) || 0)
-                    - (recommendedCounts.get((a.title || '').trim().toLowerCase()) || 0))
+                    (recommendedTo.get((b.title || '').trim().toLowerCase())?.length || 0)
+                    - (recommendedTo.get((a.title || '').trim().toLowerCase())?.length || 0))
                 }
                 if (visible.length === 0) {
                   return (
@@ -3101,83 +3109,62 @@ export default function AdminPage() {
                   )
                 }
                 return (
-                  <div className="max-h-[28rem] overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-xl">
-                    {visible.map(c => {
-                      const count = recommendedCounts.get((c.title || '').trim().toLowerCase()) || 0
-                      return (
-                        <div key={c.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                          <div className="min-w-0">
-                            <p className="text-sm text-slate-800 truncate">{c.title}</p>
-                            <p className="text-xs text-slate-400">
-                              {c.sector}{c.sector && count > 0 ? ' · ' : ''}
-                              {count > 0 && `suggested ${count}×`}
-                            </p>
-                          </div>
-                          <div className="flex gap-1.5 shrink-0">
-                            <button
-                              onClick={() => setCareerApproval(c.id, true)}
-                              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                                c.is_approved ? 'bg-teal-700 text-white' : 'bg-slate-50 text-slate-400 hover:text-teal-700'
-                              }`}
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => setCareerApproval(c.id, false)}
-                              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                                !c.is_approved ? 'bg-red-600 text-white' : 'bg-slate-50 text-slate-400 hover:text-red-600'
-                              }`}
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    })}
+                  <div className="max-h-[32rem] overflow-auto border border-slate-100 rounded-xl">
+                    <table className="w-full text-sm">
+                      <thead className="sticky top-0 bg-slate-50 text-[10px] font-bold tracking-widest uppercase text-slate-400">
+                        <tr>
+                          <th className="text-start px-4 py-2">Career</th>
+                          <th className="text-start px-4 py-2">Sector</th>
+                          <th className="text-start px-4 py-2">Recommended to</th>
+                          <th className="text-end px-4 py-2">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {visible.map(c => {
+                          const recipients = recommendedTo.get((c.title || '').trim().toLowerCase()) || []
+                          return (
+                            <tr key={c.id}>
+                              <td className="px-4 py-2.5 text-slate-800">{c.title}</td>
+                              <td className="px-4 py-2.5 text-slate-400">{c.sector}</td>
+                              <td className="px-4 py-2.5 text-slate-500">
+                                {recipients.length === 0 ? (
+                                  <span className="text-slate-300">—</span>
+                                ) : (
+                                  <span title={recipients.map(r => r.full_name || r.email || 'Unnamed').join(', ')}>
+                                    {recipients.slice(0, 2).map(r => r.full_name || r.email || 'Unnamed').join(', ')}
+                                    {recipients.length > 2 && ` +${recipients.length - 2} more`}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <div className="flex gap-1.5 justify-end">
+                                  <button
+                                    onClick={() => setCareerApproval(c.id, true)}
+                                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                                      c.is_approved ? 'bg-teal-700 text-white' : 'bg-slate-50 text-slate-400 hover:text-teal-700'
+                                    }`}
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    onClick={() => setCareerApproval(c.id, false)}
+                                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                                      !c.is_approved ? 'bg-red-600 text-white' : 'bg-slate-50 text-slate-400 hover:text-red-600'
+                                    }`}
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )
               })()}
             </div>
-
-            <p className="text-xs text-slate-400">
-              Every AI-generated career recommendation (title, match score, fit summary, growth note) shown to a beta
-              user so far, in one place — for reviewing accuracy and appropriateness without opening each submission.
-              Only submissions that have already generated this content (viewed results or downloaded a report) show up here.
-            </p>
-            {allCareerRecsLoading && (
-              <div className="flex justify-center py-16">
-                <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              </div>
-            )}
-            {allCareerRecsError && <p className="text-red-500 text-sm text-center py-8">{allCareerRecsError}</p>}
-            {!allCareerRecsLoading && !allCareerRecsError && betaCareerRecsGenerated.length === 0 && (
-              <p className="text-slate-400 text-sm text-center py-8">No career recommendations generated yet for beta submissions</p>
-            )}
-            {betaCareerRecsGenerated.map(sub => (
-              <div key={sub.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">{sub.full_name || 'Unnamed'}</p>
-                    <p className="text-xs text-slate-400">{sub.email} · {new Date(sub.created_at).toLocaleString()}</p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {sub.career_recommendations.map((c: any, i: number) => (
-                    <div key={c.title ?? i} className="border border-slate-100 rounded-xl p-4">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-sm font-semibold text-slate-800">{c.title}</span>
-                        {typeof c.match_score === 'number' && (
-                          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700">{c.match_score}% match</span>
-                        )}
-                      </div>
-                      {c.sector && <p className="text-xs text-slate-400 mb-1.5">{c.sector}</p>}
-                      {c.fit_summary && <p className="text-xs text-slate-600 mb-1.5">{c.fit_summary}</p>}
-                      {c.growth_note && <p className="text-xs text-slate-500 italic">{c.growth_note}</p>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
           </div>
         )}
 
