@@ -838,6 +838,7 @@ export default function AdminPage() {
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackEntry | null>(null)
 
   const [betaFeedbackList, setBetaFeedbackList] = useState<BetaFeedbackEntry[]>([])
+  const [betaDemographicsFilter, setBetaDemographicsFilter] = useState<'all' | 'stage1' | 'stage2'>('all')
   const [betaFeedbackLoading, setBetaFeedbackLoading] = useState(false)
   const [betaFeedbackError, setBetaFeedbackError] = useState('')
   const [selectedBetaFeedback, setSelectedBetaFeedback] = useState<BetaFeedbackEntry | null>(null)
@@ -2923,45 +2924,82 @@ export default function AdminPage() {
                       </div>
                     </div>
                   )}
-                  {betaTotal > 0 && (
-                    <div className="mb-6">
-                      <p className="text-sm font-semibold text-slate-700 mb-3">
-                        Who&apos;s testing <span className="text-slate-400 font-normal">
-                          — {betaTotal} Stage 1 respondents (of {totalSubmissions} total beta submissions)
-                        </span>
-                      </p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <BetaCategoryChart
-                          title="Age group"
-                          order={AGE_BRACKET_ORDER}
-                          labels={AGE_BRACKET_LABEL}
-                          counts={countBy(betaFeedbackList, bf => bf.assessment_responses?.age_bracket)}
-                          total={betaTotal}
-                        />
-                        <BetaCategoryChart
-                          title="Current stage"
-                          order={CURRENT_STAGE_ORDER}
-                          labels={CURRENT_STAGE_LABEL}
-                          counts={countBy(betaFeedbackList, bf => bf.assessment_responses?.current_stage)}
-                          total={betaTotal}
-                        />
-                        <BetaCategoryChart
-                          title="Country"
-                          order={COUNTRY_ORDER}
-                          labels={COUNTRY_LABEL}
-                          counts={countBy(betaFeedbackList, bf => bf.assessment_responses?.country)}
-                          total={betaTotal}
-                        />
-                        <BetaCategoryChart
-                          title="Nationality"
-                          order={NATIONALITY_ORDER}
-                          labels={NATIONALITY_LABEL}
-                          counts={countBy(betaFeedbackList, bf => bf.assessment_responses?.nationality)}
-                          total={betaTotal}
-                        />
+                  {totalSubmissions > 0 && (() => {
+                    // Normalize each cohort to the same flat shape — "all" reads
+                    // demographic fields straight off Submission, while "stage1"/
+                    // "stage2" read them off the nested assessment_responses join
+                    // on a BetaFeedbackEntry — so one countBy call below works
+                    // regardless of which cohort is selected.
+                    type DemoRow = { age_bracket: string | null; current_stage: string | null; country: string | null; nationality: string | null }
+                    const demoRows: DemoRow[] =
+                      betaDemographicsFilter === 'all'
+                        ? betaSubmissions.map(s => ({ age_bracket: s.age_bracket, current_stage: s.current_stage, country: s.country, nationality: s.nationality }))
+                        : (betaDemographicsFilter === 'stage1' ? betaFeedbackList : stage2Responses).map(bf => ({
+                            age_bracket: bf.assessment_responses?.age_bracket ?? null,
+                            current_stage: bf.assessment_responses?.current_stage ?? null,
+                            country: bf.assessment_responses?.country ?? null,
+                            nationality: bf.assessment_responses?.nationality ?? null,
+                          }))
+                    const demoTotal = demoRows.length
+                    const filterCount = { all: totalSubmissions, stage1: betaTotal, stage2: stage2Total }
+                    const filterLabel = { all: 'All submissions', stage1: 'Stage 1', stage2: 'Stage 2' }
+                    return (
+                      <div className="mb-6">
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                          <p className="text-sm font-semibold text-slate-700">
+                            Who&apos;s testing <span className="text-slate-400 font-normal">— {filterLabel[betaDemographicsFilter]} ({demoTotal})</span>
+                          </p>
+                          <div className="flex gap-2">
+                            {(['all', 'stage1', 'stage2'] as const).map(key => (
+                              <button
+                                key={key}
+                                onClick={() => setBetaDemographicsFilter(key)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                  betaDemographicsFilter === key ? 'bg-teal-700 text-white' : 'bg-white text-slate-400 border border-slate-100 hover:text-slate-600'
+                                }`}
+                              >
+                                {filterLabel[key]} ({filterCount[key]})
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {demoTotal === 0 ? (
+                          <p className="text-slate-400 text-xs text-center py-6">No submissions in this cohort yet</p>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <BetaCategoryChart
+                              title="Age group"
+                              order={AGE_BRACKET_ORDER}
+                              labels={AGE_BRACKET_LABEL}
+                              counts={countBy(demoRows, r => r.age_bracket)}
+                              total={demoTotal}
+                            />
+                            <BetaCategoryChart
+                              title="Current stage"
+                              order={CURRENT_STAGE_ORDER}
+                              labels={CURRENT_STAGE_LABEL}
+                              counts={countBy(demoRows, r => r.current_stage)}
+                              total={demoTotal}
+                            />
+                            <BetaCategoryChart
+                              title="Country"
+                              order={COUNTRY_ORDER}
+                              labels={COUNTRY_LABEL}
+                              counts={countBy(demoRows, r => r.country)}
+                              total={demoTotal}
+                            />
+                            <BetaCategoryChart
+                              title="Nationality"
+                              order={NATIONALITY_ORDER}
+                              labels={NATIONALITY_LABEL}
+                              counts={countBy(demoRows, r => r.nationality)}
+                              total={demoTotal}
+                            />
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    )
+                  })()}
                   {stage2Total === 0 && (
                     <p className="text-sm text-slate-400 text-center py-12">No completed beta surveys yet</p>
                   )}
@@ -3039,6 +3077,7 @@ export default function AdminPage() {
                               rows: stage2Responses.filter(bf => bf.language_used === 'both').map(bf => ({ bf, note: 'Both' })),
                             })}
                           />
+                          {/* Hidden for now, per request — leave the tile here, ready to re-enable.
                           {(() => {
                             const mentorAnswered = stage2Responses.filter(bf => bf.felt_like_mentor != null)
                             const mentorCount = countBy(mentorAnswered, bf => bf.felt_like_mentor).mentor || 0
@@ -3054,6 +3093,7 @@ export default function AdminPage() {
                               />
                             )
                           })()}
+                          */}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           <BetaSentimentChart
