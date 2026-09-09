@@ -123,9 +123,34 @@ const CHROME: Record<string, Record<string, string>> = {
 // estimates, which tended to alarm test users ("80 questions left") or read
 // as a broken promise when the pace estimate was off. Milestones (halfway,
 // last question) stay since they're reassuring rather than daunting.
+// Interleaved with light career/psychology trivia and clean jokes so the
+// same handful of "keep going" lines don't repeat the whole way through —
+// ordered so a plain encouragement line and a fun one alternate.
 const ENCOURAGEMENT: Record<'en' | 'ar', string[]> = {
-  en: ['You’re doing great', 'Keep going', 'Nice pace', 'Making great progress', 'You’ve got this'],
-  ar: ['أنت تبلي بلاءً حسناً', 'استمر', 'وتيرة رائعة', 'تقدّم ممتاز', 'أنت قادر على ذلك'],
+  en: [
+    'You’re doing great',
+    'Fun fact: most people change careers 5–7 times in their life',
+    'Keep going',
+    'Did you know? Curiosity is one of the strongest predictors of career happiness',
+    'Nice pace',
+    'Why did the résumé break up with the cover letter? It needed some space',
+    'Making great progress',
+    'Trivia: the personality model behind this assessment has been used since the 1950s',
+    'You’ve got this',
+    'What did one job interview say to the other? You’re a-peeling',
+  ],
+  ar: [
+    'أنت تبلي بلاءً حسناً',
+    'معلومة طريفة: كثيرون يغيّرون مسارهم المهني من ٥ إلى ٧ مرات خلال حياتهم',
+    'استمر',
+    'هل تعلم؟ الفضول من أقوى العوامل المرتبطة بالرضا الوظيفي',
+    'وتيرة رائعة',
+    'طرفة: لماذا رفضت السيرة الذاتية الذهاب للمقابلة؟ لأنها لم تكن مستعدة للتقديم على نفسها',
+    'تقدّم ممتاز',
+    'معلومة: النموذج النفسي الذي يعتمد عليه هذا التقييم مستخدم منذ الخمسينيات',
+    'أنت قادر على ذلك',
+    'طرفة: ما سر نجاح الباحث عن عمل الخجول؟ يتحدث بثقة… في سيرته الذاتية فقط',
+  ],
 }
 
 function buildProgressMessage(index: number, total: number, locale: string): string {

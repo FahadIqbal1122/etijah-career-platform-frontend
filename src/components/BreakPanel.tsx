@@ -37,6 +37,21 @@ function pickRandomKind(excluding: BreakActivity['kind'] | null): BreakActivity[
   return next
 }
 
+// The trigger used to sit onscreen for the whole assessment — always available
+// reads as "the assessment has a game in it" rather than an occasional, easy-
+// to-miss break. Instead: nothing for the first stretch (let someone get into
+// the assessment first), then cycle it on and off in blocks of a few
+// questions apart, for the rest of the run.
+const BREAK_TRIGGER_INITIAL_HIDDEN = 6
+const BREAK_TRIGGER_VISIBLE_SPAN = 5
+const BREAK_TRIGGER_HIDDEN_SPAN = 4
+function isBreakTriggerVisible(questionIndex: number): boolean {
+  if (questionIndex < BREAK_TRIGGER_INITIAL_HIDDEN) return false
+  const cycleLen = BREAK_TRIGGER_VISIBLE_SPAN + BREAK_TRIGGER_HIDDEN_SPAN
+  const posInCycle = (questionIndex - BREAK_TRIGGER_INITIAL_HIDDEN) % cycleLen
+  return posInCycle < BREAK_TRIGGER_VISIBLE_SPAN
+}
+
 interface BreakPanelProps {
   locale: 'en' | 'ar'
   eyebrow: string
@@ -87,20 +102,23 @@ export default function BreakPanel({ locale, eyebrow, progressMsg, questionIndex
   }
 
   if (!activeKind) {
+    const triggerVisible = isBreakTriggerVisible(questionIndex)
     if (compact) {
-      return (
+      return triggerVisible ? (
         <button type="button" className="assess-break-trigger" onClick={pickActivity}>
           {t(breakCopy.trigger, locale)}
         </button>
-      )
+      ) : null
     }
     return (
       <>
         <div className="assess-aside-eyebrow">{eyebrow}</div>
         {progressMsg && <div className="assess-aside-progress-msg">{progressMsg}</div>}
-        <button type="button" className="assess-break-trigger" onClick={pickActivity}>
-          {t(breakCopy.trigger, locale)}
-        </button>
+        {triggerVisible && (
+          <button type="button" className="assess-break-trigger" onClick={pickActivity}>
+            {t(breakCopy.trigger, locale)}
+          </button>
+        )}
       </>
     )
   }
