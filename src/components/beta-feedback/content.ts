@@ -59,8 +59,8 @@ export function personalHook(typeLabel: string, locale: Locale): string {
 }
 
 export const stage2Reward: Bi = {
-  en: 'Finish the feedback and book a free 20-minute session with an Etijah coach to walk through your results.',
-  ar: 'أكمل التقييم واحجز جلسة مجانية مدتها ٢٠ دقيقة مع مدرب من إتجاه لمراجعة نتائجك معك.',
+  en: 'Finish the feedback to help us make your results even more useful.',
+  ar: 'أكمل التقييم لمساعدتنا في جعل نتائجك أكثر فائدة.',
 }
 
 export type FieldType = 'single' | 'scale6' | 'face5' | 'multi' | 'text'
