@@ -200,6 +200,7 @@ export default function UserDashboard() {
   const [error, setError] = useState('')
   const [downloadingReport, setDownloadingReport] = useState(false)
   const [downloadError, setDownloadError] = useState('')
+  const [justVerified, setJustVerified] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -280,6 +281,11 @@ export default function UserDashboard() {
   const searchParams = useSearchParams()
   useEffect(() => {
     if (!user) return
+    if (searchParams.get('verified') === '1') {
+      setJustVerified(true)
+      navRouter.replace(`/${locale}/dashboard`)
+      return
+    }
     const buy = searchParams.get('buy')
     // Launchpad isn't purchasable yet (backend rejects it with 400 regardless) — drop a
     // stale/bookmarked ?buy=launchpad_* link instead of firing checkout and surfacing that
@@ -337,6 +343,13 @@ export default function UserDashboard() {
       {/* main */}
       <div className="md:ms-64">
         <main ref={mainRef} className="max-w-3xl mx-auto px-4 md:px-8 py-8 pb-28 md:pb-12 space-y-5">
+
+          {justVerified && (
+            <div className="rounded-xl bg-teal/10 border border-teal/30 text-teal px-4 py-3 text-sm flex items-center justify-between">
+              <span>{locale === 'ar' ? 'تم تأكيد بريدك الإلكتروني بنجاح!' : 'Your email has been verified!'}</span>
+              <button onClick={() => setJustVerified(false)} className="opacity-60 hover:opacity-100">✕</button>
+            </div>
+          )}
 
           {/* welcome */}
           <header id="sec-home" className="flex items-center justify-between gap-4 flex-wrap scroll-mt-4">
