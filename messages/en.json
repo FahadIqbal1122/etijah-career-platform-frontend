@@ -455,6 +455,14 @@
         "You're not just getting a personality quiz — this is matched against real regional job market data.",
         "Every recommendation is tailored to your answers, not a generic template."
       ],
+      "stages": {
+        "profile": "Analyzing your answers",
+        "careers": "Matching your top careers",
+        "impact": "Calculating AI impact on your top careers",
+        "jobs": "Finding open roles near you",
+        "companies": "Matching companies",
+        "courses": "Curating learning resources"
+      },
       "recentCompletions": "{count, plural, one {# person} other {# people}} completed their assessment in the last hour"
     },
     "error": {

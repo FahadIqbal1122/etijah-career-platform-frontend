@@ -612,6 +612,19 @@ html { scroll-behavior: smooth; }
 }
 @media (prefers-reduced-motion: reduce) { .report-loading-logo { animation: none; } }
 
+.loading-checklist { text-align: start; margin: 4px auto 0; max-width: 320px; display: flex; flex-direction: column; gap: 8px; }
+.loading-checklist li {
+  display: flex; align-items: center; gap: 10px;
+  color: rgba(255,255,255,0.55); font-size: 14px; transition: color .3s ease;
+}
+.loading-checklist li.done { color: rgba(255,255,255,0.9); }
+.loading-checklist-icon {
+  width: 18px; height: 18px; flex: 0 0 auto; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.35); display: flex; align-items: center; justify-content: center;
+  font-size: 11px; transition: background .3s ease, border-color .3s ease;
+}
+.loading-checklist li.done .loading-checklist-icon { background: #00C9A7; border-color: #00C9A7; color: #06263A; }
+
 /* ── problem section — highlighted payoff callout ───────────────────────── */
 .payoff {
   background: color-mix(in srgb, var(--accent) 8%, transparent);

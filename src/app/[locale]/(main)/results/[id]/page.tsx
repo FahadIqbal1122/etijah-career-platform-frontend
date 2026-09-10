@@ -8,6 +8,7 @@ import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
+import Constellation from '@/components/brand/Constellation'
 import { LockedSection } from '@/components/shared/LockedSection'
 import { BlurGate } from '@/components/shared/BlurGate'
 import BetaFeedbackStage1 from '@/components/beta-feedback/BetaFeedbackStage1'
@@ -98,7 +99,6 @@ export default function ResultsPage() {
   const id = params.id as string
   const locale = useLocale() as 'en' | 'ar'
   const t = useTranslations('results')
-  const loadingMessages = t.raw('loading.messages') as string[]
   const riasecLabel = (type: string) => t.has(`riasecTypes.${type}`) ? t(`riasecTypes.${type}` as any) : type
   const valueLabel = (v: string) => t.has(`valueNames.${v}`) ? t(`valueNames.${v}` as any) : v
   const strengthLabel = (s: string) => t.has(`strengthNames.${s}`) ? t(`strengthNames.${s}` as any) : s
@@ -107,7 +107,6 @@ export default function ResultsPage() {
 
   const [summary, setSummary] = useState<any>(null)
   const [recentCompletions, setRecentCompletions] = useState<number | null>(null)
-  const [messageIndex, setMessageIndex] = useState(0)
   const [tier, setTier] = useState<'free' | 'pathfinder' | 'launchpad'>('launchpad')
   const [betaMode, setBetaMode] = useState(false)
   const [stage1Done, setStage1Done] = useState(false)
@@ -189,11 +188,11 @@ export default function ResultsPage() {
           }
         })
         .catch(err => setError(err.message || t('error.loadFailed')))
-      apiAuthGet<any>(`/assessment/${id}/career-recommendations`)
+      apiAuthGet<any>(`/assessment/${id}/career-recommendations?locale=${locale}`)
         .then(data => setJobs(data.career_recommendations || []))
         .catch(() => {})
         .finally(() => setJobsSuggestionsLoading(false))
-      apiAuthGet<any>(`/assessment/${id}/ai-impact`)
+      apiAuthGet<any>(`/assessment/${id}/ai-impact?locale=${locale}`)
         .then(data => setAiImpact(data))
         .catch(() => {})
         .finally(() => setAiLoading(false))
@@ -211,7 +210,7 @@ export default function ResultsPage() {
         .finally(() => setCoursesLoading(false))
     })
     return () => { cancelled = true }
-  }, [id, retryKey, t])
+  }, [id, retryKey, t, locale])
 
   function retry() {
     setError('')
@@ -224,12 +223,6 @@ export default function ResultsPage() {
       .catch(() => {})
   }, [])
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMessageIndex(i => (i + 1) % loadingMessages.length)
-    }, 4000)
-    return () => clearInterval(interval)
-  }, [loadingMessages.length])
 
   if (error) {
     return (
@@ -261,16 +254,36 @@ export default function ResultsPage() {
     // one loader so sections don't pop in piecemeal as each request resolves,
     // and (on first completion only) until feedback is given.
     const reportReadyButAwaitingFeedback = allLoaded && awaitingStage1
+    const stages = [
+      { done: !!summary, label: t('loading.stages.profile') },
+      { done: !jobsSuggestionsLoading, label: t('loading.stages.careers') },
+      { done: !aiLoading, label: t('loading.stages.impact') },
+      { done: !jobsLoading, label: t('loading.stages.jobs') },
+      { done: !companiesLoading, label: t('loading.stages.companies') },
+      { done: !coursesLoading, label: t('loading.stages.courses') },
+    ]
+    const completedCount = stages.filter(s => s.done).length
+    // Mirrors AssessmentForm's litCount math (progress -> 8 constellation nodes),
+    // so the results-page loader reads as a continuation of the same animation.
+    const litCount = Math.max(1, Math.round((completedCount / stages.length) * 7) + 1)
     return (
       <div className="min-h-screen brand-hero flex items-center justify-center px-6">
-        <div className="text-center space-y-5 max-w-md">
+        <div className="text-center space-y-5 max-w-md w-full">
           <div className="report-loading-logo inline-flex"><Logomark size={44} tone="dark" glow /></div>
           {reportReadyButAwaitingFeedback ? (
             <p className="text-white/80 text-xl font-semibold">{t('loading.readyAwaitingFeedback')}</p>
           ) : (
             <>
               <p className="text-white/80 text-xl font-semibold">{t('loading.preparing')}</p>
-              <p className="text-white/55 text-base leading-relaxed min-h-[4.5rem]">{loadingMessages[messageIndex]}</p>
+              <div className="cst-wrap"><Constellation litCount={litCount} theme="dark" accent="#00C9A7" /></div>
+              <ul className="loading-checklist">
+                {stages.map((s, i) => (
+                  <li key={i} className={s.done ? 'done' : ''}>
+                    <span className="loading-checklist-icon">{s.done ? '✓' : ''}</span>
+                    {s.label}
+                  </li>
+                ))}
+              </ul>
               {!!recentCompletions && (
                 <p className="text-teal text-sm font-medium">✦ {t('loading.recentCompletions', { count: recentCompletions })}</p>
               )}
