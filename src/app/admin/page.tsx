@@ -647,6 +647,44 @@ function distinctValues(values: (string | null | undefined)[]): string[] {
   return Array.from(new Set(values.filter((v): v is string => !!v))).sort()
 }
 
+// ─── CSV export ─────────────────────────────────────────────────────────────
+// Plain client-side CSV (no charting/spreadsheet library) — every export below
+// already has its rows in memory from the tab's own state, so there's nothing
+// to fetch. A UTF-8 BOM is prepended so Excel renders the Arabic text in
+// names/answers correctly instead of mangling it as Latin-1.
+function csvCell(value: unknown): string {
+  if (value === null || value === undefined) return ''
+  const s = String(value)
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
+function downloadCSV(filename: string, rows: (string | number | null | undefined)[][]) {
+  const csv = '﻿' + rows.map(row => row.map(csvCell).join(',')).join('\r\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+function DownloadCSVButton({ onClick, label = 'Download CSV' }: { onClick: () => void; label?: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-slate-600 border border-slate-100 hover:bg-slate-50 flex items-center gap-1.5 transition-colors"
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 3v13m0 0-4-4m4 4 4-4M4 20h16" />
+      </svg>
+      {label}
+    </button>
+  )
+}
+
 type FeedbackEntry = {
   id: string
   fname: string
@@ -842,7 +880,7 @@ export default function AdminPage() {
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackEntry | null>(null)
 
   const [betaFeedbackList, setBetaFeedbackList] = useState<BetaFeedbackEntry[]>([])
-  const [betaDemographicsFilter, setBetaDemographicsFilter] = useState<'all' | 'stage1' | 'stage2'>('all')
+  const [betaDemographicsFilter, setBetaDemographicsFilter] = useState<'all' | 'stage1' | 'result' | 'stage2'>('all')
   const [betaFeedbackLoading, setBetaFeedbackLoading] = useState(false)
   const [betaFeedbackError, setBetaFeedbackError] = useState('')
   const [selectedBetaFeedback, setSelectedBetaFeedback] = useState<BetaFeedbackEntry | null>(null)
@@ -2100,6 +2138,7 @@ export default function AdminPage() {
                 ['Locale', bf.locale || bf.assessment_responses?.locale],
                 ['Device', bf.device],
                 ['Stage 1 completed', bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : null],
+                ['Result Stage completed', bf.result_stage_completed_at ? new Date(bf.result_stage_completed_at).toLocaleString() : null],
                 ['Stage 2 completed', bf.stage2_completed_at ? new Date(bf.stage2_completed_at).toLocaleString() : null],
               ].map(([label, value]) => (
                 <div key={label}>
@@ -2121,6 +2160,22 @@ export default function AdminPage() {
                 <div key={label}>
                   <dt className="text-slate-400">{label}</dt>
                   <dd className="text-slate-800 font-medium">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Result Stage</h3>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              {[
+                ['Result accuracy', bf.result_accuracy],
+                ['Would recommend', bf.would_recommend],
+                ['Would pay', bf.would_pay],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-slate-400">{label}</dt>
+                  <dd className="text-slate-800 font-medium capitalize">{value?.replace(/_/g, ' ') || '—'}</dd>
                 </div>
               ))}
             </dl>
@@ -2512,13 +2567,48 @@ export default function AdminPage() {
   const visibleBugReports = bugReports
     .filter(b => bugSourceFilter === 'all' || b.source === bugSourceFilter)
     .filter(b => bugStatusFilter === 'all' || b.status === bugStatusFilter)
+  function exportBugReports() {
+    const rows: (string | number | null)[][] = [
+      ['Source', 'Status', 'Summary', 'Error type', 'Error message', 'Who', 'Email', 'Feature', 'Page', 'Locale', 'Device', 'Country', 'Response ID', 'Date'],
+      ...visibleBugReports.map(b => [
+        b.source === 'user' ? 'User report' : 'System', b.status,
+        b.source === 'user' ? (b.description || '') : `${b.error_type || 'Error'}: ${b.error_message || b.description || ''}`,
+        b.error_type || '', b.error_message || '', b.full_name || '', b.email || '',
+        b.feature || '', b.page || '', b.locale || '', b.device_type || '', b.country || '',
+        b.response_id || '', new Date(b.created_at).toLocaleString(),
+      ]),
+    ]
+    downloadCSV(`beta_bug_reports_${new Date().toISOString().slice(0, 10)}.csv`, rows)
+  }
 
   // Shared by the general Submissions tab and the Beta Testing > Submissions
   // sub-tab — same columns, just a different (optionally pre-filtered) list.
-  function renderSubmissionsTable(list: Submission[], emptyMessage: string) {
+  function renderSubmissionsTable(list: Submission[], emptyMessage: string, exportFilename: string) {
+    const exportSubmissions = () => {
+      const rows: (string | number | null)[][] = [
+        ['Name', 'Email', 'Phone', 'Country', 'Nationality', 'Age group', 'Education', 'Current stage', 'Cohort', 'Date', 'Status', 'Device', 'Games played', 'Has feedback'],
+        ...list.map(sub => {
+          const session = telemetryByResponseId.get(sub.id)
+          return [
+            sub.full_name || '', sub.email || '', sub.phone || '', sub.country || '', sub.nationality || '',
+            sub.age_bracket || '', sub.education_field || '', sub.current_stage || '',
+            isBetaSubmission(sub) ? cohortLabel(sub) : '',
+            new Date(sub.created_at).toLocaleString(),
+            sub.completed ? 'Complete' : 'Incomplete',
+            session?.device_type || '',
+            session ? session.activities.map(kind => ACTIVITY_LABEL[kind] || kind).join('; ') : '',
+            feedbackSubmittedIds.has(sub.id) ? 'Yes' : 'No',
+          ]
+        }),
+      ]
+      downloadCSV(exportFilename, rows)
+    }
     return (
       <>
-        <p className="text-sm text-slate-400 mb-4">{list.length} submission{list.length !== 1 ? 's' : ''}</p>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <p className="text-sm text-slate-400">{list.length} submission{list.length !== 1 ? 's' : ''}</p>
+          <DownloadCSVButton onClick={exportSubmissions} />
+        </div>
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
           <table className="w-full text-sm min-w-[1400px]">
             <thead>
@@ -2796,7 +2886,7 @@ export default function AdminPage() {
               </div>
             )}
             {fetchError && <p className="text-red-500 text-sm text-center py-8">{fetchError}</p>}
-            {!loading && !fetchError && renderSubmissionsTable(submissions, 'No submissions yet')}
+            {!loading && !fetchError && renderSubmissionsTable(submissions, 'No submissions yet', `submissions_${new Date().toISOString().slice(0, 10)}.csv`)}
           </>
         )}
 
@@ -2905,13 +2995,113 @@ export default function AdminPage() {
               const stage2Total = stage2Responses.length
               const resultStageResponses = betaFeedbackList.filter(bf => bf.result_stage_completed_at)
               const resultStageTotal = resultStageResponses.length
+              const recommendResponses = betaFeedbackList.filter(bf => bf.would_recommend)
+              const recommendTotal = recommendResponses.length
+              const payResponses = betaFeedbackList.filter(bf => bf.would_pay)
+              const payTotal = payResponses.length
               const betaTotal = betaFeedbackList.length
               const totalSubmissions = betaSubmissions.length
+
+              // Same cohort normalization as the "Who's testing" charts below,
+              // duplicated here (rather than shared) because this runs outside
+              // that block's own IIFE — keeps the export in sync with whichever
+              // demographics filter is currently selected on screen.
+              const demoFilterLabel = { all: 'All submissions', stage1: 'Stage 1', result: 'Result Stage', stage2: 'Stage 2' } as const
+              type DemoRow = { age_bracket: string | null; current_stage: string | null; country: string | null; nationality: string | null }
+              const demoRows: DemoRow[] =
+                betaDemographicsFilter === 'all'
+                  ? betaSubmissions.map(s => ({ age_bracket: s.age_bracket, current_stage: s.current_stage, country: s.country, nationality: s.nationality }))
+                  : (betaDemographicsFilter === 'stage1' ? betaFeedbackList
+                    : betaDemographicsFilter === 'result' ? resultStageResponses
+                    : stage2Responses).map(bf => ({
+                      age_bracket: bf.assessment_responses?.age_bracket ?? null,
+                      current_stage: bf.assessment_responses?.current_stage ?? null,
+                      country: bf.assessment_responses?.country ?? null,
+                      nationality: bf.assessment_responses?.nationality ?? null,
+                    }))
+
+              const exportBetaDashboardReport = () => {
+                const pct = (n: number, total: number) => total > 0 ? `${Math.round((n / total) * 100)}%` : ''
+                const breakdownRows = (order: string[], labels: Record<string, string>, counts: Record<string, number>, total: number, colLabel: string) => {
+                  const seen = new Set(order)
+                  const rest = Object.keys(counts).filter(k => !seen.has(k))
+                  const out: (string | number)[][] = [[colLabel, 'Count', 'Percent']]
+                  for (const key of [...order, ...rest]) {
+                    const n = counts[key] || 0
+                    if (n === 0 && !order.includes(key)) continue
+                    out.push([labels[key] || formatUnderscored(key), n, pct(n, total)])
+                  }
+                  return out
+                }
+
+                const rows: (string | number | null)[][] = [
+                  ['Etijahi Beta Testing — Report', new Date().toLocaleString()],
+                  [],
+                  ['Feedback funnel', ''],
+                  ['Metric', 'Count'],
+                  ['Total submissions (everyone who took the beta assessment)', totalSubmissions],
+                  ['Stage 1 — quick pulse (answered at least 1 of 3 taps)', betaTotal],
+                  ['Result Stage (rated accuracy/recommend/pay on results page)', resultStageTotal],
+                  ['Stage 2 — full survey (completed detailed post-report survey)', stage2Total],
+                  [],
+                  [`Demographics — ${demoFilterLabel[betaDemographicsFilter]} (${demoRows.length})`],
+                  ...breakdownRows(AGE_BRACKET_ORDER, AGE_BRACKET_LABEL, countBy(demoRows, r => r.age_bracket), demoRows.length, 'Age group'),
+                  [],
+                  ...breakdownRows(CURRENT_STAGE_ORDER, CURRENT_STAGE_LABEL, countBy(demoRows, r => r.current_stage), demoRows.length, 'Current stage'),
+                  [],
+                  ...breakdownRows(COUNTRY_ORDER, COUNTRY_LABEL, countBy(demoRows, r => r.country), demoRows.length, 'Country'),
+                  [],
+                  ...breakdownRows(NATIONALITY_ORDER, NATIONALITY_LABEL, countBy(demoRows, r => r.nationality), demoRows.length, 'Nationality'),
+                  [],
+                  ['Report feedback (accuracy from Result Stage, recommend/pay from all who answered)'],
+                  ['Overall accuracy — "spot on"', pct(countBy(resultStageResponses, bf => bf.result_accuracy).spot_on || 0, resultStageTotal), `${resultStageTotal} respondents`],
+                  ['Would recommend — "yes"', pct(countBy(recommendResponses, bf => bf.would_recommend).yes || 0, recommendTotal), `${recommendTotal} respondents`],
+                  ['Would pay — "definitely" or "maybe"', pct((countBy(payResponses, bf => bf.would_pay).definitely || 0) + (countBy(payResponses, bf => bf.would_pay).maybe || 0), payTotal), `${payTotal} respondents`],
+                  [],
+                  ...breakdownRows(SENTIMENT_ORDER.accuracy, SENTIMENT_LABEL, countBy(resultStageResponses, bf => bf.result_accuracy), resultStageTotal, 'How accurate was this?'),
+                  [],
+                  ...breakdownRows(SENTIMENT_ORDER.would_recommend, SENTIMENT_LABEL, countBy(recommendResponses, bf => bf.would_recommend), recommendTotal, 'Would recommend this to a friend?'),
+                  [],
+                  ...breakdownRows(SENTIMENT_ORDER.would_pay, SENTIMENT_LABEL, countBy(payResponses, bf => bf.would_pay), payTotal, 'Would pay for the full report?'),
+                ]
+
+                if (stage2Total > 0) {
+                  const avgOverallValue = stage2Responses.reduce((sum, bf) => sum + (bf.overall_value || 0), 0) / Math.max(1, stage2Responses.filter(bf => bf.overall_value != null).length)
+                  const mvpCounts: Record<string, number> = {}
+                  for (const bf of stage2Responses) for (const v of (bf.most_valuable_parts || [])) mvpCounts[v] = (mvpCounts[v] || 0) + 1
+                  rows.push(
+                    [],
+                    [`Stage 2 — full survey analytics (${stage2Total} respondents)`],
+                    ['Overall value — average (1-6)', avgOverallValue.toFixed(1)],
+                    ['Hit an issue', pct(countBy(stage2Responses, bf => bf.had_issues).yes || 0, stage2Total)],
+                    ['Took it in English', pct(countBy(stage2Responses, bf => bf.language_used).en || 0, stage2Total)],
+                    ['Took it in Arabic', pct(countBy(stage2Responses, bf => bf.language_used).ar || 0, stage2Total)],
+                    ['Used both languages', pct(countBy(stage2Responses, bf => bf.language_used).both || 0, stage2Total)],
+                    [],
+                    ['Most valuable parts', 'Count', 'Percent'],
+                    ...Object.entries(mvpCounts).sort((a, b) => b[1] - a[1]).map(([k, n]) => [formatUnderscored(k), n, pct(n, stage2Total)]),
+                    [],
+                    ...breakdownRows(SENTIMENT_ORDER.accuracy, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.personality_accuracy), stage2Total, 'Personality type accuracy'),
+                    [],
+                    ...breakdownRows(SENTIMENT_ORDER.accuracy, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.values_accuracy), stage2Total, 'Core values accuracy'),
+                    [],
+                    ...breakdownRows(SENTIMENT_ORDER.accuracy, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.strengths_accuracy), stage2Total, 'Strengths accuracy'),
+                    [],
+                    ...breakdownRows(SENTIMENT_ORDER.accuracy, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.career_matches_accuracy), stage2Total, 'Career matches accuracy'),
+                  )
+                }
+
+                downloadCSV(`beta_dashboard_report_${new Date().toISOString().slice(0, 10)}.csv`, rows)
+              }
+
               return (
                 <>
                   {totalSubmissions > 0 && (
                     <div className="mb-6">
-                      <p className="text-sm font-semibold text-slate-700 mb-3">Feedback funnel</p>
+                      <div className="flex items-center justify-between gap-3 mb-3">
+                        <p className="text-sm font-semibold text-slate-700">Feedback funnel</p>
+                        <DownloadCSVButton onClick={exportBetaDashboardReport} label="Download full report" />
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                         <BetaStatTile
                           label="Total submissions"
@@ -2939,22 +3129,24 @@ export default function AdminPage() {
                   {totalSubmissions > 0 && (() => {
                     // Normalize each cohort to the same flat shape — "all" reads
                     // demographic fields straight off Submission, while "stage1"/
-                    // "stage2" read them off the nested assessment_responses join
-                    // on a BetaFeedbackEntry — so one countBy call below works
+                    // "result"/"stage2" read them off the nested assessment_responses
+                    // join on a BetaFeedbackEntry — so one countBy call below works
                     // regardless of which cohort is selected.
                     type DemoRow = { age_bracket: string | null; current_stage: string | null; country: string | null; nationality: string | null }
                     const demoRows: DemoRow[] =
                       betaDemographicsFilter === 'all'
                         ? betaSubmissions.map(s => ({ age_bracket: s.age_bracket, current_stage: s.current_stage, country: s.country, nationality: s.nationality }))
-                        : (betaDemographicsFilter === 'stage1' ? betaFeedbackList : stage2Responses).map(bf => ({
+                        : (betaDemographicsFilter === 'stage1' ? betaFeedbackList
+                          : betaDemographicsFilter === 'result' ? resultStageResponses
+                          : stage2Responses).map(bf => ({
                             age_bracket: bf.assessment_responses?.age_bracket ?? null,
                             current_stage: bf.assessment_responses?.current_stage ?? null,
                             country: bf.assessment_responses?.country ?? null,
                             nationality: bf.assessment_responses?.nationality ?? null,
                           }))
                     const demoTotal = demoRows.length
-                    const filterCount = { all: totalSubmissions, stage1: betaTotal, stage2: stage2Total }
-                    const filterLabel = { all: 'All submissions', stage1: 'Stage 1', stage2: 'Stage 2' }
+                    const filterCount = { all: totalSubmissions, stage1: betaTotal, result: resultStageTotal, stage2: stage2Total }
+                    const filterLabel = { all: 'All submissions', stage1: 'Stage 1', result: 'Result Stage', stage2: 'Stage 2' }
                     return (
                       <div className="mb-6">
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
@@ -2962,7 +3154,7 @@ export default function AdminPage() {
                             Who&apos;s testing <span className="text-slate-400 font-normal">— {filterLabel[betaDemographicsFilter]} ({demoTotal})</span>
                           </p>
                           <div className="flex gap-2">
-                            {(['all', 'stage1', 'stage2'] as const).map(key => (
+                            {(['all', 'stage1', 'result', 'stage2'] as const).map(key => (
                               <button
                                 key={key}
                                 onClick={() => setBetaDemographicsFilter(key)}
@@ -3012,16 +3204,16 @@ export default function AdminPage() {
                       </div>
                     )
                   })()}
-                  {resultStageTotal === 0 && (
+                  {resultStageTotal === 0 && recommendTotal === 0 && payTotal === 0 && (
                     <p className="text-sm text-slate-400 text-center py-6">No Result Stage responses yet</p>
                   )}
-                  {resultStageTotal > 0 && (
+                  {(resultStageTotal > 0 || recommendTotal > 0 || payTotal > 0) && (
                     <div className="mb-6">
-                      <p className="text-sm font-semibold text-slate-700 mb-3">Result Stage analytics <span className="text-slate-400 font-normal">— {resultStageTotal} respondents (of {betaTotal} who started Stage 1)</span></p>
+                      <p className="text-sm font-semibold text-slate-700 mb-3">Report feedback <span className="text-slate-400 font-normal">— accuracy from {resultStageTotal} Result Stage respondents, recommend/pay from all respondents who answered (of {betaTotal} who started Stage 1)</span></p>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                         <BetaStatTile
                           label="Overall accuracy"
-                          value={`${Math.round(((countBy(resultStageResponses, bf => bf.result_accuracy).spot_on || 0) / resultStageTotal) * 100)}%`}
+                          value={resultStageTotal > 0 ? `${Math.round(((countBy(resultStageResponses, bf => bf.result_accuracy).spot_on || 0) / resultStageTotal) * 100)}%` : '—'}
                           sublabel="“spot on”"
                           onClick={() => setBetaStatDrilldown({
                             title: 'Rated the report "spot on" for accuracy',
@@ -3030,20 +3222,20 @@ export default function AdminPage() {
                         />
                         <BetaStatTile
                           label="Would recommend"
-                          value={`${Math.round(((countBy(resultStageResponses, bf => bf.would_recommend).yes || 0) / resultStageTotal) * 100)}%`}
-                          sublabel="answered “yes”"
+                          value={recommendTotal > 0 ? `${Math.round(((countBy(recommendResponses, bf => bf.would_recommend).yes || 0) / recommendTotal) * 100)}%` : '—'}
+                          sublabel={`answered “yes” (${recommendTotal} responses)`}
                           onClick={() => setBetaStatDrilldown({
                             title: 'Would recommend to a friend',
-                            rows: resultStageResponses.filter(bf => bf.would_recommend === 'yes').map(bf => ({ bf, note: 'Yes' })),
+                            rows: recommendResponses.filter(bf => bf.would_recommend === 'yes').map(bf => ({ bf, note: 'Yes' })),
                           })}
                         />
                         <BetaStatTile
                           label="Would pay for it"
-                          value={`${Math.round((((countBy(resultStageResponses, bf => bf.would_pay).definitely || 0) + (countBy(resultStageResponses, bf => bf.would_pay).maybe || 0)) / resultStageTotal) * 100)}%`}
-                          sublabel="“definitely” or “maybe”"
+                          value={payTotal > 0 ? `${Math.round((((countBy(payResponses, bf => bf.would_pay).definitely || 0) + (countBy(payResponses, bf => bf.would_pay).maybe || 0)) / payTotal) * 100)}%` : '—'}
+                          sublabel={`“definitely” or “maybe” (${payTotal} responses)`}
                           onClick={() => setBetaStatDrilldown({
                             title: 'Would pay for the full report',
-                            rows: resultStageResponses
+                            rows: payResponses
                               .filter(bf => bf.would_pay === 'definitely' || bf.would_pay === 'maybe')
                               .map(bf => ({ bf, note: SENTIMENT_LABEL[bf.would_pay || ''] || bf.would_pay || '' })),
                           })}
@@ -3059,14 +3251,14 @@ export default function AdminPage() {
                         <BetaSentimentChart
                           title="Would recommend this to a friend?"
                           orderKey="would_recommend"
-                          counts={countBy(resultStageResponses, bf => bf.would_recommend)}
-                          total={resultStageTotal}
+                          counts={countBy(recommendResponses, bf => bf.would_recommend)}
+                          total={recommendTotal}
                         />
                         <BetaSentimentChart
                           title="Would pay for the full report?"
                           orderKey="would_pay"
-                          counts={countBy(resultStageResponses, bf => bf.would_pay)}
-                          total={resultStageTotal}
+                          counts={countBy(payResponses, bf => bf.would_pay)}
+                          total={payTotal}
                         />
                       </div>
                     </div>
@@ -3218,7 +3410,7 @@ export default function AdminPage() {
               </div>
             )}
             {fetchError && <p className="text-red-500 text-sm text-center py-8">{fetchError}</p>}
-            {!loading && !fetchError && renderSubmissionsTable(betaSubmissions, 'No beta submissions yet')}
+            {!loading && !fetchError && renderSubmissionsTable(betaSubmissions, 'No beta submissions yet', `beta_submissions_${new Date().toISOString().slice(0, 10)}.csv`)}
           </>
         )}
 
@@ -3381,11 +3573,47 @@ export default function AdminPage() {
                 .filter(bf => betaFeedbackStageFilter === 'all' || betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
                 .filter(bf => betaFeedbackStatusFilter === 'all' || bf.assessment_responses?.current_stage === betaFeedbackStatusFilter)
                 .filter(bf => betaFeedbackAgeFilter === 'all' || bf.assessment_responses?.age_bracket === betaFeedbackAgeFilter)
+              const exportBetaFeedback = () => {
+                const rows: (string | number | null)[][] = [
+                  [
+                    'Name', 'Email', 'Country', 'Age group', 'Current stage', 'Cohort', 'Feedback stage', 'Locale',
+                    'S1: clarity (1-5)', 'S1: feeling (1-5)', 'S1: understood (1-5)', 'Stage 1 completed at',
+                    'Accuracy (result_accuracy)', 'Would recommend', 'Would pay', 'Result Stage completed at',
+                    'Language used', 'Understood after (1-5)', 'Felt like mentor', 'Personality accuracy', 'Values accuracy',
+                    'Strengths accuracy', 'Career matches accuracy', 'Wrong career (text)', 'Missing career (text)',
+                    'AI impact useful (1-6)', 'AI impact credible (1-6)', 'AI impact changed thinking', 'Jobs relevant (1-6)',
+                    'Companies fit (1-6)', 'Courses useful (1-6)', 'Plan would follow', 'Clear next step', 'Arabic natural',
+                    'Overall value (1-6)', 'Most valuable parts',
+                    'Device', 'Had issues', 'Issue detail', 'Surprised (text)', 'Not me (text)', 'Other (text)',
+                    'Stage 2 completed at', 'Submitted at',
+                  ],
+                  ...visibleBetaFeedback.map(bf => [
+                    bf.assessment_responses?.full_name || '', bf.assessment_responses?.email || '',
+                    bf.assessment_responses?.country || '', bf.assessment_responses?.age_bracket || '',
+                    bf.assessment_responses?.current_stage || '', cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }),
+                    BETA_FEEDBACK_STAGE_LABELS[betaFeedbackStageOf(bf)], bf.locale || '',
+                    bf.s1_clarity, bf.s1_feeling, bf.s1_understood, bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : '',
+                    // would_recommend/would_pay are single columns asked both on the
+                    // Result Stage and again in Stage 2 section F (see content.ts) —
+                    // one answer, not two independent captures, so one pair of columns.
+                    bf.result_accuracy || '', bf.would_recommend || '', bf.would_pay || '', bf.result_stage_completed_at ? new Date(bf.result_stage_completed_at).toLocaleString() : '',
+                    bf.language_used || '', bf.understood_after, bf.felt_like_mentor || '', bf.personality_accuracy || '', bf.values_accuracy || '',
+                    bf.strengths_accuracy || '', bf.career_matches_accuracy || '', bf.wrong_career_text || '', bf.missing_career_text || '',
+                    bf.ai_impact_useful, bf.ai_impact_credible, bf.ai_impact_changed_thinking || '', bf.jobs_relevant,
+                    bf.companies_fit, bf.courses_useful, bf.plan_would_follow || '', bf.clear_next_step || '', bf.arabic_natural || '',
+                    bf.overall_value, (bf.most_valuable_parts || []).join('; '),
+                    bf.device || '', bf.had_issues || '', bf.issue_detail || '', bf.surprised_text || '', bf.not_me_text || '', bf.other_text || '',
+                    bf.stage2_completed_at ? new Date(bf.stage2_completed_at).toLocaleString() : '', new Date(bf.created_at).toLocaleString(),
+                  ]),
+                ]
+                downloadCSV(`beta_feedback_${new Date().toISOString().slice(0, 10)}.csv`, rows)
+              }
               return (
               <>
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                       <p className="text-sm text-slate-400">{visibleBetaFeedback.length} response{visibleBetaFeedback.length !== 1 ? 's' : ''}</p>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <DownloadCSVButton onClick={exportBetaFeedback} />
                         {(['all', 'started', 'stage1', 'result', 'stage2'] as const).map(key => (
                           <button
                             key={key}
@@ -3522,7 +3750,8 @@ export default function AdminPage() {
               <>
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                   <p className="text-sm text-slate-400">{visibleBugReports.length} report{visibleBugReports.length !== 1 ? 's' : ''}</p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <DownloadCSVButton onClick={exportBugReports} />
                     {(['open', 'resolved', 'all'] as const).map(key => (
                       <button
                         key={key}
