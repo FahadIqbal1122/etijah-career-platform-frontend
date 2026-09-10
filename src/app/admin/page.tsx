@@ -92,6 +92,44 @@ function formatAnswer(q: Question, raw: unknown): string {
   return String(raw)
 }
 
+// Sorted horizontal-bar chart for one framework's full dimension breakdown
+// (backend now returns every dimension's score, not just the top few) — used
+// for RIASEC/values/strengths/Big Five in the submission detail view so a
+// reviewer sees the whole profile shape at a glance instead of three chips.
+// `labels` overrides the numeric badge per-dimension (Big Five's low/medium/
+// high reads better than its raw score); omit it to show the rounded score.
+function DimensionBarChart({ title, subtitle, scores, labels, barColor, badgeClass }: {
+  title: string
+  subtitle?: string
+  scores: Record<string, number>
+  labels?: Record<string, string>
+  barColor: string
+  badgeClass: string
+}) {
+  const entries = Object.entries(scores).sort((a, b) => b[1] - a[1])
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+      <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">{title}</h3>
+      {subtitle && <p className="text-xs text-slate-400 mt-1 mb-4">{subtitle}</p>}
+      <div className={subtitle ? 'space-y-3' : 'space-y-3 mt-4'}>
+        {entries.map(([dim, score]) => (
+          <div key={dim}>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm text-slate-600 capitalize">{dim.replace(/_/g, ' ')}</span>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${badgeClass}`}>
+                {labels?.[dim] ?? Math.round(score)}
+              </span>
+            </div>
+            <div className="w-full bg-slate-100 rounded-full h-2">
+              <div className={`${barColor} h-2 rounded-full`} style={{ width: `${Math.max(2, score)}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // Beta cohort = everyone who took the assessment from the day the beta invite
 // went out onward (previously this badge was labeled "v2" and anchored to an
 // unrelated redesign date).
@@ -895,6 +933,13 @@ export default function AdminPage() {
   const [adminAiLoading, setAdminAiLoading] = useState(false)
   const [adminCareerRecs, setAdminCareerRecs] = useState<any[]>([])
   const [adminCareerRecsLoading, setAdminCareerRecsLoading] = useState(false)
+  const [adminActionPlan, setAdminActionPlan] = useState<any>(null)
+  const [adminJobListings, setAdminJobListings] = useState<any[]>([])
+  const [adminJobListingsLoading, setAdminJobListingsLoading] = useState(false)
+  const [adminCompanies, setAdminCompanies] = useState<any[]>([])
+  const [adminCompaniesLoading, setAdminCompaniesLoading] = useState(false)
+  const [adminCourses, setAdminCourses] = useState<any[]>([])
+  const [adminCoursesLoading, setAdminCoursesLoading] = useState(false)
   const [allCareerRecs, setAllCareerRecs] = useState<any[]>([])
   const [allCareerRecsLoading, setAllCareerRecsLoading] = useState(false)
   const [allCareerRecsError, setAllCareerRecsError] = useState('')
@@ -910,7 +955,6 @@ export default function AdminPage() {
   const [adminReportError, setAdminReportError] = useState('')
   const [adminAnswers, setAdminAnswers] = useState<Record<string, any>>({})
   const [adminAnswersLoading, setAdminAnswersLoading] = useState(false)
-  const [adminAnswersOpen, setAdminAnswersOpen] = useState(false)
 
   const [feedbackList, setFeedbackList] = useState<FeedbackEntry[]>([])
   const [feedbackLoading, setFeedbackLoading] = useState(false)
@@ -1517,24 +1561,29 @@ export default function AdminPage() {
   function fetchLocalizedSections(subId: string, locale: 'en' | 'ar') {
     setAdminAiImpact(null)
     setAdminCareerRecs([])
+    setAdminActionPlan(null)
     setAdminAiLoading(true)
     setAdminCareerRecsLoading(true)
     fetch(`/api/admin/submissions/${subId}/ai-impact?locale=${locale}`)
       .then(r => r.json()).then(d => setAdminAiImpact(d)).catch(() => {}).finally(() => setAdminAiLoading(false))
-    // AI-generated career_recommendations (match_score/fit_summary/growth_note) shown to
-    // the user in-app — surfaced here so an admin can spot-check the actual reasoning text
-    // a real user saw, not just the rule-based title list above.
+    // AI-generated career_recommendations (match_score/fit_summary/growth_note) and the
+    // 90-day action_plan shown to the user in-app / in the PDF — surfaced here so an
+    // admin can spot-check the actual reasoning text a real user saw, not just the
+    // rule-based title list above.
     fetch(`/api/admin/submissions/${subId}/career-recommendations?locale=${locale}`)
-      .then(r => r.json()).then(d => setAdminCareerRecs(d.career_recommendations || [])).catch(() => {}).finally(() => setAdminCareerRecsLoading(false))
+      .then(r => r.json()).then(d => { setAdminCareerRecs(d.career_recommendations || []); setAdminActionPlan(d.action_plan || null) })
+      .catch(() => {}).finally(() => setAdminCareerRecsLoading(false))
   }
 
   async function handleViewResults(sub: Submission) {
     setSelected(sub)
     setResults(null)
     setAdminJobs([])
+    setAdminJobListings([])
+    setAdminCompanies([])
+    setAdminCourses([])
     setAdminReportError('')
     setAdminAnswers({})
-    setAdminAnswersOpen(false)
     setResultsLoading(true)
     let locale: 'en' | 'ar' = 'en'
     try {
@@ -1556,6 +1605,17 @@ export default function AdminPage() {
     setAdminAnswersLoading(true)
     fetch(`/api/admin/submissions/${sub.id}/answers`)
       .then(r => r.json()).then(d => setAdminAnswers(d.answers || {})).catch(() => {}).finally(() => setAdminAnswersLoading(false))
+    // Job listings/companies/courses aren't locale-specific text, just tier-gated
+    // lookups — fetch once per submission rather than on every EN/AR toggle.
+    setAdminJobListingsLoading(true)
+    fetch(`/api/admin/submissions/${sub.id}/job-listings`)
+      .then(r => r.json()).then(d => setAdminJobListings(d.jobs || [])).catch(() => {}).finally(() => setAdminJobListingsLoading(false))
+    setAdminCompaniesLoading(true)
+    fetch(`/api/admin/submissions/${sub.id}/companies`)
+      .then(r => r.json()).then(d => setAdminCompanies(Array.isArray(d) ? d : [])).catch(() => {}).finally(() => setAdminCompaniesLoading(false))
+    setAdminCoursesLoading(true)
+    fetch(`/api/admin/submissions/${sub.id}/courses`)
+      .then(r => r.json()).then(d => setAdminCourses(Array.isArray(d) ? d : [])).catch(() => {}).finally(() => setAdminCoursesLoading(false))
   }
 
   async function handleDeleteSubmission(id: string) {
@@ -1889,272 +1949,369 @@ export default function AdminPage() {
           </div>
         </div>
         {adminReportError && (
-          <div className="max-w-2xl mx-auto px-4 pt-4">
+          <div className="max-w-[1700px] mx-auto px-6 pt-4">
             <p className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{adminReportError}</p>
           </div>
         )}
 
-        <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Profile</h3>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              {[
-                ['Name', selected.full_name],
-                ['Email', selected.email],
-                ['Phone', selected.phone],
-                ['Country', selected.country],
-                ['Nationality', selected.nationality],
-                ['Age bracket', selected.age_bracket],
-                ['Education field', (selected.education_field || []).join(', ')],
-                ['Current stage', selected.current_stage],
-                ...(isBetaSubmission(selected) ? [['Cohort', cohortLabel(selected)]] : []),
-                ['Submitted', new Date(selected.created_at).toLocaleString()],
-                ['Completed', selected.completed ? 'Yes' : 'No'],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <dt className="text-slate-400">{label}</dt>
-                  <dd className="text-slate-800 font-medium">{value || '—'}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+        <div className="max-w-[1700px] mx-auto px-6 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <button
-              onClick={() => setAdminAnswersOpen(o => !o)}
-              className="w-full flex items-center justify-between text-left"
-            >
-              <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">
-                Answers{adminAnswersLoading ? ' (loading…)' : ` (${Object.keys(adminAnswers).length})`}
-              </h3>
-              <svg className={`w-4 h-4 text-slate-400 transition-transform ${adminAnswersOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {adminAnswersOpen && (
-              adminAnswersLoading ? (
-                <p className="text-sm text-slate-400 mt-3">Loading answers…</p>
-              ) : Object.keys(adminAnswers).length === 0 ? (
-                <p className="text-sm text-slate-400 mt-3">No stored answers for this submission.</p>
-              ) : (
-                <div className="mt-4 space-y-5">
-                  {Object.entries(
-                    questions
-                      .filter(q => q.framework !== 'Details' && q.id in adminAnswers)
-                      .reduce((sections, q) => {
-                        (sections[q.section] ||= []).push(q)
-                        return sections
-                      }, {} as Record<string, Question[]>)
-                  ).map(([section, qs]) => (
-                    <div key={section}>
-                      <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">{section}</h4>
-                      <dl className="space-y-2.5">
-                        {qs.map(q => (
-                          <div key={q.id} className="text-sm">
-                            <dt className="text-slate-500">{q.text}</dt>
-                            <dd className="text-slate-800 font-medium">{formatAnswer(q, adminAnswers[q.id])}</dd>
-                          </div>
-                        ))}
-                      </dl>
+            {/* Answers side — sticky and independently scrollable, so lining it up
+                against a result on the right never means scrolling back up. */}
+            <div className="space-y-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:pr-1">
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Profile</h3>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  {[
+                    ['Name', selected.full_name],
+                    ['Email', selected.email],
+                    ['Phone', selected.phone],
+                    ['Country', selected.country],
+                    ['Nationality', selected.nationality],
+                    ['Age bracket', selected.age_bracket],
+                    ['Education field', (selected.education_field || []).join(', ')],
+                    ['Current stage', selected.current_stage],
+                    ...(isBetaSubmission(selected) ? [['Cohort', cohortLabel(selected)]] : []),
+                    ['Submitted', new Date(selected.created_at).toLocaleString()],
+                    ['Completed', selected.completed ? 'Yes' : 'No'],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <dt className="text-slate-400">{label}</dt>
+                      <dd className="text-slate-800 font-medium">{value || '—'}</dd>
                     </div>
                   ))}
-                </div>
-              )
-            )}
-          </div>
-
-          {onet && (
-            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 shadow-sm">
-              <h3 className="font-semibold text-orange-700 mb-2 text-sm uppercase tracking-wide">O*NET Assessment</h3>
-              {onet.label && <p className="text-xs text-orange-500 mb-2">{onet.label}</p>}
-              <a
-                href={onet.onet_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-orange-700 hover:underline break-all"
-              >
-                {onet.onet_url}
-                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-            </div>
-          )}
-
-          {resultsLoading && (
-            <div className="flex justify-center py-8">
-              <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
-
-          {results && (
-            <>
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Career Types (RIASEC)</h3>
-                <div className="flex gap-2 flex-wrap">
-                  {results.riasec.top_types.map((t: string, i: number) => (
-                    <span key={t} className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize ${i === 0 ? 'bg-primary text-white' : 'bg-lightblue text-primary border border-[var(--line)]'}`}>{t}</span>
-                  ))}
-                </div>
+                </dl>
               </div>
 
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Core Values</h3>
-                <div className="flex gap-2 flex-wrap">
-                  {results.values.top_values.map((v: string, i: number) => (
-                    <span key={v} className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize ${i === 0 ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-700 border border-amber-100'}`}>{v}</span>
-                  ))}
+              {onet && (
+                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 shadow-sm">
+                  <h3 className="font-semibold text-orange-700 mb-2 text-sm uppercase tracking-wide">O*NET Assessment</h3>
+                  {onet.label && <p className="text-xs text-orange-500 mb-2">{onet.label}</p>}
+                  <a
+                    href={onet.onet_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-orange-700 hover:underline break-all"
+                  >
+                    {onet.onet_url}
+                    <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
                 </div>
-              </div>
+              )}
 
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Top Strengths</h3>
-                <div className="flex gap-2 flex-wrap">
-                  {results.strengths.top_strengths.map((s: string, i: number) => (
-                    <span key={s} className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize ${i === 0 ? 'bg-purple-600 text-white' : 'bg-purple-50 text-purple-700 border border-purple-100'}`}>{s}</span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <h3 className="font-semibold text-slate-700 mb-5 text-sm uppercase tracking-wide">Personality (Big Five)</h3>
-                <div className="space-y-4">
-                  {Object.entries(results.big_five).map(([trait, level]: any) => (
-                    <div key={trait}>
-                      <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-sm font-medium text-slate-700 capitalize">{trait.replace(/_/g, ' ')}</span>
-                        <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full capitalize">{level}</span>
-                      </div>
-                      <div className="w-full bg-slate-100 rounded-full h-2">
-                        <div className="bg-indigo-500 h-2 rounded-full" style={{ width: levelToWidth[level] ?? '50%' }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {results.work_style && (
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                  <h3 className="font-semibold text-slate-700 mb-4 text-sm uppercase tracking-wide">Work Style & Resilience</h3>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                    {[
-                      { label: 'Pace', low: 'Steady', high: 'Fast-paced', score: results.work_style.pace },
-                      { label: 'Environment', low: 'Large org', high: 'Startup', score: results.work_style.environment },
-                      { label: 'Sector', low: 'Public', high: 'Private', score: results.work_style.sector },
-                      { label: 'Mobility', low: 'Local', high: 'Open to relocate', score: results.work_style.mobility },
-                      ...(results.resilience ? [
-                        { label: 'Long-term focus', low: 'Short-term', high: 'Long-term', score: results.resilience.long_term_focus },
-                        { label: 'Resilience', low: 'Needs support', high: 'Bounces back', score: results.resilience.workplace_resilience },
-                      ] : []),
-                    ].map(({ label, low, high, score }) => (
-                      <div key={label}>
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-xs font-medium text-slate-500">{label}</span>
-                          <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full">{score >= 50 ? high : low}</span>
-                        </div>
-                        <div className="w-full bg-slate-100 rounded-full h-1.5">
-                          <div className="bg-teal-500 h-1.5 rounded-full" style={{ width: `${score}%` }} />
-                        </div>
+                <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">
+                  Answers{adminAnswersLoading ? ' (loading…)' : ` (${Object.keys(adminAnswers).length})`}
+                </h3>
+                <p className="text-xs text-slate-400 mb-4">Every question this person actually answered, in assessment order.</p>
+                {adminAnswersLoading ? (
+                  <p className="text-sm text-slate-400">Loading answers…</p>
+                ) : Object.keys(adminAnswers).length === 0 ? (
+                  <p className="text-sm text-slate-400">No stored answers for this submission.</p>
+                ) : (
+                  <div className="space-y-5">
+                    {Object.entries(
+                      questions
+                        .filter(q => q.framework !== 'Details' && q.id in adminAnswers)
+                        .reduce((sections, q) => {
+                          (sections[q.section] ||= []).push(q)
+                          return sections
+                        }, {} as Record<string, Question[]>)
+                    ).map(([section, qs]) => (
+                      <div key={section}>
+                        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">{section}</h4>
+                        <dl className="space-y-2.5">
+                          {qs.map(q => (
+                            <div key={q.id} className="text-sm">
+                              <dt className="text-slate-500">{q.text}</dt>
+                              <dd className="text-slate-800 font-medium">{formatAnswer(q, adminAnswers[q.id])}</dd>
+                            </div>
+                          ))}
+                        </dl>
                       </div>
                     ))}
                   </div>
+                )}
+              </div>
+            </div>
+
+            {/* Results side — everything derived from the answers on the left. */}
+            <div className="min-w-0 space-y-4">
+              {resultsLoading && (
+                <div className="flex justify-center py-8">
+                  <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
-            </>
-          )}
 
-          {adminJobs.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-              <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Suggested Careers</h3>
-              <div className="flex gap-2 flex-wrap">
-                {adminJobs.map((job: any, i: number) => (
-                  <span key={job.title} className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize ${i === 0 ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 border border-green-100'}`}>
-                    {job.title}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {adminCareerRecsLoading && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 animate-pulse">
-              <div className="h-4 bg-slate-100 rounded w-1/3 mb-4" />
-              <div className="space-y-3">
-                {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl" />)}
-              </div>
-            </div>
-          )}
-
-          {!adminCareerRecsLoading && adminCareerRecs.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-              <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">AI Career Recommendations</h3>
-              <p className="text-xs text-slate-400 mb-3">Exact match_score/fit_summary/growth_note text shown to this user — review for accuracy and appropriateness.</p>
-              <div className="space-y-3">
-                {adminCareerRecs.map((c: any, i: number) => (
-                  <div key={c.title ?? i} className="border border-slate-100 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-sm font-semibold text-slate-800">{c.title}</span>
-                      {typeof c.match_score === 'number' && (
-                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700">{c.match_score}% match</span>
-                      )}
-                    </div>
-                    {c.sector && <p className="text-xs text-slate-400 mb-1.5">{c.sector}</p>}
-                    {c.fit_summary && <p className="text-xs text-slate-600 mb-1.5">{c.fit_summary}</p>}
-                    {c.growth_note && <p className="text-xs text-slate-500 italic">{c.growth_note}</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {adminAiLoading && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 animate-pulse">
-              <div className="h-4 bg-slate-100 rounded w-1/3 mb-4" />
-              <div className="space-y-3">
-                {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl" />)}
-              </div>
-            </div>
-          )}
-
-          {!adminAiLoading && adminAiImpact && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-              <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">AI Impact on Careers</h3>
-              <p className="text-sm text-slate-600 mb-4 leading-relaxed">{adminAiImpact.overall_summary}</p>
-              <div className="space-y-3">
-                {adminAiImpact.careers?.map((c: any) => (
-                  <div key={c.title} className="border border-slate-100 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-slate-800">{c.title}</span>
-                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                        c.ai_risk_level === 'low' ? 'bg-green-50 text-green-700' :
-                        c.ai_risk_level === 'medium' ? 'bg-amber-50 text-amber-700' :
-                        'bg-rose-50 text-rose-700'
-                      }`}>{c.ai_risk_level?.toUpperCase()} RISK</span>
-                    </div>
-                    <p className="text-xs text-slate-500 mb-2">{c.gcc_outlook}</p>
-                    {c.protected_skills?.length > 0 && (
-                      <div className="mb-2">
-                        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Human skills that stay valuable</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {c.protected_skills.map((s: string) => (
-                            <span key={s} className="text-xs bg-green-50 text-green-700 border border-green-100 px-2 py-0.5 rounded-full">{s}</span>
-                          ))}
-                        </div>
-                      </div>
+              {results && (
+                <>
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    {results.dimension_scores?.riasec && (
+                      <DimensionBarChart
+                        title="Career Types (RIASEC)"
+                        scores={results.dimension_scores.riasec}
+                        barColor="bg-primary"
+                        badgeClass="bg-lightblue text-primary"
+                      />
                     )}
-                    {c.upskilling?.length > 0 && <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">How to prepare</p>}
-                    <ul className="space-y-1">
-                      {c.upskilling?.map((tip: string) => (
-                        <li key={tip} className="text-xs text-slate-500 flex gap-1.5">
-                          <span className="text-primary/70 mt-0.5">→</span>{tip}
-                        </li>
-                      ))}
-                    </ul>
+                    {results.dimension_scores?.values && (
+                      <DimensionBarChart
+                        title="Core Values"
+                        scores={results.dimension_scores.values}
+                        barColor="bg-amber-500"
+                        badgeClass="bg-amber-50 text-amber-700"
+                      />
+                    )}
+                    {results.dimension_scores?.strengths && (
+                      <DimensionBarChart
+                        title="Top Strengths"
+                        scores={results.dimension_scores.strengths}
+                        barColor="bg-purple-600"
+                        badgeClass="bg-purple-50 text-purple-700"
+                      />
+                    )}
+                    {results.dimension_scores?.big_five && (
+                      <DimensionBarChart
+                        title="Personality (Big Five)"
+                        scores={results.dimension_scores.big_five}
+                        labels={results.big_five}
+                        barColor="bg-indigo-500"
+                        badgeClass="bg-indigo-50 text-indigo-600"
+                      />
+                    )}
                   </div>
-                ))}
+
+                  {results.work_style && (
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                      <h3 className="font-semibold text-slate-700 mb-4 text-sm uppercase tracking-wide">Work Style & Resilience</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                        {[
+                          { label: 'Pace', low: 'Steady', high: 'Fast-paced', score: results.work_style.pace },
+                          { label: 'Environment', low: 'Large org', high: 'Startup', score: results.work_style.environment },
+                          { label: 'Sector', low: 'Public', high: 'Private', score: results.work_style.sector },
+                          { label: 'Mobility', low: 'Local', high: 'Open to relocate', score: results.work_style.mobility },
+                          ...(results.resilience ? [
+                            { label: 'Long-term focus', low: 'Short-term', high: 'Long-term', score: results.resilience.long_term_focus },
+                            { label: 'Resilience', low: 'Needs support', high: 'Bounces back', score: results.resilience.workplace_resilience },
+                          ] : []),
+                        ].map(({ label, low, high, score }) => (
+                          <div key={label}>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs font-medium text-slate-500">{label}</span>
+                              <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full">{score >= 50 ? high : low}</span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-1.5">
+                              <div className="bg-teal-500 h-1.5 rounded-full" style={{ width: `${score}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                {adminJobs.length > 0 && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Suggested Careers</h3>
+                    <div className="flex gap-2 flex-wrap">
+                      {adminJobs.map((job: any, i: number) => (
+                        <span key={job.title} className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize ${i === 0 ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 border border-green-100'}`}>
+                          {job.title}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {adminCareerRecsLoading && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 animate-pulse">
+                    <div className="h-4 bg-slate-100 rounded w-1/3 mb-4" />
+                    <div className="space-y-3">
+                      {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl" />)}
+                    </div>
+                  </div>
+                )}
+
+                {!adminCareerRecsLoading && adminCareerRecs.length > 0 && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">AI Career Recommendations</h3>
+                    <p className="text-xs text-slate-400 mb-3">Exact match_score/fit_summary/growth_note text shown to this user — review for accuracy and appropriateness.</p>
+                    <div className="space-y-3">
+                      {adminCareerRecs.map((c: any, i: number) => (
+                        <div key={c.title ?? i} className="border border-slate-100 rounded-xl p-4">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-sm font-semibold text-slate-800">{c.title}</span>
+                            {typeof c.match_score === 'number' && (
+                              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700">{c.match_score}% match</span>
+                            )}
+                          </div>
+                          {c.sector && <p className="text-xs text-slate-400 mb-1.5">{c.sector}</p>}
+                          {c.fit_summary && <p className="text-xs text-slate-600 mb-1.5">{c.fit_summary}</p>}
+                          {c.growth_note && <p className="text-xs text-slate-500 italic">{c.growth_note}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {adminAiLoading && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 animate-pulse">
+                    <div className="h-4 bg-slate-100 rounded w-1/3 mb-4" />
+                    <div className="space-y-3">
+                      {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl" />)}
+                    </div>
+                  </div>
+                )}
+
+                {!adminAiLoading && adminAiImpact && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">AI Impact on Careers</h3>
+                    <p className="text-sm text-slate-600 mb-4 leading-relaxed">{adminAiImpact.overall_summary}</p>
+                    <div className="space-y-3">
+                      {adminAiImpact.careers?.map((c: any) => (
+                        <div key={c.title} className="border border-slate-100 rounded-xl p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-semibold text-slate-800">{c.title}</span>
+                            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                              c.ai_risk_level === 'low' ? 'bg-green-50 text-green-700' :
+                              c.ai_risk_level === 'medium' ? 'bg-amber-50 text-amber-700' :
+                              'bg-rose-50 text-rose-700'
+                            }`}>{c.ai_risk_level?.toUpperCase()} RISK</span>
+                          </div>
+                          <p className="text-xs text-slate-500 mb-2">{c.gcc_outlook}</p>
+                          {c.protected_skills?.length > 0 && (
+                            <div className="mb-2">
+                              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Human skills that stay valuable</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {c.protected_skills.map((s: string) => (
+                                  <span key={s} className="text-xs bg-green-50 text-green-700 border border-green-100 px-2 py-0.5 rounded-full">{s}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {c.upskilling?.length > 0 && <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">How to prepare</p>}
+                          <ul className="space-y-1">
+                            {c.upskilling?.map((tip: string) => (
+                              <li key={tip} className="text-xs text-slate-500 flex gap-1.5">
+                                <span className="text-primary/70 mt-0.5">→</span>{tip}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {!adminCareerRecsLoading && adminActionPlan && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">90-Day Action Plan</h3>
+                    <p className="text-xs text-slate-400 mb-3">Only shown inside the downloaded PDF for a real user — surfaced here for review.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {[
+                        ['Month 1', adminActionPlan.month_1],
+                        ['Months 2-3', adminActionPlan.months_2_3],
+                        ['Months 4-6', adminActionPlan.months_4_6],
+                      ].map(([label, items]) => (
+                        <div key={label as string}>
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">{label}</p>
+                          <ul className="space-y-1.5">
+                            {((items as string[]) || []).map((item, i) => (
+                              <li key={i} className="text-xs text-slate-600 flex gap-1.5">
+                                <span className="text-primary/70 mt-0.5">→</span>{item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {adminJobListingsLoading && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 animate-pulse">
+                    <div className="h-4 bg-slate-100 rounded w-1/3 mb-4" />
+                    <div className="space-y-3">
+                      {[1,2].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl" />)}
+                    </div>
+                  </div>
+                )}
+                {!adminJobListingsLoading && adminJobListings.length > 0 && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Live Job Postings ({adminJobListings.length})</h3>
+                    <div className="space-y-2">
+                      {adminJobListings.map((job: any, i: number) => (
+                        <a key={i} href={job.url} target="_blank" rel="noopener noreferrer" className="flex items-start justify-between gap-3 border border-slate-100 rounded-xl p-3 hover:border-slate-300 transition-colors">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-800 truncate">{job.title}</p>
+                            <p className="text-xs text-slate-400 truncate">{job.company} · {job.location}</p>
+                            {job.matched_career && <p className="text-xs text-slate-400 mt-0.5">For: {job.matched_career}</p>}
+                          </div>
+                          {job.source && <span className="text-xs shrink-0 px-2 py-0.5 rounded-full bg-slate-50 border border-slate-100 text-slate-500">{job.source}</span>}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {adminCompaniesLoading && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 animate-pulse">
+                    <div className="h-4 bg-slate-100 rounded w-1/3 mb-4" />
+                    <div className="space-y-3">
+                      {[1,2].map(i => <div key={i} className="h-12 bg-slate-100 rounded-xl" />)}
+                    </div>
+                  </div>
+                )}
+                {!adminCompaniesLoading && adminCompanies.length > 0 && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Recommended Companies ({adminCompanies.length})</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {adminCompanies.map((company: any) => (
+                        <a key={company.id} href={company.career_page_url || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between gap-3 border border-slate-100 rounded-xl p-3 hover:border-slate-300 transition-colors">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-800 truncate">{company.name_en}</p>
+                            <p className="text-xs text-slate-400 truncate">{company.sector}{company.is_government ? ' · Government' : ''}</p>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {adminCoursesLoading && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 animate-pulse">
+                    <div className="h-4 bg-slate-100 rounded w-1/3 mb-4" />
+                    <div className="space-y-3">
+                      {[1,2].map(i => <div key={i} className="h-12 bg-slate-100 rounded-xl" />)}
+                    </div>
+                  </div>
+                )}
+                {!adminCoursesLoading && adminCourses.length > 0 && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Recommended Courses ({adminCourses.length})</h3>
+                    <div className="space-y-2">
+                      {adminCourses.map((course: any) => (
+                        <a key={course.id} href={course.url} target="_blank" rel="noopener noreferrer" className="flex items-start justify-between gap-3 border border-slate-100 rounded-xl p-3 hover:border-slate-300 transition-colors">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-800 truncate">{course.title}</p>
+                            <p className="text-xs text-slate-400 truncate">{course.provider} · {course.level}{course.duration_hours ? ` · ${course.duration_hours}h` : ''}</p>
+                          </div>
+                          <span className={`text-xs shrink-0 px-2 py-0.5 rounded-full border ${course.is_free ? 'bg-teal-50 text-teal-700 border-teal-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
+                            {course.is_free ? 'Free' : 'Paid'}
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     )
