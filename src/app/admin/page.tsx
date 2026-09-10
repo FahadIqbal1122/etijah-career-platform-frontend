@@ -436,11 +436,25 @@ function TelemetryBehaviorView({
   onCloseDrilldown: () => void
 }) {
   const { sessions, sessionCount, completedCount, deviceCounts, activityCounts, sessionsThatPlayed, pacing } = summary
+  const exportSessions = () => {
+    const rows: (string | number | null)[][] = [
+      ['Name', 'Email', 'Device', 'Locale', 'Completed', 'Activities', 'Started at'],
+      ...sessions.map(s => [
+        s.full_name || '', s.email || '', s.device_type || '', s.locale || '',
+        s.completed ? 'yes' : 'no', s.activities.map(a => ACTIVITY_LABEL[a] || a).join('; '),
+        new Date(s.started_at).toLocaleString(),
+      ]),
+    ]
+    downloadCSV(`beta_behavior_sessions_${new Date().toISOString().slice(0, 10)}.csv`, rows)
+  }
   return (
     <>
-      <p className="text-sm text-slate-400 mb-4">
-        {sessionCount} assessment attempt{sessionCount !== 1 ? 's' : ''} tracked
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <p className="text-sm text-slate-400">
+          {sessionCount} assessment attempt{sessionCount !== 1 ? 's' : ''} tracked
+        </p>
+        <DownloadCSVButton onClick={exportSessions} label="Download sessions" />
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <BetaStatTile label="Attempts tracked" value={String(sessionCount)} />
@@ -873,6 +887,9 @@ export default function AdminPage() {
   const [careersCatalogSearch, setCareersCatalogSearch] = useState('')
   const [linkCopied, setLinkCopied] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [adminReportLocale, setAdminReportLocale] = useState<'en' | 'ar'>('en')
+  const [adminReportDownloading, setAdminReportDownloading] = useState(false)
+  const [adminReportError, setAdminReportError] = useState('')
 
   const [feedbackList, setFeedbackList] = useState<FeedbackEntry[]>([])
   const [feedbackLoading, setFeedbackLoading] = useState(false)
@@ -1473,33 +1490,46 @@ export default function AdminPage() {
     setCoachingSessions([])
   }
 
+  // Shared by handleViewResults (initial load) and the EN/AR toggle button in the
+  // detail panel — these two sections are locale-aware, unlike the rule-based
+  // career-suggestions chips and the raw scoring summary.
+  function fetchLocalizedSections(subId: string, locale: 'en' | 'ar') {
+    setAdminAiImpact(null)
+    setAdminCareerRecs([])
+    setAdminAiLoading(true)
+    setAdminCareerRecsLoading(true)
+    fetch(`/api/admin/submissions/${subId}/ai-impact?locale=${locale}`)
+      .then(r => r.json()).then(d => setAdminAiImpact(d)).catch(() => {}).finally(() => setAdminAiLoading(false))
+    // AI-generated career_recommendations (match_score/fit_summary/growth_note) shown to
+    // the user in-app — surfaced here so an admin can spot-check the actual reasoning text
+    // a real user saw, not just the rule-based title list above.
+    fetch(`/api/admin/submissions/${subId}/career-recommendations?locale=${locale}`)
+      .then(r => r.json()).then(d => setAdminCareerRecs(d.career_recommendations || [])).catch(() => {}).finally(() => setAdminCareerRecsLoading(false))
+  }
+
   async function handleViewResults(sub: Submission) {
     setSelected(sub)
     setResults(null)
     setAdminJobs([])
-    setAdminAiImpact(null)
-    setAdminCareerRecs([])
+    setAdminReportError('')
     setResultsLoading(true)
-    setAdminAiLoading(true)
-    setAdminCareerRecsLoading(true)
+    let locale: 'en' | 'ar' = 'en'
     try {
       const res = await fetch(`/api/admin/submissions/${sub.id}/results`)
       const data = await res.json()
       setResults(data.summary)
+      // Default the toggle to whatever locale the user actually submitted/viewed in,
+      // rather than always opening on English.
+      if (data.locale === 'ar' || data.locale === 'en') locale = data.locale
     } catch {
       setResults(null)
     } finally {
       setResultsLoading(false)
     }
+    setAdminReportLocale(locale)
     fetch(`/api/admin/submissions/${sub.id}/career-suggestions`)
       .then(r => r.json()).then(d => setAdminJobs(d.suggestions || [])).catch(() => {})
-    fetch(`/api/admin/submissions/${sub.id}/ai-impact`)
-      .then(r => r.json()).then(d => setAdminAiImpact(d)).catch(() => {}).finally(() => setAdminAiLoading(false))
-    // AI-generated career_recommendations (match_score/fit_summary/growth_note) shown to
-    // the user in-app — surfaced here so an admin can spot-check the actual reasoning text
-    // a real user saw, not just the rule-based title list above.
-    fetch(`/api/admin/submissions/${sub.id}/career-recommendations`)
-      .then(r => r.json()).then(d => setAdminCareerRecs(d.career_recommendations || [])).catch(() => {}).finally(() => setAdminCareerRecsLoading(false))
+    fetchLocalizedSections(sub.id, locale)
   }
 
   async function handleDeleteSubmission(id: string) {
@@ -1751,9 +1781,58 @@ export default function AdminPage() {
                 </button>
               )
             })()}
+            <div className="flex items-center rounded-lg border border-[var(--line-strong)] bg-white overflow-hidden text-sm font-medium">
+              {(['en', 'ar'] as const).map(loc => (
+                <button
+                  key={loc}
+                  onClick={() => {
+                    if (adminReportLocale === loc) return
+                    setAdminReportLocale(loc)
+                    fetchLocalizedSections(selected.id, loc)
+                  }}
+                  className={`px-3 py-2 transition-colors duration-150 ${
+                    adminReportLocale === loc ? 'bg-primary text-white' : 'text-slate-500 hover:bg-lightblue'
+                  }`}
+                >
+                  {loc.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={async () => {
+                setAdminReportError('')
+                setAdminReportDownloading(true)
+                try {
+                  const res = await fetch(`/api/admin/submissions/${selected.id}/report?locale=${adminReportLocale}`)
+                  if (!res.ok) throw new Error((await res.json().catch(() => null))?.error || `Failed (${res.status})`)
+                  const blob = await res.blob()
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = `career-report-${selected.id.slice(0, 8)}-${adminReportLocale}.pdf`
+                  a.click()
+                  URL.revokeObjectURL(url)
+                } catch (e: any) {
+                  setAdminReportError(e.message || 'Failed to download report')
+                } finally {
+                  setAdminReportDownloading(false)
+                }
+              }}
+              disabled={adminReportDownloading}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[var(--line-strong)] bg-white text-primary hover:bg-lightblue hover:border-primary text-sm font-medium transition-all duration-200 disabled:opacity-50"
+            >
+              {adminReportDownloading ? (
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" />
+                </svg>
+              )}
+              {adminReportDownloading ? 'Generating…' : 'Download Report'}
+            </button>
             <button
               onClick={() => {
-                const url = `${window.location.origin}/en/results/${selected.id}`
+                const url = `${window.location.origin}/${adminReportLocale}/results/${selected.id}`
                 navigator.clipboard.writeText(url)
                 setLinkCopied(true)
                 if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
@@ -1783,6 +1862,11 @@ export default function AdminPage() {
             </button>
           </div>
         </div>
+        {adminReportError && (
+          <div className="max-w-2xl mx-auto px-4 pt-4">
+            <p className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{adminReportError}</p>
+          </div>
+        )}
 
         <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
@@ -3459,6 +3543,34 @@ export default function AdminPage() {
                   Couldn&rsquo;t load who&rsquo;s been recommended what ({allCareerRecsError}) — approve/reject still works, but &ldquo;Recommended to&rdquo; may be incomplete.
                 </p>
               )}
+              {(() => {
+                const exportCareerCatalog = () => {
+                  const recommendedTo = new Map<string, { full_name: string | null; email: string | null }[]>()
+                  for (const sub of betaCareerRecsGenerated) {
+                    for (const rec of sub.career_recommendations || []) {
+                      const key = (rec.title || '').trim().toLowerCase()
+                      if (!key) continue
+                      const list = recommendedTo.get(key) || []
+                      list.push({ full_name: sub.full_name, email: sub.email })
+                      recommendedTo.set(key, list)
+                    }
+                  }
+                  const rows: (string | number | null)[][] = [
+                    ['Career', 'Sector', 'Approved', 'Recommended to'],
+                    ...careersCatalog.map(c => [
+                      c.title, c.sector, c.is_approved ? 'yes' : 'no',
+                      (recommendedTo.get((c.title || '').trim().toLowerCase()) || [])
+                        .map(r => r.full_name || r.email || 'Unnamed').join('; '),
+                    ]),
+                  ]
+                  downloadCSV(`beta_career_catalog_${new Date().toISOString().slice(0, 10)}.csv`, rows)
+                }
+                return (
+                  <div className="flex justify-end mb-3">
+                    <DownloadCSVButton onClick={exportCareerCatalog} label="Download catalog" />
+                  </div>
+                )
+              })()}
               {!careersCatalogLoading && !allCareerRecsLoading && !careersCatalogError && (() => {
                 // Every title an AI recommendation call has actually surfaced to a beta
                 // user, with who received it — the AI only ever picks from this catalog
@@ -3576,7 +3688,7 @@ export default function AdminPage() {
               const exportBetaFeedback = () => {
                 const rows: (string | number | null)[][] = [
                   [
-                    'Name', 'Email', 'Country', 'Age group', 'Current stage', 'Cohort', 'Feedback stage', 'Locale',
+                    'Name', 'Email', 'Country', 'Nationality', 'Age group', 'Current stage', 'Cohort', 'Feedback stage', 'Locale',
                     'S1: clarity (1-5)', 'S1: feeling (1-5)', 'S1: understood (1-5)', 'Stage 1 completed at',
                     'Accuracy (result_accuracy)', 'Would recommend', 'Would pay', 'Result Stage completed at',
                     'Language used', 'Understood after (1-5)', 'Felt like mentor', 'Personality accuracy', 'Values accuracy',
@@ -3589,7 +3701,7 @@ export default function AdminPage() {
                   ],
                   ...visibleBetaFeedback.map(bf => [
                     bf.assessment_responses?.full_name || '', bf.assessment_responses?.email || '',
-                    bf.assessment_responses?.country || '', bf.assessment_responses?.age_bracket || '',
+                    bf.assessment_responses?.country || '', bf.assessment_responses?.nationality || '', bf.assessment_responses?.age_bracket || '',
                     bf.assessment_responses?.current_stage || '', cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }),
                     BETA_FEEDBACK_STAGE_LABELS[betaFeedbackStageOf(bf)], bf.locale || '',
                     bf.s1_clarity, bf.s1_feeling, bf.s1_understood, bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : '',

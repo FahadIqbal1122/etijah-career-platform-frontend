@@ -11,7 +11,8 @@ export async function GET(
   if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
   const { id } = await params
-  const res = await fetch(`${BACKEND}/assessment/${id}/career-recommendations`, {
+  const locale = req.nextUrl.searchParams.get('locale') || 'en'
+  const res = await fetch(`${BACKEND}/assessment/${id}/career-recommendations?locale=${locale}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   return backendJsonResponse(res)
