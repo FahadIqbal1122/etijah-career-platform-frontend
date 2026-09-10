@@ -4,6 +4,7 @@ export type QuestionType =
   | 'behavioral_scale'
   | 'forced_choice'
   | 'text_input'
+  | 'number_input'
   | 'email_input'
   | 'phone_input'
 
@@ -94,16 +95,22 @@ export const questions: Question[] = [
     id: 'QO3',
     section: 'Onboarding',
     framework: 'Onboarding',
-    text: 'Which age range describes you?',
+    text: 'What is your age?',
+    type: 'number_input',
+  },
+  {
+    id: 'QO3B',
+    section: 'Onboarding',
+    framework: 'Onboarding',
+    text: 'How much work experience do you have?',
     type: 'single_select',
     options: [
-      { value: 'under_16', label: 'Under 16' },
-      { value: '16_18', label: '16–18' },
-      { value: '19_22', label: '19–22' },
-      { value: '23_26', label: '23–26' },
-      { value: '27_32', label: '27–32' },
-      { value: '33_40', label: '33–40' },
-      { value: '41_plus', label: '41+' },
+      { value: 'student', label: 'Still a student' },
+      { value: 'fresh_grad', label: 'Fresh graduate, no work experience yet' },
+      { value: 'up_to_1yr', label: 'Up to 1 year' },
+      { value: 'up_to_3yrs', label: 'Up to 3 years' },
+      { value: 'up_to_5yrs', label: 'Up to 5 years' },
+      { value: '10yrs_plus', label: '10+ years' },
     ],
   },
   {
@@ -141,6 +148,24 @@ export const questions: Question[] = [
       { value: 'law', label: 'Law' },
       { value: 'not_applicable', label: 'Not applicable' },
     ],
+  },
+  {
+    id: 'QO5A',
+    section: 'Onboarding',
+    framework: 'Onboarding',
+    text: 'Was choosing this field of study mainly your own decision?',
+    type: 'single_select',
+    options: [
+      { value: 'yes', label: 'Yes, it was my choice' },
+      { value: 'no', label: 'No, it was decided for me' },
+    ],
+  },
+  {
+    id: 'QO5B',
+    section: 'Onboarding',
+    framework: 'Onboarding',
+    text: 'What was the main reason it wasn\'t your choice?',
+    type: 'text_input',
   },
   {
     id: 'QO6',

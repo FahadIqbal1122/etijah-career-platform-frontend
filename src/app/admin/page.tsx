@@ -66,8 +66,12 @@ type Submission = {
   phone: string
   country: string
   nationality: string
-  age_bracket: string
+  age: number | null
+  age_bracket: string | null // legacy bracket field, still populated on rows submitted before the exact-age question shipped
+  experience_level: string | null
   education_field: string[]
+  major_was_own_choice: string | null // 'yes' | 'no' | null (not asked, e.g. high-school users)
+  major_choice_reason: string | null // only set when major_was_own_choice === 'no'
   current_stage: string
   completed: boolean
   created_at: string
@@ -211,6 +215,26 @@ const AGE_BRACKET_ORDER = ['under_16', '16_18', '19_22', '23_26', '27_32', '33_4
 const AGE_BRACKET_LABEL: Record<string, string> = {
   under_16: 'Under 16', '16_18': '16–18', '19_22': '19–22', '23_26': '23–26',
   '27_32': '27–32', '33_40': '33–40', '41_plus': '41+',
+}
+// Submissions before the exact-age question shipped only have age_bracket;
+// submissions after it only have age (age_bracket is null). This buckets an
+// exact age into the same 7 ranges so the "Age group" chart/export stay
+// continuous across the cutover instead of splitting into two incomparable
+// series.
+function ageToBracket(age: number | null | undefined): string | null {
+  if (age === null || age === undefined || !Number.isFinite(age)) return null
+  if (age < 16) return 'under_16'
+  if (age <= 18) return '16_18'
+  if (age <= 22) return '19_22'
+  if (age <= 26) return '23_26'
+  if (age <= 32) return '27_32'
+  if (age <= 40) return '33_40'
+  return '41_plus'
+}
+const EXPERIENCE_LEVEL_ORDER = ['student', 'fresh_grad', 'up_to_1yr', 'up_to_3yrs', 'up_to_5yrs', '10yrs_plus']
+const EXPERIENCE_LEVEL_LABEL: Record<string, string> = {
+  student: 'Still a student', fresh_grad: 'Fresh graduate', up_to_1yr: 'Up to 1 year',
+  up_to_3yrs: 'Up to 3 years', up_to_5yrs: 'Up to 5 years', '10yrs_plus': '10+ years',
 }
 // "current_stage" is the closest proxy we collect to employment status — it's
 // an education/career-stage question, not a strict employed/unemployed flag.
@@ -818,7 +842,7 @@ type BetaFeedbackEntry = {
   result_stage_completed_at: string | null
   stage2_completed_at: string | null
   created_at: string
-  assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null; nationality: string | null; age_bracket: string | null; current_stage: string | null; cohort_override: 'beta' | 'beta_v2' | null } | null
+  assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null; nationality: string | null; age: number | null; age_bracket: string | null; experience_level: string | null; current_stage: string | null; cohort_override: 'beta' | 'beta_v2' | null } | null
 }
 
 type BugReport = {
@@ -1969,8 +1993,12 @@ export default function AdminPage() {
                     ['Phone', selected.phone],
                     ['Country', selected.country],
                     ['Nationality', selected.nationality],
-                    ['Age bracket', selected.age_bracket],
+                    ['Age', selected.age ?? (selected.age_bracket ? AGE_BRACKET_LABEL[selected.age_bracket] || selected.age_bracket : null)],
+                    ['Experience', selected.experience_level ? (EXPERIENCE_LEVEL_LABEL[selected.experience_level] || selected.experience_level) : null],
                     ['Education field', (selected.education_field || []).join(', ')],
+                    ['Major was own choice', selected.major_was_own_choice === 'no'
+                      ? `No${selected.major_choice_reason ? ` — ${selected.major_choice_reason}` : ''}`
+                      : selected.major_was_own_choice === 'yes' ? 'Yes' : null],
                     ['Current stage', selected.current_stage],
                     ...(isBetaSubmission(selected) ? [['Cohort', cohortLabel(selected)]] : []),
                     ['Submitted', new Date(selected.created_at).toLocaleString()],
@@ -2445,7 +2473,8 @@ export default function AdminPage() {
                 ['Country', bf.assessment_responses?.country],
                 ['Status', formatUnderscored(bf.assessment_responses?.current_stage)],
                 ['Cohort', cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override })],
-                ['Age', formatUnderscored(bf.assessment_responses?.age_bracket)],
+                ['Age', bf.assessment_responses?.age ?? (bf.assessment_responses?.age_bracket ? AGE_BRACKET_LABEL[bf.assessment_responses.age_bracket] || bf.assessment_responses.age_bracket : null)],
+                ['Experience', bf.assessment_responses?.experience_level ? (EXPERIENCE_LEVEL_LABEL[bf.assessment_responses.experience_level] || bf.assessment_responses.experience_level) : null],
                 ['Locale', bf.locale || bf.assessment_responses?.locale],
                 ['Device', bf.device],
                 ['Stage 1 completed', bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : null],
@@ -2897,12 +2926,17 @@ export default function AdminPage() {
   function renderSubmissionsTable(list: Submission[], emptyMessage: string, exportFilename: string) {
     const exportSubmissions = () => {
       const rows: (string | number | null)[][] = [
-        ['Name', 'Email', 'Phone', 'Country', 'Nationality', 'Age group', 'Education', 'Current stage', 'Cohort', 'Date', 'Status', 'Device', 'Games played', 'Has feedback'],
+        ['Name', 'Email', 'Phone', 'Country', 'Nationality', 'Age', 'Experience', 'Education', 'Major own choice', 'Major choice reason', 'Current stage', 'Cohort', 'Date', 'Status', 'Device', 'Games played', 'Has feedback'],
         ...list.map(sub => {
           const session = telemetryByResponseId.get(sub.id)
           return [
             sub.full_name || '', sub.email || '', sub.phone || '', sub.country || '', sub.nationality || '',
-            sub.age_bracket || '', (sub.education_field || []).join('; '), sub.current_stage || '',
+            sub.age ?? (sub.age_bracket ? AGE_BRACKET_LABEL[sub.age_bracket] || sub.age_bracket : '') ?? '',
+            sub.experience_level ? (EXPERIENCE_LEVEL_LABEL[sub.experience_level] || sub.experience_level) : '',
+            (sub.education_field || []).join('; '),
+            sub.major_was_own_choice === 'no' ? 'No' : sub.major_was_own_choice === 'yes' ? 'Yes' : '',
+            sub.major_was_own_choice === 'no' ? (sub.major_choice_reason || '') : '',
+            sub.current_stage || '',
             isBetaSubmission(sub) ? cohortLabel(sub) : '',
             new Date(sub.created_at).toLocaleString(),
             sub.completed ? 'Complete' : 'Incomplete',
@@ -2928,7 +2962,8 @@ export default function AdminPage() {
                 <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Contact</th>
                 <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Country</th>
                 <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Nationality</th>
-                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Age group</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Age</th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Experience</th>
                 <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Education</th>
                 <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Stage</th>
                 <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
@@ -2963,7 +2998,8 @@ export default function AdminPage() {
                     </td>
                     <td className="px-3 py-3 text-slate-500">{sub.country || '—'}</td>
                     <td className="px-3 py-3 text-slate-500">{sub.nationality || '—'}</td>
-                    <td className="px-3 py-3 text-slate-500">{sub.age_bracket || '—'}</td>
+                    <td className="px-3 py-3 text-slate-500">{sub.age ?? (sub.age_bracket ? AGE_BRACKET_LABEL[sub.age_bracket] || sub.age_bracket : null) ?? '—'}</td>
+                    <td className="px-3 py-3 text-slate-500">{sub.experience_level ? (EXPERIENCE_LEVEL_LABEL[sub.experience_level] || sub.experience_level) : '—'}</td>
                     <td className="px-3 py-3 text-slate-500 capitalize">{(sub.education_field || []).map(f => f.replace(/_/g, ' ')).join(', ') || '—'}</td>
                     <td className="px-3 py-3 text-slate-500 capitalize">{sub.current_stage?.replace(/_/g, ' ') || '—'}</td>
                     <td className="px-3 py-3 text-slate-400 text-xs">{new Date(sub.created_at).toLocaleDateString()}</td>
@@ -3318,14 +3354,15 @@ export default function AdminPage() {
               // that block's own IIFE — keeps the export in sync with whichever
               // demographics filter is currently selected on screen.
               const demoFilterLabel = { all: 'All submissions', stage1: 'Stage 1', result: 'Result Stage', stage2: 'Stage 2' } as const
-              type DemoRow = { age_bracket: string | null; current_stage: string | null; country: string | null; nationality: string | null }
+              type DemoRow = { age_bracket: string | null; experience_level: string | null; current_stage: string | null; country: string | null; nationality: string | null }
               const demoRows: DemoRow[] =
                 betaDemographicsFilter === 'all'
-                  ? betaSubmissions.map(s => ({ age_bracket: s.age_bracket, current_stage: s.current_stage, country: s.country, nationality: s.nationality }))
+                  ? betaSubmissions.map(s => ({ age_bracket: s.age_bracket ?? ageToBracket(s.age), experience_level: s.experience_level, current_stage: s.current_stage, country: s.country, nationality: s.nationality }))
                   : (betaDemographicsFilter === 'stage1' ? betaFeedbackList
                     : betaDemographicsFilter === 'result' ? resultStageResponses
                     : stage2Responses).map(bf => ({
-                      age_bracket: bf.assessment_responses?.age_bracket ?? null,
+                      age_bracket: bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age),
+                      experience_level: bf.assessment_responses?.experience_level ?? null,
                       current_stage: bf.assessment_responses?.current_stage ?? null,
                       country: bf.assessment_responses?.country ?? null,
                       nationality: bf.assessment_responses?.nationality ?? null,
@@ -3357,6 +3394,8 @@ export default function AdminPage() {
                   [],
                   [`Demographics — ${demoFilterLabel[betaDemographicsFilter]} (${demoRows.length})`],
                   ...breakdownRows(AGE_BRACKET_ORDER, AGE_BRACKET_LABEL, countBy(demoRows, r => r.age_bracket), demoRows.length, 'Age group'),
+                  [],
+                  ...breakdownRows(EXPERIENCE_LEVEL_ORDER, EXPERIENCE_LEVEL_LABEL, countBy(demoRows, r => r.experience_level), demoRows.length, 'Experience level'),
                   [],
                   ...breakdownRows(CURRENT_STAGE_ORDER, CURRENT_STAGE_LABEL, countBy(demoRows, r => r.current_stage), demoRows.length, 'Current stage'),
                   [],
@@ -3443,14 +3482,15 @@ export default function AdminPage() {
                     // "result"/"stage2" read them off the nested assessment_responses
                     // join on a BetaFeedbackEntry — so one countBy call below works
                     // regardless of which cohort is selected.
-                    type DemoRow = { age_bracket: string | null; current_stage: string | null; country: string | null; nationality: string | null }
+                    type DemoRow = { age_bracket: string | null; experience_level: string | null; current_stage: string | null; country: string | null; nationality: string | null }
                     const demoRows: DemoRow[] =
                       betaDemographicsFilter === 'all'
-                        ? betaSubmissions.map(s => ({ age_bracket: s.age_bracket, current_stage: s.current_stage, country: s.country, nationality: s.nationality }))
+                        ? betaSubmissions.map(s => ({ age_bracket: s.age_bracket ?? ageToBracket(s.age), experience_level: s.experience_level, current_stage: s.current_stage, country: s.country, nationality: s.nationality }))
                         : (betaDemographicsFilter === 'stage1' ? betaFeedbackList
                           : betaDemographicsFilter === 'result' ? resultStageResponses
                           : stage2Responses).map(bf => ({
-                            age_bracket: bf.assessment_responses?.age_bracket ?? null,
+                            age_bracket: bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age),
+                            experience_level: bf.assessment_responses?.experience_level ?? null,
                             current_stage: bf.assessment_responses?.current_stage ?? null,
                             country: bf.assessment_responses?.country ?? null,
                             nationality: bf.assessment_responses?.nationality ?? null,
@@ -3487,6 +3527,13 @@ export default function AdminPage() {
                               order={AGE_BRACKET_ORDER}
                               labels={AGE_BRACKET_LABEL}
                               counts={countBy(demoRows, r => r.age_bracket)}
+                              total={demoTotal}
+                            />
+                            <BetaCategoryChart
+                              title="Experience level"
+                              order={EXPERIENCE_LEVEL_ORDER}
+                              labels={EXPERIENCE_LEVEL_LABEL}
+                              counts={countBy(demoRows, r => r.experience_level)}
                               total={demoTotal}
                             />
                             <BetaCategoryChart
@@ -3907,15 +3954,15 @@ export default function AdminPage() {
             {betaFeedbackError && <p className="text-red-500 text-sm text-center py-8">{betaFeedbackError}</p>}
             {!betaFeedbackLoading && !betaFeedbackError && (() => {
               const statusOptions = distinctValues(betaFeedbackList.map(bf => bf.assessment_responses?.current_stage))
-              const ageOptions = distinctValues(betaFeedbackList.map(bf => bf.assessment_responses?.age_bracket))
+              const ageOptions = distinctValues(betaFeedbackList.map(bf => bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age)))
               const visibleBetaFeedback = betaFeedbackList
                 .filter(bf => betaFeedbackStageFilter === 'all' || betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
                 .filter(bf => betaFeedbackStatusFilter === 'all' || bf.assessment_responses?.current_stage === betaFeedbackStatusFilter)
-                .filter(bf => betaFeedbackAgeFilter === 'all' || bf.assessment_responses?.age_bracket === betaFeedbackAgeFilter)
+                .filter(bf => betaFeedbackAgeFilter === 'all' || (bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age)) === betaFeedbackAgeFilter)
               const exportBetaFeedback = () => {
                 const rows: (string | number | null)[][] = [
                   [
-                    'Name', 'Email', 'Country', 'Nationality', 'Age group', 'Current stage', 'Cohort', 'Feedback stage', 'Locale',
+                    'Name', 'Email', 'Country', 'Nationality', 'Age', 'Experience', 'Current stage', 'Cohort', 'Feedback stage', 'Locale',
                     'S1: clarity (1-5)', 'S1: feeling (1-5)', 'S1: understood (1-5)', 'Stage 1 completed at',
                     'Accuracy (result_accuracy)', 'Would recommend', 'Would pay', 'Result Stage completed at',
                     'Language used', 'Understood after (1-5)', 'Felt like mentor', 'Personality accuracy', 'Values accuracy',
@@ -3928,7 +3975,9 @@ export default function AdminPage() {
                   ],
                   ...visibleBetaFeedback.map(bf => [
                     bf.assessment_responses?.full_name || '', bf.assessment_responses?.email || '',
-                    bf.assessment_responses?.country || '', bf.assessment_responses?.nationality || '', bf.assessment_responses?.age_bracket || '',
+                    bf.assessment_responses?.country || '', bf.assessment_responses?.nationality || '',
+                    bf.assessment_responses?.age ?? (bf.assessment_responses?.age_bracket ? AGE_BRACKET_LABEL[bf.assessment_responses.age_bracket] || bf.assessment_responses.age_bracket : '') ?? '',
+                    bf.assessment_responses?.experience_level ? (EXPERIENCE_LEVEL_LABEL[bf.assessment_responses.experience_level] || bf.assessment_responses.experience_level) : '',
                     bf.assessment_responses?.current_stage || '', cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }),
                     BETA_FEEDBACK_STAGE_LABELS[betaFeedbackStageOf(bf)], bf.locale || '',
                     bf.s1_clarity, bf.s1_feeling, bf.s1_understood, bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : '',
@@ -3981,7 +4030,7 @@ export default function AdminPage() {
                         >
                           <option value="all">All ages</option>
                           {ageOptions.map(v => (
-                            <option key={v} value={v}>{formatUnderscored(v)}</option>
+                            <option key={v} value={v}>{AGE_BRACKET_LABEL[v] || formatUnderscored(v)}</option>
                           ))}
                         </select>
                       </div>
@@ -4017,7 +4066,7 @@ export default function AdminPage() {
                                 <td className="px-4 py-3 text-slate-500">{bf.assessment_responses?.email || '—'}</td>
                                 <td className="px-4 py-3 text-slate-500">{bf.assessment_responses?.country || '—'}</td>
                                 <td className="px-4 py-3 text-slate-500 capitalize">{formatUnderscored(bf.assessment_responses?.current_stage)}</td>
-                                <td className="px-4 py-3 text-slate-500">{formatUnderscored(bf.assessment_responses?.age_bracket)}</td>
+                                <td className="px-4 py-3 text-slate-500">{bf.assessment_responses?.age ?? (bf.assessment_responses?.age_bracket ? AGE_BRACKET_LABEL[bf.assessment_responses.age_bracket] || bf.assessment_responses.age_bracket : '—')}</td>
                                 <td className="px-4 py-3">
                                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                                     stageKey === 'stage2' ? 'bg-green-50 text-green-700' :

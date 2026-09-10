@@ -22,7 +22,8 @@ import { initTelemetry, pushTelemetry, getTelemetrySessionId, rotateTelemetrySes
 
 // ── skip / auto-fill rules (identical to the original form) ──────────────────
 const SKIP_RULES: { condition: (a: Record<string, any>) => boolean; ids: Record<string, any> }[] = [
-  { condition: a => a['QO4'] === 'high_school', ids: { QO5: ['not_applicable'] } },
+  { condition: a => a['QO4'] === 'high_school', ids: { QO5: ['not_applicable'], QO5A: '', QO5B: '' } },
+  { condition: a => a['QO5A'] !== 'no', ids: { QO5B: '' } },
   { condition: a => a['QO7'] === 'employee', ids: { Q69: 1, Q71: 'B', Q73: 1 } },
 ]
 function getAutoFills(answers: Record<string, any>): Record<string, any> {
@@ -178,7 +179,7 @@ function buildProgressMessage(index: number, total: number, locale: string): str
   return pool[index % pool.length]
 }
 
-const MANUAL_TYPES = new Set(['multi_select', 'text_input', 'email_input', 'phone_input'])
+const MANUAL_TYPES = new Set(['multi_select', 'text_input', 'number_input', 'email_input', 'phone_input'])
 
 export default function AssessmentForm() {
   const locale = useLocale()
@@ -341,6 +342,10 @@ export default function AssessmentForm() {
     if (question.type === 'phone_input') return String(a).replace(/\D/g, '').length >= 7
     if (question.type === 'email_input') return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(a))
     if (question.type === 'text_input') return String(a).trim().length >= 2
+    if (question.type === 'number_input') {
+      const n = Number(a)
+      return Number.isInteger(n) && n >= 10 && n <= 100
+    }
     if (a === 'other' && !otherTextFilled(question.id)) return false
     return true
   }
@@ -519,9 +524,12 @@ export default function AssessmentForm() {
         phone: answers['QD3'],
         country: answers['QO1'],
         nationality: answers['QO2'],
-        age_bracket: answers['QO3'],
+        age: Number(answers['QO3']),
+        experience_level: answers['QO3B'],
         current_stage: answers['QO4'],
         education_field: finalAnswers['QO5'] || [],
+        major_was_own_choice: finalAnswers['QO5A'] || null,
+        major_choice_reason: finalAnswers['QO5A'] === 'no' ? (finalAnswers['QO5B'] || null) : null,
         sectors_of_interest: answers['QO6'] || [],
         career_structure: answers['QO7'],
         languages: answers['QO8'] || [],
@@ -699,6 +707,24 @@ export default function AssessmentForm() {
                 <input
                   className="qinput"
                   type={q.type === 'email_input' ? 'email' : 'text'}
+                  value={answers[q.id] || ''}
+                  onChange={e => setAnswer(q.id, e.target.value)}
+                  placeholder={tForm('placeholder')}
+                  autoFocus
+                />
+              </>
+            )}
+
+            {q.type === 'number_input' && (
+              <>
+                <div className="qcard"><p className="qtext">{tQ(`${q.id}.text`)}</p></div>
+                <input
+                  className="qinput"
+                  type="number"
+                  inputMode="numeric"
+                  step={1}
+                  min={10}
+                  max={100}
                   value={answers[q.id] || ''}
                   onChange={e => setAnswer(q.id, e.target.value)}
                   placeholder={tForm('placeholder')}

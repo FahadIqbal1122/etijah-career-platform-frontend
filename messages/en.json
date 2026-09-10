@@ -69,15 +69,17 @@
       }
     },
     "QO3": {
-      "text": "Which age range describes you?",
+      "text": "What is your age?"
+    },
+    "QO3B": {
+      "text": "How much work experience do you have?",
       "options": {
-        "under_16": "Under 16",
-        "16_18": "16–18",
-        "19_22": "19–22",
-        "23_26": "23–26",
-        "27_32": "27–32",
-        "33_40": "33–40",
-        "41_plus": "41+"
+        "student": "Still a student",
+        "fresh_grad": "Fresh graduate, no work experience yet",
+        "up_to_1yr": "Up to 1 year",
+        "up_to_3yrs": "Up to 3 years",
+        "up_to_5yrs": "Up to 5 years",
+        "10yrs_plus": "10+ years"
       }
     },
     "QO4": {
@@ -106,6 +108,16 @@
         "law": "Law",
         "not_applicable": "Not applicable"
       }
+    },
+    "QO5A": {
+      "text": "Was choosing this field of study mainly your own decision?",
+      "options": {
+        "yes": "Yes, it was my choice",
+        "no": "No, it was decided for me"
+      }
+    },
+    "QO5B": {
+      "text": "What was the main reason it wasn't your choice?"
     },
     "QO6": {
       "text": "Which sectors are you naturally drawn to? Pick up to 3.",

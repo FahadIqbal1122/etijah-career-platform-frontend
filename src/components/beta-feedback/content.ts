@@ -138,6 +138,11 @@ export const resultStageQuestions: { key: 'result_accuracy' | 'would_recommend' 
   },
 ]
 
+export const resultStageNoteLabel: Bi = {
+  en: 'Is there anything you want to tell us? (optional)',
+  ar: 'هل هناك أي شيء تود إخبارنا به؟ (اختياري)',
+}
+
 export const stage2Sections: SectionDef[] = [
   {
     id: 'A',
@@ -187,6 +192,20 @@ export const stage2Sections: SectionDef[] = [
       {
         key: 'career_matches_accuracy', type: 'single', required: true, options: ACCURACY,
         label: { en: 'Your suggested career matches', ar: 'المسارات المهنية المقترحة لك' },
+      },
+      {
+        key: 'careers_seriously_considered', type: 'single', required: true,
+        label: { en: 'How many of these careers would you seriously consider?', ar: 'كم عدد هذه المسارات التي قد تفكر فيها جديًا؟' },
+        options: [
+          { value: 'none', label: { en: 'None of them', ar: 'لا شيء منها' } },
+          { value: 'one', label: { en: 'Just one', ar: 'واحد فقط' } },
+          { value: 'a_few', label: { en: 'A few (2–3)', ar: 'قليل منها (٢-٣)' } },
+          { value: 'most', label: { en: 'Most or all of them', ar: 'معظمها أو كلها' } },
+        ],
+      },
+      {
+        key: 'career_understanding_text', type: 'text',
+        label: { en: 'Did you understand each suggested career? If not, which one, and what was unclear?', ar: 'هل فهمت كل مسار مهني مقترح؟ إذا لم يكن كذلك، فأيّها، وما الذي لم يكن واضحًا؟' },
       },
       {
         key: 'wrong_career_text', type: 'text',
@@ -293,7 +312,7 @@ export const stage2Sections: SectionDef[] = [
       // Kept here too so it's still askable/editable if skipped or changed.
       {
         key: 'would_pay', type: 'single', required: true,
-        label: { en: 'If the full report you just saw were a paid product, would it be worth it?', ar: 'لو كان التقرير الكامل الذي رأيته للتو منتجًا مدفوعًا، فهل يستحق ذلك؟' },
+        label: { en: 'Are you willing to pay for this?', ar: 'هل أنت مستعد للدفع مقابل هذا؟' },
         options: [
           { value: 'definitely', label: { en: 'Definitely', ar: 'بالتأكيد' } },
           { value: 'maybe', label: { en: 'Maybe', ar: 'ربما' } },
@@ -301,8 +320,22 @@ export const stage2Sections: SectionDef[] = [
         ],
       },
       {
+        key: 'would_pay_reason', type: 'text',
+        label: { en: 'If not, why not?', ar: 'إذا لم تكن كذلك، فلماذا؟' },
+        showIf: (a) => a.would_pay === 'no',
+      },
+      {
         key: 'would_recommend', type: 'single', required: true,
         label: { en: 'Would you recommend this to a friend?', ar: 'هل توصي به صديقًا؟' },
+        options: [
+          { value: 'yes', label: { en: 'Yes', ar: 'نعم' } },
+          { value: 'maybe', label: { en: 'Maybe', ar: 'ربما' } },
+          { value: 'no', label: { en: 'No', ar: 'لا' } },
+        ],
+      },
+      {
+        key: 'wants_coach_session', type: 'single', required: true,
+        label: { en: 'Would you want a session with a career coach to go through your results?', ar: 'هل تودّ جلسة مع مدرّب مهني لمراجعة نتائجك؟' },
         options: [
           { value: 'yes', label: { en: 'Yes', ar: 'نعم' } },
           { value: 'maybe', label: { en: 'Maybe', ar: 'ربما' } },
