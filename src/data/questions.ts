@@ -126,8 +126,9 @@ export const questions: Question[] = [
     id: 'QO5',
     section: 'Onboarding',
     framework: 'Onboarding',
-    text: 'If you are studying or have studied at university, what is your field?',
-    type: 'single_select',
+    text: 'If you are studying or have studied at university, what is your field? Pick up to 2.',
+    type: 'multi_select',
+    maxSelect: 2,
     options: [
       { value: 'business', label: 'Business' },
       { value: 'engineering', label: 'Engineering' },

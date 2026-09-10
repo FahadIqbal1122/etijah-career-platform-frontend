@@ -22,7 +22,7 @@ import { initTelemetry, pushTelemetry, getTelemetrySessionId, rotateTelemetrySes
 
 // ── skip / auto-fill rules (identical to the original form) ──────────────────
 const SKIP_RULES: { condition: (a: Record<string, any>) => boolean; ids: Record<string, any> }[] = [
-  { condition: a => a['QO4'] === 'high_school', ids: { QO5: 'not_applicable' } },
+  { condition: a => a['QO4'] === 'high_school', ids: { QO5: ['not_applicable'] } },
   { condition: a => a['QO7'] === 'employee', ids: { Q69: 1, Q71: 'B', Q73: 1 } },
 ]
 function getAutoFills(answers: Record<string, any>): Record<string, any> {
@@ -508,7 +508,7 @@ export default function AssessmentForm() {
         nationality: answers['QO2'],
         age_bracket: answers['QO3'],
         current_stage: answers['QO4'],
-        education_field: finalAnswers['QO5'],
+        education_field: finalAnswers['QO5'] || [],
         sectors_of_interest: answers['QO6'] || [],
         career_structure: answers['QO7'],
         languages: answers['QO8'] || [],

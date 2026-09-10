@@ -7,7 +7,7 @@ import DashboardStatsView, { type DashboardStats } from '@/components/admin/Dash
 import EmailTemplatesTab from '@/components/admin/EmailTemplatesTab'
 import EmailSchedulerTab from '@/components/admin/EmailSchedulerTab'
 import SmtpSettingsTab from '@/components/admin/SmtpSettingsTab'
-import { questions } from '@/data/questions'
+import { questions, BEHAVIORAL_SCALE, type Question } from '@/data/questions'
 
 const levelToWidth: Record<string, string> = {
   low: '20%',
@@ -67,11 +67,29 @@ type Submission = {
   country: string
   nationality: string
   age_bracket: string
-  education_field: string
+  education_field: string[]
   current_stage: string
   completed: boolean
   created_at: string
   cohort_override: 'beta' | 'beta_v2' | null
+}
+
+// Resolves a raw stored answer (option value(s), a 1-6 scale number, or free
+// text) back to the human-readable label a reviewer would recognize — so the
+// admin answers panel reads like the assessment itself, not a value dump.
+function formatAnswer(q: Question, raw: unknown): string {
+  if (raw === null || raw === undefined || raw === '') return '—'
+  if (q.type === 'behavioral_scale') {
+    const opt = BEHAVIORAL_SCALE.find(o => String(o.value) === String(raw))
+    return opt ? `${raw} — ${opt.label}` : String(raw)
+  }
+  if (q.type === 'multi_select' && Array.isArray(raw)) {
+    return raw.map(v => q.options?.find(o => o.value === v)?.label || String(v)).join(', ')
+  }
+  if (q.options) {
+    return q.options.find(o => o.value === raw)?.label || String(raw)
+  }
+  return String(raw)
 }
 
 // Beta cohort = everyone who took the assessment from the day the beta invite
@@ -890,6 +908,9 @@ export default function AdminPage() {
   const [adminReportLocale, setAdminReportLocale] = useState<'en' | 'ar'>('en')
   const [adminReportDownloading, setAdminReportDownloading] = useState(false)
   const [adminReportError, setAdminReportError] = useState('')
+  const [adminAnswers, setAdminAnswers] = useState<Record<string, any>>({})
+  const [adminAnswersLoading, setAdminAnswersLoading] = useState(false)
+  const [adminAnswersOpen, setAdminAnswersOpen] = useState(false)
 
   const [feedbackList, setFeedbackList] = useState<FeedbackEntry[]>([])
   const [feedbackLoading, setFeedbackLoading] = useState(false)
@@ -1512,6 +1533,8 @@ export default function AdminPage() {
     setResults(null)
     setAdminJobs([])
     setAdminReportError('')
+    setAdminAnswers({})
+    setAdminAnswersOpen(false)
     setResultsLoading(true)
     let locale: 'en' | 'ar' = 'en'
     try {
@@ -1530,6 +1553,9 @@ export default function AdminPage() {
     fetch(`/api/admin/submissions/${sub.id}/career-suggestions`)
       .then(r => r.json()).then(d => setAdminJobs(d.suggestions || [])).catch(() => {})
     fetchLocalizedSections(sub.id, locale)
+    setAdminAnswersLoading(true)
+    fetch(`/api/admin/submissions/${sub.id}/answers`)
+      .then(r => r.json()).then(d => setAdminAnswers(d.answers || {})).catch(() => {}).finally(() => setAdminAnswersLoading(false))
   }
 
   async function handleDeleteSubmission(id: string) {
@@ -1879,7 +1905,7 @@ export default function AdminPage() {
                 ['Country', selected.country],
                 ['Nationality', selected.nationality],
                 ['Age bracket', selected.age_bracket],
-                ['Education field', selected.education_field],
+                ['Education field', (selected.education_field || []).join(', ')],
                 ['Current stage', selected.current_stage],
                 ...(isBetaSubmission(selected) ? [['Cohort', cohortLabel(selected)]] : []),
                 ['Submitted', new Date(selected.created_at).toLocaleString()],
@@ -1891,6 +1917,50 @@ export default function AdminPage() {
                 </div>
               ))}
             </dl>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <button
+              onClick={() => setAdminAnswersOpen(o => !o)}
+              className="w-full flex items-center justify-between text-left"
+            >
+              <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">
+                Answers{adminAnswersLoading ? ' (loading…)' : ` (${Object.keys(adminAnswers).length})`}
+              </h3>
+              <svg className={`w-4 h-4 text-slate-400 transition-transform ${adminAnswersOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {adminAnswersOpen && (
+              adminAnswersLoading ? (
+                <p className="text-sm text-slate-400 mt-3">Loading answers…</p>
+              ) : Object.keys(adminAnswers).length === 0 ? (
+                <p className="text-sm text-slate-400 mt-3">No stored answers for this submission.</p>
+              ) : (
+                <div className="mt-4 space-y-5">
+                  {Object.entries(
+                    questions
+                      .filter(q => q.framework !== 'Details' && q.id in adminAnswers)
+                      .reduce((sections, q) => {
+                        (sections[q.section] ||= []).push(q)
+                        return sections
+                      }, {} as Record<string, Question[]>)
+                  ).map(([section, qs]) => (
+                    <div key={section}>
+                      <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">{section}</h4>
+                      <dl className="space-y-2.5">
+                        {qs.map(q => (
+                          <div key={q.id} className="text-sm">
+                            <dt className="text-slate-500">{q.text}</dt>
+                            <dd className="text-slate-800 font-medium">{formatAnswer(q, adminAnswers[q.id])}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
           </div>
 
           {onet && (
@@ -2675,7 +2745,7 @@ export default function AdminPage() {
           const session = telemetryByResponseId.get(sub.id)
           return [
             sub.full_name || '', sub.email || '', sub.phone || '', sub.country || '', sub.nationality || '',
-            sub.age_bracket || '', sub.education_field || '', sub.current_stage || '',
+            sub.age_bracket || '', (sub.education_field || []).join('; '), sub.current_stage || '',
             isBetaSubmission(sub) ? cohortLabel(sub) : '',
             new Date(sub.created_at).toLocaleString(),
             sub.completed ? 'Complete' : 'Incomplete',
@@ -2737,7 +2807,7 @@ export default function AdminPage() {
                     <td className="px-3 py-3 text-slate-500">{sub.country || '—'}</td>
                     <td className="px-3 py-3 text-slate-500">{sub.nationality || '—'}</td>
                     <td className="px-3 py-3 text-slate-500">{sub.age_bracket || '—'}</td>
-                    <td className="px-3 py-3 text-slate-500 capitalize">{sub.education_field?.replace(/_/g, ' ') || '—'}</td>
+                    <td className="px-3 py-3 text-slate-500 capitalize">{(sub.education_field || []).map(f => f.replace(/_/g, ' ')).join(', ') || '—'}</td>
                     <td className="px-3 py-3 text-slate-500 capitalize">{sub.current_stage?.replace(/_/g, ' ') || '—'}</td>
                     <td className="px-3 py-3 text-slate-400 text-xs">{new Date(sub.created_at).toLocaleDateString()}</td>
                     <td className="px-3 py-3">
