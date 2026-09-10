@@ -43,7 +43,10 @@ export default function BetaFeedbackStage2({ responseId, locale, stage1AnsweredC
   function missingRequired(): boolean {
     for (const section of visibleSections) {
       for (const field of section.fields) {
-        if (field.required && (answers[field.key] === undefined || answers[field.key] === '')) return true
+        if (!field.required) continue
+        const value = answers[field.key]
+        const empty = Array.isArray(value) ? value.length === 0 : (value === undefined || value === '')
+        if (empty) return true
       }
     }
     return false
@@ -112,14 +115,14 @@ export default function BetaFeedbackStage2({ responseId, locale, stage1AnsweredC
                 case 'face5':
                   return (
                     <FaceScale
-                      key={field.key} label={field.label[locale]} note={note} locale={locale}
+                      key={field.key} label={field.label[locale]} note={note} required={field.required} locale={locale}
                       value={value} onChange={v => set(field.key, v)}
                     />
                   )
                 case 'scale6':
                   return (
                     <Scale6
-                      key={field.key} label={field.label[locale]} note={note}
+                      key={field.key} label={field.label[locale]} note={note} required={field.required}
                       low={field.low?.[locale] || ''} high={field.high?.[locale] || ''}
                       value={value} onChange={v => set(field.key, v)}
                     />
@@ -135,7 +138,7 @@ export default function BetaFeedbackStage2({ responseId, locale, stage1AnsweredC
                 case 'multi':
                   return (
                     <MultiPillSelect
-                      key={field.key} label={field.label[locale]} options={field.options || []}
+                      key={field.key} label={field.label[locale]} required={field.required} options={field.options || []}
                       value={value || []} locale={locale}
                       onChange={v => set(field.key, v)}
                     />

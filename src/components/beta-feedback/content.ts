@@ -273,7 +273,7 @@ export const stage2Sections: SectionDef[] = [
         low: { en: 'Not valuable', ar: 'غير مفيد' }, high: { en: 'Extremely valuable', ar: 'مفيد للغاية' },
       },
       {
-        key: 'most_valuable_parts', type: 'multi',
+        key: 'most_valuable_parts', type: 'multi', required: true,
         label: { en: 'Which parts were most valuable to you?', ar: 'أي الأجزاء كانت الأكثر قيمة بالنسبة لك؟' },
         options: [
           { value: 'personality', label: { en: 'Personality profile', ar: 'ملف الشخصية' } },

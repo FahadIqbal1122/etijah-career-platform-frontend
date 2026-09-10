@@ -2,16 +2,19 @@
 
 import { FACE_EMOJIS, type Locale, type Option } from './content'
 
-export function FaceScale({ label, note, value, onChange, locale }: {
+export function FaceScale({ label, note, required, value, onChange, locale }: {
   label: string
   note?: string
+  required?: boolean
   value: number | undefined
   onChange: (v: number) => void
   locale: Locale
 }) {
   return (
     <div className="mb-5">
-      <p className="text-sm font-medium text-slate-700 mb-2.5">{label}</p>
+      <p className="text-sm font-medium text-slate-700 mb-2.5">
+        {label} {required && <span className="text-red-500">*</span>}
+      </p>
       {note && <p className="text-[11px] text-slate-400 mb-2 -mt-1.5">{note}</p>}
       <div className="flex gap-2 justify-between" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
         {FACE_EMOJIS.map((emoji, i) => {
@@ -36,9 +39,10 @@ export function FaceScale({ label, note, value, onChange, locale }: {
   )
 }
 
-export function Scale6({ label, note, low, high, value, onChange }: {
+export function Scale6({ label, note, required, low, high, value, onChange }: {
   label: string
   note?: string
+  required?: boolean
   low: string
   high: string
   value: number | undefined
@@ -46,7 +50,9 @@ export function Scale6({ label, note, low, high, value, onChange }: {
 }) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-5 mb-3">
-      <p className="text-sm font-medium text-slate-700 mb-1">{label}</p>
+      <p className="text-sm font-medium text-slate-700 mb-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </p>
       {note && <p className="text-[11px] text-slate-400 mb-2">{note}</p>}
       <div className="flex gap-1.5 mt-2">
         {[1, 2, 3, 4, 5, 6].map(n => (
@@ -107,8 +113,9 @@ export function PillSelect({ label, note, required, options, value, onChange, lo
   )
 }
 
-export function MultiPillSelect({ label, options, value, onChange, locale }: {
+export function MultiPillSelect({ label, required, options, value, onChange, locale }: {
   label: string
+  required?: boolean
   options: Option[]
   value: string[]
   onChange: (v: string[]) => void
@@ -119,7 +126,9 @@ export function MultiPillSelect({ label, options, value, onChange, locale }: {
   }
   return (
     <div className="mb-5">
-      <p className="text-sm font-medium text-slate-700 mb-2.5">{label}</p>
+      <p className="text-sm font-medium text-slate-700 mb-2.5">
+        {label} {required && <span className="text-red-500">*</span>}
+      </p>
       <div className="flex flex-wrap gap-2">
         {options.map(opt => (
           <button
