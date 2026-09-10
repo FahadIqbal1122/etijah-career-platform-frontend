@@ -275,7 +275,7 @@ export default function ResultsPage() {
           ) : (
             <>
               <p className="text-white/80 text-xl font-semibold">{t('loading.preparing')}</p>
-              <div className="cst-wrap"><Constellation litCount={litCount} theme="dark" accent="#00C9A7" /></div>
+              <div className="cst-wrap"><Constellation litCount={litCount} rippleKey={completedCount} theme="dark" accent="#00C9A7" /></div>
               <ul className="loading-checklist">
                 {stages.map((s, i) => (
                   <li key={i} className={s.done ? 'done' : ''}>

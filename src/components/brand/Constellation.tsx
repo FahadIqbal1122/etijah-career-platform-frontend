@@ -4,6 +4,8 @@
 //
 //   theme: 'dark' (on the navy assessment gradient) | 'teal' (on the reveal takeover)
 
+import { useRef } from 'react'
+
 // A sparse asterism rising from lower-left to a bright "north star" at the
 // upper-right — ufuq (أفق) = horizon.
 export const CONSTELLATION = {
@@ -55,6 +57,18 @@ export default function Constellation({
   const isLit = (i: number) => i < lit
   const dur = (s: number) => `${(s / Math.max(0.4, motion)).toFixed(2)}s`
 
+  // Tracks the previously-rendered frontier (no effect needed — refs are exempt
+  // from render purity, this is the standard "remember the last value" pattern)
+  // so a comet of light can fly along the specific edge just crossed, instead of
+  // the node itself scaling/"popping" in place — that read as the star jumping
+  // out of position rather than progress arriving at it.
+  const prevFrontierRef = useRef(frontier)
+  const arrivedFrom = prevFrontierRef.current
+  const cometDur = 0.55
+  const hasDirectEdge = links.some(([a, b]) => (a === arrivedFrom && b === frontier) || (a === frontier && b === arrivedFrom))
+  const showComet = frontier > 0 && frontier !== arrivedFrom && hasDirectEdge
+  prevFrontierRef.current = frontier
+
   return (
     <svg className="cst" viewBox={viewBox} preserveAspectRatio="xMidYMid meet" aria-hidden="true">
       <defs>
@@ -65,6 +79,13 @@ export default function Constellation({
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
+        {/* Brand-colored travel light: a bright core fading through teal into
+            primary blue, rather than a plain white dot. */}
+        <radialGradient id={`comet-${theme}`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#F0FFFC" stopOpacity="1" />
+          <stop offset="45%" stopColor={isTeal ? '#0770BA' : accent} stopOpacity="0.95" />
+          <stop offset="100%" stopColor={isTeal ? '#00C9A7' : '#188BDC'} stopOpacity="0" />
+        </radialGradient>
       </defs>
 
       <g>
@@ -105,15 +126,13 @@ export default function Constellation({
                   stroke={isTeal ? '#0770BA' : accent}
                   strokeWidth="1.4"
                   className="cst-ripple"
-                  style={{ animationDuration: dur(1.6) }}
+                  // Held back until the comet (if any) actually lands, so the
+                  // sequence reads as light-arrives-then-star-flashes rather
+                  // than both firing at once.
+                  style={{ animationDuration: dur(1.6), animationDelay: showComet ? dur(cometDur) : '0s' }}
                 />
               )}
               <circle
-                // Remounting on rippleKey (frontier node only) replays the pop
-                // animation below every time — same trigger as the ripple ring,
-                // so answering a question visibly moves the star, not just
-                // fades its color in over half a second.
-                key={isFrontier ? `node-${i}-${rippleKey}` : `node-${i}`}
                 cx={n.x}
                 cy={n.y}
                 r={r}
@@ -121,18 +140,36 @@ export default function Constellation({
                 stroke={on ? 'none' : dimRing}
                 strokeWidth={on ? 0 : 1}
                 filter={on ? `url(#glow-${theme})` : undefined}
-                className={on && isFrontier ? 'cst-pop' : undefined}
                 style={{
                   transition: `fill ${dur(0.5)} ease`,
                   opacity: on ? 1 : 0.9,
                   transformOrigin: `${n.x}px ${n.y}px`,
-                  animationDuration: on && isFrontier ? dur(0.5) : undefined,
                 }}
               />
             </g>
           )
         })}
       </g>
+
+      {showComet && (
+        <circle
+          key={`comet-${rippleKey}`}
+          r={3}
+          fill={`url(#comet-${theme})`}
+          filter={`url(#glow-${theme})`}
+          // Fades out shortly after landing — it can stay mounted for a while
+          // (nothing else forces a re-render until the next question), and a
+          // duplicate bright dot frozen on the star would otherwise look like
+          // clutter rather than a light that arrived and settled.
+          style={{ animation: `cstCometFade ${dur(cometDur + 0.5)} ease forwards` }}
+        >
+          <animateMotion
+            dur={dur(cometDur)}
+            fill="freeze"
+            path={`M${nodes[arrivedFrom].x},${nodes[arrivedFrom].y} L${nodes[frontier].x},${nodes[frontier].y}`}
+          />
+        </circle>
+      )}
     </svg>
   )
 }
