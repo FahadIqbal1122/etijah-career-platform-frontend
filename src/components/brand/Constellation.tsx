@@ -109,6 +109,11 @@ export default function Constellation({
                 />
               )}
               <circle
+                // Remounting on rippleKey (frontier node only) replays the pop
+                // animation below every time — same trigger as the ripple ring,
+                // so answering a question visibly moves the star, not just
+                // fades its color in over half a second.
+                key={isFrontier ? `node-${i}-${rippleKey}` : `node-${i}`}
                 cx={n.x}
                 cy={n.y}
                 r={r}
@@ -116,10 +121,12 @@ export default function Constellation({
                 stroke={on ? 'none' : dimRing}
                 strokeWidth={on ? 0 : 1}
                 filter={on ? `url(#glow-${theme})` : undefined}
+                className={on && isFrontier ? 'cst-pop' : undefined}
                 style={{
                   transition: `fill ${dur(0.5)} ease`,
                   opacity: on ? 1 : 0.9,
                   transformOrigin: `${n.x}px ${n.y}px`,
+                  animationDuration: on && isFrontier ? dur(0.5) : undefined,
                 }}
               />
             </g>

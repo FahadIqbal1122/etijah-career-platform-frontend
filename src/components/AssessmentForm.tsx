@@ -162,6 +162,14 @@ function buildProgressMessage(index: number, total: number, locale: string): str
   const pct = index / total
   const isAr = locale === 'ar'
 
+  // Shown once, on the very first question only — the constellation otherwise
+  // gives no indication it's a progress indicator at all (people register it
+  // as ambient decoration until they happen to notice a star has lit). One
+  // plain-language line the moment someone has the most attention to spare,
+  // rather than a persistent number/percentage — those were tried before and
+  // read as daunting (see the ENCOURAGEMENT comment above).
+  if (index === 0) return isAr ? '✦ كل نجمة تضيء كلما تقدّمت' : '✦ Each star lights up as you go'
+
   if (remaining === 1) return isAr ? 'سؤال أخير!' : 'Last question!'
   if (pct >= 0.48 && pct < 0.52) return isAr ? 'منتصف الطريق! استمر' : 'Halfway there — keep going'
   if (remaining <= 5) return isAr ? 'أنت على وشك الانتهاء' : 'So close — almost done'
@@ -354,6 +362,12 @@ export default function AssessmentForm() {
   function doAdvance() {
     const next = index + 1
     const done = next >= total
+    // Every advance pulses the constellation's current star, not just the
+    // handful of "reveal" moments below — most answers otherwise only fade
+    // a node's color, a change easy to miss entirely since attention is on
+    // the question card, not the aside. A visible pulse each time ties the
+    // graphic's motion directly to the action that just happened.
+    setRippleKey(k => k + 1)
     // Fire a reveal when we cross out of a "reveal framework" block (RIASEC,
     // Values, Strengths) — the message reflects the top dimension the user
     // actually leaned toward in that block.
@@ -369,7 +383,6 @@ export default function AssessmentForm() {
     if (shouldReveal && curFw) {
       revealedRef.current.add(curFw)
       setRevealMsg(buildReveal(answersRef.current, curFw, locale))
-      setRippleKey(k => k + 1)
       pendingRef.current = next
       setPhase('reveal')
     } else if (done) {
@@ -548,8 +561,6 @@ export default function AssessmentForm() {
 
   return (
     <div className={`assess-screen ${phase === 'reveal' ? 'is-reveal' : ''} ${leaving ? 'leaving' : ''}`} dir={dir} lang={locale}>
-      <div className="prog"><div className="prog-fill" style={{ width: `${progress * 100}%` }} /></div>
-
       <div className="assess-topbar">
         <Logomark size={30} tone="dark" />
         <div className="assess-topbar-actions">
