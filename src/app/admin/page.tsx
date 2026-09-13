@@ -194,17 +194,23 @@ function countBy<T>(items: T[], getKey: (item: T) => string | null | undefined):
 const SENTIMENT_ORDER: Record<string, string[]> = {
   would_recommend: ['yes', 'maybe', 'no'],
   would_pay: ['definitely', 'maybe', 'no'],
+  would_pay_at_price: ['yes_today', 'yes_if_cheaper', 'maybe_later', 'no'],
   accuracy: ['spot_on', 'mostly_right', 'off'],
   yes_somewhat_no: ['yes', 'somewhat', 'no'],
+  career_explained: ['yes', 'partly', 'no'],
+  wants_coach_session: ['yes_pay', 'if_included', 'no'],
 }
 const SENTIMENT_COLOR: Record<string, string> = {
-  yes: '#00C9A7', definitely: '#00C9A7', spot_on: '#00C9A7',
-  maybe: '#F59E0B', mostly_right: '#F59E0B', somewhat: '#F59E0B',
+  yes: '#00C9A7', definitely: '#00C9A7', spot_on: '#00C9A7', yes_today: '#00C9A7', yes_pay: '#00C9A7',
+  maybe: '#F59E0B', mostly_right: '#F59E0B', somewhat: '#F59E0B', yes_if_cheaper: '#F59E0B',
+  maybe_later: '#F59E0B', partly: '#F59E0B', if_included: '#F59E0B',
   no: '#FB7185', off: '#FB7185',
 }
 const SENTIMENT_LABEL: Record<string, string> = {
   yes: 'Yes', maybe: 'Maybe', no: 'No', definitely: 'Definitely',
   spot_on: 'Spot on', mostly_right: 'Mostly right', off: 'Off', somewhat: 'Somewhat',
+  yes_today: 'Yes, today', yes_if_cheaper: 'Yes, if cheaper', maybe_later: 'Maybe later',
+  partly: 'Partly', yes_pay: "Yes, I'd pay for it", if_included: 'Only if included',
 }
 
 // Demographic breakdowns (age_bracket, current_stage) come from the onboarding
@@ -240,6 +246,29 @@ const EXPERIENCE_LEVEL_LABEL: Record<string, string> = {
 const CAREER_DIRECTION_LABEL: Record<string, string> = {
   stay_in_field: 'Stay close to field', change_field: 'Move into something different', not_sure: 'Not sure yet',
 }
+// Labels below mirror the current Stage 2 beta-feedback form (src/components/beta-feedback/content.ts).
+const CAREER_EXPLAINED_LABEL: Record<string, string> = { yes: 'Yes', partly: 'Partly', no: 'No' }
+const CAREERS_CONSIDERED_LABEL: Record<string, string> = { none: 'None', one: '1', a_few: '2–3', four_or_five: '4–5' }
+const REPORT_SECTION_LABEL: Record<string, string> = {
+  personality: 'Personality profile', values: 'Values', strengths: 'Strengths', careers: 'Career matches',
+  ai_impact: 'AI Impact', jobs: 'Job listings', companies: 'Target companies', courses: 'Courses', plan: '90-day plan',
+}
+const WOULD_PAY_AT_PRICE_LABEL: Record<string, string> = {
+  yes_today: 'Yes, today', yes_if_cheaper: 'Yes, if cheaper', maybe_later: 'Maybe later', no: 'No',
+}
+const PAY_BLOCKER_LABEL: Record<string, string> = {
+  careers_dont_fit: "Careers don't feel right", free_results_enough: 'Free results already enough',
+  not_sure_next_step: 'Not sure what to do next', doesnt_reflect_situation: "Doesn't reflect their situation",
+  want_coach_first: 'Wants to speak with a coach first', price_higher_than_expected: 'Price higher than expected',
+  dont_usually_pay: "Doesn't usually pay for career tools", someone_else_decides: 'Someone else decides',
+  dont_need_guidance_now: "Doesn't need guidance right now", other: 'Other',
+}
+const WORTH_PAYING_FOR_LABEL: Record<string, string> = {
+  plan_for_stage: 'A plan for their stage', internships_jobs: 'Internships or jobs', certifications: 'Certifications',
+  coach_session: 'A session with a coach', deeper_ai_outlook: 'Deeper AI outlook', shareable_report: 'Shareable family report',
+  other: 'Other',
+}
+const WANTS_COACH_LABEL: Record<string, string> = { yes_pay: "Yes, I'd pay for it", if_included: 'Only if included', no: 'No' }
 // "current_stage" is the closest proxy we collect to employment status — it's
 // an education/career-stage question, not a strict employed/unemployed flag.
 const CURRENT_STAGE_ORDER = ['high_school', 'university', 'recent_graduate', 'working_exploring', 'career_changer', 'returning', 'between_roles']
@@ -813,16 +842,39 @@ type BetaFeedbackEntry = {
   s1_clarity: number | null
   s1_feeling: number | null
   s1_understood: number | null
+  s1_intent: string | null
   stage1_completed_at: string | null
   language_used: string | null
   understood_after: number | null
   felt_like_mentor: string | null
+  careers_seriously_considered: string | null
+  career_explained: string | null
+  most_useful_part: string | null
+  least_useful_part: string | null
+  first_action_text: string | null
+  would_pay_at_price: string | null
+  pay_blockers: string[] | null
+  pay_blocker_other_text: string | null
+  pay_blocker_priority: string | null
+  worth_paying_for: string[] | null
+  wants_coach_session: string | null
+  would_recommend: string | null
+  device: string | null
+  had_issues: string | null
+  issue_detail: string | null
+  result_accuracy: string | null
+  result_stage_completed_at: string | null
+  stage2_completed_at: string | null
+  // Legacy Beta 1 fields — removed from the live Stage 2 form (see the beta
+  // strategy doc's Stage 2 redesign) but old rows still carry them, so kept
+  // here (and shown conditionally) rather than dropped.
   personality_accuracy: string | null
   values_accuracy: string | null
   strengths_accuracy: string | null
   career_matches_accuracy: string | null
   wrong_career_text: string | null
   missing_career_text: string | null
+  career_understanding_text: string | null
   ai_impact_useful: number | null
   ai_impact_credible: number | null
   ai_impact_changed_thinking: string | null
@@ -835,16 +887,10 @@ type BetaFeedbackEntry = {
   overall_value: number | null
   most_valuable_parts: string[] | null
   would_pay: string | null
-  would_recommend: string | null
-  device: string | null
-  had_issues: string | null
-  issue_detail: string | null
+  would_pay_reason: string | null
   surprised_text: string | null
   not_me_text: string | null
   other_text: string | null
-  result_accuracy: string | null
-  result_stage_completed_at: string | null
-  stage2_completed_at: string | null
   created_at: string
   assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null; nationality: string | null; age: number | null; age_bracket: string | null; experience_level: string | null; current_stage: string | null; cohort_override: 'beta' | 'beta_v2' | null } | null
 }
@@ -964,6 +1010,9 @@ export default function AdminPage() {
   const [adminActionPlan, setAdminActionPlan] = useState<any>(null)
   const [adminJobListings, setAdminJobListings] = useState<any[]>([])
   const [adminJobListingsLoading, setAdminJobListingsLoading] = useState(false)
+  const [adminStudentTrack, setAdminStudentTrack] = useState<any>(null)
+  const [adminCertifications, setAdminCertifications] = useState<any>(null)
+  const [adminCareerPath, setAdminCareerPath] = useState<any>(null)
   const [adminCompanies, setAdminCompanies] = useState<any[]>([])
   const [adminCompaniesLoading, setAdminCompaniesLoading] = useState(false)
   const [adminCourses, setAdminCourses] = useState<any[]>([])
@@ -1590,17 +1639,29 @@ export default function AdminPage() {
     setAdminAiImpact(null)
     setAdminCareerRecs([])
     setAdminActionPlan(null)
+    setAdminStudentTrack(null)
+    setAdminCertifications(null)
+    setAdminCareerPath(null)
     setAdminAiLoading(true)
     setAdminCareerRecsLoading(true)
     fetch(`/api/admin/submissions/${subId}/ai-impact?locale=${locale}`)
       .then(r => r.json()).then(d => setAdminAiImpact(d)).catch(() => {}).finally(() => setAdminAiLoading(false))
-    // AI-generated career_recommendations (match_score/fit_summary/growth_note) and the
-    // 90-day action_plan shown to the user in-app / in the PDF — surfaced here so an
-    // admin can spot-check the actual reasoning text a real user saw, not just the
-    // rule-based title list above.
+    // AI-generated career_recommendations (match_score/fit_summary/growth_note/fit_tag/
+    // direction_tag) and the 90-day action_plan shown to the user in-app / in the PDF —
+    // surfaced here so an admin can spot-check the actual reasoning text a real user
+    // saw, not just the rule-based title list above.
     fetch(`/api/admin/submissions/${subId}/career-recommendations?locale=${locale}`)
       .then(r => r.json()).then(d => { setAdminCareerRecs(d.career_recommendations || []); setAdminActionPlan(d.action_plan || null) })
       .catch(() => {}).finally(() => setAdminCareerRecsLoading(false))
+    // The three practical tracks (students/entering-market/professionals) — each
+    // request returns {} for a submission not in that stage, so at most one of
+    // these three ever has content for a given person.
+    fetch(`/api/admin/submissions/${subId}/student-track?locale=${locale}`)
+      .then(r => r.json()).then(d => { if (d?.majors_guidance || d?.exposure_ideas?.length) setAdminStudentTrack(d) }).catch(() => {})
+    fetch(`/api/admin/submissions/${subId}/certifications?locale=${locale}`)
+      .then(r => r.json()).then(d => { if (d?.certifications?.length) setAdminCertifications(d) }).catch(() => {})
+    fetch(`/api/admin/submissions/${subId}/career-path?locale=${locale}`)
+      .then(r => r.json()).then(d => { if (d?.narrative) setAdminCareerPath(d) }).catch(() => {})
   }
 
   async function handleViewResults(sub: Submission) {
@@ -2173,7 +2234,7 @@ export default function AdminPage() {
                 {!adminCareerRecsLoading && adminCareerRecs.length > 0 && (
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                     <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">AI Career Recommendations</h3>
-                    <p className="text-xs text-slate-400 mb-3">Exact match_score/fit_summary/growth_note text shown to this user — review for accuracy and appropriateness.</p>
+                    <p className="text-xs text-slate-400 mb-3">Exact match_score/fit_summary/growth_note/fit_tag/direction_tag shown to this user — review for accuracy and appropriateness.</p>
                     <div className="space-y-3">
                       {adminCareerRecs.map((c: any, i: number) => (
                         <div key={c.title ?? i} className="border border-slate-100 rounded-xl p-4">
@@ -2184,6 +2245,12 @@ export default function AdminPage() {
                             )}
                           </div>
                           {c.sector && <p className="text-xs text-slate-400 mb-1.5">{c.sector}</p>}
+                          {(c.fit_tag || c.direction_tag) && (
+                            <div className="flex flex-wrap gap-1.5 mb-1.5">
+                              {c.fit_tag && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 capitalize">{formatUnderscored(c.fit_tag)}</span>}
+                              {c.direction_tag && <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-slate-200 text-slate-500 capitalize">{formatUnderscored(c.direction_tag)}</span>}
+                            </div>
+                          )}
                           {c.fit_summary && <p className="text-xs text-slate-600 mb-1.5">{c.fit_summary}</p>}
                           {c.growth_note && <p className="text-xs text-slate-500 italic">{c.growth_note}</p>}
                         </div>
@@ -2235,6 +2302,11 @@ export default function AdminPage() {
                               </li>
                             ))}
                           </ul>
+                          {c.what_this_means_for_you && (
+                            <p className="text-xs font-semibold text-slate-600 mt-2 pl-2 border-l-2 border-teal-400">
+                              What this means for you: <span className="font-normal">{c.what_this_means_for_you}</span>
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -2266,6 +2338,57 @@ export default function AdminPage() {
                   </div>
                 )}
 
+                {!adminCareerRecsLoading && adminStudentTrack && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">Majors &amp; Exposure</h3>
+                    <p className="text-xs text-slate-400 mb-3">Students' practical track — also shown on the live results page and in the PDF.</p>
+                    {adminStudentTrack.majors_guidance && <p className="text-sm text-slate-600 mb-3">{adminStudentTrack.majors_guidance}</p>}
+                    <div className="space-y-2">
+                      {(adminStudentTrack.exposure_ideas || []).map((idea: any, i: number) => (
+                        <div key={i} className="border border-slate-100 rounded-xl p-3">
+                          <p className="text-sm font-semibold text-slate-800">{idea.title}</p>
+                          {idea.why && <p className="text-xs text-slate-500 mt-0.5">{idea.why}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {!adminCareerRecsLoading && adminCertifications && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">Certifications to Pursue</h3>
+                    <p className="text-xs text-slate-400 mb-3">"Entering the market" practical track — also shown on the live results page and in the PDF.</p>
+                    <div className="space-y-2">
+                      {(adminCertifications.certifications || []).map((cert: any, i: number) => (
+                        <div key={i} className="border border-slate-100 rounded-xl p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-slate-800">{cert.title}</p>
+                            {cert.provider_type && <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{cert.provider_type}</span>}
+                          </div>
+                          {cert.why && <p className="text-xs text-slate-500 mt-0.5">{cert.why}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {!adminCareerRecsLoading && adminCareerPath && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">
+                      Your Path Forward {adminCareerPath.path_type && <span className="text-xs font-normal text-slate-400 capitalize">({formatUnderscored(adminCareerPath.path_type)})</span>}
+                    </h3>
+                    <p className="text-xs text-slate-400 mb-3">Working professionals' practical track — also shown on the live results page and in the PDF.</p>
+                    <p className="text-sm text-slate-600 mb-2">{adminCareerPath.narrative}</p>
+                    <ul className="space-y-1">
+                      {(adminCareerPath.next_steps || []).map((step: string, i: number) => (
+                        <li key={i} className="text-xs text-slate-500 flex gap-1.5">
+                          <span className="text-primary/70 mt-0.5">→</span>{step}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 {adminJobListingsLoading && (
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 animate-pulse">
                     <div className="h-4 bg-slate-100 rounded w-1/3 mb-4" />
@@ -2276,7 +2399,9 @@ export default function AdminPage() {
                 )}
                 {!adminJobListingsLoading && adminJobListings.length > 0 && (
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                    <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Live Job Postings ({adminJobListings.length})</h3>
+                    <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">
+                      {adminJobListings[0]?.is_internship ? 'Internship Postings' : 'Live Job Postings'} ({adminJobListings.length})
+                    </h3>
                     <div className="space-y-2">
                       {adminJobListings.map((job: any, i: number) => (
                         <a key={i} href={job.url} target="_blank" rel="noopener noreferrer" className="flex items-start justify-between gap-3 border border-slate-100 rounded-xl p-3 hover:border-slate-300 transition-colors">
@@ -2501,6 +2626,7 @@ export default function AdminPage() {
                 ['Clarity', ratingLabel(bf.s1_clarity)],
                 ['Feeling', ratingLabel(bf.s1_feeling)],
                 ['Understood', ratingLabel(bf.s1_understood)],
+                ['Wants from results', formatUnderscored(bf.s1_intent)],
               ].map(([label, value]) => (
                 <div key={label}>
                   <dt className="text-slate-400">{label}</dt>
@@ -2527,56 +2653,111 @@ export default function AdminPage() {
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Accuracy</h3>
+            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Report Understanding</h3>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
               {[
-                ['Understood after', ratingLabel(bf.understood_after)],
-                ['Felt like a mentor?', bf.felt_like_mentor],
-                ['Personality', bf.personality_accuracy],
-                ['Values', bf.values_accuracy],
-                ['Strengths', bf.strengths_accuracy],
-                ['Career matches', bf.career_matches_accuracy],
-                ['Arabic natural', bf.arabic_natural],
+                ['Understood after', bf.understood_after ? `${bf.understood_after} / 5` : '—'],
+                ['Felt like a coach?', bf.felt_like_mentor ? formatUnderscored(bf.felt_like_mentor) : '—'],
+                ['Careers seriously considered', bf.careers_seriously_considered ? (CAREERS_CONSIDERED_LABEL[bf.careers_seriously_considered] || bf.careers_seriously_considered) : '—'],
+                ['Understood why suggested', bf.career_explained ? (CAREER_EXPLAINED_LABEL[bf.career_explained] || bf.career_explained) : '—'],
               ].map(([label, value]) => (
                 <div key={label}>
                   <dt className="text-slate-400">{label}</dt>
-                  <dd className="text-slate-800 font-medium capitalize">{value || '—'}</dd>
+                  <dd className="text-slate-800 font-medium capitalize">{value}</dd>
                 </div>
               ))}
             </dl>
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">AI Impact &amp; Recommendations</h3>
+            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">What Stood Out</h3>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
               {[
-                ['AI impact useful', ratingLabel(bf.ai_impact_useful)],
-                ['AI impact credible', ratingLabel(bf.ai_impact_credible)],
-                ['Jobs relevant', ratingLabel(bf.jobs_relevant)],
-                ['Companies fit', ratingLabel(bf.companies_fit)],
-                ['Courses useful', ratingLabel(bf.courses_useful)],
-                ['Overall value', ratingLabel(bf.overall_value)],
-                ['Would pay', bf.would_pay],
-                ['Would recommend', bf.would_recommend],
+                ['Most useful part', bf.most_useful_part ? (REPORT_SECTION_LABEL[bf.most_useful_part] || bf.most_useful_part) : '—'],
+                ['Least useful part', bf.least_useful_part ? (REPORT_SECTION_LABEL[bf.least_useful_part] || bf.least_useful_part) : '—'],
               ].map(([label, value]) => (
                 <div key={label}>
                   <dt className="text-slate-400">{label}</dt>
-                  <dd className="text-slate-800 font-medium capitalize">{(value as string)?.replace(/_/g, ' ') || value || '—'}</dd>
+                  <dd className="text-slate-800 font-medium">{value}</dd>
                 </div>
               ))}
             </dl>
           </div>
 
-          {bf.most_valuable_parts && bf.most_valuable_parts.length > 0 && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Value &amp; Pricing</h3>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              {[
+                ['Would pay (at price)', bf.would_pay_at_price ? (WOULD_PAY_AT_PRICE_LABEL[bf.would_pay_at_price] || bf.would_pay_at_price) : '—'],
+                ['Top pay blocker', bf.pay_blocker_priority ? (PAY_BLOCKER_LABEL[bf.pay_blocker_priority] || bf.pay_blocker_priority) : '—'],
+                ['Wants coach session', bf.wants_coach_session ? (WANTS_COACH_LABEL[bf.wants_coach_session] || bf.wants_coach_session) : '—'],
+                ['Would recommend', bf.would_recommend ? formatUnderscored(bf.would_recommend) : '—'],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt className="text-slate-400">{label}</dt>
+                  <dd className="text-slate-800 font-medium capitalize">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          {bf.pay_blockers && bf.pay_blockers.length > 0 && (
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-              <h3 className="font-semibold text-slate-700 mb-2 text-sm uppercase tracking-wide">Most Valuable Parts</h3>
+              <h3 className="font-semibold text-slate-700 mb-2 text-sm uppercase tracking-wide">Pay Blockers</h3>
               <div className="flex flex-wrap gap-2">
-                {bf.most_valuable_parts.map(part => (
-                  <span key={part} className="text-xs font-medium px-2 py-1 rounded-full bg-teal-50 text-teal-700 capitalize">{part.replace(/_/g, ' ')}</span>
+                {bf.pay_blockers.map(blocker => (
+                  <span key={blocker} className="text-xs font-medium px-2 py-1 rounded-full bg-rose-50 text-rose-700">{PAY_BLOCKER_LABEL[blocker] || formatUnderscored(blocker)}</span>
                 ))}
               </div>
             </div>
           )}
+
+          {bf.worth_paying_for && bf.worth_paying_for.length > 0 && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+              <h3 className="font-semibold text-slate-700 mb-2 text-sm uppercase tracking-wide">Worth Paying For</h3>
+              <div className="flex flex-wrap gap-2">
+                {bf.worth_paying_for.map(reason => (
+                  <span key={reason} className="text-xs font-medium px-2 py-1 rounded-full bg-teal-50 text-teal-700">{WORTH_PAYING_FOR_LABEL[reason] || formatUnderscored(reason)}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Legacy Beta 1 fields — removed from the live form, shown only for old rows that still carry them. */}
+          {bf.most_valuable_parts && bf.most_valuable_parts.length > 0 && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+              <h3 className="font-semibold text-slate-700 mb-2 text-sm uppercase tracking-wide">Most Valuable Parts (legacy)</h3>
+              <div className="flex flex-wrap gap-2">
+                {bf.most_valuable_parts.map(part => (
+                  <span key={part} className="text-xs font-medium px-2 py-1 rounded-full bg-slate-100 text-slate-600 capitalize">{part.replace(/_/g, ' ')}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {(() => {
+            const legacyRatings = [
+              ['Personality accuracy', bf.personality_accuracy], ['Values accuracy', bf.values_accuracy],
+              ['Strengths accuracy', bf.strengths_accuracy], ['Career matches accuracy', bf.career_matches_accuracy],
+              ['Arabic natural', bf.arabic_natural], ['AI impact useful', ratingLabel(bf.ai_impact_useful)],
+              ['AI impact credible', ratingLabel(bf.ai_impact_credible)], ['Jobs relevant', ratingLabel(bf.jobs_relevant)],
+              ['Companies fit', ratingLabel(bf.companies_fit)], ['Courses useful', ratingLabel(bf.courses_useful)],
+              ['Overall value', ratingLabel(bf.overall_value)], ['Would pay (legacy)', bf.would_pay],
+              ['Would pay reason', bf.would_pay_reason],
+            ].filter(([, v]) => v)
+            return legacyRatings.length > 0 && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Legacy Beta 1 Ratings</h3>
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  {legacyRatings.map(([label, value]) => (
+                    <div key={label as string}>
+                      <dt className="text-slate-400">{label}</dt>
+                      <dd className="text-slate-800 font-medium capitalize">{(value as string)?.replace(/_/g, ' ') || value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            )
+          })()}
 
           {(bf.had_issues || bf.issue_detail) && (
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
@@ -2592,13 +2773,16 @@ export default function AdminPage() {
           )}
 
           {[
-            ['Plan they would follow', bf.plan_would_follow],
-            ['Clear next step', bf.clear_next_step],
-            ['AI impact changed thinking', bf.ai_impact_changed_thinking],
-            ['Wrong career suggestions', bf.wrong_career_text],
-            ['Missing careers', bf.missing_career_text],
-            ['Surprised by results', bf.surprised_text],
-            ['"Not me" feedback', bf.not_me_text],
+            ['First thing they will do', bf.first_action_text],
+            ['Pay blocker — other', bf.pay_blocker_other_text],
+            ['Plan they would follow (legacy)', bf.plan_would_follow],
+            ['Clear next step (legacy)', bf.clear_next_step],
+            ['AI impact changed thinking (legacy)', bf.ai_impact_changed_thinking],
+            ['Career understanding (legacy)', bf.career_understanding_text],
+            ['Wrong career suggestions (legacy)', bf.wrong_career_text],
+            ['Missing careers (legacy)', bf.missing_career_text],
+            ['Surprised by results (legacy)', bf.surprised_text],
+            ['"Not me" feedback (legacy)', bf.not_me_text],
             ['Other comments', bf.other_text],
           ].filter(([, value]) => value).map(([label, value]) => (
             <div key={label as string} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
@@ -3421,29 +3605,65 @@ export default function AdminPage() {
                 ]
 
                 if (stage2Total > 0) {
-                  const avgOverallValue = stage2Responses.reduce((sum, bf) => sum + (bf.overall_value || 0), 0) / Math.max(1, stage2Responses.filter(bf => bf.overall_value != null).length)
-                  const mvpCounts: Record<string, number> = {}
-                  for (const bf of stage2Responses) for (const v of (bf.most_valuable_parts || [])) mvpCounts[v] = (mvpCounts[v] || 0) + 1
+                  const worthPayingCounts: Record<string, number> = {}
+                  for (const bf of stage2Responses) for (const v of (bf.worth_paying_for || [])) worthPayingCounts[v] = (worthPayingCounts[v] || 0) + 1
+                  const payBlockerCounts: Record<string, number> = {}
+                  for (const bf of stage2Responses) for (const v of (bf.pay_blockers || [])) payBlockerCounts[v] = (payBlockerCounts[v] || 0) + 1
                   rows.push(
                     [],
                     [`Stage 2 — full survey analytics (${stage2Total} respondents)`],
-                    ['Overall value — average (1-6)', avgOverallValue.toFixed(1)],
                     ['Hit an issue', pct(countBy(stage2Responses, bf => bf.had_issues).yes || 0, stage2Total)],
                     ['Took it in English', pct(countBy(stage2Responses, bf => bf.language_used).en || 0, stage2Total)],
                     ['Took it in Arabic', pct(countBy(stage2Responses, bf => bf.language_used).ar || 0, stage2Total)],
                     ['Used both languages', pct(countBy(stage2Responses, bf => bf.language_used).both || 0, stage2Total)],
                     [],
-                    ['Most valuable parts', 'Count', 'Percent'],
-                    ...Object.entries(mvpCounts).sort((a, b) => b[1] - a[1]).map(([k, n]) => [formatUnderscored(k), n, pct(n, stage2Total)]),
+                    ...breakdownRows(SENTIMENT_ORDER.would_pay_at_price, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.would_pay_at_price), stage2Total, 'Would pay, at the shown price?'),
                     [],
-                    ...breakdownRows(SENTIMENT_ORDER.accuracy, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.personality_accuracy), stage2Total, 'Personality type accuracy'),
+                    ...breakdownRows(SENTIMENT_ORDER.career_explained, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.career_explained), stage2Total, 'Understood why each career was suggested?'),
                     [],
-                    ...breakdownRows(SENTIMENT_ORDER.accuracy, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.values_accuracy), stage2Total, 'Core values accuracy'),
+                    ...breakdownRows(SENTIMENT_ORDER.wants_coach_session, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.wants_coach_session), stage2Total, 'Wants a coach session?'),
                     [],
-                    ...breakdownRows(SENTIMENT_ORDER.accuracy, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.strengths_accuracy), stage2Total, 'Strengths accuracy'),
+                    ['Careers seriously considered', 'Count', 'Percent'],
+                    ...Object.entries(countBy(stage2Responses, bf => bf.careers_seriously_considered)).map(([k, n]) => [CAREERS_CONSIDERED_LABEL[k] || formatUnderscored(k), n, pct(n, stage2Total)]),
                     [],
-                    ...breakdownRows(SENTIMENT_ORDER.accuracy, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.career_matches_accuracy), stage2Total, 'Career matches accuracy'),
+                    ['Most useful part', 'Count', 'Percent'],
+                    ...Object.entries(countBy(stage2Responses, bf => bf.most_useful_part)).map(([k, n]) => [REPORT_SECTION_LABEL[k] || formatUnderscored(k), n, pct(n, stage2Total)]),
+                    [],
+                    ['Least useful part', 'Count', 'Percent'],
+                    ...Object.entries(countBy(stage2Responses, bf => bf.least_useful_part)).map(([k, n]) => [REPORT_SECTION_LABEL[k] || formatUnderscored(k), n, pct(n, stage2Total)]),
+                    [],
+                    ['What would make it worth paying for', 'Count', 'Percent'],
+                    ...Object.entries(worthPayingCounts).sort((a, b) => b[1] - a[1]).map(([k, n]) => [WORTH_PAYING_FOR_LABEL[k] || formatUnderscored(k), n, pct(n, stage2Total)]),
+                    [],
+                    ['What would stop them from buying', 'Count', 'Percent'],
+                    ...Object.entries(payBlockerCounts).sort((a, b) => b[1] - a[1]).map(([k, n]) => [PAY_BLOCKER_LABEL[k] || formatUnderscored(k), n, pct(n, stage2Total)]),
                   )
+
+                  // Legacy Beta 1 fields (removed from the live form) — only worth a section
+                  // if any respondent in range actually has them, so a report scoped to only
+                  // redesigned-form submissions doesn't show an all-zero legacy block.
+                  const hasLegacy = stage2Responses.some(bf => bf.personality_accuracy || bf.overall_value != null || (bf.most_valuable_parts && bf.most_valuable_parts.length > 0))
+                  if (hasLegacy) {
+                    const avgOverallValue = stage2Responses.reduce((sum, bf) => sum + (bf.overall_value || 0), 0) / Math.max(1, stage2Responses.filter(bf => bf.overall_value != null).length)
+                    const mvpCounts: Record<string, number> = {}
+                    for (const bf of stage2Responses) for (const v of (bf.most_valuable_parts || [])) mvpCounts[v] = (mvpCounts[v] || 0) + 1
+                    rows.push(
+                      [],
+                      ['Legacy Beta 1 fields (removed from the live form)'],
+                      ['Overall value — average (1-6)', avgOverallValue.toFixed(1)],
+                      [],
+                      ['Most valuable parts (legacy)', 'Count', 'Percent'],
+                      ...Object.entries(mvpCounts).sort((a, b) => b[1] - a[1]).map(([k, n]) => [formatUnderscored(k), n, pct(n, stage2Total)]),
+                      [],
+                      ...breakdownRows(SENTIMENT_ORDER.accuracy, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.personality_accuracy), stage2Total, 'Personality type accuracy (legacy)'),
+                      [],
+                      ...breakdownRows(SENTIMENT_ORDER.accuracy, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.values_accuracy), stage2Total, 'Core values accuracy (legacy)'),
+                      [],
+                      ...breakdownRows(SENTIMENT_ORDER.accuracy, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.strengths_accuracy), stage2Total, 'Strengths accuracy (legacy)'),
+                      [],
+                      ...breakdownRows(SENTIMENT_ORDER.accuracy, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.career_matches_accuracy), stage2Total, 'Career matches accuracy (legacy)'),
+                    )
+                  }
                 }
 
                 downloadCSV(`beta_dashboard_report_${new Date().toISOString().slice(0, 10)}.csv`, rows)
@@ -3701,28 +3921,79 @@ export default function AdminPage() {
                           })()}
                           */}
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <BetaScaleChart title="Overall value (1-6)" values={stage2Responses.map(bf => bf.overall_value)} />
-                          <BetaRankedMultiChart
-                            title="Most valuable parts of the report"
-                            lists={stage2Responses.map(bf => bf.most_valuable_parts)}
-                            labels={{
-                              personality: 'Personality profile', values: 'Values', strengths: 'Strengths',
-                              careers: 'Career matches', ai_impact: 'AI Impact', jobs: 'Job listings',
-                              companies: 'Target companies', courses: 'Courses', plan: '90-day plan',
-                            }}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <BetaSentimentChart
+                            title="Would pay, at the shown price?"
+                            orderKey="would_pay_at_price"
+                            counts={countBy(stage2Responses, bf => bf.would_pay_at_price)}
+                            total={stage2Total}
+                          />
+                          <BetaSentimentChart
+                            title="Understood why each career was suggested?"
+                            orderKey="career_explained"
+                            counts={countBy(stage2Responses, bf => bf.career_explained)}
+                            total={stage2Total}
+                          />
+                          <BetaSentimentChart
+                            title="Wants a coach session?"
+                            orderKey="wants_coach_session"
+                            counts={countBy(stage2Responses, bf => bf.wants_coach_session)}
                             total={stage2Total}
                           />
                         </div>
-                        <BetaAccuracyChart
-                          title="Report accuracy by section"
-                          dimensions={[
-                            { label: 'Personality type', values: stage2Responses.map(bf => bf.personality_accuracy) },
-                            { label: 'Core values', values: stage2Responses.map(bf => bf.values_accuracy) },
-                            { label: 'Strengths', values: stage2Responses.map(bf => bf.strengths_accuracy) },
-                            { label: 'Career matches', values: stage2Responses.map(bf => bf.career_matches_accuracy) },
-                          ]}
-                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <BetaCategoryChart
+                            title="Careers seriously considered"
+                            order={['none', 'one', 'a_few', 'four_or_five']}
+                            labels={CAREERS_CONSIDERED_LABEL}
+                            counts={countBy(stage2Responses, bf => bf.careers_seriously_considered)}
+                            total={stage2Total}
+                          />
+                          <BetaCategoryChart
+                            title="Most useful part of the report"
+                            order={['personality', 'values', 'strengths', 'careers', 'ai_impact', 'jobs', 'companies', 'courses', 'plan']}
+                            labels={REPORT_SECTION_LABEL}
+                            counts={countBy(stage2Responses, bf => bf.most_useful_part)}
+                            total={stage2Total}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <BetaRankedMultiChart
+                            title="What would make it worth paying for"
+                            lists={stage2Responses.map(bf => bf.worth_paying_for)}
+                            labels={WORTH_PAYING_FOR_LABEL}
+                            total={stage2Total}
+                          />
+                          <BetaRankedMultiChart
+                            title="What would stop them from buying"
+                            lists={stage2Responses.map(bf => bf.pay_blockers)}
+                            labels={PAY_BLOCKER_LABEL}
+                            total={stage2Total}
+                          />
+                        </div>
+                        {stage2Responses.some(bf => bf.personality_accuracy || bf.overall_value != null || (bf.most_valuable_parts && bf.most_valuable_parts.length > 0)) && (
+                          <>
+                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 mt-6">Legacy Beta 1 fields (removed from the live form)</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              <BetaScaleChart title="Overall value (1-6, legacy)" values={stage2Responses.map(bf => bf.overall_value)} />
+                              <BetaRankedMultiChart
+                                title="Most valuable parts of the report (legacy)"
+                                lists={stage2Responses.map(bf => bf.most_valuable_parts)}
+                                labels={REPORT_SECTION_LABEL}
+                                total={stage2Total}
+                              />
+                            </div>
+                            <BetaAccuracyChart
+                              title="Report accuracy by section (legacy)"
+                              dimensions={[
+                                { label: 'Personality type', values: stage2Responses.map(bf => bf.personality_accuracy) },
+                                { label: 'Core values', values: stage2Responses.map(bf => bf.values_accuracy) },
+                                { label: 'Strengths', values: stage2Responses.map(bf => bf.strengths_accuracy) },
+                                { label: 'Career matches', values: stage2Responses.map(bf => bf.career_matches_accuracy) },
+                              ]}
+                            />
+                          </>
+                        )}
                       </div>
                     )}
                     {betaStatDrilldown && (
@@ -3968,15 +4239,22 @@ export default function AdminPage() {
                 const rows: (string | number | null)[][] = [
                   [
                     'Name', 'Email', 'Country', 'Nationality', 'Age', 'Experience', 'Current stage', 'Cohort', 'Feedback stage', 'Locale',
-                    'S1: clarity (1-5)', 'S1: feeling (1-5)', 'S1: understood (1-5)', 'Stage 1 completed at',
-                    'Accuracy (result_accuracy)', 'Would recommend', 'Would pay', 'Result Stage completed at',
-                    'Language used', 'Understood after (1-5)', 'Felt like mentor', 'Personality accuracy', 'Values accuracy',
-                    'Strengths accuracy', 'Career matches accuracy', 'Wrong career (text)', 'Missing career (text)',
-                    'AI impact useful (1-6)', 'AI impact credible (1-6)', 'AI impact changed thinking', 'Jobs relevant (1-6)',
-                    'Companies fit (1-6)', 'Courses useful (1-6)', 'Plan would follow', 'Clear next step', 'Arabic natural',
-                    'Overall value (1-6)', 'Most valuable parts',
-                    'Device', 'Had issues', 'Issue detail', 'Surprised (text)', 'Not me (text)', 'Other (text)',
+                    'S1: clarity (1-5)', 'S1: feeling (1-5)', 'S1: understood (1-5)', 'S1: wants from results', 'Stage 1 completed at',
+                    'Accuracy (result_accuracy)', 'Would recommend', 'Would pay (Result Stage)', 'Result Stage completed at',
+                    'Language used', 'Device', 'Understood after (1-5)', 'Felt like coach', 'Careers seriously considered',
+                    'Understood why suggested', 'Most useful part', 'Least useful part', 'First action (text)',
+                    'Would pay at price', 'Pay blockers', 'Pay blocker — other (text)', 'Top pay blocker',
+                    'Worth paying for', 'Wants coach session', 'Had issues', 'Issue detail',
                     'Stage 2 completed at', 'Submitted at',
+                    // Legacy Beta 1 columns, removed from the live form — kept so a CSV
+                    // export spanning both cohorts doesn't silently drop old answers.
+                    'Personality accuracy (legacy)', 'Values accuracy (legacy)', 'Strengths accuracy (legacy)',
+                    'Career matches accuracy (legacy)', 'Wrong career (legacy text)', 'Missing career (legacy text)',
+                    'AI impact useful (legacy 1-6)', 'AI impact credible (legacy 1-6)', 'AI impact changed thinking (legacy)',
+                    'Jobs relevant (legacy 1-6)', 'Companies fit (legacy 1-6)', 'Courses useful (legacy 1-6)',
+                    'Plan would follow (legacy)', 'Clear next step (legacy)', 'Arabic natural (legacy)',
+                    'Overall value (legacy 1-6)', 'Most valuable parts (legacy)', 'Would pay reason (legacy text)',
+                    'Surprised (legacy text)', 'Not me (legacy text)', 'Other (text)',
                   ],
                   ...visibleBetaFeedback.map(bf => [
                     bf.assessment_responses?.full_name || '', bf.assessment_responses?.email || '',
@@ -3985,18 +4263,33 @@ export default function AdminPage() {
                     bf.assessment_responses?.experience_level ? (EXPERIENCE_LEVEL_LABEL[bf.assessment_responses.experience_level] || bf.assessment_responses.experience_level) : '',
                     bf.assessment_responses?.current_stage || '', cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }),
                     BETA_FEEDBACK_STAGE_LABELS[betaFeedbackStageOf(bf)], bf.locale || '',
-                    bf.s1_clarity, bf.s1_feeling, bf.s1_understood, bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : '',
+                    bf.s1_clarity, bf.s1_feeling, bf.s1_understood, bf.s1_intent ? formatUnderscored(bf.s1_intent) : '',
+                    bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : '',
                     // would_recommend/would_pay are single columns asked both on the
-                    // Result Stage and again in Stage 2 section F (see content.ts) —
-                    // one answer, not two independent captures, so one pair of columns.
+                    // Result Stage and again in Stage 2 — one answer, not two independent
+                    // captures, so one pair of columns. Stage 2's own, richer priced
+                    // question (would_pay_at_price) is a separate column further down.
                     bf.result_accuracy || '', bf.would_recommend || '', bf.would_pay || '', bf.result_stage_completed_at ? new Date(bf.result_stage_completed_at).toLocaleString() : '',
-                    bf.language_used || '', bf.understood_after, bf.felt_like_mentor || '', bf.personality_accuracy || '', bf.values_accuracy || '',
-                    bf.strengths_accuracy || '', bf.career_matches_accuracy || '', bf.wrong_career_text || '', bf.missing_career_text || '',
+                    bf.language_used || '', bf.device || '', bf.understood_after, bf.felt_like_mentor || '',
+                    bf.careers_seriously_considered ? (CAREERS_CONSIDERED_LABEL[bf.careers_seriously_considered] || bf.careers_seriously_considered) : '',
+                    bf.career_explained ? (CAREER_EXPLAINED_LABEL[bf.career_explained] || bf.career_explained) : '',
+                    bf.most_useful_part ? (REPORT_SECTION_LABEL[bf.most_useful_part] || bf.most_useful_part) : '',
+                    bf.least_useful_part ? (REPORT_SECTION_LABEL[bf.least_useful_part] || bf.least_useful_part) : '',
+                    bf.first_action_text || '',
+                    bf.would_pay_at_price ? (WOULD_PAY_AT_PRICE_LABEL[bf.would_pay_at_price] || bf.would_pay_at_price) : '',
+                    (bf.pay_blockers || []).map(k => PAY_BLOCKER_LABEL[k] || k).join('; '),
+                    bf.pay_blocker_other_text || '',
+                    bf.pay_blocker_priority ? (PAY_BLOCKER_LABEL[bf.pay_blocker_priority] || bf.pay_blocker_priority) : '',
+                    (bf.worth_paying_for || []).map(k => WORTH_PAYING_FOR_LABEL[k] || k).join('; '),
+                    bf.wants_coach_session ? (WANTS_COACH_LABEL[bf.wants_coach_session] || bf.wants_coach_session) : '',
+                    bf.had_issues || '', bf.issue_detail || '',
+                    bf.stage2_completed_at ? new Date(bf.stage2_completed_at).toLocaleString() : '', new Date(bf.created_at).toLocaleString(),
+                    bf.personality_accuracy || '', bf.values_accuracy || '', bf.strengths_accuracy || '', bf.career_matches_accuracy || '',
+                    bf.wrong_career_text || '', bf.missing_career_text || '',
                     bf.ai_impact_useful, bf.ai_impact_credible, bf.ai_impact_changed_thinking || '', bf.jobs_relevant,
                     bf.companies_fit, bf.courses_useful, bf.plan_would_follow || '', bf.clear_next_step || '', bf.arabic_natural || '',
-                    bf.overall_value, (bf.most_valuable_parts || []).join('; '),
-                    bf.device || '', bf.had_issues || '', bf.issue_detail || '', bf.surprised_text || '', bf.not_me_text || '', bf.other_text || '',
-                    bf.stage2_completed_at ? new Date(bf.stage2_completed_at).toLocaleString() : '', new Date(bf.created_at).toLocaleString(),
+                    bf.overall_value, (bf.most_valuable_parts || []).join('; '), bf.would_pay_reason || '',
+                    bf.surprised_text || '', bf.not_me_text || '', bf.other_text || '',
                   ]),
                 ]
                 downloadCSV(`beta_feedback_${new Date().toISOString().slice(0, 10)}.csv`, rows)

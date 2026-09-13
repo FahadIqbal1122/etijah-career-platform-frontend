@@ -839,6 +839,11 @@ export default function ResultsPage() {
                       </ul>
                     </div>
                   )}
+                  {c.what_this_means_for_you && (
+                    <p className="text-xs font-semibold text-charcoal/70 mt-3 pl-2.5 border-l-2 border-teal">
+                      {t('aiImpact.whatThisMeansLabel')}: <span className="font-normal">{c.what_this_means_for_you}</span>
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
