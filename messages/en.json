@@ -541,7 +541,11 @@
       "needsSupport": "Needs support",
       "bouncesBack": "Bounces back"
     },
-    "suggestedCareers": { "title": "Suggested Careers", "subtitle": "Matched across your full profile", "matchLabel": "match" },
+    "suggestedCareers": {
+      "title": "Suggested Careers", "subtitle": "Matched across your full profile", "matchLabel": "match",
+      "fitTag": { "strong_fit": "Strong fit", "worth_exploring": "Worth exploring" },
+      "directionTag": { "builds_on_background": "Builds on your background", "new_direction": "New direction" }
+    },
     "actionPlan": {
       "title": "Your Action Plan",
       "subtitle": "Concrete steps for the next 6 months",
@@ -569,6 +573,20 @@
       "signupBody": "Create a free account to unlock internship openings matched to your top career matches.",
       "lockedTitle": "Unlock matched internships",
       "lockedBody": "See internship openings matched to your top career matches, updated daily."
+    },
+    "studentTrack": {
+      "title": "Majors & Exposure",
+      "subtitle": "How to explore your matched careers before committing to a job"
+    },
+    "certifications": {
+      "title": "Certifications to Pursue",
+      "subtitle": "Stand out for entry-level roles in your matched careers"
+    },
+    "careerPath": {
+      "title": "Your Path Forward",
+      "subtitleProgression": "Building on where you are today",
+      "subtitleTransition": "A credible path to something different",
+      "subtitleBalanced": "Next steps that keep your options open"
     },
     "aiImpact": {
       "title": "AI Impact on Your Careers",

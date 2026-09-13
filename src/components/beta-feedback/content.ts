@@ -33,6 +33,24 @@ export const stage1Questions: { key: 's1_clarity' | 's1_feeling' | 's1_understoo
   } },
 ]
 
+// A 4th Stage 1 question, but categorical (intent) rather than a 1-5 feel
+// rating like the three above — analytics-only for now (segments Beta 2
+// results by why someone came), not wired into report generation, since the
+// report is already generating by the time this loading-screen pulse fires.
+export const stage1IntentLabel: Bi = {
+  en: 'What do you most want from your results?',
+  ar: 'ما الذي تتمنى الحصول عليه أكثر من نتائجك؟',
+}
+
+export const stage1IntentOptions: Option[] = [
+  { value: 'confirm_right_path', label: { en: "Confirm I'm on the right path", ar: 'تأكيد أنني على المسار الصحيح' } },
+  { value: 'discover_new_options', label: { en: 'Discover new options', ar: 'اكتشاف خيارات جديدة' } },
+  { value: 'choose_university_major', label: { en: 'Choose a university major', ar: 'اختيار تخصص جامعي' } },
+  { value: 'plan_career_change', label: { en: 'Plan a career change', ar: 'التخطيط لتغيير مساري المهني' } },
+  { value: 'get_job_faster', label: { en: 'Get a job faster', ar: 'الحصول على وظيفة بشكل أسرع' } },
+  { value: 'understand_ai_impact', label: { en: 'Understand how AI affects my field', ar: 'فهم تأثير الذكاء الاصطناعي على مجالي' } },
+]
+
 // ---------------------------------------------------------------------------
 // Stage 2 — post-result full form
 // ---------------------------------------------------------------------------

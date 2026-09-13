@@ -541,7 +541,11 @@
       "needsSupport": "يحتاج دعماً",
       "bouncesBack": "يتعافى بسرعة"
     },
-    "suggestedCareers": { "title": "مسارات مهنية مقترحة", "subtitle": "مطابقة لملفك الكامل", "matchLabel": "تطابق" },
+    "suggestedCareers": {
+      "title": "مسارات مهنية مقترحة", "subtitle": "مطابقة لملفك الكامل", "matchLabel": "تطابق",
+      "fitTag": { "strong_fit": "تطابق قوي", "worth_exploring": "يستحق الاستكشاف" },
+      "directionTag": { "builds_on_background": "يبني على خلفيتك", "new_direction": "اتجاه جديد" }
+    },
     "actionPlan": {
       "title": "خطة عملك",
       "subtitle": "خطوات عملية لأول ٦ أشهر",
@@ -569,6 +573,20 @@
       "signupBody": "أنشئ حساباً مجانياً لفتح فرص التدريب المطابقة لأفضل مساراتك المهنية.",
       "lockedTitle": "افتح فرص التدريب المطابقة",
       "lockedBody": "اطّلع على فرص التدريب المطابقة لأفضل مساراتك المهنية، مُحدَّثة يومياً."
+    },
+    "studentTrack": {
+      "title": "التخصصات والتعرّف على المجال",
+      "subtitle": "كيف تستكشف مساراتك المهنية المقترحة قبل الالتزام بوظيفة"
+    },
+    "certifications": {
+      "title": "شهادات يُنصح بها",
+      "subtitle": "تميّز في التقديم للوظائف المبتدئة في مساراتك المقترحة"
+    },
+    "careerPath": {
+      "title": "مسارك المهني القادم",
+      "subtitleProgression": "البناء على ما وصلت إليه اليوم",
+      "subtitleTransition": "مسار موثوق نحو اتجاه مختلف",
+      "subtitleBalanced": "خطوات تالية تُبقي خياراتك مفتوحة"
     },
     "aiImpact": {
       "title": "تأثير الذكاء الاصطناعي على مساراتك المهنية",

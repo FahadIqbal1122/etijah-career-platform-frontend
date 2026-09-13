@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { apiAuthPost } from '@/lib/api'
-import { stage1Intro, stage1Questions, type Locale } from './content'
+import { stage1Intro, stage1IntentLabel, stage1IntentOptions, stage1Questions, type Locale } from './content'
 
-type Answers = Partial<Record<'s1_clarity' | 's1_feeling' | 's1_understood', number>>
+type Answers = Partial<Record<'s1_clarity' | 's1_feeling' | 's1_understood', number>> & { s1_intent?: string }
+const TOTAL_STAGE1_QUESTIONS = stage1Questions.length + 1
 
 function stage1DoneKey(responseId: string) {
   return `betaStage1Done:${responseId}`
@@ -26,12 +27,12 @@ export default function BetaFeedbackStage1({ responseId, locale, onAnswered, onC
     if (done) onComplete?.()
   }, [done])
 
-  function answer(key: keyof Answers, value: number) {
+  function answer(key: keyof Answers, value: number | string) {
     const next = { ...answers, [key]: value }
     setAnswers(next)
     onAnswered?.(Object.keys(next).length)
     const save = apiAuthPost('/beta-feedback/stage1', { response_id: responseId, locale, ...next })
-    const isLast = Object.keys(next).length >= stage1Questions.length
+    const isLast = Object.keys(next).length >= TOTAL_STAGE1_QUESTIONS
     if (isLast) {
       // Await the final upsert so the server has recorded stage1_completed_at
       // before we tell the parent stage 1 is done and it unlocks stage 2.
@@ -75,6 +76,26 @@ export default function BetaFeedbackStage1({ responseId, locale, onAnswered, onC
             </div>
           </div>
         ))}
+        <div>
+          <p className="text-white/70 text-xs mb-2">{stage1IntentLabel[locale]}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {stage1IntentOptions.map(opt => {
+              const active = answers.s1_intent === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => answer('s1_intent', opt.value)}
+                  className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${
+                    active ? 'bg-white/25 border-white/50 text-white' : 'bg-white/5 border-white/15 text-white/70 hover:border-white/40'
+                  }`}
+                >
+                  {opt.label[locale]}
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </div>
     </div>
   )

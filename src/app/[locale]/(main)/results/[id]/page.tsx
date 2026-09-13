@@ -132,6 +132,9 @@ export default function ResultsPage() {
   const [aiImpact, setAiImpact] = useState<any>(null)
   const [jobListings, setJobListings] = useState<any[]>([])
   const [isStillEnrolled, setIsStillEnrolled] = useState(false)
+  const [studentTrack, setStudentTrack] = useState<any>(null)
+  const [certifications, setCertifications] = useState<any>(null)
+  const [careerPath, setCareerPath] = useState<any>(null)
   const [aiLoading, setAiLoading] = useState(true)
   const [jobsLoading, setJobsLoading] = useState(true)
   const [companies, setCompanies] = useState<any[]>([])
@@ -206,6 +209,15 @@ export default function ResultsPage() {
         .then(data => setJobListings(data.jobs || []))
         .catch(() => {})
         .finally(() => setJobsLoading(false))
+      apiAuthGet<any>(`/assessment/${id}/student-track?locale=${locale}`)
+        .then(data => { if (data && (data.majors_guidance || data.exposure_ideas?.length)) setStudentTrack(data) })
+        .catch(() => {})
+      apiAuthGet<any>(`/assessment/${id}/certifications?locale=${locale}`)
+        .then(data => { if (data?.certifications?.length) setCertifications(data) })
+        .catch(() => {})
+      apiAuthGet<any>(`/assessment/${id}/career-path?locale=${locale}`)
+        .then(data => { if (data && data.narrative) setCareerPath(data) })
+        .catch(() => {})
       apiAuthGet<any[]>(`/assessment/${id}/companies`)
         .then(data => { setCompanies(data || []); setCompaniesError(false) })
         .catch(() => setCompaniesError(true))
@@ -582,6 +594,24 @@ export default function ResultsPage() {
                       </span>
                     )}
                   </div>
+                  {(job.fit_tag || job.direction_tag) && (
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {job.fit_tag && ['strong_fit', 'worth_exploring'].includes(job.fit_tag) && (
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                          i === 0 ? 'bg-white/20 text-white' : 'bg-teal/10 text-teal'
+                        }`}>
+                          {t(`suggestedCareers.fitTag.${job.fit_tag}`)}
+                        </span>
+                      )}
+                      {job.direction_tag && ['builds_on_background', 'new_direction'].includes(job.direction_tag) && (
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+                          i === 0 ? 'border-white/30 text-white/90' : 'border-[var(--line-strong)] text-charcoal/50'
+                        }`}>
+                          {t(`suggestedCareers.directionTag.${job.direction_tag}`)}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {job.fit_summary && (
                     <p className={`text-xs mt-1 ${i === 0 ? 'text-white/80' : 'text-charcoal/60'}`}>{job.fit_summary}</p>
                   )}
@@ -693,6 +723,73 @@ export default function ResultsPage() {
             />
           )}
           </>
+        )}
+
+        {/* Majors & Exposure — students' practical track, alongside Internships & Exposure above */}
+        {studentTrack && (
+          <div className="card p-5">
+            <SectionHead
+              title={t('studentTrack.title')}
+              subtitle={t('studentTrack.subtitle')}
+              icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.636 50.636 0 00-2.658-.813A59.906 59.906 0 0112 3.493a59.903 59.903 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443" /></svg>}
+            />
+            {studentTrack.majors_guidance && (
+              <p className="text-sm text-charcoal/70 mb-4">{studentTrack.majors_guidance}</p>
+            )}
+            {studentTrack.exposure_ideas?.length > 0 && (
+              <div className="space-y-2">
+                {studentTrack.exposure_ideas.map((idea: any, i: number) => (
+                  <div key={i} className="border border-[var(--line)] rounded-xl p-3.5">
+                    <p className="text-sm font-bold text-charcoal">{idea.title}</p>
+                    {idea.why && <p className="text-xs text-charcoal/50 mt-0.5">{idea.why}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Certifications to Pursue — "entering the market" practical track */}
+        {certifications?.certifications?.length > 0 && (
+          <div className="card p-5">
+            <SectionHead
+              title={t('certifications.title')}
+              subtitle={t('certifications.subtitle')}
+              icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>}
+            />
+            <div className="space-y-2">
+              {certifications.certifications.map((cert: any, i: number) => (
+                <div key={i} className="border border-[var(--line)] rounded-xl p-3.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-bold text-charcoal">{cert.title}</p>
+                    {cert.provider_type && <span className="chip !py-0.5 !text-[11px]">{cert.provider_type}</span>}
+                  </div>
+                  {cert.why && <p className="text-xs text-charcoal/50 mt-0.5">{cert.why}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Your Path Forward — "working professionals" practical track */}
+        {careerPath?.narrative && (
+          <div className="card p-5">
+            <SectionHead
+              title={t('careerPath.title')}
+              subtitle={t(careerPath.path_type === 'progression' ? 'careerPath.subtitleProgression' : careerPath.path_type === 'transition' ? 'careerPath.subtitleTransition' : 'careerPath.subtitleBalanced')}
+              icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>}
+            />
+            <p className="text-sm text-charcoal/70 mb-3">{careerPath.narrative}</p>
+            {careerPath.next_steps?.length > 0 && (
+              <div className="space-y-1.5">
+                {careerPath.next_steps.map((step: string, i: number) => (
+                  <div key={i} className="flex items-start gap-1.5 text-xs text-charcoal/60">
+                    <span className="text-primary/70 mt-0.5">→</span>{step}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {/* AI Impact */}
