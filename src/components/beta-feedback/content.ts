@@ -85,12 +85,6 @@ export interface SectionDef {
   fields: FieldDef[]
 }
 
-const YES_SOMEWHAT_NO: Option[] = [
-  { value: 'yes', label: { en: 'Yes', ar: 'نعم' } },
-  { value: 'somewhat', label: { en: 'Somewhat', ar: 'إلى حدٍّ ما' } },
-  { value: 'no', label: { en: 'No', ar: 'لا' } },
-]
-
 const ACCURACY: Option[] = [
   { value: 'spot_on', label: { en: 'Spot on', ar: 'دقيق تمامًا' } },
   { value: 'mostly_right', label: { en: 'Mostly right', ar: 'صحيح إلى حدٍّ كبير' } },
@@ -143,199 +137,151 @@ export const resultStageNoteLabel: Bi = {
   ar: 'هل هناك أي شيء تود إخبارنا به؟ (اختياري)',
 }
 
+// Placeholder — final price / Founding Members offer is TBD per the
+// beta-strategy doc §7 (Dina decides by 16 Oct after Beta 2's 99 vs 149 SAR
+// test). Update this one constant once a price is set.
+export const STAGE2_REPORT_PRICE_SAR = 129
+
+const REPORT_SECTION_OPTIONS: Option[] = [
+  { value: 'personality', label: { en: 'Personality profile', ar: 'ملف الشخصية' } },
+  { value: 'values', label: { en: 'Values', ar: 'القيم' } },
+  { value: 'strengths', label: { en: 'Strengths', ar: 'نقاط القوة' } },
+  { value: 'careers', label: { en: 'Career matches', ar: 'المسارات المهنية' } },
+  { value: 'ai_impact', label: { en: 'AI Impact', ar: 'تأثير الذكاء الاصطناعي' } },
+  { value: 'jobs', label: { en: 'Job listings', ar: 'الوظائف المعروضة' } },
+  { value: 'companies', label: { en: 'Target companies', ar: 'الشركات المقترحة' } },
+  { value: 'courses', label: { en: 'Courses', ar: 'الدورات' } },
+  { value: 'plan', label: { en: '90-day plan', ar: 'خطة الـ ٩٠ يومًا' } },
+]
+
+const PAY_BLOCKER_OPTIONS: Option[] = [
+  { value: 'careers_dont_fit', label: { en: "The suggested careers don't feel right for me", ar: 'المسارات المقترحة لا تبدو مناسبة لي' } },
+  { value: 'free_results_enough', label: { en: 'The complimentary results already give me enough', ar: 'النتائج المجانية تكفيني بالفعل' } },
+  { value: 'not_sure_next_step', label: { en: "I'm still not sure what to do next", ar: 'ما زلت غير متأكد من خطوتي التالية' } },
+  { value: 'doesnt_reflect_situation', label: { en: "It doesn't reflect my situation (e.g. student, or years of experience)", ar: 'لا يعكس وضعي (مثل كوني طالبًا، أو عدد سنوات خبرتي)' } },
+  { value: 'want_coach_first', label: { en: "I'd want to speak with a real coach first", ar: 'أرغب في التحدث مع مدرّب حقيقي أولاً' } },
+  { value: 'price_higher_than_expected', label: { en: "The price is higher than I'd expect", ar: 'السعر أعلى مما توقعت' } },
+  { value: 'dont_usually_pay', label: { en: "I don't usually pay for career tools", ar: 'لا أدفع عادةً مقابل أدوات مهنية' } },
+  { value: 'someone_else_decides', label: { en: 'Someone else would decide this (e.g. a parent)', ar: 'شخص آخر هو من سيقرر (مثل أحد الوالدين)' } },
+  { value: 'dont_need_guidance_now', label: { en: "I don't need career guidance right now", ar: 'لا أحتاج إلى إرشاد مهني الآن' } },
+  { value: 'other', label: { en: 'Other', ar: 'أخرى' } },
+]
+
 export const stage2Sections: SectionDef[] = [
-  {
-    id: 'A',
-    heading: { en: 'Language', ar: 'اللغة' },
-    fields: [
-      {
-        key: 'language_used', type: 'single', required: true,
-        label: { en: 'Which language did you use?', ar: 'ما اللغة التي استخدمتها؟' },
-        options: [
-          { value: 'en', label: { en: 'English', ar: 'الإنجليزية' } },
-          { value: 'ar', label: { en: 'Arabic', ar: 'العربية' } },
-          { value: 'both', label: { en: 'Both', ar: 'كلاهما' } },
-        ],
-      },
-    ],
-  },
   {
     id: 'B',
     heading: { en: 'Your report', ar: 'تقريرك' },
     fields: [
       {
         key: 'understood_after', type: 'face5', required: true,
-        label: { en: 'Now that you’ve read it — how well did we actually understand you?', ar: 'بعد أن قرأت التقرير — إلى أي مدى فهمناك فعلًا؟' },
+        label: { en: 'How well did the report understand you?', ar: 'إلى أي مدى فهمك التقرير؟' },
         note: { en: 'mirrors Stage 1 Q3', ar: 'يقابل السؤال ٣ في المرحلة الأولى' },
       },
       {
         key: 'felt_like_mentor', type: 'single', required: true,
-        label: { en: 'Did it feel like a mentor who understands your context, or a generic quiz?', ar: 'هل شعرت أنه مرشد يفهم ظروفك، أم اختبار عام؟' },
+        label: { en: 'Did it feel like a coach who understands your situation, or a generic quiz?', ar: 'هل شعرت أنه مدرّب يفهم وضعك، أم اختبار عام؟' },
         options: [
-          { value: 'mentor', label: { en: 'Like a mentor who understands me', ar: 'كمرشد يفهمني' } },
+          { value: 'mentor', label: { en: 'Like a coach who understands me', ar: 'كمدرّب يفهمني' } },
           { value: 'mixed', label: { en: 'Somewhere in between', ar: 'بين الاثنين' } },
           { value: 'generic', label: { en: 'Like a generic quiz', ar: 'كاختبار عام' } },
         ],
       },
       {
-        key: 'personality_accuracy', type: 'single', required: true, options: ACCURACY,
-        label: { en: 'Your personality type', ar: 'نمط شخصيتك' },
-      },
-      {
-        key: 'values_accuracy', type: 'single', required: true, options: ACCURACY,
-        label: { en: 'Your core values', ar: 'قيمك الأساسية' },
-      },
-      {
-        key: 'strengths_accuracy', type: 'single', required: true, options: ACCURACY,
-        label: { en: 'Your strengths', ar: 'نقاط قوتك' },
-      },
-      {
-        key: 'career_matches_accuracy', type: 'single', required: true, options: ACCURACY,
-        label: { en: 'Your suggested career matches', ar: 'المسارات المهنية المقترحة لك' },
-      },
-      {
         key: 'careers_seriously_considered', type: 'single', required: true,
         label: { en: 'How many of these careers would you seriously consider?', ar: 'كم عدد هذه المسارات التي قد تفكر فيها جديًا؟' },
         options: [
-          { value: 'none', label: { en: 'None of them', ar: 'لا شيء منها' } },
-          { value: 'one', label: { en: 'Just one', ar: 'واحد فقط' } },
-          { value: 'a_few', label: { en: 'A few (2–3)', ar: 'قليل منها (٢-٣)' } },
-          { value: 'most', label: { en: 'Most or all of them', ar: 'معظمها أو كلها' } },
+          { value: 'none', label: { en: 'None', ar: 'لا شيء منها' } },
+          { value: 'one', label: { en: '1', ar: '١' } },
+          { value: 'a_few', label: { en: '2–3', ar: '٢-٣' } },
+          { value: 'four_or_five', label: { en: '4–5', ar: '٤-٥' } },
         ],
       },
       {
-        key: 'career_understanding_text', type: 'text',
-        label: { en: 'Did you understand each suggested career? If not, which one, and what was unclear?', ar: 'هل فهمت كل مسار مهني مقترح؟ إذا لم يكن كذلك، فأيّها، وما الذي لم يكن واضحًا؟' },
-      },
-      {
-        key: 'wrong_career_text', type: 'text',
-        label: { en: 'Was any suggested career clearly wrong for you? Which one, and why?', ar: 'هل كان أي مسار مقترح غير مناسب لك بوضوح؟ أيّها، ولماذا؟' },
-      },
-      {
-        key: 'missing_career_text', type: 'text',
-        label: { en: 'Any career you expected to see that was missing?', ar: 'هل هناك مسار توقعت رؤيته ولم يظهر؟' },
+        key: 'career_explained', type: 'single', required: true,
+        label: { en: 'Did you understand why each career was suggested?', ar: 'هل فهمت سبب اقتراح كل مسار مهني؟' },
+        options: [
+          { value: 'yes', label: { en: 'Yes', ar: 'نعم' } },
+          { value: 'partly', label: { en: 'Partly', ar: 'جزئيًا' } },
+          { value: 'no', label: { en: 'No', ar: 'لا' } },
+        ],
       },
     ],
   },
   {
     id: 'C',
-    heading: { en: 'The deeper report', ar: 'الأجزاء المتقدمة من التقرير' },
+    heading: { en: 'What stood out', ar: 'ما الذي لفت انتباهك' },
     fields: [
       {
-        key: 'ai_impact_useful', type: 'scale6', required: true,
-        label: { en: 'AI Impact & Future-Proofing section — was it useful?', ar: 'قسم «تأثير الذكاء الاصطناعي ومستقبل المهنة» — هل كان مفيدًا؟' },
-        low: { en: 'Not useful', ar: 'غير مفيد' }, high: { en: 'Very useful', ar: 'مفيد جدًا' },
+        key: 'most_useful_part', type: 'single', required: true, options: REPORT_SECTION_OPTIONS,
+        label: { en: 'Which part was most useful to you?', ar: 'أي جزء كان الأكثر فائدة لك؟' },
       },
       {
-        key: 'ai_impact_credible', type: 'scale6', required: true,
-        label: { en: 'AI Impact section — did it feel believable and credible?', ar: 'قسم تأثير الذكاء الاصطناعي — هل بدا مقنعًا وموثوقًا؟' },
-        low: { en: 'Not credible', ar: 'غير موثوق' }, high: { en: 'Very credible', ar: 'موثوق جدًا' },
+        key: 'least_useful_part', type: 'single', required: true, options: REPORT_SECTION_OPTIONS,
+        label: { en: 'Which part was least useful to you?', ar: 'أي جزء كان الأقل فائدة لك؟' },
       },
       {
-        key: 'ai_impact_changed_thinking', type: 'single', required: true, options: YES_SOMEWHAT_NO,
-        label: { en: 'AI Impact section — did it change how you think about your direction?', ar: 'قسم تأثير الذكاء الاصطناعي — هل غيّر طريقة تفكيرك في مسارك؟' },
-      },
-      {
-        key: 'jobs_relevant', type: 'scale6', required: true,
-        label: { en: 'The job listings — were they relevant to you?', ar: 'الوظائف المعروضة — هل كانت ذات صلة بك؟' },
-        low: { en: 'Not relevant', ar: 'غير ذات صلة' }, high: { en: 'Very relevant', ar: 'ذات صلة كبيرة' },
-      },
-      {
-        key: 'companies_fit', type: 'scale6', required: true,
-        label: { en: 'The companies to target — were they the right fit for you?', ar: 'الشركات المقترحة للتقديم — هل كانت مناسبة لك؟' },
-        low: { en: 'Not a fit', ar: 'غير مناسبة' }, high: { en: 'Great fit', ar: 'مناسبة جدًا' },
-      },
-      {
-        key: 'courses_useful', type: 'scale6', required: true,
-        label: { en: 'The recommended courses — were they useful?', ar: 'الدورات الموصى بها — هل كانت مفيدة؟' },
-        low: { en: 'Not useful', ar: 'غير مفيدة' }, high: { en: 'Very useful', ar: 'مفيدة جدًا' },
-      },
-    ],
-  },
-  {
-    id: 'D',
-    heading: { en: 'Actionability', ar: 'قابلية التنفيذ' },
-    fields: [
-      {
-        key: 'plan_would_follow', type: 'single', required: true, options: YES_SOMEWHAT_NO,
-        label: { en: 'The 90-Day Action Plan — is it something you would actually follow?', ar: 'خطة الـ ٩٠ يومًا — هل هي شيء ستتّبعه فعلًا؟' },
-      },
-      {
-        key: 'clear_next_step', type: 'single', required: true, options: YES_SOMEWHAT_NO,
-        label: { en: 'Did you leave with a clear next step?', ar: 'هل خرجت بخطوة تالية واضحة؟' },
-      },
-    ],
-  },
-  {
-    id: 'E',
-    heading: { en: 'Coaching voice & culture', ar: 'الصوت الإرشادي والسياق الثقافي' },
-    fields: [
-      {
-        key: 'arabic_natural', type: 'single', required: true,
-        label: { en: 'Did the Arabic read naturally, or like translated English?', ar: 'هل كانت اللغة العربية طبيعية، أم بدت وكأنها ترجمة حرفية؟' },
-        options: [
-          { value: 'natural', label: { en: 'Natural', ar: 'طبيعية' } },
-          { value: 'mixed', label: { en: 'Mixed', ar: 'متوسطة' } },
-          { value: 'translated', label: { en: 'Feels translated', ar: 'تبدو مترجمة' } },
-        ],
-        showIf: (a) => a.language_used === 'ar',
+        key: 'first_action_text', type: 'text',
+        label: { en: "What's the first thing you'll do after reading this? (optional)", ar: 'ما أول شيء ستفعله بعد قراءة هذا؟ (اختياري)' },
       },
     ],
   },
   {
     id: 'F',
-    heading: { en: 'Value', ar: 'القيمة' },
+    heading: { en: 'Value & pricing', ar: 'القيمة والسعر' },
     fields: [
       {
-        key: 'overall_value', type: 'scale6', required: true,
-        label: { en: 'Overall, how valuable was this for making a real career decision?', ar: 'بشكل عام، ما مدى فائدة هذا التقرير في اتخاذ قرار مهني حقيقي؟' },
-        low: { en: 'Not valuable', ar: 'غير مفيد' }, high: { en: 'Extremely valuable', ar: 'مفيد للغاية' },
-      },
-      {
-        key: 'most_valuable_parts', type: 'multi', required: true,
-        label: { en: 'Which parts were most valuable to you?', ar: 'أي الأجزاء كانت الأكثر قيمة بالنسبة لك؟' },
+        key: 'would_pay_at_price', type: 'single', required: true,
+        label: {
+          en: `The full report is ${STAGE2_REPORT_PRICE_SAR} SAR, one time. Would you buy it?`,
+          ar: `التقرير الكامل بسعر ${STAGE2_REPORT_PRICE_SAR} ريال سعودي، لمرة واحدة. هل ستشتريه؟`,
+        },
         options: [
-          { value: 'personality', label: { en: 'Personality profile', ar: 'ملف الشخصية' } },
-          { value: 'values', label: { en: 'Values', ar: 'القيم' } },
-          { value: 'strengths', label: { en: 'Strengths', ar: 'نقاط القوة' } },
-          { value: 'careers', label: { en: 'Career matches', ar: 'المسارات المهنية' } },
-          { value: 'ai_impact', label: { en: 'AI Impact', ar: 'تأثير الذكاء الاصطناعي' } },
-          { value: 'jobs', label: { en: 'Job listings', ar: 'الوظائف المعروضة' } },
-          { value: 'companies', label: { en: 'Target companies', ar: 'الشركات المقترحة' } },
-          { value: 'courses', label: { en: 'Courses', ar: 'الدورات' } },
-          { value: 'plan', label: { en: '90-day plan', ar: 'خطة الـ ٩٠ يومًا' } },
-        ],
-      },
-      // Also asked earlier by the Result Stage (see resultStageQuestions above) —
-      // same beta_feedback columns, so BetaFeedbackStage2's pre-fill (GET
-      // /beta-feedback/{id}/stage2) already shows whatever was answered there.
-      // Kept here too so it's still askable/editable if skipped or changed.
-      {
-        key: 'would_pay', type: 'single', required: true,
-        label: { en: 'Are you willing to pay for this?', ar: 'هل أنت مستعد للدفع مقابل هذا؟' },
-        options: [
-          { value: 'definitely', label: { en: 'Definitely', ar: 'بالتأكيد' } },
-          { value: 'maybe', label: { en: 'Maybe', ar: 'ربما' } },
+          { value: 'yes_today', label: { en: 'Yes, today', ar: 'نعم، اليوم' } },
+          { value: 'yes_if_cheaper', label: { en: 'Yes, if cheaper', ar: 'نعم، إذا كان أرخص' } },
+          { value: 'maybe_later', label: { en: 'Maybe later', ar: 'ربما لاحقًا' } },
           { value: 'no', label: { en: 'No', ar: 'لا' } },
         ],
       },
       {
-        key: 'would_pay_reason', type: 'text',
-        label: { en: 'If not, why not?', ar: 'إذا لم تكن كذلك، فلماذا؟' },
-        showIf: (a) => a.would_pay === 'no',
+        key: 'pay_blockers', type: 'multi', required: true, options: PAY_BLOCKER_OPTIONS,
+        label: { en: 'What, if anything, would stop you from buying it today?', ar: 'ما الذي قد يمنعك من شرائه اليوم، إن وُجد؟' },
+        showIf: (a) => !!a.would_pay_at_price && a.would_pay_at_price !== 'yes_today',
       },
       {
-        key: 'would_recommend', type: 'single', required: true,
-        label: { en: 'Would you recommend this to a friend?', ar: 'هل توصي به صديقًا؟' },
+        key: 'pay_blocker_other_text', type: 'text',
+        label: { en: 'You said "Other" — what did you mean?', ar: 'ذكرت «أخرى» — ماذا كنت تقصد؟' },
+        showIf: (a) => Array.isArray(a.pay_blockers) && a.pay_blockers.includes('other'),
+      },
+      {
+        key: 'pay_blocker_priority', type: 'single', required: true, options: PAY_BLOCKER_OPTIONS,
+        label: { en: 'Which of these matters most?', ar: 'أي من هذه الأمور هو الأهم؟' },
+        showIf: (a) => Array.isArray(a.pay_blockers) && a.pay_blockers.length > 0,
+      },
+      {
+        key: 'worth_paying_for', type: 'multi', required: true,
+        label: { en: 'What would make it worth paying for?', ar: 'ما الذي قد يجعله يستحق الدفع مقابله؟' },
         options: [
-          { value: 'yes', label: { en: 'Yes', ar: 'نعم' } },
-          { value: 'maybe', label: { en: 'Maybe', ar: 'ربما' } },
-          { value: 'no', label: { en: 'No', ar: 'لا' } },
+          { value: 'plan_for_stage', label: { en: 'A plan for my stage', ar: 'خطة مناسبة لمرحلتي' } },
+          { value: 'internships_jobs', label: { en: 'Internships or jobs in my country', ar: 'فرص تدريب أو وظائف في بلدي' } },
+          { value: 'certifications', label: { en: 'Certifications to pursue', ar: 'شهادات يمكنني الحصول عليها' } },
+          { value: 'coach_session', label: { en: 'A session with a coach', ar: 'جلسة مع مدرّب' } },
+          { value: 'deeper_ai_outlook', label: { en: 'Deeper AI outlook for my career', ar: 'نظرة أعمق حول تأثير الذكاء الاصطناعي على مساري' } },
+          { value: 'shareable_report', label: { en: 'A report I can share with my family', ar: 'تقرير يمكنني مشاركته مع عائلتي' } },
+          { value: 'other', label: { en: 'Other', ar: 'أخرى' } },
         ],
       },
       {
         key: 'wants_coach_session', type: 'single', required: true,
-        label: { en: 'Would you want a session with a career coach to go through your results?', ar: 'هل تودّ جلسة مع مدرّب مهني لمراجعة نتائجك؟' },
+        label: { en: 'Would a session with a career coach to go through your results be useful?', ar: 'هل ستكون جلسة مع مدرّب مهني لمراجعة نتائجك مفيدة؟' },
+        options: [
+          { value: 'yes_pay', label: { en: "Yes, I'd pay for it", ar: 'نعم، سأدفع مقابلها' } },
+          { value: 'if_included', label: { en: 'Only if included', ar: 'فقط إذا كانت مُدرجة' } },
+          { value: 'no', label: { en: 'No', ar: 'لا' } },
+        ],
+      },
+      {
+        key: 'would_recommend', type: 'single', required: true,
+        label: { en: 'Would you recommend Etijahi to a friend?', ar: 'هل توصي بإتجاهي لصديق؟' },
         options: [
           { value: 'yes', label: { en: 'Yes', ar: 'نعم' } },
           { value: 'maybe', label: { en: 'Maybe', ar: 'ربما' } },
@@ -349,14 +295,6 @@ export const stage2Sections: SectionDef[] = [
     heading: { en: 'Anything broken?', ar: 'هل واجهت أي مشكلة؟' },
     fields: [
       {
-        key: 'device', type: 'single', required: true,
-        label: { en: 'Which device did you use?', ar: 'ما الجهاز الذي استخدمته؟' },
-        options: [
-          { value: 'mobile', label: { en: 'Mobile', ar: 'جوال' } },
-          { value: 'desktop', label: { en: 'Desktop', ar: 'حاسوب' } },
-        ],
-      },
-      {
         key: 'had_issues', type: 'single', required: true,
         label: { en: 'Did you hit any errors, glitches, or confusing moments?', ar: 'هل واجهت أي أخطاء أو مشاكل تقنية أو لحظات مربكة؟' },
         options: [
@@ -368,24 +306,6 @@ export const stage2Sections: SectionDef[] = [
         key: 'issue_detail', type: 'text',
         label: { en: 'If yes — what happened?', ar: 'إذا كانت الإجابة نعم — ماذا حدث؟' },
         showIf: (a) => a.had_issues === 'yes',
-      },
-    ],
-  },
-  {
-    id: 'H',
-    heading: { en: 'Open reflections', ar: 'انطباعات ختامية' },
-    fields: [
-      {
-        key: 'surprised_text', type: 'text',
-        label: { en: 'What surprised you most?', ar: 'ما الذي فاجأك أكثر؟' },
-      },
-      {
-        key: 'not_me_text', type: 'text',
-        label: { en: 'Was there anything that felt "that’s not me"?', ar: 'هل كان هناك شيء شعرت أنه «لا يمثّلني»؟' },
-      },
-      {
-        key: 'other_text', type: 'text',
-        label: { en: 'Anything else you’d like to tell us?', ar: 'أي شيء آخر تود إخبارنا به؟' },
       },
     ],
   },

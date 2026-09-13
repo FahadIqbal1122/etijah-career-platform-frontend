@@ -22,7 +22,7 @@ import { initTelemetry, pushTelemetry, getTelemetrySessionId, rotateTelemetrySes
 
 // ── skip / auto-fill rules (identical to the original form) ──────────────────
 const SKIP_RULES: { condition: (a: Record<string, any>) => boolean; ids: Record<string, any> }[] = [
-  { condition: a => a['QO4'] === 'high_school', ids: { QO5: ['not_applicable'], QO5A: '', QO5B: '' } },
+  { condition: a => a['QO4'] === 'high_school', ids: { QO5: ['not_applicable'], QO5A: '', QO5B: '', QO5C: '' } },
   { condition: a => a['QO5A'] !== 'no', ids: { QO5B: '' } },
   { condition: a => a['QO7'] === 'employee', ids: { Q69: 1, Q71: 'B', Q73: 1 } },
 ]
@@ -530,6 +530,7 @@ export default function AssessmentForm() {
         education_field: finalAnswers['QO5'] || [],
         major_was_own_choice: finalAnswers['QO5A'] || null,
         major_choice_reason: finalAnswers['QO5A'] === 'no' ? (finalAnswers['QO5B'] || null) : null,
+        career_direction: finalAnswers['QO5C'] || null,
         sectors_of_interest: answers['QO6'] || [],
         career_structure: answers['QO7'],
         languages: answers['QO8'] || [],

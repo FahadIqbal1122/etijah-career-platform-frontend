@@ -168,6 +168,18 @@ export const questions: Question[] = [
     type: 'text_input',
   },
   {
+    id: 'QO5C',
+    section: 'Onboarding',
+    framework: 'Onboarding',
+    text: 'When it comes to your career, do you want to...',
+    type: 'single_select',
+    options: [
+      { value: 'stay_in_field', label: 'Stay close to my field' },
+      { value: 'change_field', label: 'Move into something different' },
+      { value: 'not_sure', label: 'Not sure yet' },
+    ],
+  },
+  {
     id: 'QO6',
     section: 'Onboarding',
     framework: 'Onboarding',

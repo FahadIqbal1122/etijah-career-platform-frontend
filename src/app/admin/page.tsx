@@ -72,6 +72,7 @@ type Submission = {
   education_field: string[]
   major_was_own_choice: string | null // 'yes' | 'no' | null (not asked, e.g. high-school users)
   major_choice_reason: string | null // only set when major_was_own_choice === 'no'
+  career_direction: string | null // 'stay_in_field' | 'change_field' | 'not_sure' | null
   current_stage: string
   completed: boolean
   created_at: string
@@ -235,6 +236,9 @@ const EXPERIENCE_LEVEL_ORDER = ['student', 'fresh_grad', 'up_to_1yr', 'up_to_3yr
 const EXPERIENCE_LEVEL_LABEL: Record<string, string> = {
   student: 'Still a student', fresh_grad: 'Fresh graduate', up_to_1yr: 'Up to 1 year',
   up_to_3yrs: 'Up to 3 years', up_to_5yrs: 'Up to 5 years', '10yrs_plus': '10+ years',
+}
+const CAREER_DIRECTION_LABEL: Record<string, string> = {
+  stay_in_field: 'Stay close to field', change_field: 'Move into something different', not_sure: 'Not sure yet',
 }
 // "current_stage" is the closest proxy we collect to employment status — it's
 // an education/career-stage question, not a strict employed/unemployed flag.
@@ -1999,6 +2003,7 @@ export default function AdminPage() {
                     ['Major was own choice', selected.major_was_own_choice === 'no'
                       ? `No${selected.major_choice_reason ? ` — ${selected.major_choice_reason}` : ''}`
                       : selected.major_was_own_choice === 'yes' ? 'Yes' : null],
+                    ['Career direction', selected.career_direction ? (CAREER_DIRECTION_LABEL[selected.career_direction] || selected.career_direction) : null],
                     ['Current stage', selected.current_stage],
                     ...(isBetaSubmission(selected) ? [['Cohort', cohortLabel(selected)]] : []),
                     ['Submitted', new Date(selected.created_at).toLocaleString()],
@@ -2239,7 +2244,7 @@ export default function AdminPage() {
                 {!adminCareerRecsLoading && adminActionPlan && (
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                     <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">90-Day Action Plan</h3>
-                    <p className="text-xs text-slate-400 mb-3">Only shown inside the downloaded PDF for a real user — surfaced here for review.</p>
+                    <p className="text-xs text-slate-400 mb-3">Also shown on the user's live results page and in the downloaded PDF.</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       {[
                         ['Month 1', adminActionPlan.month_1],

@@ -127,9 +127,11 @@ export default function ResultsPage() {
   })
   const [error, setError] = useState('')
   const [jobs, setJobs] = useState<any[]>([])
+  const [actionPlan, setActionPlan] = useState<any>(null)
   const [jobsSuggestionsLoading, setJobsSuggestionsLoading] = useState(true)
   const [aiImpact, setAiImpact] = useState<any>(null)
   const [jobListings, setJobListings] = useState<any[]>([])
+  const [isStillEnrolled, setIsStillEnrolled] = useState(false)
   const [aiLoading, setAiLoading] = useState(true)
   const [jobsLoading, setJobsLoading] = useState(true)
   const [companies, setCompanies] = useState<any[]>([])
@@ -169,6 +171,7 @@ export default function ResultsPage() {
           setSummary(data.summary)
           setEmail(data.email || '')
           if (data.tier === 'free' || data.tier === 'pathfinder' || data.tier === 'launchpad') setTier(data.tier)
+          setIsStillEnrolled(!!data.is_still_enrolled)
           if (data.locale === 'ar' || data.locale === 'en') setReportLocale(data.locale)
           setBetaMode(!!data.beta_mode)
           // Server-truth check, not just each child's localStorage flag — covers a
@@ -189,7 +192,10 @@ export default function ResultsPage() {
         })
         .catch(err => setError(err.message || t('error.loadFailed')))
       apiAuthGet<any>(`/assessment/${id}/career-recommendations?locale=${locale}`)
-        .then(data => setJobs(data.career_recommendations || []))
+        .then(data => {
+          setJobs(data.career_recommendations || [])
+          setActionPlan(data.action_plan || null)
+        })
         .catch(() => {})
         .finally(() => setJobsSuggestionsLoading(false))
       apiAuthGet<any>(`/assessment/${id}/ai-impact?locale=${locale}`)
@@ -585,14 +591,45 @@ export default function ResultsPage() {
           </div>
         )}
 
-        {/* Live Job Postings */}
+        {/* Action Plan */}
+        {actionPlan && (actionPlan.month_1?.length > 0 || actionPlan.months_2_3?.length > 0 || actionPlan.months_4_6?.length > 0) && (
+          <div className="card p-5">
+            <SectionHead
+              title={t('actionPlan.title')}
+              subtitle={t('actionPlan.subtitle')}
+              icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                [t('actionPlan.month1'), actionPlan.month_1],
+                [t('actionPlan.months2to3'), actionPlan.months_2_3],
+                [t('actionPlan.months4to6'), actionPlan.months_4_6],
+              ].map(([label, items]) => (
+                (items as string[])?.length > 0 && (
+                  <div key={label as string}>
+                    <p className="text-xs font-semibold text-charcoal/40 uppercase tracking-wide mb-2">{label}</p>
+                    <ul className="space-y-1.5">
+                      {(items as string[]).map((item, i) => (
+                        <li key={i} className="text-xs text-charcoal/70 flex gap-1.5">
+                          <span className="text-primary/70 mt-0.5">→</span>{item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Live Job Postings (or Internships & Exposure for still-enrolled students) */}
         {jobListings.length > 0 && (
           <>
           {tier === 'launchpad' ? (
             <div className="card p-5">
               <SectionHead
-                title={t('liveJobs.title')}
-                subtitle={t('liveJobs.subtitle')}
+                title={t(isStillEnrolled ? 'internships.title' : 'liveJobs.title')}
+                subtitle={t(isStillEnrolled ? 'internships.subtitle' : 'liveJobs.subtitle')}
                 icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>}
               />
               {saveError && <p className="text-xs text-rose-500 mb-2">{saveError}</p>}
@@ -624,13 +661,13 @@ export default function ResultsPage() {
             </div>
           ) : !loggedIn ? (
             <BlurGate
-              title={t('liveJobs.signupTitle')}
-              body={t('liveJobs.signupBody')}
+              title={t(isStillEnrolled ? 'internships.signupTitle' : 'liveJobs.signupTitle')}
+              body={t(isStillEnrolled ? 'internships.signupBody' : 'liveJobs.signupBody')}
             >
               <div className="card p-5">
                 <SectionHead
-                  title={t('liveJobs.title')}
-                  subtitle={t('liveJobs.subtitle')}
+                  title={t(isStillEnrolled ? 'internships.title' : 'liveJobs.title')}
+                  subtitle={t(isStillEnrolled ? 'internships.subtitle' : 'liveJobs.subtitle')}
                   icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>}
                 />
                 <div className="space-y-2">
@@ -649,8 +686,8 @@ export default function ResultsPage() {
           ) : (
             <LockedSection
               tag={t('liveJobs.lockedTag')}
-              title={t('liveJobs.lockedTitle')}
-              body={t('liveJobs.lockedBody')}
+              title={t(isStillEnrolled ? 'internships.lockedTitle' : 'liveJobs.lockedTitle')}
+              body={t(isStillEnrolled ? 'internships.lockedBody' : 'liveJobs.lockedBody')}
               ctaLabel={t('liveJobs.lockedCta')}
               ctaHref="/#pricing"
             />

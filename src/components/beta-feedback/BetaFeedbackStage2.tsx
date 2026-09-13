@@ -61,7 +61,14 @@ export default function BetaFeedbackStage2({ responseId, locale, stage1AnsweredC
     setError('')
     setSubmitting(true)
     try {
-      await apiAuthPost('/beta-feedback/stage2', { response_id: responseId, locale, ...answers })
+      // device/language_used are no longer asked as questions (per the beta-
+      // strategy doc — capture automatically instead) but the admin dashboard
+      // still reads these columns, so they're detected here rather than
+      // dropped outright.
+      const device = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+      await apiAuthPost('/beta-feedback/stage2', {
+        response_id: responseId, locale, device, language_used: locale, ...answers,
+      })
       setSubmitted(true)
     } catch {
       setError(locale === 'ar' ? 'حدث خطأ ما. يرجى المحاولة مرة أخرى.' : 'Something went wrong. Please try again.')

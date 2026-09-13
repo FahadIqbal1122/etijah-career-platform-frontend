@@ -119,6 +119,14 @@
     "QO5B": {
       "text": "What was the main reason it wasn't your choice?"
     },
+    "QO5C": {
+      "text": "When it comes to your career, do you want to...",
+      "options": {
+        "stay_in_field": "Stay close to my field",
+        "change_field": "Move into something different",
+        "not_sure": "Not sure yet"
+      }
+    },
     "QO6": {
       "text": "Which sectors are you naturally drawn to? Pick up to 3.",
       "options": {
@@ -534,6 +542,13 @@
       "bouncesBack": "Bounces back"
     },
     "suggestedCareers": { "title": "Suggested Careers", "subtitle": "Matched across your full profile", "matchLabel": "match" },
+    "actionPlan": {
+      "title": "Your Action Plan",
+      "subtitle": "Concrete steps for the next 6 months",
+      "month1": "Month 1",
+      "months2to3": "Months 2-3",
+      "months4to6": "Months 4-6"
+    },
     "liveJobs": {
       "title": "Live Job Postings",
       "subtitle": "Current openings matched to your careers",
@@ -546,6 +561,14 @@
       "lockedTitle": "Unlock live job postings",
       "lockedBody": "See current openings matched to your top career matches, updated daily.",
       "lockedCta": "Unlock Full Report"
+    },
+    "internships": {
+      "title": "Internships & Exposure",
+      "subtitle": "Internship openings matched to your careers — a first step before full-time jobs",
+      "signupTitle": "Sign up to see matched internships",
+      "signupBody": "Create a free account to unlock internship openings matched to your top career matches.",
+      "lockedTitle": "Unlock matched internships",
+      "lockedBody": "See internship openings matched to your top career matches, updated daily."
     },
     "aiImpact": {
       "title": "AI Impact on Your Careers",
