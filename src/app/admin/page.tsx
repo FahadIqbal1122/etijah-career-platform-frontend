@@ -161,6 +161,35 @@ function cohortLabel(row: { created_at: string; cohort_override?: 'beta' | 'beta
   return isBetaV2(row.created_at) ? 'beta v2' : 'beta'
 }
 
+// 'all' matches everything (including pre-beta rows); 'beta'/'beta_v2' only
+// match rows that are actually part of the beta cohort in the first place —
+// a pre-beta submission has no cohort at all, so it's excluded either way.
+function matchesCohortFilter(row: { created_at: string; cohort_override?: 'beta' | 'beta_v2' | null }, filter: 'all' | 'beta' | 'beta_v2'): boolean {
+  if (filter === 'all') return true
+  if (!isBetaSubmission(row)) return false
+  return cohortLabel(row) === (filter === 'beta_v2' ? 'beta v2' : 'beta')
+}
+
+function CohortFilterPills({ value, onChange }: { value: 'all' | 'beta' | 'beta_v2'; onChange: (v: 'all' | 'beta' | 'beta_v2') => void }) {
+  const labels = { all: 'All cohorts', beta: 'Beta', beta_v2: 'Beta v2' } as const
+  return (
+    <div className="flex gap-2">
+      {(['all', 'beta', 'beta_v2'] as const).map(key => (
+        <button
+          key={key}
+          type="button"
+          onClick={() => onChange(key)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            value === key ? 'bg-teal-700 text-white' : 'bg-white text-slate-400 border border-slate-100 hover:text-slate-600'
+          }`}
+        >
+          {labels[key]}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 type BetaFeedbackStage = 'started' | 'stage1' | 'result' | 'stage2'
 function betaFeedbackStageOf(bf: Pick<BetaFeedbackEntry, 'stage1_completed_at' | 'result_stage_completed_at' | 'stage2_completed_at'>): BetaFeedbackStage {
   return bf.stage2_completed_at ? 'stage2' : bf.result_stage_completed_at ? 'result' : bf.stage1_completed_at ? 'stage1' : 'started'
@@ -1049,6 +1078,11 @@ export default function AdminPage() {
   const [betaFeedbackStageFilter, setBetaFeedbackStageFilter] = useState<'all' | BetaFeedbackStage>('all')
   const [betaFeedbackStatusFilter, setBetaFeedbackStatusFilter] = useState('all')
   const [betaFeedbackAgeFilter, setBetaFeedbackAgeFilter] = useState('all')
+  // Shared across Submissions, Beta Submissions, Beta Feedback and the Beta
+  // Testing dashboard — lets staff isolate "beta v2" (the round of fixes/
+  // features shipped 2026-09-08 onward) from the original "beta" cohort,
+  // instead of eyeballing the per-row cohort badge across every list.
+  const [cohortFilter, setCohortFilter] = useState<'all' | 'beta' | 'beta_v2'>('all')
 
   const [telemetryList, setTelemetryList] = useState<TelemetryEvent[]>([])
   const [telemetryLoading, setTelemetryLoading] = useState(false)
@@ -3114,7 +3148,8 @@ export default function AdminPage() {
 
   // Shared by the general Submissions tab and the Beta Testing > Submissions
   // sub-tab — same columns, just a different (optionally pre-filtered) list.
-  function renderSubmissionsTable(list: Submission[], emptyMessage: string, exportFilename: string) {
+  function renderSubmissionsTable(fullList: Submission[], emptyMessage: string, exportFilename: string) {
+    const list = fullList.filter(sub => matchesCohortFilter(sub, cohortFilter))
     const exportSubmissions = () => {
       const rows: (string | number | null)[][] = [
         ['Name', 'Email', 'Phone', 'Country', 'Nationality', 'Age', 'Experience', 'Education', 'Major own choice', 'Major choice reason', 'Current stage', 'Cohort', 'Date', 'Status', 'Device', 'Games played', 'Has feedback'],
@@ -3141,9 +3176,12 @@ export default function AdminPage() {
     }
     return (
       <>
-        <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <p className="text-sm text-slate-400">{list.length} submission{list.length !== 1 ? 's' : ''}</p>
-          <DownloadCSVButton onClick={exportSubmissions} />
+          <div className="flex flex-wrap items-center gap-2">
+            <DownloadCSVButton onClick={exportSubmissions} />
+            <CohortFilterPills value={cohortFilter} onChange={setCohortFilter} />
+          </div>
         </div>
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
           <table className="w-full text-sm min-w-[1400px]">
@@ -3529,16 +3567,21 @@ export default function AdminPage() {
             )}
             {betaFeedbackError && <p className="text-red-500 text-sm text-center py-8">{betaFeedbackError}</p>}
             {!betaFeedbackLoading && !betaFeedbackError && (() => {
-              const stage2Responses = betaFeedbackList.filter(bf => bf.stage2_completed_at)
+              // Cohort-scoped views of the raw lists — every count/chart/export
+              // below is derived from these, so the whole dashboard (including
+              // the "Who's testing" charts further down) respects cohortFilter.
+              const scopedFeedback = betaFeedbackList.filter(bf => matchesCohortFilter({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }, cohortFilter))
+              const scopedSubmissions = betaSubmissions.filter(s => matchesCohortFilter(s, cohortFilter))
+              const stage2Responses = scopedFeedback.filter(bf => bf.stage2_completed_at)
               const stage2Total = stage2Responses.length
-              const resultStageResponses = betaFeedbackList.filter(bf => bf.result_stage_completed_at)
+              const resultStageResponses = scopedFeedback.filter(bf => bf.result_stage_completed_at)
               const resultStageTotal = resultStageResponses.length
-              const recommendResponses = betaFeedbackList.filter(bf => bf.would_recommend)
+              const recommendResponses = scopedFeedback.filter(bf => bf.would_recommend)
               const recommendTotal = recommendResponses.length
-              const payResponses = betaFeedbackList.filter(bf => bf.would_pay)
+              const payResponses = scopedFeedback.filter(bf => bf.would_pay)
               const payTotal = payResponses.length
-              const betaTotal = betaFeedbackList.length
-              const totalSubmissions = betaSubmissions.length
+              const betaTotal = scopedFeedback.length
+              const totalSubmissions = scopedSubmissions.length
 
               // Same cohort normalization as the "Who's testing" charts below,
               // duplicated here (rather than shared) because this runs outside
@@ -3548,8 +3591,8 @@ export default function AdminPage() {
               type DemoRow = { age_bracket: string | null; experience_level: string | null; current_stage: string | null; country: string | null; nationality: string | null }
               const demoRows: DemoRow[] =
                 betaDemographicsFilter === 'all'
-                  ? betaSubmissions.map(s => ({ age_bracket: s.age_bracket ?? ageToBracket(s.age), experience_level: s.experience_level, current_stage: s.current_stage, country: s.country, nationality: s.nationality }))
-                  : (betaDemographicsFilter === 'stage1' ? betaFeedbackList
+                  ? scopedSubmissions.map(s => ({ age_bracket: s.age_bracket ?? ageToBracket(s.age), experience_level: s.experience_level, current_stage: s.current_stage, country: s.country, nationality: s.nationality }))
+                  : (betaDemographicsFilter === 'stage1' ? scopedFeedback
                     : betaDemographicsFilter === 'result' ? resultStageResponses
                     : stage2Responses).map(bf => ({
                       age_bracket: bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age),
@@ -3673,10 +3716,13 @@ export default function AdminPage() {
 
               return (
                 <>
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <p className="text-sm font-semibold text-slate-700">Feedback funnel</p>
+                    <CohortFilterPills value={cohortFilter} onChange={setCohortFilter} />
+                  </div>
                   {totalSubmissions > 0 && (
                     <div className="mb-6">
-                      <div className="flex items-center justify-between gap-3 mb-3">
-                        <p className="text-sm font-semibold text-slate-700">Feedback funnel</p>
+                      <div className="flex items-center justify-end gap-3 mb-3">
                         <DownloadCSVButton onClick={exportBetaDashboardReport} label="Download full report" />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -3712,8 +3758,8 @@ export default function AdminPage() {
                     type DemoRow = { age_bracket: string | null; experience_level: string | null; current_stage: string | null; country: string | null; nationality: string | null }
                     const demoRows: DemoRow[] =
                       betaDemographicsFilter === 'all'
-                        ? betaSubmissions.map(s => ({ age_bracket: s.age_bracket ?? ageToBracket(s.age), experience_level: s.experience_level, current_stage: s.current_stage, country: s.country, nationality: s.nationality }))
-                        : (betaDemographicsFilter === 'stage1' ? betaFeedbackList
+                        ? scopedSubmissions.map(s => ({ age_bracket: s.age_bracket ?? ageToBracket(s.age), experience_level: s.experience_level, current_stage: s.current_stage, country: s.country, nationality: s.nationality }))
+                        : (betaDemographicsFilter === 'stage1' ? scopedFeedback
                           : betaDemographicsFilter === 'result' ? resultStageResponses
                           : stage2Responses).map(bf => ({
                             age_bracket: bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age),
@@ -4234,6 +4280,7 @@ export default function AdminPage() {
               const statusOptions = distinctValues(betaFeedbackList.map(bf => bf.assessment_responses?.current_stage))
               const ageOptions = distinctValues(betaFeedbackList.map(bf => bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age)))
               const visibleBetaFeedback = betaFeedbackList
+                .filter(bf => matchesCohortFilter({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }, cohortFilter))
                 .filter(bf => betaFeedbackStageFilter === 'all' || betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
                 .filter(bf => betaFeedbackStatusFilter === 'all' || bf.assessment_responses?.current_stage === betaFeedbackStatusFilter)
                 .filter(bf => betaFeedbackAgeFilter === 'all' || (bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age)) === betaFeedbackAgeFilter)
@@ -4302,6 +4349,7 @@ export default function AdminPage() {
                       <p className="text-sm text-slate-400">{visibleBetaFeedback.length} response{visibleBetaFeedback.length !== 1 ? 's' : ''}</p>
                       <div className="flex flex-wrap items-center gap-2">
                         <DownloadCSVButton onClick={exportBetaFeedback} />
+                        <CohortFilterPills value={cohortFilter} onChange={setCohortFilter} />
                         {(['all', 'started', 'stage1', 'result', 'stage2'] as const).map(key => (
                           <button
                             key={key}
