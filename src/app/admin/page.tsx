@@ -196,9 +196,9 @@ function betaFeedbackStageOf(bf: Pick<BetaFeedbackEntry, 'stage1_completed_at' |
 }
 const BETA_FEEDBACK_STAGE_LABELS: Record<BetaFeedbackStage, string> = {
   started: 'Started',
-  stage1: 'Stage 1',
+  stage1: 'Pre-Result Stage',
   result: 'Result Stage',
-  stage2: 'Stage 2',
+  stage2: 'Post-Result Stage',
 }
 
 // ─── Beta feedback analytics (charts) ──────────────────────────────────────
@@ -300,6 +300,8 @@ const WORTH_PAYING_FOR_LABEL: Record<string, string> = {
   other: 'Other',
 }
 const WANTS_COACH_LABEL: Record<string, string> = { yes_pay: "Yes, I'd pay for it", if_included: 'Only if included', no: 'No' }
+// language_used (asked explicitly pre-13 Sept) — legacy; device/language are now captured automatically.
+const LANGUAGE_USED_LABEL: Record<string, string> = { en: 'English', ar: 'Arabic', both: 'Both' }
 // "current_stage" is the closest proxy we collect to employment status — it's
 // an education/career-stage question, not a strict employed/unemployed flag.
 const CURRENT_STAGE_ORDER = ['high_school', 'university', 'recent_graduate', 'working_exploring', 'career_changer', 'returning', 'between_roles']
@@ -2643,9 +2645,9 @@ export default function AdminPage() {
                 ['Experience', bf.assessment_responses?.experience_level ? (EXPERIENCE_LEVEL_LABEL[bf.assessment_responses.experience_level] || bf.assessment_responses.experience_level) : null],
                 ['Locale', bf.locale || bf.assessment_responses?.locale],
                 ['Device', bf.device],
-                ['Stage 1 completed', bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : null],
+                ['Pre-Result Stage completed', bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : null],
                 ['Result Stage completed', bf.result_stage_completed_at ? new Date(bf.result_stage_completed_at).toLocaleString() : null],
-                ['Stage 2 completed', bf.stage2_completed_at ? new Date(bf.stage2_completed_at).toLocaleString() : null],
+                ['Post-Result Stage completed', bf.stage2_completed_at ? new Date(bf.stage2_completed_at).toLocaleString() : null],
               ].map(([label, value]) => (
                 <div key={label}>
                   <dt className="text-slate-400">{label}</dt>
@@ -2656,7 +2658,7 @@ export default function AdminPage() {
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Stage 1 · Quick Pulse</h3>
+            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Pre-Result Stage · Quick Pulse</h3>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
               {[
                 ['Clarity', ratingLabel(bf.s1_clarity)],
@@ -3587,7 +3589,7 @@ export default function AdminPage() {
               // duplicated here (rather than shared) because this runs outside
               // that block's own IIFE — keeps the export in sync with whichever
               // demographics filter is currently selected on screen.
-              const demoFilterLabel = { all: 'All submissions', stage1: 'Stage 1', result: 'Result Stage', stage2: 'Stage 2' } as const
+              const demoFilterLabel = { all: 'All submissions', stage1: 'Pre-Result Stage', result: 'Result Stage', stage2: 'Post-Result Stage' } as const
               type DemoRow = { age_bracket: string | null; experience_level: string | null; current_stage: string | null; country: string | null; nationality: string | null }
               const demoRows: DemoRow[] =
                 betaDemographicsFilter === 'all'
@@ -3622,9 +3624,9 @@ export default function AdminPage() {
                   ['Feedback funnel', ''],
                   ['Metric', 'Count'],
                   ['Total submissions (everyone who took the beta assessment)', totalSubmissions],
-                  ['Stage 1 — quick pulse (answered at least 1 of 3 taps)', betaTotal],
+                  ['Pre-Result Stage — quick pulse (answered at least 1 of 3 taps)', betaTotal],
                   ['Result Stage (rated accuracy/recommend/pay on results page)', resultStageTotal],
-                  ['Stage 2 — full survey (completed detailed post-report survey)', stage2Total],
+                  ['Post-Result Stage — full survey (completed detailed post-report survey)', stage2Total],
                   [],
                   [`Demographics — ${demoFilterLabel[betaDemographicsFilter]} (${demoRows.length})`],
                   ...breakdownRows(AGE_BRACKET_ORDER, AGE_BRACKET_LABEL, countBy(demoRows, r => r.age_bracket), demoRows.length, 'Age group'),
@@ -3656,11 +3658,8 @@ export default function AdminPage() {
                   for (const bf of stage2Responses) for (const v of (bf.pay_blockers || [])) payBlockerCounts[v] = (payBlockerCounts[v] || 0) + 1
                   rows.push(
                     [],
-                    [`Stage 2 — full survey analytics (${stage2Total} respondents)`],
+                    [`Post-Result Stage — full survey analytics (${stage2Total} respondents)`],
                     ['Hit an issue', pct(countBy(stage2Responses, bf => bf.had_issues).yes || 0, stage2Total)],
-                    ['Took it in English', pct(countBy(stage2Responses, bf => bf.language_used).en || 0, stage2Total)],
-                    ['Took it in Arabic', pct(countBy(stage2Responses, bf => bf.language_used).ar || 0, stage2Total)],
-                    ['Used both languages', pct(countBy(stage2Responses, bf => bf.language_used).both || 0, stage2Total)],
                     [],
                     ...breakdownRows(SENTIMENT_ORDER.would_pay_at_price, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.would_pay_at_price), stage2Total, 'Would pay, at the shown price?'),
                     [],
@@ -3687,7 +3686,7 @@ export default function AdminPage() {
                   // Legacy Beta 1 fields (removed from the live form) — only worth a section
                   // if any respondent in range actually has them, so a report scoped to only
                   // redesigned-form submissions doesn't show an all-zero legacy block.
-                  const hasLegacy = stage2Responses.some(bf => bf.personality_accuracy || bf.overall_value != null || (bf.most_valuable_parts && bf.most_valuable_parts.length > 0))
+                  const hasLegacy = stage2Responses.some(bf => bf.personality_accuracy || bf.overall_value != null || bf.language_used || (bf.most_valuable_parts && bf.most_valuable_parts.length > 0))
                   if (hasLegacy) {
                     const avgOverallValue = stage2Responses.reduce((sum, bf) => sum + (bf.overall_value || 0), 0) / Math.max(1, stage2Responses.filter(bf => bf.overall_value != null).length)
                     const mvpCounts: Record<string, number> = {}
@@ -3696,6 +3695,9 @@ export default function AdminPage() {
                       [],
                       ['Legacy Beta 1 fields (removed from the live form)'],
                       ['Overall value — average (1-6)', avgOverallValue.toFixed(1)],
+                      ['Took it in English (legacy — now auto-captured)', pct(countBy(stage2Responses, bf => bf.language_used).en || 0, stage2Total)],
+                      ['Took it in Arabic (legacy — now auto-captured)', pct(countBy(stage2Responses, bf => bf.language_used).ar || 0, stage2Total)],
+                      ['Used both languages (legacy — now auto-captured)', pct(countBy(stage2Responses, bf => bf.language_used).both || 0, stage2Total)],
                       [],
                       ['Most valuable parts (legacy)', 'Count', 'Percent'],
                       ...Object.entries(mvpCounts).sort((a, b) => b[1] - a[1]).map(([k, n]) => [formatUnderscored(k), n, pct(n, stage2Total)]),
@@ -3732,7 +3734,7 @@ export default function AdminPage() {
                           sublabel="everyone who took the beta assessment"
                         />
                         <BetaStatTile
-                          label="Stage 1 — quick pulse"
+                          label="Pre-Result Stage — quick pulse"
                           value={String(betaTotal)}
                           sublabel="answered at least one of the 3 quick taps on the loading screen"
                         />
@@ -3742,7 +3744,7 @@ export default function AdminPage() {
                           sublabel="rated accuracy/recommend/pay on the results page"
                         />
                         <BetaStatTile
-                          label="Stage 2 — full survey"
+                          label="Post-Result Stage — full survey"
                           value={String(stage2Total)}
                           sublabel="completed the detailed post-report survey"
                         />
@@ -3770,7 +3772,7 @@ export default function AdminPage() {
                           }))
                     const demoTotal = demoRows.length
                     const filterCount = { all: totalSubmissions, stage1: betaTotal, result: resultStageTotal, stage2: stage2Total }
-                    const filterLabel = { all: 'All submissions', stage1: 'Stage 1', result: 'Result Stage', stage2: 'Stage 2' }
+                    const filterLabel = { all: 'All submissions', stage1: 'Pre-Result Stage', result: 'Result Stage', stage2: 'Post-Result Stage' }
                     return (
                       <div className="mb-6">
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
@@ -3840,7 +3842,7 @@ export default function AdminPage() {
                   )}
                   {(resultStageTotal > 0 || recommendTotal > 0 || payTotal > 0) && (
                     <div className="mb-6">
-                      <p className="text-sm font-semibold text-slate-700 mb-3">Report feedback <span className="text-slate-400 font-normal">— accuracy from {resultStageTotal} Result Stage respondents, recommend/pay from all respondents who answered (of {betaTotal} who started Stage 1)</span></p>
+                      <p className="text-sm font-semibold text-slate-700 mb-3">Report feedback <span className="text-slate-400 font-normal">— accuracy from {resultStageTotal} Result Stage respondents, recommend/pay from all respondents who answered (of {betaTotal} who started the Pre-Result Stage)</span></p>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                         <BetaStatTile
                           label="Overall accuracy"
@@ -3899,20 +3901,8 @@ export default function AdminPage() {
                   )}
                   {stage2Total > 0 && (
                       <div className="mb-6">
-                        <p className="text-sm font-semibold text-slate-700 mb-3">Feedback analytics <span className="text-slate-400 font-normal">— {stage2Total} Stage 2 respondents (of {betaTotal} who started Stage 1)</span></p>
-                        <div className="grid grid-cols-2 gap-3 mb-4">
-                          <BetaStatTile
-                            label="Overall value"
-                            value={`${(stage2Responses.reduce((sum, bf) => sum + (bf.overall_value || 0), 0) / Math.max(1, stage2Responses.filter(bf => bf.overall_value != null).length)).toFixed(1)}/6`}
-                            sublabel="average rating"
-                            onClick={() => setBetaStatDrilldown({
-                              title: 'Overall value ratings',
-                              rows: stage2Responses
-                                .filter(bf => bf.overall_value != null)
-                                .sort((a, b) => (b.overall_value || 0) - (a.overall_value || 0))
-                                .map(bf => ({ bf, note: `${bf.overall_value}/6` })),
-                            })}
-                          />
+                        <p className="text-sm font-semibold text-slate-700 mb-3">Feedback analytics <span className="text-slate-400 font-normal">— {stage2Total} Post-Result Stage respondents (of {betaTotal} who started the Pre-Result Stage)</span></p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                           <BetaStatTile
                             label="Hit an issue"
                             value={`${Math.round(((countBy(stage2Responses, bf => bf.had_issues).yes || 0) / stage2Total) * 100)}%`}
@@ -3920,35 +3910,6 @@ export default function AdminPage() {
                             onClick={() => setBetaStatDrilldown({
                               title: 'Hit an error, glitch, or confusing moment',
                               rows: stage2Responses.filter(bf => bf.had_issues === 'yes').map(bf => ({ bf, note: bf.issue_detail || 'No details given' })),
-                            })}
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                          <BetaStatTile
-                            label="Took it in English"
-                            value={`${Math.round(((countBy(stage2Responses, bf => bf.language_used).en || 0) / stage2Total) * 100)}%`}
-                            sublabel={`${countBy(stage2Responses, bf => bf.language_used).en || 0} people`}
-                            onClick={() => setBetaStatDrilldown({
-                              title: 'Took the assessment in English',
-                              rows: stage2Responses.filter(bf => bf.language_used === 'en').map(bf => ({ bf, note: 'English' })),
-                            })}
-                          />
-                          <BetaStatTile
-                            label="Took it in Arabic"
-                            value={`${Math.round(((countBy(stage2Responses, bf => bf.language_used).ar || 0) / stage2Total) * 100)}%`}
-                            sublabel={`${countBy(stage2Responses, bf => bf.language_used).ar || 0} people`}
-                            onClick={() => setBetaStatDrilldown({
-                              title: 'Took the assessment in Arabic',
-                              rows: stage2Responses.filter(bf => bf.language_used === 'ar').map(bf => ({ bf, note: 'Arabic' })),
-                            })}
-                          />
-                          <BetaStatTile
-                            label="Used both languages"
-                            value={`${Math.round(((countBy(stage2Responses, bf => bf.language_used).both || 0) / stage2Total) * 100)}%`}
-                            sublabel={`${countBy(stage2Responses, bf => bf.language_used).both || 0} people`}
-                            onClick={() => setBetaStatDrilldown({
-                              title: 'Used both languages',
-                              rows: stage2Responses.filter(bf => bf.language_used === 'both').map(bf => ({ bf, note: 'Both' })),
                             })}
                           />
                           {/* Hidden for now, per request — leave the tile here, ready to re-enable.
@@ -4019,11 +3980,18 @@ export default function AdminPage() {
                             total={stage2Total}
                           />
                         </div>
-                        {stage2Responses.some(bf => bf.personality_accuracy || bf.overall_value != null || (bf.most_valuable_parts && bf.most_valuable_parts.length > 0)) && (
+                        {stage2Responses.some(bf => bf.personality_accuracy || bf.overall_value != null || bf.language_used || (bf.most_valuable_parts && bf.most_valuable_parts.length > 0)) && (
                           <>
                             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 mt-6">Legacy Beta 1 fields (removed from the live form)</p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                               <BetaScaleChart title="Overall value (1-6, legacy)" values={stage2Responses.map(bf => bf.overall_value)} />
+                              <BetaCategoryChart
+                                title="Language used (legacy — now captured automatically)"
+                                order={['en', 'ar', 'both']}
+                                labels={LANGUAGE_USED_LABEL}
+                                counts={countBy(stage2Responses, bf => bf.language_used)}
+                                total={stage2Total}
+                              />
                               <BetaRankedMultiChart
                                 title="Most valuable parts of the report (legacy)"
                                 lists={stage2Responses.map(bf => bf.most_valuable_parts)}
@@ -4288,13 +4256,13 @@ export default function AdminPage() {
                 const rows: (string | number | null)[][] = [
                   [
                     'Name', 'Email', 'Country', 'Nationality', 'Age', 'Experience', 'Current stage', 'Cohort', 'Feedback stage', 'Locale',
-                    'S1: clarity (1-5)', 'S1: feeling (1-5)', 'S1: understood (1-5)', 'S1: wants from results', 'Stage 1 completed at',
+                    'S1: clarity (1-5)', 'S1: feeling (1-5)', 'S1: understood (1-5)', 'S1: wants from results', 'Pre-Result Stage completed at',
                     'Accuracy (result_accuracy)', 'Would recommend', 'Would pay (Result Stage)', 'Result Stage completed at',
                     'Language used', 'Device', 'Understood after (1-5)', 'Felt like coach', 'Careers seriously considered',
                     'Understood why suggested', 'Most useful part', 'Least useful part', 'First action (text)',
                     'Would pay at price', 'Pay blockers', 'Pay blocker — other (text)', 'Top pay blocker',
                     'Worth paying for', 'Wants coach session', 'Had issues', 'Issue detail',
-                    'Stage 2 completed at', 'Submitted at',
+                    'Post-Result Stage completed at', 'Submitted at',
                     // Legacy Beta 1 columns, removed from the live form — kept so a CSV
                     // export spanning both cohorts doesn't silently drop old answers.
                     'Personality accuracy (legacy)', 'Values accuracy (legacy)', 'Strengths accuracy (legacy)',
@@ -4393,7 +4361,7 @@ export default function AdminPage() {
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Age</th>
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Stage</th>
-                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Overall</th>
+                            <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Would pay</th>
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Would recommend</th>
                             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
                             <th className="px-4 py-3" />
@@ -4424,8 +4392,8 @@ export default function AdminPage() {
                                   }`}>{stage}</span>
                                 </td>
                                 <td className="px-4 py-3 text-slate-500">
-                                  {bf.overall_value ? (
-                                    <span className="font-semibold text-slate-700">{bf.overall_value}<span className="text-slate-400 font-normal">/6</span></span>
+                                  {bf.would_pay_at_price ? (
+                                    <span className="font-semibold text-slate-700">{WOULD_PAY_AT_PRICE_LABEL[bf.would_pay_at_price] || bf.would_pay_at_price}</span>
                                   ) : '—'}
                                 </td>
                                 <td className="px-4 py-3 text-slate-500 capitalize">{bf.would_recommend?.replace(/_/g, ' ') || '—'}</td>
