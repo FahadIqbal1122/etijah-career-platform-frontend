@@ -12,6 +12,7 @@ import Constellation from '@/components/brand/Constellation'
 import { LockedSection } from '@/components/shared/LockedSection'
 import { BlurGate } from '@/components/shared/BlurGate'
 import BetaFeedbackStage1 from '@/components/beta-feedback/BetaFeedbackStage1'
+import BreakPanel from '@/components/BreakPanel'
 import BetaFeedbackResultStage from '@/components/beta-feedback/BetaFeedbackResultStage'
 
 const levelToWidth: Record<string, string> = {
@@ -284,31 +285,47 @@ export default function ResultsPage() {
     // Mirrors AssessmentForm's litCount math (progress -> 8 constellation nodes),
     // so the results-page loader reads as a continuation of the same animation.
     const litCount = Math.max(1, Math.round((completedCount / stages.length) * 7) + 1)
+    const showFeedbackCol = betaMode && justCompleted
     return (
-      <div className="min-h-screen brand-hero flex items-center justify-center px-6">
-        <div className="text-center space-y-5 max-w-md w-full">
-          <div className="report-loading-logo inline-flex"><Logomark size={44} tone="dark" glow /></div>
-          {reportReadyButAwaitingFeedback ? (
-            <p className="text-white/80 text-xl font-semibold">{t('loading.readyAwaitingFeedback')}</p>
-          ) : (
-            <>
-              <p className="text-white/80 text-xl font-semibold">{t('loading.preparing')}</p>
-              <div className="cst-wrap"><Constellation litCount={litCount} rippleKey={completedCount} theme="dark" accent="#00C9A7" /></div>
-              <ul className="loading-checklist">
-                {stages.map((s, i) => (
-                  <li key={i} className={s.done ? 'done' : ''}>
-                    <span className="loading-checklist-icon">{s.done ? '✓' : ''}</span>
-                    {s.label}
-                  </li>
-                ))}
-              </ul>
-              {!!recentCompletions && (
-                <p className="text-teal text-sm font-medium">✦ {t('loading.recentCompletions', { count: recentCompletions })}</p>
-              )}
-            </>
-          )}
-          {betaMode && justCompleted && (
-            <BetaFeedbackStage1 responseId={id} locale={locale} onComplete={() => setStage1Done(true)} />
+      <div className="min-h-screen brand-hero flex items-center justify-center px-6 py-10">
+        <div className="report-loading-grid">
+          <div className="report-loading-col report-loading-left">
+            <div className="report-loading-logo inline-flex"><Logomark size={44} tone="dark" glow /></div>
+            {reportReadyButAwaitingFeedback ? (
+              <p className="text-white/80 text-xl font-semibold">{t('loading.readyAwaitingFeedback')}</p>
+            ) : (
+              <>
+                <p className="text-white/80 text-xl font-semibold">{t('loading.preparing')}</p>
+                <div className="cst-wrap"><Constellation litCount={litCount} rippleKey={completedCount} theme="dark" accent="#00C9A7" /></div>
+                <ul className="loading-checklist">
+                  {stages.map((s, i) => (
+                    <li key={i} className={s.done ? 'done' : ''}>
+                      <span className="loading-checklist-icon">{s.done ? '✓' : ''}</span>
+                      {s.label}
+                    </li>
+                  ))}
+                </ul>
+                {!!recentCompletions && (
+                  <p className="text-teal text-sm font-medium">✦ {t('loading.recentCompletions', { count: recentCompletions })}</p>
+                )}
+              </>
+            )}
+            {showFeedbackCol && (
+              <button
+                type="button"
+                className="report-loading-scroll-hint"
+                onClick={() => document.getElementById('report-loading-feedback')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              >
+                {t('loading.scrollForFeedback')} <span aria-hidden>↓</span>
+              </button>
+            )}
+          </div>
+
+          {showFeedbackCol && (
+            <div className="report-loading-col report-loading-right" id="report-loading-feedback">
+              <BreakPanel locale={locale} eyebrow="" progressMsg="" questionIndex={0} compact forceVisible />
+              <BetaFeedbackStage1 responseId={id} locale={locale} onComplete={() => setStage1Done(true)} />
+            </div>
           )}
         </div>
       </div>
@@ -621,6 +638,83 @@ export default function ResultsPage() {
           </div>
         )}
 
+        {/* AI Impact */}
+        {aiImpact ? (
+          <>
+          <div className="card p-5">
+            <SectionHead
+              title={t('aiImpact.title')}
+              subtitle={t('aiImpact.subtitle')}
+              icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 001.357 2.059l.096.04a2.25 2.25 0 002.635-.701L19.5 9m-9.75-5.896A24.27 24.27 0 0112 3c.607 0 1.207.026 1.8.078" /></svg>}
+            />
+            <p className="text-sm text-charcoal/70 mb-4 leading-relaxed">{aiImpact.overall_summary}</p>
+            <div className="space-y-3">
+              {aiImpact.careers?.map((c: any) => (
+                <div key={c.title} className="border border-[var(--line)] rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-bold text-charcoal">{c.title}</span>
+                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                      c.ai_risk_level === 'low' ? 'bg-teal/10 text-teal' :
+                      c.ai_risk_level === 'medium' ? 'bg-amber-50 text-amber-700' :
+                      'bg-rose-50 text-rose-700'
+                    }`}>
+                      {c.ai_risk_level ? levelLabel(c.ai_risk_level).toUpperCase() : ''} {t('aiImpact.riskSuffix')}
+                    </span>
+                  </div>
+                  <p className="text-xs text-charcoal/50 mb-3">{c.gcc_outlook}</p>
+                  {c.protected_skills?.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-[11px] font-semibold text-charcoal/40 uppercase tracking-wide mb-1.5">{t('aiImpact.protectedSkillsLabel')}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {c.protected_skills.map((s: string) => (
+                          <span key={s} className="chip chip-teal !py-0.5 !text-[11px]">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {c.upskilling?.length > 0 && (
+                    <div>
+                      <p className="text-[11px] font-semibold text-charcoal/40 uppercase tracking-wide mb-1.5">{t('aiImpact.upskillingLabel')}</p>
+                      <ul className="space-y-1">
+                        {c.upskilling.map((tip: string) => (
+                          <li key={tip} className="text-xs text-charcoal/50 flex gap-1.5">
+                            <span className="text-primary mt-0.5">→</span>
+                            {tip}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {c.what_this_means_for_you && (
+                    <p className="text-xs font-semibold text-charcoal/70 mt-3 pl-2.5 border-l-2 border-teal">
+                      {t('aiImpact.whatThisMeansLabel')}: <span className="font-normal">{c.what_this_means_for_you}</span>
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          {tier === 'free' && !loggedIn ? (
+            <BlurGate
+              title={t('aiImpact.signupTitle')}
+              body={t('aiImpact.signupBody')}
+            >
+              <div className="card p-5">
+                <AiImpactDeepDivePlaceholder />
+              </div>
+            </BlurGate>
+          ) : tier === 'free' ? (
+            <LockedSection
+              tag={t('aiImpact.lockedTag')}
+              title={t('aiImpact.lockedTitle')}
+              body={t('aiImpact.lockedBody')}
+              ctaLabel={t('aiImpact.lockedCta')}
+              ctaHref="/#pricing"
+            />
+          ) : null}
+          </>
+        ) : null}
+
         {/* Action Plan */}
         {actionPlan && (actionPlan.month_1?.length > 0 || actionPlan.months_2_3?.length > 0 || actionPlan.months_4_6?.length > 0) && (
           <div className="card p-5">
@@ -805,83 +899,6 @@ export default function ResultsPage() {
             )}
           </div>
         )}
-
-        {/* AI Impact */}
-        {aiImpact ? (
-          <>
-          <div className="card p-5">
-            <SectionHead
-              title={t('aiImpact.title')}
-              subtitle={t('aiImpact.subtitle')}
-              icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 001.357 2.059l.096.04a2.25 2.25 0 002.635-.701L19.5 9m-9.75-5.896A24.27 24.27 0 0112 3c.607 0 1.207.026 1.8.078" /></svg>}
-            />
-            <p className="text-sm text-charcoal/70 mb-4 leading-relaxed">{aiImpact.overall_summary}</p>
-            <div className="space-y-3">
-              {aiImpact.careers?.map((c: any) => (
-                <div key={c.title} className="border border-[var(--line)] rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-bold text-charcoal">{c.title}</span>
-                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                      c.ai_risk_level === 'low' ? 'bg-teal/10 text-teal' :
-                      c.ai_risk_level === 'medium' ? 'bg-amber-50 text-amber-700' :
-                      'bg-rose-50 text-rose-700'
-                    }`}>
-                      {c.ai_risk_level ? levelLabel(c.ai_risk_level).toUpperCase() : ''} {t('aiImpact.riskSuffix')}
-                    </span>
-                  </div>
-                  <p className="text-xs text-charcoal/50 mb-3">{c.gcc_outlook}</p>
-                  {c.protected_skills?.length > 0 && (
-                    <div className="mb-3">
-                      <p className="text-[11px] font-semibold text-charcoal/40 uppercase tracking-wide mb-1.5">{t('aiImpact.protectedSkillsLabel')}</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {c.protected_skills.map((s: string) => (
-                          <span key={s} className="chip chip-teal !py-0.5 !text-[11px]">{s}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {c.upskilling?.length > 0 && (
-                    <div>
-                      <p className="text-[11px] font-semibold text-charcoal/40 uppercase tracking-wide mb-1.5">{t('aiImpact.upskillingLabel')}</p>
-                      <ul className="space-y-1">
-                        {c.upskilling.map((tip: string) => (
-                          <li key={tip} className="text-xs text-charcoal/50 flex gap-1.5">
-                            <span className="text-primary mt-0.5">→</span>
-                            {tip}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {c.what_this_means_for_you && (
-                    <p className="text-xs font-semibold text-charcoal/70 mt-3 pl-2.5 border-l-2 border-teal">
-                      {t('aiImpact.whatThisMeansLabel')}: <span className="font-normal">{c.what_this_means_for_you}</span>
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-          {tier === 'free' && !loggedIn ? (
-            <BlurGate
-              title={t('aiImpact.signupTitle')}
-              body={t('aiImpact.signupBody')}
-            >
-              <div className="card p-5">
-                <AiImpactDeepDivePlaceholder />
-              </div>
-            </BlurGate>
-          ) : tier === 'free' ? (
-            <LockedSection
-              tag={t('aiImpact.lockedTag')}
-              title={t('aiImpact.lockedTitle')}
-              body={t('aiImpact.lockedBody')}
-              ctaLabel={t('aiImpact.lockedCta')}
-              ctaHref="/#pricing"
-            />
-          ) : null}
-          </>
-        ) : null}
 
         {/* Course Recommendations */}
         {courses.length > 0 ? (

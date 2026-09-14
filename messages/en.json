@@ -483,7 +483,8 @@
         "companies": "Matching companies",
         "courses": "Curating learning resources"
       },
-      "recentCompletions": "{count, plural, one {# person} other {# people}} completed their assessment in the last hour"
+      "recentCompletions": "{count, plural, one {# person} other {# people}} completed their assessment in the last hour",
+      "scrollForFeedback": "Scroll down to answer 3 quick questions and unlock your report"
     },
     "error": {
       "loadFailed": "Failed to load results",

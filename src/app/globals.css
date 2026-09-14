@@ -630,6 +630,43 @@ html { scroll-behavior: smooth; }
 }
 .loading-checklist li.done .loading-checklist-icon { background: #00C9A7; border-color: #00C9A7; color: #06263A; }
 
+/* Mobile-first: one centered column — generation status, then (if beta
+   feedback is pending) the scroll hint, then the game trigger + Stage-1
+   feedback below. Desktop (≥900px) splits into two side-by-side columns so
+   the feedback/game never sits below the fold and needs no scrolling. */
+.report-loading-grid {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 28px; width: 100%; max-width: 420px;
+}
+.report-loading-col { width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.report-loading-left { gap: 14px; }
+.report-loading-right { gap: 10px; }
+
+.report-loading-scroll-hint {
+  margin-top: 6px; appearance: none; border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.08); color: #fff; font-size: 13px; font-weight: 600;
+  padding: 10px 20px; border-radius: 999px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  animation: reportScrollHintBounce 1.6s ease-in-out infinite;
+}
+.report-loading-scroll-hint:hover { background: rgba(255,255,255,0.14); }
+@keyframes reportScrollHintBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+@media (prefers-reduced-motion: reduce) { .report-loading-scroll-hint { animation: none; } }
+
+@media (min-width: 900px) {
+  .report-loading-grid {
+    flex-direction: row; align-items: flex-start; justify-content: center;
+    max-width: 900px; gap: 60px;
+  }
+  .report-loading-col { flex: 1 1 380px; max-width: 380px; }
+  /* the columns are already side by side, so the "scroll down" cue is
+     mobile-only — nothing is below the fold to scroll to. */
+  .report-loading-scroll-hint { display: none; }
+}
+
 /* ── problem section — highlighted payoff callout ───────────────────────── */
 .payoff {
   background: color-mix(in srgb, var(--accent) 8%, transparent);

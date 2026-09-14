@@ -483,7 +483,8 @@
         "companies": "مطابقة الشركات",
         "courses": "تنسيق مصادر التعلّم"
       },
-      "recentCompletions": "أنهى {count, plural, one {# شخص} other {# أشخاص}} تقييمهم خلال الساعة الماضية"
+      "recentCompletions": "أنهى {count, plural, one {# شخص} other {# أشخاص}} تقييمهم خلال الساعة الماضية",
+      "scrollForFeedback": "مرّر للأسفل للإجابة عن 3 أسئلة سريعة وفتح تقريرك"
     },
     "error": {
       "loadFailed": "فشل تحميل النتائج",

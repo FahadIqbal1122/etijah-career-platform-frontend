@@ -61,9 +61,14 @@ interface BreakPanelProps {
   // (.assess-progress-label) above this panel, so skip it here to avoid
   // showing the same line twice — just the trigger button, then the game.
   compact?: boolean
+  // Skip the on/off cycling (isBreakTriggerVisible) entirely and always show
+  // the trigger — used outside the assessment (e.g. the results loading
+  // screen) where questionIndex doesn't apply and there's real waiting time
+  // to fill, so hiding the trigger some of the time serves no purpose.
+  forceVisible?: boolean
 }
 
-export default function BreakPanel({ locale, eyebrow, progressMsg, questionIndex, compact }: BreakPanelProps) {
+export default function BreakPanel({ locale, eyebrow, progressMsg, questionIndex, compact, forceVisible }: BreakPanelProps) {
   const [activeKind, setActiveKind] = useState<BreakActivity['kind'] | null>(null)
   const [riddleIdx, setRiddleIdx] = useState(0)
   const [revealed, setRevealed] = useState(false)
@@ -102,7 +107,7 @@ export default function BreakPanel({ locale, eyebrow, progressMsg, questionIndex
   }
 
   if (!activeKind) {
-    const triggerVisible = isBreakTriggerVisible(questionIndex)
+    const triggerVisible = forceVisible || isBreakTriggerVisible(questionIndex)
     if (compact) {
       return triggerVisible ? (
         <button type="button" className="assess-break-trigger" onClick={pickActivity}>
