@@ -629,19 +629,28 @@ export default function ResultsPage() {
               subtitle={t('actionPlan.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
             />
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               {[
                 [t('actionPlan.month1'), actionPlan.month_1],
                 [t('actionPlan.months2to3'), actionPlan.months_2_3],
                 [t('actionPlan.months4to6'), actionPlan.months_4_6],
-              ].map(([label, items]) => (
+              ].map(([label, items], colIdx) => (
                 (items as string[])?.length > 0 && (
-                  <div key={label as string}>
-                    <p className="text-xs font-semibold text-charcoal/40 uppercase tracking-wide mb-2">{label}</p>
-                    <ul className="space-y-1.5">
+                  <div key={label as string} className="relative">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-[11px] font-bold shrink-0">
+                        {colIdx + 1}
+                      </span>
+                      <p className="text-xs font-bold text-charcoal uppercase tracking-wide">{label}</p>
+                    </div>
+                    {colIdx < 2 && (
+                      <span className="hidden sm:block absolute top-3 left-full w-5 h-px bg-[var(--line-strong)] -translate-x-1" />
+                    )}
+                    <ul className="space-y-2.5 border-l-2 border-primary/15 pl-3.5">
                       {(items as string[]).map((item, i) => (
-                        <li key={i} className="text-xs text-charcoal/70 flex gap-1.5">
-                          <span className="text-primary/70 mt-0.5">→</span>{item}
+                        <li key={i} className="text-xs leading-relaxed text-charcoal/70 relative">
+                          <span className="absolute -left-[19px] top-1 w-2 h-2 rounded-full bg-teal/80" />
+                          {item}
                         </li>
                       ))}
                     </ul>
@@ -779,12 +788,17 @@ export default function ResultsPage() {
               subtitle={t(careerPath.path_type === 'progression' ? 'careerPath.subtitleProgression' : careerPath.path_type === 'transition' ? 'careerPath.subtitleTransition' : 'careerPath.subtitleBalanced')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>}
             />
-            <p className="text-sm text-charcoal/70 mb-3">{careerPath.narrative}</p>
+            <div className="rounded-xl bg-lightblue/60 border-l-4 border-primary px-4 py-3.5 mb-4">
+              <p className="text-sm leading-relaxed text-charcoal/80">{careerPath.narrative}</p>
+            </div>
             {careerPath.next_steps?.length > 0 && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {careerPath.next_steps.map((step: string, i: number) => (
-                  <div key={i} className="flex items-start gap-1.5 text-xs text-charcoal/60">
-                    <span className="text-primary/70 mt-0.5">→</span>{step}
+                  <div key={i} className="flex items-start gap-3 text-xs text-charcoal/70 leading-relaxed border border-[var(--line)] rounded-xl p-3 hover:border-primary/30 hover:bg-lightblue/30 transition-colors">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-teal/15 text-teal text-[10px] font-bold shrink-0 mt-0.5">
+                      {i + 1}
+                    </span>
+                    <span>{step}</span>
                   </div>
                 ))}
               </div>
