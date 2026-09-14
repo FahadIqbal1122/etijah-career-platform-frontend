@@ -74,8 +74,7 @@
     "QO3B": {
       "text": "How much work experience do you have?",
       "options": {
-        "student": "Still a student",
-        "fresh_grad": "Fresh graduate, no work experience yet",
+        "no_experience": "No work experience yet",
         "up_to_1yr": "Up to 1 year",
         "up_to_3yrs": "Up to 3 years",
         "up_to_5yrs": "Up to 5 years",
