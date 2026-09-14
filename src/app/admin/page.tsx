@@ -238,9 +238,11 @@ function ageToBracket(age: number | null | undefined): string | null {
   if (age <= 40) return '33_40'
   return '41_plus'
 }
-const EXPERIENCE_LEVEL_ORDER = ['student', 'fresh_grad', 'up_to_1yr', 'up_to_3yrs', 'up_to_5yrs', '10yrs_plus']
+// 'student'/'fresh_grad' are legacy values from before QO3B was reworked (10/13 Sept) —
+// still shown here so older submissions display correctly; new submissions use 'no_experience'.
+const EXPERIENCE_LEVEL_ORDER = ['student', 'fresh_grad', 'no_experience', 'up_to_1yr', 'up_to_3yrs', 'up_to_5yrs', '10yrs_plus']
 const EXPERIENCE_LEVEL_LABEL: Record<string, string> = {
-  student: 'Still a student', fresh_grad: 'Fresh graduate', up_to_1yr: 'Up to 1 year',
+  student: 'Still a student', fresh_grad: 'Fresh graduate', no_experience: 'No work experience yet', up_to_1yr: 'Up to 1 year',
   up_to_3yrs: 'Up to 3 years', up_to_5yrs: 'Up to 5 years', '10yrs_plus': '10+ years',
 }
 const CAREER_DIRECTION_LABEL: Record<string, string> = {

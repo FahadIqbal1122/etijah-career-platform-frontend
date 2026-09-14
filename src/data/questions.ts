@@ -99,21 +99,6 @@ export const questions: Question[] = [
     type: 'number_input',
   },
   {
-    id: 'QO3B',
-    section: 'Onboarding',
-    framework: 'Onboarding',
-    text: 'How much work experience do you have?',
-    type: 'single_select',
-    options: [
-      { value: 'student', label: 'Still a student' },
-      { value: 'fresh_grad', label: 'Fresh graduate, no work experience yet' },
-      { value: 'up_to_1yr', label: 'Up to 1 year' },
-      { value: 'up_to_3yrs', label: 'Up to 3 years' },
-      { value: 'up_to_5yrs', label: 'Up to 5 years' },
-      { value: '10yrs_plus', label: '10+ years' },
-    ],
-  },
-  {
     id: 'QO4',
     section: 'Onboarding',
     framework: 'Onboarding',
@@ -127,6 +112,20 @@ export const questions: Question[] = [
       { value: 'career_changer', label: 'Career changer' },
       { value: 'returning', label: 'Returning to work' },
       { value: 'between_roles', label: 'Between roles' },
+    ],
+  },
+  {
+    id: 'QO3B',
+    section: 'Onboarding',
+    framework: 'Onboarding',
+    text: 'How much work experience do you have?',
+    type: 'single_select',
+    options: [
+      { value: 'no_experience', label: 'No work experience yet' },
+      { value: 'up_to_1yr', label: 'Up to 1 year' },
+      { value: 'up_to_3yrs', label: 'Up to 3 years' },
+      { value: 'up_to_5yrs', label: 'Up to 5 years' },
+      { value: '10yrs_plus', label: '10+ years' },
     ],
   },
   {
