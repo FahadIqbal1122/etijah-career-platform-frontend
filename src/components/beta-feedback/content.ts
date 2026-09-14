@@ -158,7 +158,7 @@ export const resultStageNoteLabel: Bi = {
 // Placeholder — final price / Founding Members offer is TBD per the
 // beta-strategy doc §7 (Dina decides by 16 Oct after Beta 2's 99 vs 149 SAR
 // test). Update this one constant once a price is set.
-export const STAGE2_REPORT_PRICE_SAR = 129
+export const STAGE2_REPORT_PRICE_SAR = 149
 
 const REPORT_SECTION_OPTIONS: Option[] = [
   { value: 'personality', label: { en: 'Personality profile', ar: 'ملف الشخصية' } },
@@ -255,7 +255,6 @@ export const stage2Sections: SectionDef[] = [
         },
         options: [
           { value: 'yes_today', label: { en: 'Yes, today', ar: 'نعم، اليوم' } },
-          { value: 'yes_if_cheaper', label: { en: 'Yes, if cheaper', ar: 'نعم، إذا كان أرخص' } },
           { value: 'maybe_later', label: { en: 'Maybe later', ar: 'ربما لاحقًا' } },
           { value: 'no', label: { en: 'No', ar: 'لا' } },
         ],
@@ -274,19 +273,6 @@ export const stage2Sections: SectionDef[] = [
         key: 'pay_blocker_priority', type: 'single', required: true, options: PAY_BLOCKER_OPTIONS,
         label: { en: 'Which of these matters most?', ar: 'أي من هذه الأمور هو الأهم؟' },
         showIf: (a) => Array.isArray(a.pay_blockers) && a.pay_blockers.length > 0,
-      },
-      {
-        key: 'worth_paying_for', type: 'multi', required: true,
-        label: { en: 'What would make it worth paying for?', ar: 'ما الذي قد يجعله يستحق الدفع مقابله؟' },
-        options: [
-          { value: 'plan_for_stage', label: { en: 'A plan for my stage', ar: 'خطة مناسبة لمرحلتي' } },
-          { value: 'internships_jobs', label: { en: 'Internships or jobs in my country', ar: 'فرص تدريب أو وظائف في بلدي' } },
-          { value: 'certifications', label: { en: 'Certifications to pursue', ar: 'شهادات يمكنني الحصول عليها' } },
-          { value: 'coach_session', label: { en: 'A session with a coach', ar: 'جلسة مع مدرّب' } },
-          { value: 'deeper_ai_outlook', label: { en: 'Deeper AI outlook for my career', ar: 'نظرة أعمق حول تأثير الذكاء الاصطناعي على مساري' } },
-          { value: 'shareable_report', label: { en: 'A report I can share with my family', ar: 'تقرير يمكنني مشاركته مع عائلتي' } },
-          { value: 'other', label: { en: 'Other', ar: 'أخرى' } },
-        ],
       },
       {
         key: 'wants_coach_session', type: 'single', required: true,

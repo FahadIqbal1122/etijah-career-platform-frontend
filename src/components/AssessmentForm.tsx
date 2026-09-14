@@ -17,6 +17,7 @@ import Logomark from '@/components/brand/Logomark'
 import Constellation, { CONSTELLATION } from '@/components/brand/Constellation'
 import BreakPanel from '@/components/BreakPanel'
 import BugReportModal from '@/components/BugReportModal'
+import FieldOfStudyInfo from '@/components/FieldOfStudyInfo'
 import { frameworkOf, buildReveal, REVEAL_FRAMEWORKS } from '@/data/revealScoring'
 import { initTelemetry, pushTelemetry, getTelemetrySessionId, rotateTelemetrySession, flush as flushTelemetry } from '@/lib/telemetry'
 
@@ -676,6 +677,12 @@ export default function AssessmentForm() {
               <>
                 <div className="qcard"><p className="qtext">{tQ(`${q.id}.text`)}</p></div>
                 {q.maxSelect && <p className={`qsection ${maxSelectHit ? 'shake' : ''}`} style={{ marginBottom: 12 }}>{tForm('selectUpTo', { max: q.maxSelect })}</p>}
+                {q.id === 'QO5' && (
+                  <FieldOfStudyInfo
+                    locale={locale === 'ar' ? 'ar' : 'en'}
+                    optionLabels={(q.options || []).map(opt => ({ value: opt.value, label: tQ(`${q.id}.options.${opt.value}`) }))}
+                  />
+                )}
                 <div className="pills">
                   {q.options?.map(opt => {
                     const selected: string[] = answers[q.id] || []
