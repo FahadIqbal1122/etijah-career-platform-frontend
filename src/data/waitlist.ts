@@ -167,7 +167,7 @@ export const W = {
       sub: 'Join the waiting list and get your direction the moment your complementary beta access opens.',
     },
     footer: {
-      brandTagline: 'AI-powered career direction, grounded in 15 years of real GCC coaching.',
+      brandTagline: 'Intelligent career direction, grounded in 15 years of real GCC coaching.',
       brandPowered: 'by Etijah Coaching & Consulting',
       contactHead: 'Contact',
       phone: '+973 3508 2446',

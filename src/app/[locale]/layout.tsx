@@ -6,7 +6,7 @@ import { routing } from '@/i18n/routing'
 
 export const metadata: Metadata = {
   title: 'Etijahi',
-  description: 'The GCC’s AI-powered career coaching platform. Discover who you are, where you belong, and exactly how to get there.',
+  description: 'The GCC’s intelligent career coaching platform, grounded in 15 years of real coaching experience. Discover who you are, where you belong, and exactly how to get there.',
 }
 
 export function generateStaticParams() {
