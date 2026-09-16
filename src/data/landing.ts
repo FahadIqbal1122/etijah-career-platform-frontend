@@ -8,6 +8,7 @@ export const L = {
   en: {
     dir: 'ltr',
     langToggle: 'العربية | English',
+    betaBanner: 'We’re currently in beta testing — please try the assessment and share your feedback. Contact info@myetijahi.com',
     // ── NAV ───────────────────────────────────────────────────────────
     nav: {
       brandEn: 'Etijahi',
@@ -164,7 +165,7 @@ export const L = {
           'A preview of AI’s impact on your top 2 matches',
           'A shareable results link for family or mentors',
         ],
-        cta: 'Start Now',
+        cta: 'Try Beta Access',
       },
       paid: {
         code: 'pathfinder',
@@ -257,6 +258,7 @@ export const L = {
   ar: {
     dir: 'rtl',
     langToggle: 'العربية | English',
+    betaBanner: 'نحن حالياً في مرحلة الاختبار التجريبي (بيتا) — جرّب التقييم وشاركنا رأيك. للتواصل: info@myetijahi.com',
     nav: {
       brandEn: 'Etijahi',
       brandAr: 'اتجاهي',
@@ -402,7 +404,7 @@ export const L = {
           'نظرة عامة على تأثير الذكاء الاصطناعي على أفضل مسارَين لديك',
           'رابط لمشاركة نتائجك مع العائلة أو المرشدين',
         ],
-        cta: 'ابدأ الآن',
+        cta: 'جرّب الوصول التجريبي',
       },
       paid: {
         code: 'pathfinder',

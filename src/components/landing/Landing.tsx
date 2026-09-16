@@ -126,8 +126,17 @@ export default function Landing() {
   return (
     <div className="brand-surface text-charcoal" dir={dir}>
 
+      {/* ── BETA ANNOUNCEMENT BAR ───────────────────────────────────── */}
+      <div className="sticky top-0 z-40 bg-charcoal text-white overflow-hidden">
+        <div className="beta-marquee-track py-2 text-xs font-semibold tracking-wide">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <span key={i}>{c.betaBanner}</span>
+          ))}
+        </div>
+      </div>
+
       {/* ── NAV ──────────────────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-30 bg-white border-b border-[var(--line)]">
+      <nav className="sticky top-8 z-30 bg-white border-b border-[var(--line)]">
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between gap-4">
           <Wordmark size={30} />
           <div className="hidden md:flex items-center gap-7 text-sm font-medium text-charcoal/70">
@@ -387,7 +396,7 @@ export default function Landing() {
               <span className="text-xs text-charcoal/45">{c.pricing.free.priceSub}</span>
             </div>
             */}
-            <p className="mt-3 text-sm font-semibold text-charcoal/70">{c.pricing.free.priceNote}</p>
+            <p className="mt-3 text-lg font-bold text-charcoal">{c.pricing.free.priceNote}</p>
             <p className="mt-3 text-sm text-charcoal/65 leading-relaxed">{c.pricing.free.for}</p>
             <div className="h-px bg-[var(--line)] my-6" />
             <ul className="space-y-3.5 flex-1">
@@ -409,7 +418,7 @@ export default function Landing() {
               <span className="text-xs text-white/70">{c.pricing.paid.priceSub}</span>
             </div>
             */}
-            <p className="mt-3 text-sm font-semibold text-white/85">{c.pricing.paid.priceNote}</p>
+            <p className="mt-3 text-lg font-bold text-white">{c.pricing.paid.priceNote}</p>
             <p className="mt-3 text-sm text-white/80 leading-relaxed">{c.pricing.paid.for}</p>
             <div className="h-px bg-white/16 my-6" />
             <ul className="space-y-3.5 flex-1">
@@ -420,6 +429,7 @@ export default function Landing() {
                 </li>
               ))}
             </ul>
+            {/*
             <button
               onClick={() => handlePlanCta(c.pricing.paid.code)}
               disabled={checkingOut === c.pricing.paid.code}
@@ -427,6 +437,7 @@ export default function Landing() {
             >
               {checkingOut === c.pricing.paid.code ? '…' : c.pricing.paid.cta}
             </button>
+            */}
           </Reveal>
           {/*
           <Reveal className="card p-7 relative opacity-70" style={{ transitionDelay: '150ms' }}>

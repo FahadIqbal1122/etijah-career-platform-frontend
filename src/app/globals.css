@@ -505,6 +505,23 @@ html { scroll-behavior: smooth; }
 }
 @keyframes pageFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
+/* ── beta announcement marquee bar ───────────────────────────────────── */
+.beta-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: betaMarquee 22s linear infinite;
+}
+.beta-marquee-track span {
+  white-space: nowrap;
+  padding-inline-end: 3rem;
+}
+@keyframes betaMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+[dir='rtl'] .beta-marquee-track { animation-name: betaMarqueeRtl; }
+@keyframes betaMarqueeRtl { from { transform: translateX(0); } to { transform: translateX(50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .beta-marquee-track { animation: none; overflow-x: auto; }
+}
+
 /* ── desktop: split the immersive screen into an ambient panel + content ──── */
 @media (min-width: 900px) {
   .assess-main { flex-direction: row; align-items: stretch; gap: clamp(24px, 4vw, 72px);
