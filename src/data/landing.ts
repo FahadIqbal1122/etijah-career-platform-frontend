@@ -155,6 +155,7 @@ export const L = {
         label: 'Explorer',
         price: 'Free',
         priceSub: 'Always',
+        priceNote: 'Pricing will be announced at launch',
         for: 'You want to understand yourself properly before your next move.',
         bullets: [
           'The full 15-minute assessment across five frameworks',
@@ -171,6 +172,7 @@ export const L = {
         label: 'Pathfinder',
         price: '149 SAR',
         priceSub: 'One-time payment',
+        priceNote: 'Pricing will be announced at launch',
         for: 'You have your report and want to know exactly where your career is heading — and what to build now.',
         bullets: [
           'Everything in Explorer',
@@ -391,6 +393,7 @@ export const L = {
         label: 'المستكشف',
         price: 'مجاناً',
         priceSub: 'دائماً',
+        priceNote: 'سيتم الإعلان عن الأسعار عند الإطلاق',
         for: 'تريد أن تفهم نفسك جيداً قبل خطوتك القادمة.',
         bullets: [
           'التقييم الكامل (١٥ دقيقة) عبر خمسة أطر علمية',
@@ -407,6 +410,7 @@ export const L = {
         label: 'مرشد المسار',
         price: '١٤٩ ريال',
         priceSub: 'دفعة واحدة',
+        priceNote: 'سيتم الإعلان عن الأسعار عند الإطلاق',
         for: 'حصلت على تقريرك وتريد أن تعرف بالضبط إلى أين تتجه مسيرتك — وما الذي تبنيه الآن.',
         bullets: [
           'كل ما في «مستكشف»',

@@ -387,6 +387,7 @@ export default function Landing() {
               <span className="text-xs text-charcoal/45">{c.pricing.free.priceSub}</span>
             </div>
             */}
+            <p className="mt-3 text-sm font-semibold text-charcoal/70">{c.pricing.free.priceNote}</p>
             <p className="mt-3 text-sm text-charcoal/65 leading-relaxed">{c.pricing.free.for}</p>
             <div className="h-px bg-[var(--line)] my-6" />
             <ul className="space-y-3.5 flex-1">
@@ -408,6 +409,7 @@ export default function Landing() {
               <span className="text-xs text-white/70">{c.pricing.paid.priceSub}</span>
             </div>
             */}
+            <p className="mt-3 text-sm font-semibold text-white/85">{c.pricing.paid.priceNote}</p>
             <p className="mt-3 text-sm text-white/80 leading-relaxed">{c.pricing.paid.for}</p>
             <div className="h-px bg-white/16 my-6" />
             <ul className="space-y-3.5 flex-1">
