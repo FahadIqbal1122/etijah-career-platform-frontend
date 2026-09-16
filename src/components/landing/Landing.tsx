@@ -378,13 +378,15 @@ export default function Landing() {
       {/* ── PRICING ──────────────────────────────────────────────────── */}
       <Section id="pricing" eyebrow={c.pricing.label} tint center>
         <Reveal><h2 className="section-h max-w-3xl mx-auto">{<Highlight text={c.pricing.headline} hl={c.pricing.hl} />}</h2></Reveal>
-        <div className="mt-10 grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-start text-start">
+        <div className="mt-10 grid md:grid-cols-2 gap-6 max-w-3xl mx-auto items-start text-start">
           <Reveal className="card p-7 relative">
             <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.free.label}</p>
+            {/*
             <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-extrabold text-charcoal">{c.pricing.free.price}</span>
               <span className="text-xs text-charcoal/45">{c.pricing.free.priceSub}</span>
             </div>
+            */}
             <p className="mt-3 text-sm text-charcoal/65 leading-relaxed">{c.pricing.free.for}</p>
             <div className="h-px bg-[var(--line)] my-6" />
             <ul className="space-y-3.5 flex-1">
@@ -400,10 +402,12 @@ export default function Landing() {
           <Reveal className="pcard-paid rounded-[26px] p-7 relative" style={{ transitionDelay: '90ms' }}>
             <span className="pcard-badge absolute -top-3.5 start-1/2 -translate-x-1/2 rtl:translate-x-1/2">{c.pricing.paid.badge}</span>
             <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.paid.label}</p>
+            {/*
             <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-extrabold text-white">{c.pricing.paid.price}</span>
               <span className="text-xs text-white/70">{c.pricing.paid.priceSub}</span>
             </div>
+            */}
             <p className="mt-3 text-sm text-white/80 leading-relaxed">{c.pricing.paid.for}</p>
             <div className="h-px bg-white/16 my-6" />
             <ul className="space-y-3.5 flex-1">
@@ -422,6 +426,7 @@ export default function Landing() {
               {checkingOut === c.pricing.paid.code ? '…' : c.pricing.paid.cta}
             </button>
           </Reveal>
+          {/*
           <Reveal className="card p-7 relative opacity-70" style={{ transitionDelay: '150ms' }}>
             <span className="absolute -top-3.5 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 rounded-full bg-charcoal/80 text-white text-[11px] font-bold uppercase tracking-widest px-3 py-1">
               Coming Soon
@@ -446,6 +451,7 @@ export default function Landing() {
               Coming Soon
             </button>
           </Reveal>
+          */}
         </div>
         <Reveal className="mt-8 max-w-2xl mx-auto text-center card p-6">
           <p className="font-bold text-charcoal">{c.pricing.addOn.title}</p>
