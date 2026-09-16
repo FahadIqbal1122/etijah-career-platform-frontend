@@ -20,7 +20,7 @@ export const L = {
     // ── HERO ──────────────────────────────────────────────────────────
     hero: {
       eyebrow: 'While everyone else seems sure… you’re still asking which way to go?',
-      headline: ['You don’t need another test.', 'You need a direction.'],
+      headline: ['You don’t need another test', 'You need a direction'],
       hl: 'direction',
       sub: 'That hesitation isn’t a weakness. It’s the right question, and it deserves more than a personality quiz. We put 15 years of real career guidance from across the Gulf in your hands, grounded in the customs and traditions of the region, with the clarity to see which paths will still be standing as AI reshapes the world of work. You won’t figure it out alone.',
       trust: '15 years of coaching, now in your hands. · Etijahi — by Etijah Coaching & Consulting',
@@ -56,14 +56,14 @@ export const L = {
     },
     // ── SECTION 3B — NOT JUST WHAT PAYS ───────────────────────────────
     notJustWhatPays: {
-      headline: ['Not just what pays.', 'What fits who you are.'],
+      headline: ['Not just what pays', 'What fits who you are'],
       hl: 'who you are',
       body: 'A bigger salary won’t help if the work quietly drains you. We read your values — meaning, stability, freedom, impact — alongside your strengths, so the direction we point you toward isn’t just employable. It’s yours.',
     },
     // ── SECTION 4 — PROBLEM ───────────────────────────────────────────
     problem: {
       label: 'Sound Familiar?',
-      headline: ['Choosing a path is hard enough.', 'Choosing one AI won’t erase is harder.'],
+      headline: ['Choosing a path is hard enough', 'Choosing one AI won’t erase is harder'],
       hl: 'AI won’t erase',
       body: [
         'You’ve probably taken a personality test before. You got the report, read it, closed the page, and went on with your life. Simply because it wasn’t connected to your reality.',
@@ -74,7 +74,7 @@ export const L = {
     // ── SECTION 5 — HOW IT WORKS ──────────────────────────────────────
     how: {
       label: 'Simple. Deep. Customised.',
-      headline: 'Three steps between you and a direction you can trust.',
+      headline: 'Three steps between you and a direction you can trust',
       hl: 'you can trust',
       steps: [
         { n: '01', title: 'Tell us who you are.', body: 'A 15-minute assessment, available in Arabic and English, built on five proven frameworks, adapted by our own coaches for the realities of the Gulf. No jargon, no 200-question forms — just honest questions that surface what matters.' },
@@ -86,7 +86,7 @@ export const L = {
     // ── SECTION 6 — INSIDE YOUR REPORT ────────────────────────────────
     insideReport: {
       label: 'What you actually get',
-      headline: 'See your report before you take the assessment.',
+      headline: 'See your report before you take the assessment',
       hl: 'before you take the assessment',
       intro: 'No mystery. This is exactly what your Etijahi report includes:',
       items: [
@@ -104,7 +104,7 @@ export const L = {
     // ── SECTION 7 — BUILT FOR THE GULF ────────────────────────────────
     builtForGulf: {
       label: 'Not translated for the Gulf. Born in it.',
-      headline: 'Global tests get adapted for this market. We’re from it.',
+      headline: 'Global tests get adapted for this market — we’re from it',
       localisationLine: 'Built by people of the Gulf, for everyone who’s building a future here.',
       pillars: [
         { title: 'Local market intelligence', body: 'Real, continuously updated data on your country’s labour market — deepest where we’ve worked longest, expanding across the GCC.' },
@@ -116,7 +116,7 @@ export const L = {
     // ── SECTION 8 — WHO IT'S FOR ──────────────────────────────────────
     who: {
       label: 'Who is Etijahi for?',
-      headline: 'Built for every turning point in a career.',
+      headline: 'Built for every turning point in a career',
       hl: 'every turning point',
       cards: [
         { tag: 'Fresh Graduates (0–2 years)', head: 'You did everything right. So why is no one replying?', body: 'Sending applications into silence is exhausting. Etijahi shows you which roles genuinely fit you, what employers in your market are actually screening for, and how to present your real strengths — so you stop guessing and start interviewing.' },
@@ -128,7 +128,7 @@ export const L = {
     // ── SECTION 9 — SOCIAL PROOF / HERITAGE ───────────────────────────
     heritage: {
       label: 'The proof is in the people',
-      headline: ['For 15 years, we’ve helped people find their direction.', 'Etijahi is that experience, in your hands.'],
+      headline: ['For 15 years, we’ve helped people find their direction', 'Etijahi is that experience, in your hands'],
       stats: [
         { num: '2010', label: 'Founded' },
         { num: '15+', label: 'Years of GCC Coaching' },
@@ -148,7 +148,7 @@ export const L = {
     // ── SECTION 10 — PRICING ──────────────────────────────────────────
     pricing: {
       label: 'Start at no cost. Go further when you’re ready.',
-      headline: 'Every Etijahi journey starts the same way — nothing to pay, everything to gain.',
+      headline: 'Every Etijahi journey starts the same way — nothing to pay, everything to gain',
       hl: 'everything to gain',
       free: {
         code: null,
@@ -209,13 +209,13 @@ export const L = {
     // ── SECTION 11 — FOR INSTITUTIONS ─────────────────────────────────
     institutions: {
       label: 'For institutions',
-      headline: 'You can’t sit one-on-one with every student. Now you don’t have to.',
+      headline: 'You can’t sit one-on-one with every student — now you don’t have to',
       body: 'Etijahi gives every student a personal career guide — a bilingual assessment, a report built for the Gulf, and an honest read on how AI is reshaping their options. It lifts the repetitive load off your team and gives you cohort-level dashboards to prove employability outcomes to your leadership. The same guidance we’ve delivered with governments, universities, and foundations for 15 years — now working for every student you serve.',
       cta: 'Partner with us →',
     },
     // ── SECTION 12 — FAQ ───────────────────────────────────────────────
     faq: {
-      headline: 'Questions? Good. That’s where clarity starts.',
+      headline: 'Questions? Good — that’s where clarity starts',
       hl: 'clarity starts',
       items: [
         { q: 'How long does the assessment take?', a: 'Most people finish in 12–15 minutes. It’s designed to feel like a conversation, not a 200-question HR form.' },
@@ -229,7 +229,7 @@ export const L = {
     },
     // ── SECTION 13 — FINAL CTA ────────────────────────────────────────
     finalCta: {
-      headline: 'Your direction is closer than you think.',
+      headline: 'Your direction is closer than you think',
       sub: 'No cost. Fifteen minutes. And it might change where everything is heading.',
       cta: 'Find My Direction',
       arrow: '→',
@@ -267,7 +267,7 @@ export const L = {
     },
     hero: {
       eyebrow: 'بينما يبدو الجميع واثقين من خطواتهم… ما زلت تتساءل: إلى أين أتجه؟',
-      headline: ['لست بحاجة إلى اختبار آخر.', 'أنت بحاجة إلى اتجاه.'],
+      headline: ['لست بحاجة إلى اختبار آخر', 'أنت بحاجة إلى اتجاه'],
       hl: 'اتجاه',
       sub: 'حيرتك ليست ضعفاً، بل هو السؤال الصحيح الذي تبحث عنه، وهو سؤال يستحق إجابة أعمق بكثير من مجرد "اختبار شخصية" عابر. لقد وضعنا بين يديك خلاصة ١٥ عاماً من التوجيه المهني الحقيقي والمبني على واقع منطقتنا الخليجية بعاداتها وتقاليدها، لنمنحك رؤية واضحة تُمكّنك من معرفة المسارات المهنية التي ستظل صامدة ومزدهرة في ظل تشكيل الذكاء الاصطناعي لملامح سوق العمل المستقبلي. لن تخوض هذه الرحلة بمفردك.',
       trust: '١٥ عاماً من الخبرة، بين يديك. · اتجاهي — من اتجاه للإرشاد والاستشارات',
@@ -301,13 +301,13 @@ export const L = {
       ],
     },
     notJustWhatPays: {
-      headline: ['المسألة لا تقتصر على ما يدرّ عليك مالاً.', 'بل ما يناسب حقيقتك ومن أنت.'],
+      headline: ['المسألة لا تقتصر على ما يدرّ عليك مالاً', 'بل ما يناسب حقيقتك ومن أنت'],
       hl: 'حقيقتك ومن أنت',
       body: 'الراتب الأعلى لن يسعفك إن كانت الوظيفة تستهلك روحك في صمت. نحن لا ننظر فقط إلى مهاراتك، بل نقرأ قيمك الشخصية بدقة — ما تبحث عنه من معنى، واستقرار، وحرية، وأثر — لنرسم لك مساراً لا يضمن لك وظيفة فحسب، بل يضمن لك مساراً يشبهك ويمثلك أنت.',
     },
     problem: {
       label: 'هل يبدو هذا مألوفاً؟',
-      headline: ['اختيار مسارك المهني صعب بما يكفي…', 'لكن اختيار مسارٍ لا يمحوه الذكاء الاصطناعي هو الأصعب.'],
+      headline: ['اختيار مسارك المهني صعب بما يكفي…', 'لكن اختيار مسارٍ لا يمحوه الذكاء الاصطناعي هو الأصعب'],
       hl: 'لا يمحوه الذكاء الاصطناعي',
       body: [
         'على الأرجح أنك جرّبت أحد اختبارات الشخصية من قبل؛ حصلت على التقرير، قرأته، ثم طويت الصفحة وواصلت حياتك… ببساطة لأنه لم يكن متصلاً بواقعك.',
@@ -317,7 +317,7 @@ export const L = {
     },
     how: {
       label: 'بسيط. عميق. يشبهك تماماً.',
-      headline: 'ثلاث خطوات تفصلك عن اتجاه تثق به.',
+      headline: 'ثلاث خطوات تفصلك عن اتجاه تثق به',
       hl: 'تثق به',
       steps: [
         { n: '١', title: 'أخبرنا من أنت.', body: 'تقييم من ١٥ دقيقة، متوفر باللغتين العربية والإنجليزية، مبنيّ على خمسة أساليب عمل علمية معتمدة طوّرها مرشدونا لتناسب واقع منطقتنا الخليجية. لا مصطلحات معقدة، ولا استبيانات بـ ٢٠٠ سؤال؛ فقط أسئلة صادقة تلمس جوهر ما يهمك.' },
@@ -328,7 +328,7 @@ export const L = {
     },
     insideReport: {
       label: 'ما الذي ستحصل عليه فعلاً',
-      headline: 'اطّلع على تقريرك قبل أن تبدأ التقييم.',
+      headline: 'اطّلع على تقريرك قبل أن تبدأ التقييم',
       hl: 'قبل أن تبدأ التقييم',
       intro: 'لا غموض. هذا بالضبط ما يتضمنه تقريرك من اتجاهي:',
       items: [
@@ -345,7 +345,7 @@ export const L = {
     },
     builtForGulf: {
       label: 'لم يُترجم لأجل منطقتنا الخليجية. بل وُلد فيها.',
-      headline: 'الاختبارات العالمية يتم تكييفها لتناسب هذا السوق.. أما نحن، فننتمي إليه.',
+      headline: 'الاختبارات العالمية يتم تكييفها لتناسب هذا السوق — أما نحن، فننتمي إليه',
       localisationLine: 'صُمِّم بأيدي أبناء الخليج، لكل من يبني مستقبله هنا.',
       pillars: [
         { title: 'معلومات ذكية عن سوق العمل المحلي', body: 'بيانات حقيقية ومحدثة باستمرار حول سوق العمل في بلدك، نابعة من خبرتنا الطويلة في الأسواق المحلية والخليجية الآخذة في التوسع والنمو.' },
@@ -356,7 +356,7 @@ export const L = {
     },
     who: {
       label: 'لمن اتجاهي؟',
-      headline: 'صُمِّمت لكل منعطف في المسيرة المهنية.',
+      headline: 'صُمِّمت لكل منعطف في المسيرة المهنية',
       hl: 'كل منعطف',
       cards: [
         { tag: 'الخريجون الجدد (٠–٢ سنة)', head: 'فعلتَ كل شيء بشكل صحيح. فلماذا لا يرد أحد؟', body: 'إرسال الطلبات إلى الصمت أمر مرهق. اتجاهي تريك الوظائف التي تناسبك فعلاً، وما الذي يبحث عنه أصحاب العمل في سوقك فعلياً، وكيف تقدّم نقاط قوتك الحقيقية — لتتوقف عن التخمين وتبدأ بالمقابلات.' },
@@ -367,7 +367,7 @@ export const L = {
     },
     heritage: {
       label: 'الدليل في الناس',
-      headline: ['على مدى ١٥ عاماً، ساعدنا الناس على إيجاد اتجاههم.', 'واتجاهي يضع كل هذه الخبرة اليوم بين يديك.'],
+      headline: ['على مدى ١٥ عاماً، ساعدنا الناس على إيجاد اتجاههم', 'واتجاهي يضع كل هذه الخبرة اليوم بين يديك'],
       stats: [
         { num: '2010', label: 'تأسست' },
         { num: '+15', label: 'عاماً من الإرشاد في الخليج' },
@@ -386,7 +386,7 @@ export const L = {
     },
     pricing: {
       label: 'ابدأ دون رسوم. وتقدَّم حين تكون جاهزاً.',
-      headline: 'كل رحلة في اتجاهي تبدأ بالطريقة نفسها — لا شيء تدفعه، والكثير لتكسبه.',
+      headline: 'كل رحلة في اتجاهي تبدأ بالطريقة نفسها — لا شيء تدفعه، والكثير لتكسبه',
       hl: 'والكثير لتكسبه',
       free: {
         code: null,
@@ -446,12 +446,12 @@ export const L = {
     },
     institutions: {
       label: 'للمؤسسات',
-      headline: 'لا يمكنكم الجلوس في جلسة فردية مع كل طالب. والآن لم تعودوا مضطرين لذلك.',
+      headline: 'لا يمكنكم الجلوس في جلسة فردية مع كل طالب — والآن لم تعودوا مضطرين لذلك',
       body: 'اتجاهي يمنح كل طالب مرشداً مهنياً شخصياً — تقييماً ثنائي اللغة، وتقريراً مبنياً لواقع منطقتنا الخليجية، وقراءة صادقة لأثر الذكاء الاصطناعي في خياراته. يرفع هذا العبء المتكرر عن كاهل فريقكم، ويمنحكم لوحات متابعة على مستوى الدفعات لإثبات نتائج التوظيف أمام قيادتكم. إنها الخبرة نفسها التي قدّمناها مع الحكومات والجامعات والمؤسسات على مدى ١٥ عاماً — نضعها اليوم لتعمل من أجل كل طالب ترعونه.',
       cta: 'كن شريكاً لنا ←',
     },
     faq: {
-      headline: 'لديك أسئلة؟ جيد. فمن هنا يبدأ الوضوح.',
+      headline: 'لديك أسئلة؟ جيد — فمن هنا يبدأ الوضوح',
       hl: 'يبدأ الوضوح',
       items: [
         { q: 'كم يستغرق التقييم؟', a: 'ينهيه معظم الأشخاص في ١٢–١٥ دقيقة. صُمِّم ليبدو كمحادثة، لا كنموذج موارد بشرية من ٢٠٠ سؤال.' },
@@ -464,7 +464,7 @@ export const L = {
       ],
     },
     finalCta: {
-      headline: 'اتجاهك أقرب مما تظن.',
+      headline: 'اتجاهك أقرب مما تظن',
       sub: 'دون أي رسوم. خمس عشرة دقيقة. وقد يغيّر وجهة كل ما هو قادم.',
       cta: 'اكتشف اتجاهي',
       arrow: '←',
