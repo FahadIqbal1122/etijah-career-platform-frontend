@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     version="1.2" baseProfile="tiny-ps"
+     viewBox="0 0 543 543" width="543" height="543">
+  <title>Etijahi</title>
+  <defs>
+    <linearGradient id="lineGrad" x1="30" y1="495" x2="415" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0055C8"/>
+      <stop offset="0.55" stop-color="#0090C1"/>
+      <stop offset="1" stop-color="#00C9A7"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="543" height="543" fill="#FFFFFF"/>
+
+  <path d="M30,495 L150,340 L295,390 L400,190"
+        fill="none" stroke="url(#lineGrad)" stroke-width="26"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <circle cx="30" cy="495" r="48" fill="#8CB1E8"/>
+  <circle cx="30" cy="500" r="13" fill="#0055C8"/>
+
+  <circle cx="150" cy="340" r="48" fill="#4C86DB"/>
+  <circle cx="150" cy="340" r="13" fill="#0055C8"/>
+
+  <circle cx="295" cy="390" r="36" fill="#3FA8C9"/>
+  <circle cx="295" cy="390" r="13" fill="#0090A8"/>
+
+  <circle cx="415" cy="108" r="108" fill="none" stroke="#99E9DC" stroke-width="18"/>
+  <circle cx="415" cy="108" r="75" fill="#00C9A7"/>
+</svg>

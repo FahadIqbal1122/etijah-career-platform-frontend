@@ -400,9 +400,9 @@ export default function Waitlist() {
             ) : (
               <WaitlistForm c={c.hero} locale={locale} onJoined={() => setJoined(true)} />
             )}
-            <p className="text-sm text-charcoal/55 flex items-center gap-2">
+            <h2 className="text-sm font-normal text-charcoal/55 flex items-center gap-2">
               <span className="text-teal">✦</span>{c.hero.trust}
-            </p>
+            </h2>
           </Reveal>
         </div>
 

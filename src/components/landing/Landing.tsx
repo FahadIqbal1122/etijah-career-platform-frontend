@@ -171,9 +171,9 @@ export default function Landing() {
               <Highlight text={c.hero.headline[1]} hl={c.hero.hl} />
             </h1>
             <p className="mt-6 text-lg text-charcoal/70 leading-relaxed max-w-xl">{c.hero.sub}</p>
-            <p className="mt-4 text-sm text-charcoal/55 flex items-center gap-2">
+            <h2 className="mt-4 text-sm font-normal text-charcoal/55 flex items-center gap-2">
               <span className="text-teal">✦</span>{c.hero.trust}
-            </p>
+            </h2>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link href="/assessment" className="cta">
                 <span>{c.hero.cta}</span>
