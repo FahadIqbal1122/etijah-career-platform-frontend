@@ -375,9 +375,41 @@ function average(values: (number | null | undefined)[]): number | null {
   return nums.reduce((a, b) => a + b, 0) / nums.length
 }
 
-// One card per funnel stage, each showing 2-3 headline numbers only — built
-// so Pre-Result / Result / Post-Result sit side by side and read as a direct
-// comparison instead of scattered charts of differing depth.
+// Most-picked option for a single-select field, as a "Label (n%)" tile value.
+function topEntry(counts: Record<string, number>, labels: Record<string, string>, total: number): string {
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]
+  if (!top || total === 0) return '—'
+  const [key, n] = top
+  return `${labels[key] || formatUnderscored(key)} (${Math.round((n / total) * 100)}%)`
+}
+
+// Same, but for a multi-select (checkbox list) field — counts every pick
+// across all respondents' arrays, not just the first item.
+function topListEntry(lists: (string[] | null)[], labels: Record<string, string>, total: number): string {
+  const counts: Record<string, number> = {}
+  for (const list of lists) for (const v of list || []) counts[v] = (counts[v] || 0) + 1
+  return topEntry(counts, labels, total)
+}
+
+// The Post-Result survey has been reworked several times during the beta —
+// questions added, removed, or renamed (see stage2Sections history in
+// content.ts) — so a respondent who completed *a* version of the survey may
+// never have been asked a given field. Filtering to "answered this field"
+// before computing a percentage keeps those respondents out of the
+// denominator instead of silently counting them as if they'd been asked and
+// left it blank.
+function answered<T>(responses: T[], field: (r: T) => unknown): T[] {
+  return responses.filter(r => {
+    const v = field(r)
+    return v != null && !(Array.isArray(v) && v.length === 0)
+  })
+}
+
+// One card per funnel stage. Tile count is dynamic per stage — it always
+// mirrors exactly the questions that stage actually asks (3 for Pre-Result,
+// 3 for Result, the full Post-Result survey for Post-Result) rather than a
+// fixed cap, so Pre-Result / Result / Post-Result sit side by side and read
+// as a direct comparison instead of scattered charts of differing depth.
 function BetaStageCard({ title, count, sublabel, accent, tiles }: {
   title: string
   count: number
@@ -3668,6 +3700,34 @@ export default function AdminPage() {
               const clarityAvg = average(stage1Responses.map(bf => bf.s1_clarity))
               const feelingAvg = average(stage1Responses.map(bf => bf.s1_feeling))
               const understoodAvg = average(stage1Responses.map(bf => bf.s1_understood))
+
+              // Post-Result question-by-question denominators — see the `answered`
+              // helper's comment above. Each tile below uses its own subset rather
+              // than stage2Total, since several of these fields (would_pay_at_price,
+              // career_explained, most/least_useful_part, worth_paying_for,
+              // careers_seriously_considered) were added, removed, or reworked
+              // partway through the beta (2026-09-13 form redesign, confirmed
+              // against actual submissions — 30 of the current stage2Total simply
+              // predate these fields and correctly show as unanswered here).
+              const hadIssuesAnswered = answered(stage2Responses, bf => bf.had_issues)
+              const careerExplainedAnswered = answered(stage2Responses, bf => bf.career_explained)
+              const wantsCoachAnswered = answered(stage2Responses, bf => bf.wants_coach_session)
+              const careersConsideredAnswered = answered(stage2Responses, bf => bf.careers_seriously_considered)
+              const mostUsefulAnswered = answered(stage2Responses, bf => bf.most_useful_part)
+              const leastUsefulAnswered = answered(stage2Responses, bf => bf.least_useful_part)
+              const worthPayingAnswered = answered(stage2Responses, bf => bf.worth_paying_for)
+              const payBlockersAnswered = answered(stage2Responses, bf => bf.pay_blockers)
+              // would_pay_at_price is trickier: everyone who was asked it *did*
+              // answer (it's required with no showIf), so `answered` alone can't
+              // separate versions — but the price/options themselves changed
+              // mid-beta (commit 665bac1, 2026-09-14 13:22 +03: 129 -> 149 SAR,
+              // and the "yes, if cheaper" option was dropped). Split on that
+              // timestamp so the two price points are never blended into one %.
+              const PRICE_CHANGE_AT = new Date('2026-09-14T10:22:51Z')
+              const payAtPriceAnswered = answered(stage2Responses, bf => bf.would_pay_at_price)
+              const payAtPriceCurrent = payAtPriceAnswered.filter(bf => new Date(bf.stage2_completed_at as string) >= PRICE_CHANGE_AT)
+              const payAtPriceLegacy = payAtPriceAnswered.filter(bf => new Date(bf.stage2_completed_at as string) < PRICE_CHANGE_AT)
+
               const recommendResponses = scopedFeedback.filter(bf => bf.would_recommend)
               const recommendTotal = recommendResponses.length
               const payResponses = scopedFeedback.filter(bf => bf.would_pay)
@@ -3985,17 +4045,57 @@ export default function AdminPage() {
                           accent="#8B5CF6"
                           tiles={[
                             {
+                              label: 'Hit an issue',
+                              value: hadIssuesAnswered.length > 0 ? `${Math.round(((countBy(hadIssuesAnswered, bf => bf.had_issues).yes || 0) / hadIssuesAnswered.length) * 100)}%` : '—',
+                              sublabel: `errors or glitches · ${hadIssuesAnswered.length} answered`,
+                              onClick: () => setBetaStatDrilldown({
+                                title: 'Hit an error, glitch, or confusing moment',
+                                rows: stage2Responses.filter(bf => bf.had_issues === 'yes').map(bf => ({ bf, note: bf.issue_detail || 'No details given' })),
+                              }),
+                            },
+                            {
                               label: 'Would pay at this price',
-                              value: stage2Total > 0 ? `${Math.round(((countBy(stage2Responses, bf => bf.would_pay_at_price).yes_today || 0) / stage2Total) * 100)}%` : '—',
-                              sublabel: '"yes, today"',
+                              value: payAtPriceCurrent.length > 0 ? `${Math.round(((countBy(payAtPriceCurrent, bf => bf.would_pay_at_price).yes_today || 0) / payAtPriceCurrent.length) * 100)}%` : '—',
+                              sublabel: `"yes, today" @ 149 SAR · ${payAtPriceCurrent.length} answered${payAtPriceLegacy.length > 0 ? `, +${payAtPriceLegacy.length} under the old 129 SAR price (excluded)` : ''}`,
+                              onClick: payAtPriceLegacy.length > 0 ? () => setBetaStatDrilldown({
+                                title: 'Answered "would pay" under the earlier 129 SAR price/options',
+                                rows: payAtPriceLegacy.map(bf => ({ bf, note: SENTIMENT_LABEL[bf.would_pay_at_price || ''] || bf.would_pay_at_price || '' })),
+                              }) : undefined,
                             },
                             {
                               label: 'Understood career picks',
-                              value: stage2Total > 0 ? `${Math.round(((countBy(stage2Responses, bf => bf.career_explained).yes || 0) / stage2Total) * 100)}%` : '—',
+                              value: careerExplainedAnswered.length > 0 ? `${Math.round(((countBy(careerExplainedAnswered, bf => bf.career_explained).yes || 0) / careerExplainedAnswered.length) * 100)}%` : '—',
+                              sublabel: `${careerExplainedAnswered.length} answered`,
                             },
                             {
                               label: 'Wants a coach session',
-                              value: stage2Total > 0 ? `${Math.round(((countBy(stage2Responses, bf => bf.wants_coach_session).yes_pay || 0) / stage2Total) * 100)}%` : '—',
+                              value: wantsCoachAnswered.length > 0 ? `${Math.round(((countBy(wantsCoachAnswered, bf => bf.wants_coach_session).yes_pay || 0) / wantsCoachAnswered.length) * 100)}%` : '—',
+                              sublabel: `${wantsCoachAnswered.length} answered`,
+                            },
+                            {
+                              label: 'Careers seriously considered',
+                              value: topEntry(countBy(careersConsideredAnswered, bf => bf.careers_seriously_considered), CAREERS_CONSIDERED_LABEL, careersConsideredAnswered.length),
+                              sublabel: `${careersConsideredAnswered.length} answered`,
+                            },
+                            {
+                              label: 'Best part of the report',
+                              value: topEntry(countBy(mostUsefulAnswered, bf => bf.most_useful_part), REPORT_SECTION_LABEL, mostUsefulAnswered.length),
+                              sublabel: `${mostUsefulAnswered.length} answered`,
+                            },
+                            {
+                              label: 'Worst part of the report',
+                              value: topEntry(countBy(leastUsefulAnswered, bf => bf.least_useful_part), REPORT_SECTION_LABEL, leastUsefulAnswered.length),
+                              sublabel: `${leastUsefulAnswered.length} answered`,
+                            },
+                            {
+                              label: 'Top reason worth paying',
+                              value: topListEntry(worthPayingAnswered.map(bf => bf.worth_paying_for), WORTH_PAYING_FOR_LABEL, worthPayingAnswered.length),
+                              sublabel: `${worthPayingAnswered.length} answered — question retired 2026-09-14`,
+                            },
+                            {
+                              label: 'Top pay blocker',
+                              value: topListEntry(payBlockersAnswered.map(bf => bf.pay_blockers), PAY_BLOCKER_LABEL, payBlockersAnswered.length),
+                              sublabel: `${payBlockersAnswered.length} answered (only those not saying "yes, today")`,
                             },
                           ]}
                         />
