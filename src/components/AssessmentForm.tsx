@@ -595,6 +595,11 @@ export default function AssessmentForm() {
         <aside className="assess-aside">
           <div className="cst-wrap">
             <Constellation litCount={litCount} theme={phase === 'reveal' ? 'teal' : 'dark'} rippleKey={rippleKey} accent="#00C9A7" />
+            {phase === 'question' && (
+              <div className="cst-progress-text">
+                {locale === 'ar' ? `${index + 1} من ${total}` : `${index + 1} / ${total}`}
+              </div>
+            )}
           </div>
           {/* desktop-only progress context beneath the constellation */}
           <div className="assess-aside-context">

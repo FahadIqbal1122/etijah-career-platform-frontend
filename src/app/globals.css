@@ -144,6 +144,21 @@ html { scroll-behavior: smooth; }
 [dir="rtl"] .assess-progress-label { font-family: var(--font-tajawal), sans-serif; letter-spacing: 0; text-transform: none; font-size: 13px; }
 @media (min-width: 900px) { .assess-progress-label { display: none; } }
 
+/* tiny numeric counter under the constellation stars, clarifying it's progress */
+.cst-progress-text {
+  text-align: center;
+  font-family: var(--font-mono), monospace;
+  font-size: 9px;
+  letter-spacing: .08em;
+  color: color-mix(in srgb, #fff 55%, transparent);
+  margin-top: 4px;
+}
+[dir="rtl"] .cst-progress-text {
+  font-family: var(--font-tajawal), sans-serif;
+  letter-spacing: 0;
+  font-size: 11px;
+}
+
 /* opt-in "take a break" trigger + panel (riddle / tic-tac-toe / RPS / memory
    match). Used in two spots: a mobile-only slot under the progress label
    above, and (desktop, ≥900px — see that media query) inside the aside next

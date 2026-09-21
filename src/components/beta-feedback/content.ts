@@ -104,9 +104,9 @@ export interface SectionDef {
 }
 
 const ACCURACY: Option[] = [
-  { value: 'spot_on', label: { en: 'Spot on', ar: 'دقيق تمامًا' } },
-  { value: 'mostly_right', label: { en: 'Mostly right', ar: 'صحيح إلى حدٍّ كبير' } },
-  { value: 'off', label: { en: 'Off', ar: 'غير دقيق' } },
+  { value: 'spot_on', label: { en: '🎯 Spot on', ar: '🎯 دقيق تمامًا' } },
+  { value: 'mostly_right', label: { en: '👍 Mostly right', ar: '👍 صحيح إلى حدٍّ كبير' } },
+  { value: 'off', label: { en: '👎 Off', ar: '👎 غير دقيق' } },
 ]
 
 // ---------------------------------------------------------------------------
@@ -134,18 +134,18 @@ export const resultStageQuestions: { key: 'result_accuracy' | 'would_recommend' 
     key: 'would_recommend',
     label: { en: 'Would you recommend this to a friend?', ar: 'هل توصي به صديقًا؟' },
     options: [
-      { value: 'yes', label: { en: 'Yes', ar: 'نعم' } },
-      { value: 'maybe', label: { en: 'Maybe', ar: 'ربما' } },
-      { value: 'no', label: { en: 'No', ar: 'لا' } },
+      { value: 'yes', label: { en: '✅ Yes', ar: '✅ نعم' } },
+      { value: 'maybe', label: { en: '🤔 Maybe', ar: '🤔 ربما' } },
+      { value: 'no', label: { en: '❌ No', ar: '❌ لا' } },
     ],
   },
   {
     key: 'would_pay',
     label: { en: 'Would you pay for this?', ar: 'هل ستدفع مقابل هذا؟' },
     options: [
-      { value: 'definitely', label: { en: 'Definitely', ar: 'بالتأكيد' } },
-      { value: 'maybe', label: { en: 'Maybe', ar: 'ربما' } },
-      { value: 'no', label: { en: 'No', ar: 'لا' } },
+      { value: 'definitely', label: { en: '💰 Definitely', ar: '💰 بالتأكيد' } },
+      { value: 'maybe', label: { en: '🤔 Maybe', ar: '🤔 ربما' } },
+      { value: 'no', label: { en: '❌ No', ar: '❌ لا' } },
     ],
   },
 ]
