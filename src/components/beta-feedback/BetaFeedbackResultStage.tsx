@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { apiAuthPost } from '@/lib/api'
-import { resultStageIntro, resultStageNoteLabel, resultStageQuestions, type Locale } from './content'
+import { RESULT_STAGE_FORM_VERSION, resultStageIntro, resultStageNoteLabel, resultStageQuestions, type Locale } from './content'
 import { PillSelect } from './shared'
 
 type Answers = Partial<Record<'result_accuracy' | 'would_recommend' | 'would_pay', string>>
@@ -47,7 +47,7 @@ export default function BetaFeedbackResultStage({ responseId, locale, initiallyD
   function answer(key: keyof Answers, value: string) {
     const next = { ...answers, [key]: value }
     setAnswers(next)
-    const save = apiAuthPost('/beta-feedback/result-stage', { response_id: responseId, locale, ...next })
+    const save = apiAuthPost('/beta-feedback/result-stage', { response_id: responseId, locale, result_stage_form_version: RESULT_STAGE_FORM_VERSION, ...next })
     const isLast = Object.keys(next).length >= resultStageQuestions.length
     if (isLast) {
       save.finally(() => setPillsDone(true))
@@ -68,7 +68,7 @@ export default function BetaFeedbackResultStage({ responseId, locale, initiallyD
     if (!text.trim() || text === lastSavedNote.current) return
     lastSavedNote.current = text
     noteSaveChain.current = noteSaveChain.current.then(async () => {
-      await apiAuthPost('/beta-feedback/result-stage', { response_id: responseId, locale, other_text: text }).catch(() => {})
+      await apiAuthPost('/beta-feedback/result-stage', { response_id: responseId, locale, result_stage_form_version: RESULT_STAGE_FORM_VERSION, other_text: text }).catch(() => {})
     })
   }
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { apiAuthPost } from '@/lib/api'
-import { stage1Intro, stage1IntentLabel, stage1IntentOptions, stage1Questions, type Locale } from './content'
+import { STAGE1_FORM_VERSION, stage1Intro, stage1IntentLabel, stage1IntentOptions, stage1Questions, type Locale } from './content'
 
 type Answers = Partial<Record<'s1_clarity' | 's1_feeling' | 's1_understood', number>> & { s1_intent?: string }
 const TOTAL_STAGE1_QUESTIONS = stage1Questions.length + 1
@@ -31,7 +31,7 @@ export default function BetaFeedbackStage1({ responseId, locale, onAnswered, onC
     const next = { ...answers, [key]: value }
     setAnswers(next)
     onAnswered?.(Object.keys(next).length)
-    const save = apiAuthPost('/beta-feedback/stage1', { response_id: responseId, locale, ...next })
+    const save = apiAuthPost('/beta-feedback/stage1', { response_id: responseId, locale, stage1_form_version: STAGE1_FORM_VERSION, ...next })
     const isLast = Object.keys(next).length >= TOTAL_STAGE1_QUESTIONS
     if (isLast) {
       // Await the final upsert so the server has recorded stage1_completed_at

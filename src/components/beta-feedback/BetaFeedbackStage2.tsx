@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { apiAuthGet, apiAuthPost } from '@/lib/api'
 import {
-  personalHook, stage2CoCreator, stage2Hook, stage2ProgressCarry, stage2Reward, stage2Sections,
+  STAGE2_FORM_VERSION, personalHook, stage2CoCreator, stage2Hook, stage2ProgressCarry, stage2Reward, stage2Sections,
   type Locale,
 } from './content'
 import { FaceScale, MultiPillSelect, PillSelect, Scale6, TextField } from './shared'
@@ -66,8 +66,13 @@ export default function BetaFeedbackStage2({ responseId, locale, stage1AnsweredC
       // still reads these columns, so they're detected here rather than
       // dropped outright.
       const device = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+      // stage2_form_version goes after the ...answers spread deliberately —
+      // `answers` can carry a pre-filled, stale version from an earlier
+      // partial submission (see the GET prefill above), and this submission
+      // is always answering the *current* form, so the current constant must
+      // win regardless of what's in the prefill.
       await apiAuthPost('/beta-feedback/stage2', {
-        response_id: responseId, locale, device, language_used: locale, ...answers,
+        response_id: responseId, locale, device, language_used: locale, ...answers, stage2_form_version: STAGE2_FORM_VERSION,
       })
       setSubmitted(true)
     } catch {

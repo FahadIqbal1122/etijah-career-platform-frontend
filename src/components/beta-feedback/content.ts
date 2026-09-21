@@ -9,6 +9,23 @@ export interface Bi { en: string; ar: string }
 
 export const FACE_EMOJIS = ['😖', '😐', '🙂', '😀', '🤩']
 
+// Bump the relevant constant below whenever that stage's questions, options,
+// or a shown value (e.g. STAGE2_REPORT_PRICE_SAR) change materially. Sent
+// along with every submission and stamped onto the response row, so the
+// admin dashboard (and anyone querying the data later) can tell exactly
+// which version of a question a respondent saw, instead of reconstructing
+// it from git history and submission timestamps after the fact.
+//
+// History (for reference — don't need to keep this updated beyond the
+// current value, git blame has the rest):
+//   stage2: v1 = original ~30-field form (through 2026-09-12)
+//           v2 = 2026-09-13 redesign, ~12 fields, would_pay_at_price @ 129 SAR
+//           v3 = 2026-09-14, would_pay_at_price bumped to 149 SAR and the
+//                "yes, if cheaper" option was dropped
+export const STAGE1_FORM_VERSION = 'v1'
+export const RESULT_STAGE_FORM_VERSION = 'v1'
+export const STAGE2_FORM_VERSION = 'v3'
+
 // ---------------------------------------------------------------------------
 // Stage 1 — pre-result pulse (loading screen, 3 taps, never blocks)
 // ---------------------------------------------------------------------------
