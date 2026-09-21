@@ -312,11 +312,26 @@ const CAREER_DIRECTION_LABEL: Record<string, string> = {
 }
 // Labels below mirror the current Stage 2 beta-feedback form (src/components/beta-feedback/content.ts).
 const CAREER_EXPLAINED_LABEL: Record<string, string> = { yes: 'Yes', partly: 'Partly', no: 'No' }
+const CAREERS_CONSIDERED_ORDER = ['none', 'one', 'a_few', 'four_or_five']
 const CAREERS_CONSIDERED_LABEL: Record<string, string> = { none: 'None', one: '1', a_few: '2–3', four_or_five: '4–5' }
+const REPORT_SECTION_ORDER = ['personality', 'values', 'strengths', 'careers', 'ai_impact', 'jobs', 'companies', 'courses', 'plan']
 const REPORT_SECTION_LABEL: Record<string, string> = {
   personality: 'Personality profile', values: 'Values', strengths: 'Strengths', careers: 'Career matches',
   ai_impact: 'AI Impact', jobs: 'Job listings', companies: 'Target companies', courses: 'Courses', plan: '90-day plan',
 }
+// Stage 1's "what do you want from your results" (added 13 Sept) — order
+// matches stage1IntentOptions in content.ts.
+const STAGE1_INTENT_ORDER = ['confirm_right_path', 'discover_new_options', 'choose_university_major', 'plan_career_change', 'get_job_faster', 'understand_ai_impact']
+const STAGE1_INTENT_LABEL: Record<string, string> = {
+  confirm_right_path: "Confirm I'm on the right path", discover_new_options: 'Discover new options',
+  choose_university_major: 'Choose a university major', plan_career_change: 'Plan a career change',
+  get_job_faster: 'Get a job faster', understand_ai_impact: 'Understand AI impact',
+}
+// Neutral order/labels for had_issues — deliberately not run through
+// BetaSentimentChart, whose green/red coloring assumes "yes" is the good
+// answer; here "yes" (hit an issue) is the bad one.
+const HAD_ISSUES_ORDER = ['no', 'yes']
+const HAD_ISSUES_LABEL: Record<string, string> = { no: 'No issues', yes: 'Had an issue' }
 const WOULD_PAY_AT_PRICE_LABEL: Record<string, string> = {
   yes_today: 'Yes, today', yes_if_cheaper: 'Yes, if cheaper', maybe_later: 'Maybe later', no: 'No',
 }
@@ -375,22 +390,6 @@ function average(values: (number | null | undefined)[]): number | null {
   return nums.reduce((a, b) => a + b, 0) / nums.length
 }
 
-// Most-picked option for a single-select field, as a "Label (n%)" tile value.
-function topEntry(counts: Record<string, number>, labels: Record<string, string>, total: number): string {
-  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]
-  if (!top || total === 0) return '—'
-  const [key, n] = top
-  return `${labels[key] || formatUnderscored(key)} (${Math.round((n / total) * 100)}%)`
-}
-
-// Same, but for a multi-select (checkbox list) field — counts every pick
-// across all respondents' arrays, not just the first item.
-function topListEntry(lists: (string[] | null)[], labels: Record<string, string>, total: number): string {
-  const counts: Record<string, number> = {}
-  for (const list of lists) for (const v of list || []) counts[v] = (counts[v] || 0) + 1
-  return topEntry(counts, labels, total)
-}
-
 // The Post-Result survey has been reworked several times during the beta —
 // questions added, removed, or renamed (see stage2Sections history in
 // content.ts) — so a respondent who completed *a* version of the survey may
@@ -403,47 +402,6 @@ function answered<T>(responses: T[], field: (r: T) => unknown): T[] {
     const v = field(r)
     return v != null && !(Array.isArray(v) && v.length === 0)
   })
-}
-
-// One card per funnel stage. Tile count is dynamic per stage — it always
-// mirrors exactly the questions that stage actually asks (3 for Pre-Result,
-// 3 for Result, the full Post-Result survey for Post-Result) rather than a
-// fixed cap, so Pre-Result / Result / Post-Result sit side by side and read
-// as a direct comparison instead of scattered charts of differing depth.
-function BetaStageCard({ title, count, sublabel, accent, tiles }: {
-  title: string
-  count: number
-  sublabel: string
-  accent: string
-  tiles: { label: string; value: string; sublabel?: string; onClick?: () => void }[]
-}) {
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-      <div className="flex items-center gap-2 mb-1">
-        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accent }} />
-        <p className="text-sm font-semibold text-slate-700">{title}</p>
-      </div>
-      <p className="text-xs text-slate-400 mb-4">{count} respondent{count !== 1 ? 's' : ''} · {sublabel}</p>
-      <div className="space-y-2.5">
-        {tiles.map(t => {
-          const Tag = t.onClick ? 'button' : 'div'
-          return (
-            <Tag
-              key={t.label}
-              onClick={t.onClick}
-              className={`w-full flex items-center justify-between text-left px-3 py-2.5 rounded-xl bg-slate-50 ${t.onClick ? 'hover:bg-slate-100 transition-colors cursor-pointer' : ''}`}
-            >
-              <span className="text-xs text-slate-500">{t.label}</span>
-              <span className="text-right">
-                <span className="text-base font-bold text-slate-800 tabular-nums">{t.value}</span>
-                {t.sublabel && <span className="block text-[10px] text-slate-400">{t.sublabel}</span>}
-              </span>
-            </Tag>
-          )
-        })}
-      </div>
-    </div>
-  )
 }
 
 // One labeled horizontal bar — `total` is the denominator (usually all stage2
@@ -496,6 +454,33 @@ function BetaCategoryChart({ title, order, labels, counts, total }: { title: str
               </div>
               <span className="w-20 shrink-0 text-right text-xs font-semibold text-slate-700 tabular-nums">
                 {pct}% <span className="text-slate-400 font-normal">({count})</span>
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// One bar per average-rating question (e.g. Stage 1's 1-5 face-scale taps) —
+// bar length is the average as a share of `max`, so several questions on the
+// same scale sit directly comparable to each other in one card.
+function BetaAverageChart({ title, rows, max }: { title: string; rows: { label: string; avg: number | null; n: number }[]; max: number }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+      <p className="text-sm font-semibold text-slate-700 mb-4">{title}</p>
+      <div className="space-y-2.5">
+        {rows.map(row => {
+          const pct = row.avg != null ? Math.round((row.avg / max) * 100) : 0
+          return (
+            <div key={row.label} className="flex items-center gap-3">
+              <span className="w-40 shrink-0 text-xs text-slate-500">{row.label}</span>
+              <div className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+              </div>
+              <span className="w-24 shrink-0 text-right text-xs font-semibold text-slate-700 tabular-nums">
+                {row.avg != null ? row.avg.toFixed(1) : '—'}/{max} <span className="text-slate-400 font-normal">(n={row.n})</span>
               </span>
             </div>
           )
@@ -3700,6 +3685,7 @@ export default function AdminPage() {
               const clarityAvg = average(stage1Responses.map(bf => bf.s1_clarity))
               const feelingAvg = average(stage1Responses.map(bf => bf.s1_feeling))
               const understoodAvg = average(stage1Responses.map(bf => bf.s1_understood))
+              const stage1IntentAnswered = answered(stage1Responses, bf => bf.s1_intent)
 
               // Post-Result question-by-question denominators — see the `answered`
               // helper's comment above. Each tile below uses its own subset rather
@@ -3989,117 +3975,150 @@ export default function AdminPage() {
                   })()}
                   <div className="mb-6">
                     <p className="text-sm font-semibold text-slate-700 mb-3">
-                      Feedback by stage <span className="text-slate-400 font-normal">— Pre-Result, Result, and Post-Result side by side</span>
+                      Feedback by stage <span className="text-slate-400 font-normal">— pick a stage above to see its charts</span>
                     </p>
                     {betaTotal === 0 ? (
                       <p className="text-sm text-slate-400 text-center py-6">No feedback yet</p>
+                    ) : betaDemographicsFilter === 'all' ? (
+                      <p className="text-slate-400 text-xs text-center py-6">Select Pre-Result, Result, or Post-Result above to see that stage's feedback charts.</p>
+                    ) : betaDemographicsFilter === 'stage1' ? (
+                      <>
+                        <p className="text-xs text-slate-400 mb-3">{stage1Total} respondent{stage1Total !== 1 ? 's' : ''} · quick pulse while the report loads</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <BetaAverageChart
+                            title="Assessment-taking experience (1–5)"
+                            max={5}
+                            rows={[
+                              { label: 'Clarity of questions', avg: clarityAvg, n: stage1Responses.length },
+                              { label: 'Feeling during assessment', avg: feelingAvg, n: stage1Responses.length },
+                              { label: 'Felt understood', avg: understoodAvg, n: stage1Responses.length },
+                            ]}
+                          />
+                          <BetaCategoryChart
+                            title="What they want from their results"
+                            order={STAGE1_INTENT_ORDER}
+                            labels={STAGE1_INTENT_LABEL}
+                            counts={countBy(stage1IntentAnswered, bf => bf.s1_intent)}
+                            total={stage1IntentAnswered.length}
+                          />
+                        </div>
+                      </>
+                    ) : betaDemographicsFilter === 'result' ? (
+                      <>
+                        <p className="text-xs text-slate-400 mb-3">{resultStageTotal} respondent{resultStageTotal !== 1 ? 's' : ''} rated the results page</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <BetaSentimentChart
+                            title={`How accurate was this? (${resultStageTotal} answered)`}
+                            orderKey="accuracy"
+                            counts={countBy(resultStageResponses, bf => bf.result_accuracy)}
+                            total={resultStageTotal}
+                          />
+                          <BetaSentimentChart
+                            title={`Would recommend to a friend? (${recommendTotal} answered)`}
+                            orderKey="would_recommend"
+                            counts={countBy(recommendResponses, bf => bf.would_recommend)}
+                            total={recommendTotal}
+                          />
+                          <BetaSentimentChart
+                            title={`Would pay for the full report? (${payTotal} answered)`}
+                            orderKey="would_pay"
+                            counts={countBy(payResponses, bf => bf.would_pay)}
+                            total={payTotal}
+                          />
+                        </div>
+                      </>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <BetaStageCard
-                          title="Pre-Result Stage"
-                          count={stage1Total}
-                          sublabel="quick pulse while report loads"
-                          accent="#0770BA"
-                          tiles={[
-                            { label: 'Clarity of questions', value: clarityAvg != null ? `${clarityAvg.toFixed(1)}/5` : '—' },
-                            { label: 'Feeling during assessment', value: feelingAvg != null ? `${feelingAvg.toFixed(1)}/5` : '—' },
-                            { label: 'Felt understood', value: understoodAvg != null ? `${understoodAvg.toFixed(1)}/5` : '—' },
-                          ]}
-                        />
-                        <BetaStageCard
-                          title="Result Stage"
-                          count={resultStageTotal}
-                          sublabel="rated the results page"
-                          accent="#00C9A7"
-                          tiles={[
-                            {
-                              label: 'Accuracy — "spot on"',
-                              value: resultStageTotal > 0 ? `${Math.round(((countBy(resultStageResponses, bf => bf.result_accuracy).spot_on || 0) / resultStageTotal) * 100)}%` : '—',
-                              onClick: () => setBetaStatDrilldown({
-                                title: 'Rated the report "spot on" for accuracy',
-                                rows: resultStageResponses.filter(bf => bf.result_accuracy === 'spot_on').map(bf => ({ bf, note: 'Spot on' })),
-                              }),
-                            },
-                            {
-                              label: 'Would recommend',
-                              value: recommendTotal > 0 ? `${Math.round(((countBy(recommendResponses, bf => bf.would_recommend).yes || 0) / recommendTotal) * 100)}%` : '—',
-                              onClick: () => setBetaStatDrilldown({
-                                title: 'Would recommend to a friend',
-                                rows: recommendResponses.filter(bf => bf.would_recommend === 'yes').map(bf => ({ bf, note: 'Yes' })),
-                              }),
-                            },
-                            {
-                              label: 'Would pay',
-                              value: payTotal > 0 ? `${Math.round((((countBy(payResponses, bf => bf.would_pay).definitely || 0) + (countBy(payResponses, bf => bf.would_pay).maybe || 0)) / payTotal) * 100)}%` : '—',
-                              onClick: () => setBetaStatDrilldown({
-                                title: 'Would pay for the full report',
-                                rows: payResponses.filter(bf => bf.would_pay === 'definitely' || bf.would_pay === 'maybe').map(bf => ({ bf, note: SENTIMENT_LABEL[bf.would_pay || ''] || bf.would_pay || '' })),
-                              }),
-                            },
-                          ]}
-                        />
-                        <BetaStageCard
-                          title="Post-Result Stage"
-                          count={stage2Total}
-                          sublabel="completed the full survey"
-                          accent="#8B5CF6"
-                          tiles={[
-                            {
-                              label: 'Hit an issue',
-                              value: hadIssuesAnswered.length > 0 ? `${Math.round(((countBy(hadIssuesAnswered, bf => bf.had_issues).yes || 0) / hadIssuesAnswered.length) * 100)}%` : '—',
-                              sublabel: `errors or glitches · ${hadIssuesAnswered.length} answered`,
-                              onClick: () => setBetaStatDrilldown({
-                                title: 'Hit an error, glitch, or confusing moment',
-                                rows: stage2Responses.filter(bf => bf.had_issues === 'yes').map(bf => ({ bf, note: bf.issue_detail || 'No details given' })),
-                              }),
-                            },
-                            {
-                              label: 'Would pay at this price',
-                              value: payAtPriceCurrent.length > 0 ? `${Math.round(((countBy(payAtPriceCurrent, bf => bf.would_pay_at_price).yes_today || 0) / payAtPriceCurrent.length) * 100)}%` : '—',
-                              sublabel: `"yes, today" @ 149 SAR · ${payAtPriceCurrent.length} answered${payAtPriceLegacy.length > 0 ? `, +${payAtPriceLegacy.length} under the old 129 SAR price (excluded)` : ''}`,
-                              onClick: payAtPriceLegacy.length > 0 ? () => setBetaStatDrilldown({
-                                title: 'Answered "would pay" under the earlier 129 SAR price/options',
-                                rows: payAtPriceLegacy.map(bf => ({ bf, note: SENTIMENT_LABEL[bf.would_pay_at_price || ''] || bf.would_pay_at_price || '' })),
-                              }) : undefined,
-                            },
-                            {
-                              label: 'Understood career picks',
-                              value: careerExplainedAnswered.length > 0 ? `${Math.round(((countBy(careerExplainedAnswered, bf => bf.career_explained).yes || 0) / careerExplainedAnswered.length) * 100)}%` : '—',
-                              sublabel: `${careerExplainedAnswered.length} answered`,
-                            },
-                            {
-                              label: 'Wants a coach session',
-                              value: wantsCoachAnswered.length > 0 ? `${Math.round(((countBy(wantsCoachAnswered, bf => bf.wants_coach_session).yes_pay || 0) / wantsCoachAnswered.length) * 100)}%` : '—',
-                              sublabel: `${wantsCoachAnswered.length} answered`,
-                            },
-                            {
-                              label: 'Careers seriously considered',
-                              value: topEntry(countBy(careersConsideredAnswered, bf => bf.careers_seriously_considered), CAREERS_CONSIDERED_LABEL, careersConsideredAnswered.length),
-                              sublabel: `${careersConsideredAnswered.length} answered`,
-                            },
-                            {
-                              label: 'Best part of the report',
-                              value: topEntry(countBy(mostUsefulAnswered, bf => bf.most_useful_part), REPORT_SECTION_LABEL, mostUsefulAnswered.length),
-                              sublabel: `${mostUsefulAnswered.length} answered`,
-                            },
-                            {
-                              label: 'Worst part of the report',
-                              value: topEntry(countBy(leastUsefulAnswered, bf => bf.least_useful_part), REPORT_SECTION_LABEL, leastUsefulAnswered.length),
-                              sublabel: `${leastUsefulAnswered.length} answered`,
-                            },
-                            {
-                              label: 'Top reason worth paying',
-                              value: topListEntry(worthPayingAnswered.map(bf => bf.worth_paying_for), WORTH_PAYING_FOR_LABEL, worthPayingAnswered.length),
-                              sublabel: `${worthPayingAnswered.length} answered — question retired 2026-09-14`,
-                            },
-                            {
-                              label: 'Top pay blocker',
-                              value: topListEntry(payBlockersAnswered.map(bf => bf.pay_blockers), PAY_BLOCKER_LABEL, payBlockersAnswered.length),
-                              sublabel: `${payBlockersAnswered.length} answered (only those not saying "yes, today")`,
-                            },
-                          ]}
-                        />
-                      </div>
+                      <>
+                        <p className="text-xs text-slate-400 mb-3">{stage2Total} respondent{stage2Total !== 1 ? 's' : ''} completed the full survey</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <BetaCategoryChart
+                              title={`Hit an issue? (${hadIssuesAnswered.length} answered)`}
+                              order={HAD_ISSUES_ORDER}
+                              labels={HAD_ISSUES_LABEL}
+                              counts={countBy(hadIssuesAnswered, bf => bf.had_issues)}
+                              total={hadIssuesAnswered.length}
+                            />
+                            {hadIssuesAnswered.some(bf => bf.had_issues === 'yes') && (
+                              <button
+                                type="button"
+                                onClick={() => setBetaStatDrilldown({
+                                  title: 'Hit an error, glitch, or confusing moment',
+                                  rows: stage2Responses.filter(bf => bf.had_issues === 'yes').map(bf => ({ bf, note: bf.issue_detail || 'No details given' })),
+                                })}
+                                className="text-xs font-medium text-primary hover:underline mt-2"
+                              >
+                                See who, and what they reported →
+                              </button>
+                            )}
+                          </div>
+                          <BetaSentimentChart
+                            title={`Understood why each career was suggested? (${careerExplainedAnswered.length} answered)`}
+                            orderKey="career_explained"
+                            counts={countBy(careerExplainedAnswered, bf => bf.career_explained)}
+                            total={careerExplainedAnswered.length}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <BetaSentimentChart
+                            title={`Would pay @ 149 SAR, current price (${payAtPriceCurrent.length} answered)`}
+                            orderKey="would_pay_at_price"
+                            counts={countBy(payAtPriceCurrent, bf => bf.would_pay_at_price)}
+                            total={payAtPriceCurrent.length}
+                          />
+                          <BetaSentimentChart
+                            title={`Would pay @ 129 SAR, old price — retired 2026-09-14 (${payAtPriceLegacy.length} answered)`}
+                            orderKey="would_pay_at_price"
+                            counts={countBy(payAtPriceLegacy, bf => bf.would_pay_at_price)}
+                            total={payAtPriceLegacy.length}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <BetaSentimentChart
+                            title={`Wants a coach session? (${wantsCoachAnswered.length} answered)`}
+                            orderKey="wants_coach_session"
+                            counts={countBy(wantsCoachAnswered, bf => bf.wants_coach_session)}
+                            total={wantsCoachAnswered.length}
+                          />
+                          <BetaCategoryChart
+                            title={`Careers seriously considered (${careersConsideredAnswered.length} answered)`}
+                            order={CAREERS_CONSIDERED_ORDER}
+                            labels={CAREERS_CONSIDERED_LABEL}
+                            counts={countBy(careersConsideredAnswered, bf => bf.careers_seriously_considered)}
+                            total={careersConsideredAnswered.length}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <BetaCategoryChart
+                            title={`Most useful part of the report (${mostUsefulAnswered.length} answered)`}
+                            order={REPORT_SECTION_ORDER}
+                            labels={REPORT_SECTION_LABEL}
+                            counts={countBy(mostUsefulAnswered, bf => bf.most_useful_part)}
+                            total={mostUsefulAnswered.length}
+                          />
+                          <BetaCategoryChart
+                            title={`Least useful part of the report (${leastUsefulAnswered.length} answered)`}
+                            order={REPORT_SECTION_ORDER}
+                            labels={REPORT_SECTION_LABEL}
+                            counts={countBy(leastUsefulAnswered, bf => bf.least_useful_part)}
+                            total={leastUsefulAnswered.length}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <BetaRankedMultiChart
+                            title={`What would make it worth paying for (${worthPayingAnswered.length} answered — question retired 2026-09-14)`}
+                            lists={worthPayingAnswered.map(bf => bf.worth_paying_for)}
+                            labels={WORTH_PAYING_FOR_LABEL}
+                            total={worthPayingAnswered.length}
+                          />
+                          <BetaRankedMultiChart
+                            title={`What's stopping them from buying (${payBlockersAnswered.length} answered — only those not saying "yes, today")`}
+                            lists={payBlockersAnswered.map(bf => bf.pay_blockers)}
+                            labels={PAY_BLOCKER_LABEL}
+                            total={payBlockersAnswered.length}
+                          />
+                        </div>
+                      </>
                     )}
                   </div>
                     {betaStatDrilldown && (
