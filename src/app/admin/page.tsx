@@ -201,6 +201,39 @@ const BETA_FEEDBACK_STAGE_LABELS: Record<BetaFeedbackStage, string> = {
   stage2: 'Post-Result Stage',
 }
 
+// Submissions-table feedback filter: presence/absence, or how far into the
+// beta feedback flow a respondent got. 'none' also covers pre-beta rows,
+// which never have a betaFeedbackList entry at all.
+type SubmissionFeedbackFilter = 'all' | 'none' | 'started' | 'stage1' | 'result' | 'stage2'
+function matchesFeedbackFilter(bf: BetaFeedbackEntry | undefined, filter: SubmissionFeedbackFilter): boolean {
+  if (filter === 'all') return true
+  if (filter === 'none') return !bf
+  if (!bf) return false
+  return betaFeedbackStageOf(bf) === filter
+}
+
+function FeedbackFilterPills({ value, onChange }: { value: SubmissionFeedbackFilter; onChange: (v: SubmissionFeedbackFilter) => void }) {
+  const labels: Record<SubmissionFeedbackFilter, string> = {
+    all: 'All feedback', none: 'No feedback', started: 'Started', stage1: 'Pre-Result', result: 'Result', stage2: 'Post-Result',
+  }
+  return (
+    <div className="flex gap-2">
+      {(['all', 'none', 'started', 'stage1', 'result', 'stage2'] as const).map(key => (
+        <button
+          key={key}
+          type="button"
+          onClick={() => onChange(key)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            value === key ? 'bg-teal-700 text-white' : 'bg-white text-slate-400 border border-slate-100 hover:text-slate-600'
+          }`}
+        >
+          {labels[key]}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 // ─── Beta feedback analytics (charts) ──────────────────────────────────────
 // Small, dependency-free primitives built from the app's own design tokens
 // (--primary, --teal, and the green/amber/rose badge colors already used
@@ -1130,6 +1163,9 @@ export default function AdminPage() {
   // features shipped 2026-09-08 onward) from the original "beta" cohort,
   // instead of eyeballing the per-row cohort badge across every list.
   const [cohortFilter, setCohortFilter] = useState<'all' | 'beta' | 'beta_v2'>('all')
+  // Submissions tab: filter by how far (if at all) each respondent got into
+  // the beta feedback flow, joined in via betaFeedbackByResponseId below.
+  const [submissionFeedbackFilter, setSubmissionFeedbackFilter] = useState<SubmissionFeedbackFilter>('all')
 
   const [telemetryList, setTelemetryList] = useState<TelemetryEvent[]>([])
   const [telemetryLoading, setTelemetryLoading] = useState(false)
@@ -3174,6 +3210,7 @@ export default function AdminPage() {
   const betaCareerRecs = allCareerRecs.filter(isBetaSubmission)
   const betaCareerRecsGenerated = betaCareerRecs.filter(r => r.career_recommendations?.length > 0)
   const feedbackSubmittedIds = new Set(betaFeedbackList.map(bf => bf.response_id))
+  const betaFeedbackByResponseId = new Map(betaFeedbackList.map(bf => [bf.response_id, bf]))
 
   const openBugCount = bugReports.filter(b => b.status === 'open').length
   const visibleBugReports = bugReports
@@ -3196,7 +3233,9 @@ export default function AdminPage() {
   // Shared by the general Submissions tab and the Beta Testing > Submissions
   // sub-tab — same columns, just a different (optionally pre-filtered) list.
   function renderSubmissionsTable(fullList: Submission[], emptyMessage: string, exportFilename: string) {
-    const list = fullList.filter(sub => matchesCohortFilter(sub, cohortFilter))
+    const list = fullList
+      .filter(sub => matchesCohortFilter(sub, cohortFilter))
+      .filter(sub => matchesFeedbackFilter(betaFeedbackByResponseId.get(sub.id), submissionFeedbackFilter))
     const exportSubmissions = () => {
       const rows: (string | number | null)[][] = [
         ['Name', 'Email', 'Phone', 'Country', 'Nationality', 'Age', 'Experience', 'Education', 'Major own choice', 'Major choice reason', 'Current stage', 'Cohort', 'Date', 'Status', 'Device', 'Games played', 'Has feedback'],
@@ -3228,6 +3267,7 @@ export default function AdminPage() {
           <div className="flex flex-wrap items-center gap-2">
             <DownloadCSVButton onClick={exportSubmissions} />
             <CohortFilterPills value={cohortFilter} onChange={setCohortFilter} />
+            <FeedbackFilterPills value={submissionFeedbackFilter} onChange={setSubmissionFeedbackFilter} />
           </div>
         </div>
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
