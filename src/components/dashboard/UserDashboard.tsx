@@ -13,6 +13,7 @@ import { useLocale } from 'next-intl'
 import { useRouter, usePathname, Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
 import { apiAuthGet, apiAuthGetBlob, apiAuthPost, apiAuthPatch, apiAuthDelete, startCheckout, type PlanCode } from '@/lib/api'
+import { trackOnce } from '@/lib/analytics'
 import Logomark from '@/components/brand/Logomark'
 import { LockedSection } from '@/components/shared/LockedSection'
 
@@ -33,6 +34,9 @@ type Plan = {
   subscription_status: string | null
   subscription_current_period_end: string | null
 }
+// Hub transaction statuses that mean money was received — confirm against the values the shop actually sends.
+const PAID_STATUSES = ['paid', 'captured', 'succeeded', 'success', 'completed']
+
 type Transaction = { order_ref: string; plan_code: string; amount: number; currency: string; status: string; created_at: string }
 type JobMatch = {
   id: string
@@ -209,6 +213,15 @@ export default function UserDashboard() {
       setUser(session.user); setLoading(false)
     })
   }, [navRouter, locale])
+
+  // Tag Manager: the payment webhook is server-side, so the browser's only proof
+  // of a confirmed purchase is a paid row in the user's transaction list. Fired
+  // once per order (localStorage, so a later session doesn't re-count it).
+  useEffect(() => {
+    transactions
+      .filter(txn => PAID_STATUSES.includes(txn.status.toLowerCase()))
+      .forEach(txn => trackOnce(`purchase:${txn.order_ref}`, 'report_purchase', { value: txn.amount, currency: txn.currency, transaction_id: txn.order_ref }, 'local'))
+  }, [transactions])
 
   useEffect(() => {
     if (!user) return

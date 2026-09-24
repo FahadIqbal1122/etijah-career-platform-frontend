@@ -13,6 +13,8 @@ import LandingConstellation from '@/components/brand/LandingConstellation'
 import { supabase } from '@/lib/supabase'
 import { startCheckout, type PlanCode } from '@/lib/api'
 import PartnerModal from '@/components/shared/PartnerModal'
+import { LANDING_VARIANTS, type VariantSlug } from '@/data/landingVariants'
+import { setLandingVariant } from '@/lib/analytics'
 
 // Render a headline, tealing the `hl` phrase inside it. Uses indexOf so text
 // after a repeated phrase is never dropped.
@@ -94,12 +96,16 @@ const Chevron = () => (
   </svg>
 )
 
-export default function Landing() {
+export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
   const locale = useLocale()
   const dir = locale === 'ar' ? 'rtl' : 'ltr'
   const router = useRouter()
   const pathname = usePathname()
-  const c = (L as any)[locale] ?? L.en
+  const base = (L as any)[locale] ?? L.en
+  // Campaign variants (/start/<variant>) override only the hero headline + first paragraph.
+  const heroOverride = variant ? LANDING_VARIANTS[variant]?.[locale === 'ar' ? 'ar' : 'en'] ?? {} : {}
+  const c = variant ? { ...base, hero: { ...base.hero, ...Object.fromEntries(Object.entries(heroOverride).filter(([, v]) => v !== undefined)) } } : base
+  useEffect(() => { if (variant) setLandingVariant(variant) }, [variant])
   const arrow = dir === 'rtl' ? '←' : '→'
   const [checkingOut, setCheckingOut] = useState<PlanCode | null>(null)
   const [showPartnerModal, setShowPartnerModal] = useState(false)

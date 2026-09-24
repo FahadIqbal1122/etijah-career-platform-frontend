@@ -20,6 +20,7 @@ import BugReportModal from '@/components/BugReportModal'
 import FieldOfStudyInfo from '@/components/FieldOfStudyInfo'
 import { frameworkOf, buildReveal, REVEAL_FRAMEWORKS } from '@/data/revealScoring'
 import { initTelemetry, pushTelemetry, getTelemetrySessionId, rotateTelemetrySession, flush as flushTelemetry } from '@/lib/telemetry'
+import { track, trackOnce } from '@/lib/analytics'
 
 // ── skip / auto-fill rules (identical to the original form) ──────────────────
 const SKIP_RULES: { condition: (a: Record<string, any>) => boolean; ids: Record<string, any> }[] = [
@@ -304,6 +305,14 @@ export default function AssessmentForm() {
   const total = visibleQuestions.length
   const q = visibleQuestions[Math.min(index, total - 1)]
 
+  // Tag Manager: the assessment has begun once question 1 first renders.
+  // Keyed by the telemetry session id so a retake (fresh session) counts again
+  // but a re-render or a back-and-forth within one attempt does not.
+  useEffect(() => {
+    if (phase !== 'question' || !q) return
+    trackOnce(`assessment_start:${getTelemetrySessionId()}`, 'assessment_start', { lang: locale })
+  }, [phase, q])
+
   // Per-question pacing — the cleanup fires exactly when `q.id`/`phase`
   // changes (next question, back, a reveal takeover, finish) or on unmount
   // (closing the tab mid-question), so this needs no manual ref bookkeeping.
@@ -542,6 +551,7 @@ export default function AssessmentForm() {
         locale,
         telemetry_session_id: getTelemetrySessionId(),
       })
+      track('assessment_complete', { lang: locale })
       clearDraft()
       // this attempt is done — flush what's queued so it isn't lost, then
       // start a fresh session id for any future retake.

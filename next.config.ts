@@ -5,6 +5,11 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // The shop hub sends buyers back to /account/billing (BILLING_RETURN_URL in the backend),
+  // which has no page — land them on the dashboard, where billing lives.
+  async redirects() {
+    return [{ source: '/account/billing', destination: '/dashboard?paid=1', permanent: false }]
+  },
   async headers() {
     return [
       {
