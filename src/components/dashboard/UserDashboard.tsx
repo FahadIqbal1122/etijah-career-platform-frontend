@@ -312,6 +312,29 @@ export default function UserDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
+  // The shop redirects the buyer back with ?order_ref=…&status=paid. That redirect is unsigned,
+  // so it is only a cue to look — the signed webhook is what marks the order paid, and it can land
+  // a moment after the redirect. Re-check the transaction list briefly until the order shows paid
+  // (the effect above then fires report_purchase). status=failed never fires anything.
+  useEffect(() => {
+    if (!user) return
+    const orderRef = searchParams.get('order_ref')
+    if (!orderRef || searchParams.get('status') !== 'paid') return
+    let tries = 0
+    const id = window.setInterval(() => {
+      tries += 1
+      apiAuthGet<Transaction[]>('/billing/transaction')
+        .then(rows => {
+          setTransactions(rows)
+          if (rows.some(t => t.order_ref === orderRef && PAID_STATUSES.includes(t.status.toLowerCase()))) window.clearInterval(id)
+        })
+        .catch(() => {})
+      if (tries >= 10) window.clearInterval(id)
+    }, 3000)
+    return () => window.clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- searchParams is read once on arrival
+  }, [user])
+
   function go(id: string) {
     setActive(id)
     document.getElementById(`sec-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
