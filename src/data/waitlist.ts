@@ -181,7 +181,7 @@ export const W = {
       social: [
         { label: 'Instagram: @etijahcoaching', href: 'https://www.instagram.com/etijahcoaching/' },
         { label: 'LinkedIn: Etijah Coaching & consulting', href: 'https://www.linkedin.com/company/etijahcoaching' },
-        { label: 'WhatsApp Community', href: '#' },
+        { label: 'WhatsApp Contact', href: 'https://wa.me/966550770711' },
       ],
     },
   },
@@ -364,7 +364,7 @@ export const W = {
       social: [
         { label: 'إنستغرام: @etijahcoaching', href: 'https://www.instagram.com/etijahcoaching/' },
         { label: 'لينكدإن: Etijah Coaching & consulting', href: 'https://www.linkedin.com/company/etijahcoaching' },
-        { label: 'مجتمع واتساب', href: '#' },
+        { label: 'تواصل عبر واتساب', href: 'https://wa.me/966550770711' },
       ],
     },
   },
