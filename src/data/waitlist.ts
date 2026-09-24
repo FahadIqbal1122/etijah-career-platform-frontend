@@ -178,7 +178,11 @@ export const W = {
       copyright: '© 2026 Etijah Coaching & Consulting. All rights reserved.',
       legalLinks: 'Terms & Conditions | Privacy Policy | Cookie Policy',
       registered: 'Registered in Bahrain',
-      social: ['Instagram: @etijahiapp', 'LinkedIn: Etijahi', 'WhatsApp Community'],
+      social: [
+        { label: 'Instagram: @etijahcoaching', href: 'https://www.instagram.com/etijahcoaching/' },
+        { label: 'LinkedIn: Etijah Coaching & consulting', href: 'https://www.linkedin.com/company/etijahcoaching' },
+        { label: 'WhatsApp Community', href: '#' },
+      ],
     },
   },
   ar: {
@@ -357,7 +361,11 @@ export const W = {
       copyright: '© 2026 اتجاهي · جميع الحقوق محفوظة',
       legalLinks: 'الشروط والأحكام | سياسة الخصوصية | سياسة ملفات الارتباط',
       registered: 'مسجّلة في مملكة البحرين',
-      social: ['إنستغرام: @etijahiapp', 'لينكدإن: Etijahi', 'مجتمع واتساب'],
+      social: [
+        { label: 'إنستغرام: @etijahcoaching', href: 'https://www.instagram.com/etijahcoaching/' },
+        { label: 'لينكدإن: Etijah Coaching & consulting', href: 'https://www.linkedin.com/company/etijahcoaching' },
+        { label: 'مجتمع واتساب', href: '#' },
+      ],
     },
   },
 }

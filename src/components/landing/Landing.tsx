@@ -303,7 +303,14 @@ export default function Landing() {
           </ul>
         </Reveal>
         <Reveal className="mt-8 flex justify-center">
-          <a href="#pricing" className="cta cta-outline">{c.insideReport.cta}</a>
+          <a
+            href={locale === 'ar' ? '/demo-report-ar.pdf' : '/demo-report-en.pdf'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cta cta-outline"
+          >
+            {c.insideReport.cta}
+          </a>
         </Reveal>
       </Section>
 
@@ -537,7 +544,9 @@ export default function Landing() {
             <p className="text-xs text-white/55 leading-relaxed mb-2">{c.footer.legalLinks}</p>
             <p className="text-xs text-white/55 mb-3">{c.footer.registered}</p>
             <div className="space-y-1">
-              {c.footer.social.map((s: string) => <p key={s} className="text-xs text-white/55">{s}</p>)}
+              {c.footer.social.map((s: { label: string; href: string }) => (
+                <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className="block text-xs text-white/55 hover:text-white/80">{s.label}</a>
+              ))}
             </div>
           </div>
         </div>
