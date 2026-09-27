@@ -7,6 +7,9 @@ import { routing } from '@/i18n/routing'
 export const metadata: Metadata = {
   title: 'Etijahi — Career Assessment by Etijah Coaching & Consulting',
   description: 'Take Etijahi’s intelligent career assessment by Etijah Coaching & Consulting — discover who you are, where you belong, and how to get there.',
+  other: {
+    'facebook-domain-verification': 'pb946h5t88g1bz0xwu7apmyrbjjt91',
+  },
 }
 
 export function generateStaticParams() {
