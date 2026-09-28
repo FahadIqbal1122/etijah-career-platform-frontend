@@ -6,9 +6,9 @@ import './globals.css'
 // configured as a tag inside Tag Manager (two installs would double-count page views).
 const GA_MEASUREMENT_ID = 'G-RHL2CLN46Y'
 
-// Google Tag Manager container — dedicated to myetijahi.com (a separate
-// container, "Etijah Coaching" account, holds the corporate site + shop tags).
-const GTM_ID: string = 'GTM-N2TS8VBT'
+// Google Tag Manager container — the published "Etijah Coaching" container, which now
+// also carries the Meta Pixel + event tags. (GTM-N2TS8VBT was never published.)
+const GTM_ID: string = 'GTM-5W7469W3'
 const GTM_ENABLED = GTM_ID !== 'GTM-XXXXXXX'
 
 // Etijahi brand type system — Tajawal (Arabic + Latin, our primary) + IBM Plex Mono
