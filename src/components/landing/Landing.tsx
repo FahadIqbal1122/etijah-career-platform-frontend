@@ -442,7 +442,6 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
                 </li>
               ))}
             </ul>
-            {/*
             <button
               onClick={() => handlePlanCta(c.pricing.paid.code)}
               disabled={checkingOut === c.pricing.paid.code}
@@ -450,7 +449,6 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             >
               {checkingOut === c.pricing.paid.code ? '…' : c.pricing.paid.cta}
             </button>
-            */}
           </Reveal>
           {/*
           <Reveal className="card p-7 relative opacity-70" style={{ transitionDelay: '150ms' }}>
