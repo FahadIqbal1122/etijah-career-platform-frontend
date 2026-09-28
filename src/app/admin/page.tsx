@@ -194,6 +194,12 @@ type BetaFeedbackStage = 'started' | 'stage1' | 'result' | 'stage2'
 function betaFeedbackStageOf(bf: Pick<BetaFeedbackEntry, 'stage1_completed_at' | 'result_stage_completed_at' | 'stage2_completed_at'>): BetaFeedbackStage {
   return bf.stage2_completed_at ? 'stage2' : bf.result_stage_completed_at ? 'result' : bf.stage1_completed_at ? 'stage1' : 'started'
 }
+// Most recent point the respondent touched the feedback flow. created_at is
+// when the row was first made (Pre-Result pulse), so it goes stale for people
+// who come back later (e.g. after a reminder email) to finish Stage 2.
+function betaFeedbackLatestAt(bf: Pick<BetaFeedbackEntry, 'created_at' | 'stage1_completed_at' | 'result_stage_completed_at' | 'stage2_completed_at'>): string {
+  return bf.stage2_completed_at || bf.result_stage_completed_at || bf.stage1_completed_at || bf.created_at
+}
 const BETA_FEEDBACK_STAGE_LABELS: Record<BetaFeedbackStage, string> = {
   started: 'Started',
   stage1: 'Pre-Result Stage',
@@ -4361,6 +4367,7 @@ export default function AdminPage() {
                 .filter(bf => betaFeedbackStageFilter === 'all' || betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
                 .filter(bf => betaFeedbackStatusFilter === 'all' || bf.assessment_responses?.current_stage === betaFeedbackStatusFilter)
                 .filter(bf => betaFeedbackAgeFilter === 'all' || (bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age)) === betaFeedbackAgeFilter)
+                .sort((a, b) => new Date(betaFeedbackLatestAt(b)).getTime() - new Date(betaFeedbackLatestAt(a)).getTime())
               const exportBetaFeedback = () => {
                 const rows: (string | number | null)[][] = [
                   [
@@ -4506,7 +4513,7 @@ export default function AdminPage() {
                                   ) : '—'}
                                 </td>
                                 <td className="px-4 py-3 text-slate-500 capitalize">{bf.would_recommend?.replace(/_/g, ' ') || '—'}</td>
-                                <td className="px-4 py-3 text-slate-400 text-xs">{new Date(bf.created_at).toLocaleDateString()}</td>
+                                <td className="px-4 py-3 text-slate-400 text-xs">{new Date(betaFeedbackLatestAt(bf)).toLocaleDateString()}</td>
                                 <td className="px-4 py-3">
                                   <button
                                     onClick={() => setSelectedBetaFeedback(bf)}

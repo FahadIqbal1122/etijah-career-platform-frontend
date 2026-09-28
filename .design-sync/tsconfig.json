@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/lib/supabase": ["./stubs/supabase.ts"],
+      "@/lib/api": ["./stubs/api.ts"],
+      "@/lib/telemetry": ["./stubs/telemetry.ts"],
+      "@/*": ["../src/*"]
+    }
+  }
+}

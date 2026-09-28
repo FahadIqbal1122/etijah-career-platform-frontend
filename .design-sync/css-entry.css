@@ -1,0 +1,15 @@
+/* design-sync CSS entry: the app loads Tajawal + IBM Plex Mono via
+   next/font/google (self-hosted at Next's build time, not available as a
+   static file here). We load the same families from Google Fonts directly
+   so previews render in the real brand type instead of a fallback. */
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+/* The app sets these two custom properties via next/font's `variable` class
+   on <html> (see src/app/layout.tsx) — not present here, so define them
+   directly against the Google-Fonts families loaded above. */
+:root {
+  --font-tajawal: 'Tajawal', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+@import "../src/app/globals.css";
