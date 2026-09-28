@@ -115,8 +115,21 @@ export async function apiAuthPatch<T>(path: string, body: unknown): Promise<T> {
 
 export type PlanCode = 'pathfinder' | 'launchpad_monthly' | 'launchpad_yearly'
 
+// Meta's browser identifiers, set by the Meta Pixel in the GTM container. Sent with
+// checkout so the server-side Purchase event can carry them (better match quality).
+function readCookie(name: string): string | undefined {
+    try {
+        const m = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
+        return m ? decodeURIComponent(m[1]) : undefined
+    } catch { return undefined }
+}
+
 export async function startCheckout(planCode: PlanCode): Promise<{ checkout_url: string }> {
-    return apiAuthPost<{ checkout_url: string }>('/billing/checkout', { plan_code: planCode })
+    return apiAuthPost<{ checkout_url: string }>('/billing/checkout', {
+        plan_code: planCode,
+        fbp: readCookie('_fbp'),
+        fbc: readCookie('_fbc'),
+    })
 }
 
 export async function apiAuthDelete<T>(path: string): Promise<T> {

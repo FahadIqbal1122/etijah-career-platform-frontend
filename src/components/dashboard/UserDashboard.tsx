@@ -216,11 +216,14 @@ export default function UserDashboard() {
 
   // Tag Manager: the payment webhook is server-side, so the browser's only proof
   // of a confirmed purchase is a paid row in the user's transaction list. Fired
-  // once per order (localStorage, so a later session doesn't re-count it).
+  // once per order (localStorage), and only for an order confirmed in the last hour —
+  // i.e. the purchase the buyer just came back from — so opening the dashboard on
+  // another device (or after clearing storage) doesn't re-report old purchases.
   useEffect(() => {
+    const RECENT_MS = 60 * 60 * 1000
     transactions
-      .filter(txn => PAID_STATUSES.includes(txn.status.toLowerCase()))
-      .forEach(txn => trackOnce(`purchase:${txn.order_ref}`, 'report_purchase', { value: txn.amount, currency: txn.currency, transaction_id: txn.order_ref }, 'local'))
+      .filter(txn => PAID_STATUSES.includes(txn.status.toLowerCase()) && Date.now() - new Date(txn.created_at).getTime() < RECENT_MS)
+      .forEach(txn => trackOnce(`purchase:${txn.order_ref}`, 'report_purchase', { value: txn.amount, currency: txn.currency, transaction_id: txn.order_ref, event_id: txn.order_ref }, 'local'))
   }, [transactions])
 
   useEffect(() => {
