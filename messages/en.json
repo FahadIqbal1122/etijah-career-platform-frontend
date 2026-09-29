@@ -658,7 +658,7 @@
       "bouncesBack": "Bounces back"
     },
     "suggestedCareers": {
-      "title": "Suggested Careers", "subtitle": "Matched across your full profile", "matchLabel": "match",
+      "title": "Careers & AI Impact", "subtitle": "Matched across your full profile, with how AI may change each one", "matchLabel": "match",
       "fitTag": { "strong_fit": "Strong fit", "worth_exploring": "Worth exploring" },
       "directionTag": { "builds_on_background": "Builds on your background", "new_direction": "New direction" },
       "groupBuild": "Build on what you have",
@@ -787,6 +787,9 @@
     "aiImpact": {
       "title": "AI Impact on Your Careers",
       "subtitle": "How automation affects your top matches",
+      "rowTitle": "How AI may change this career",
+      "atRiskLabel": "Tasks that are changing",
+      "overallLabel": "AI and your top careers",
       "riskSuffix": "RISK",
       "protectedSkillsLabel": "Human skills that stay valuable",
       "upskillingLabel": "How to prepare",

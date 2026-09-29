@@ -658,7 +658,7 @@
       "bouncesBack": "يتعافى بسرعة"
     },
     "suggestedCareers": {
-      "title": "مسارات مهنية مقترحة", "subtitle": "مطابقة لملفك الكامل", "matchLabel": "تطابق",
+      "title": "المسارات المهنية وتأثير الذكاء الاصطناعي", "subtitle": "مطابقة لملفك الكامل، مع كيف قد يغيّر الذكاء الاصطناعي كل مسار", "matchLabel": "تطابق",
       "fitTag": { "strong_fit": "تطابق قوي", "worth_exploring": "يستحق الاستكشاف" },
       "directionTag": { "builds_on_background": "يبني على خلفيتك", "new_direction": "اتجاه جديد" },
       "groupBuild": "ابنِ على ما لديك",
@@ -787,6 +787,9 @@
     "aiImpact": {
       "title": "تأثير الذكاء الاصطناعي على مساراتك المهنية",
       "subtitle": "كيف تؤثر الأتمتة على أفضل مساراتك",
+      "rowTitle": "كيف قد يغيّر الذكاء الاصطناعي هذا المسار",
+      "atRiskLabel": "مهام تتغيّر",
+      "overallLabel": "الذكاء الاصطناعي ومساراتك",
       "riskSuffix": "المخاطر",
       "protectedSkillsLabel": "مهارات إنسانية تبقى ذات قيمة",
       "upskillingLabel": "كيف تستعد",

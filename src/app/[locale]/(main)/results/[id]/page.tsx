@@ -168,6 +168,8 @@ export default function ResultsPage() {
   // Careers the user marked "not for me": career title -> reason. Feedback only, it never changes scores.
   const [recFeedback, setRecFeedback] = useState<Record<string, string>>({})
   const [feedbackOpen, setFeedbackOpen] = useState<string | null>(null)
+  // Which careers have their AI-impact panel open. Unset = the top match is open, the rest collapsed.
+  const [aiOpen, setAiOpen] = useState<Record<string, boolean>>({})
   const [dirError, setDirError] = useState('')
   const [jobsSuggestionsLoading, setJobsSuggestionsLoading] = useState(true)
   const [aiImpact, setAiImpact] = useState<any>(null)
@@ -805,6 +807,12 @@ export default function ResultsPage() {
               subtitle={t('suggestedCareers.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.07A2.25 2.25 0 0118 20.47H6a2.25 2.25 0 01-2.25-2.25v-4.07M15.75 9.75V6a3.75 3.75 0 00-7.5 0v3.75M3.75 9.75h16.5" /></svg>}
             />
+            {aiImpact?.overall_summary && (
+              <div className="rp-note rp-blue mb-5">
+                <span className="rp-note-label">{t('aiImpact.overallLabel')}</span>
+                <p className="rp-body rp-note-text">{aiImpact.overall_summary}</p>
+              </div>
+            )}
             {(() => {
               // One card per recommended career. The top match (index 0 of the full list) is highlighted.
               const renderCareer = (job: any) => {
@@ -812,8 +820,11 @@ export default function ResultsPage() {
                 const isNew = job.direction_tag === 'new_direction'
                 const rejected = recFeedback[job.title]
                 const top = i === 0 && !rejected
-                // One-word AI risk from the AI Impact section (top matches only); the detail stays in that section.
-                const aiRisk: string | undefined = aiImpact?.careers?.find((c: any) => String(c.title || '').toLowerCase() === String(job.title || '').toLowerCase())?.ai_risk_level
+                // AI impact for this career (top matches only): the risk pill sits on the card and the detail is a
+                // collapsible panel at the bottom of it (the top match starts open).
+                const aiCareer: any = aiImpact?.careers?.find((c: any) => String(c.title || '').toLowerCase() === String(job.title || '').toLowerCase())
+                const aiRisk: string | undefined = aiCareer?.ai_risk_level
+                const aiIsOpen = aiOpen[job.title] ?? (i === 0)
                 return (
                   <div
                     key={job.title}
@@ -845,12 +856,12 @@ export default function ResultsPage() {
                           </span>
                         )}
                         {aiRisk && ['low', 'medium', 'high'].includes(aiRisk) && (
-                          <a href="#ai-impact" title={t('suggestedCareers.aiRiskLink')} className={`rp-pill ${
+                          <button type="button" title={t('suggestedCareers.aiRiskLink')} onClick={() => { setAiOpen(prev => ({ ...prev, [job.title]: true })); setTimeout(() => document.getElementById(`ai-${i}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 60) }} className={`rp-pill ${
                             top ? 'rp-ondark' : aiRisk === 'low' ? 'rp-green' : aiRisk === 'medium' ? 'rp-amber' : 'rp-rose'
                           }`}>
                             <PillIcon name="shield" />
                             {levelLabel(aiRisk).toUpperCase()} {t('aiImpact.riskSuffix')}
-                          </a>
+                          </button>
                         )}
                       </div>
                     )}
@@ -869,6 +880,66 @@ export default function ResultsPage() {
                           <div className={`rp-note ${top ? 'rp-ondark-note' : 'rp-green'}`}>
                             <span className="rp-note-label">{t('suggestedCareers.nextAction')}</span>
                             <p className={`rp-sub ${top ? 'text-white/95!' : 'rp-note-text'}`}>{job.next_action}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {aiCareer && (
+                      <div id={`ai-${i}`} className="mt-3 rounded-xl bg-white border border-[var(--line)] text-charcoal">
+                        <button
+                          type="button"
+                          aria-expanded={aiIsOpen}
+                          onClick={() => setAiOpen(prev => ({ ...prev, [job.title]: !aiIsOpen }))}
+                          className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 text-start"
+                        >
+                          <span className="flex items-center gap-2 rp-body font-bold"><PillIcon name="shield" size={16} />{t('aiImpact.rowTitle')}</span>
+                          <span className="flex items-center gap-2">
+                            {aiRisk && ['low', 'medium', 'high'].includes(aiRisk) && (
+                              <span className={`rp-pill ${aiRisk === 'low' ? 'rp-green' : aiRisk === 'medium' ? 'rp-amber' : 'rp-rose'}`}>{levelLabel(aiRisk).toUpperCase()} {t('aiImpact.riskSuffix')}</span>
+                            )}
+                            <span aria-hidden="true" className={`transition-transform ${aiIsOpen ? 'rotate-180' : ''}`}>▾</span>
+                          </span>
+                        </button>
+                        {aiIsOpen && (
+                          <div className="px-3.5 pb-3.5 space-y-3">
+                            {aiCareer.at_risk_tasks?.length > 0 && (
+                              <div className="rp-note rp-rose">
+                                <span className="rp-note-label">{t('aiImpact.atRiskLabel')}</span>
+                                <ul className="rp-sub rp-note-text list-disc ps-5 space-y-0.5">
+                                  {aiCareer.at_risk_tasks.map((x: string) => <li key={x}>{x}</li>)}
+                                </ul>
+                              </div>
+                            )}
+                            {aiCareer.global_evidence && (
+                              <p className="rp-sub"><span className="font-bold text-charcoal">{t('aiImpact.globalEvidenceLabel')}:</span> {aiCareer.global_evidence}</p>
+                            )}
+                            {aiCareer.gcc_outlook && (
+                              <p className="rp-sub"><span className="font-bold text-charcoal">{t('aiImpact.localOutlookLabel')}:</span> {aiCareer.gcc_outlook}</p>
+                            )}
+                            {aiCareer.protected_skills?.length > 0 && (
+                              <div>
+                                <p className="rp-label mb-1.5">{t('aiImpact.protectedSkillsLabel')}</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {aiCareer.protected_skills.map((sk: string) => <span key={sk} className="rp-pill rp-green rp-wrap">{sk}</span>)}
+                                </div>
+                              </div>
+                            )}
+                            {aiCareer.upskilling?.length > 0 && (
+                              <div>
+                                <p className="rp-label mb-1.5">{t('aiImpact.upskillingLabel')}</p>
+                                <ul className="space-y-1">
+                                  {aiCareer.upskilling.map((tip: string) => (
+                                    <li key={tip} className="rp-sub flex gap-1.5"><span className="text-primary mt-0.5">→</span>{tip}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {aiCareer.what_this_means_for_you && (
+                              <div className="rp-note rp-blue">
+                                <span className="rp-note-label">{t('aiImpact.whatThisMeansLabel')}</span>
+                                <p className="rp-body rp-note-text">{aiCareer.what_this_means_for_you}</p>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -927,6 +998,28 @@ export default function ResultsPage() {
               )
             })()}
           </div>
+        )}
+
+        {/* AI impact deep dive for free users (was under the separate AI section) */}
+        {aiImpact && tier === 'free' && (
+          !loggedIn ? (
+            <BlurGate
+              title={t('aiImpact.signupTitle')}
+              body={t('aiImpact.signupBody')}
+            >
+              <div className="card p-5">
+                <AiImpactDeepDivePlaceholder />
+              </div>
+            </BlurGate>
+          ) : (
+            <LockedSection
+              tag={t('aiImpact.lockedTag')}
+              title={t('aiImpact.lockedTitle')}
+              body={t('aiImpact.lockedBody')}
+              ctaLabel={t('aiImpact.lockedCta')}
+              ctaHref="/#pricing"
+            />
+          )
         )}
 
       </>),
@@ -1444,7 +1537,9 @@ export default function ResultsPage() {
   const DEFAULT_ORDER = ['summary', 'careers', 'plan', 'jobs', 'courses', 'companies', 'ai', 'profile']
   const knownKeys = Object.keys(sectionBlocks)
   const baseOrder = (sectionOrder && sectionOrder.length ? sectionOrder : DEFAULT_ORDER).filter(k => knownKeys.includes(k))
-  const orderedKeys = [...baseOrder, ...knownKeys.filter(k => !baseOrder.includes(k))]
+  // 'ai' is merged into the careers section (a collapsible panel on each career); the PDF still has its own AI page.
+  const MERGED_SECTIONS = ['ai']
+  const orderedKeys = [...baseOrder, ...knownKeys.filter(k => !baseOrder.includes(k))].filter(k => !MERGED_SECTIONS.includes(k))
 
   return (
     <div className="min-h-screen brand-surface page-fade-in">

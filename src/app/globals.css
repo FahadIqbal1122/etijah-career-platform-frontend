@@ -797,6 +797,8 @@ html { scroll-behavior: smooth; }
 .rp-note.rp-green  { border-inline-start-color: var(--rp-green); }
 .rp-note.rp-amber  { border-inline-start-color: var(--rp-amber-line); }
 .rp-note.rp-purple { border-inline-start-color: var(--rp-purple-line); }
+.rp-note.rp-rose   { border-inline-start-color: var(--rp-rose-line); }
+.rp-note.rp-gray   { border-inline-start-color: var(--rp-gray-line); }
 .rp-note-text { color: rgb(65 65 66 / 0.92); }
 .rp-ondark-note { background: rgb(255 255 255 / 0.12); border-color: rgb(255 255 255 / 0.5); color: #fff; }
 .rp-onblue { color: var(--rp-blue); background: #fff; border-color: var(--rp-blue-line); }
