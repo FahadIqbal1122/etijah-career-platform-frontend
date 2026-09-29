@@ -23,6 +23,10 @@ const levelToWidth: Record<string, string> = {
   high: '88%',
 }
 
+// Links for exposure ideas and majors come from the backend (a known programme's site or a web search). Only
+// https addresses are ever opened.
+const safeLink = (link: any): boolean => typeof link?.url === 'string' && link.url.startsWith('https://')
+
 // Small icons for pills and labels (heroicons outline paths).
 const PILL_ICONS = {
   check: 'M4.5 12.75l6 6 9-13.5',
@@ -950,6 +954,11 @@ export default function ResultsPage() {
                         {m.careers.map((c: string) => <span key={c} className="rp-pill rp-blue">{c}</span>)}
                       </div>
                     )}
+                    {safeLink(m.link) && (
+                      <a href={m.link.url} target="_blank" rel="noopener noreferrer" className="rp-pill rp-blue mt-2.5 no-underline hover:border-primary">
+                        {t('studentTrack.findPrograms')} ↗
+                      </a>
+                    )}
                     {m.try_it && (
                       <div className="rp-note rp-green mt-2.5">
                         <span className="rp-note-label">{t('studentTrack.tryIt')}</span>
@@ -969,6 +978,11 @@ export default function ResultsPage() {
                   <div key={i} className="border border-[var(--line)] rounded-xl p-3.5">
                     <p className="rp-h text-charcoal">{idea.title}</p>
                     {idea.why && <p className="rp-sub mt-0.5">{idea.why}</p>}
+                    {safeLink(idea.link) && (
+                      <a href={idea.link.url} target="_blank" rel="noopener noreferrer" className="rp-pill rp-blue mt-2.5 no-underline hover:border-primary">
+                        {t(idea.link.kind === 'site' ? 'studentTrack.openSite' : 'studentTrack.findIt')} ↗
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>

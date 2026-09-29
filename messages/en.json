@@ -763,6 +763,9 @@
     "studentTrack": {
       "title": "Majors & Exposure",
       "subtitle": "How to explore your matched careers before committing to a job",
+      "findIt": "Search for it",
+      "openSite": "Open the site",
+      "findPrograms": "Find degree programs",
       "leadsTo": "Leads to",
       "tryIt": "Try it",
       "lockedMajors": "Unlock the full report to see the careers each major leads to and how to try it."
