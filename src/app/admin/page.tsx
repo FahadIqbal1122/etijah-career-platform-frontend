@@ -72,7 +72,7 @@ type Submission = {
   education_field: string[]
   major_was_own_choice: string | null // 'yes' | 'no' | null (not asked, e.g. high-school users)
   major_choice_reason: string | null // only set when major_was_own_choice === 'no'
-  career_direction: string | null // 'stay_in_field' | 'change_field' | 'not_sure' | null
+  career_direction: string | null // 'stay_in_field' | 'unsure_subject' | 'change_field' | 'not_sure' | null
   current_stage: string
   completed: boolean
   created_at: string
@@ -314,7 +314,8 @@ const EXPERIENCE_LEVEL_LABEL: Record<string, string> = {
   up_to_3yrs: 'Up to 3 years', up_to_5yrs: 'Up to 5 years', '10yrs_plus': '10+ years',
 }
 const CAREER_DIRECTION_LABEL: Record<string, string> = {
-  stay_in_field: 'Stay close to field', change_field: 'Move into something different', not_sure: 'Not sure yet',
+  stay_in_field: 'Options related to studies / current work', unsure_subject: 'Unsure about subject / current path', change_field: 'Explore a different direction', not_sure: 'Not sure yet',
+  choosing_major: 'Choose what to study (high school)', explore_careers: 'Explore careers (high school)',
 }
 // Labels below mirror the current Stage 2 beta-feedback form (src/components/beta-feedback/content.ts).
 const CAREER_EXPLAINED_LABEL: Record<string, string> = { yes: 'Yes', partly: 'Partly', no: 'No' }
@@ -1146,6 +1147,14 @@ export default function AdminPage() {
   const [adminJobListingsLoading, setAdminJobListingsLoading] = useState(false)
   const [adminStudentTrack, setAdminStudentTrack] = useState<any>(null)
   const [adminCertifications, setAdminCertifications] = useState<any>(null)
+  const [adminDirection, setAdminDirection] = useState<any>(null)
+  // "Not for me" feedback on recommended careers, summarised across all submissions (Career Recs tab).
+  const [recFeedbackSummary, setRecFeedbackSummary] = useState<any>(null)
+  useEffect(() => {
+    if (activeTab !== 'betaCareerRecs') return
+    fetch('/api/admin/recommendation-feedback')
+      .then(r => r.json()).then(d => setRecFeedbackSummary(d && typeof d.total === 'number' ? d : { total: 0 })).catch(() => setRecFeedbackSummary({ total: 0 }))
+  }, [activeTab])
   const [adminCareerPath, setAdminCareerPath] = useState<any>(null)
   const [adminCompanies, setAdminCompanies] = useState<any[]>([])
   const [adminCompaniesLoading, setAdminCompaniesLoading] = useState(false)
@@ -1783,6 +1792,7 @@ export default function AdminPage() {
     setAdminActionPlan(null)
     setAdminStudentTrack(null)
     setAdminCertifications(null)
+    setAdminDirection(null)
     setAdminCareerPath(null)
     setAdminAiLoading(true)
     setAdminCareerRecsLoading(true)
@@ -1800,6 +1810,8 @@ export default function AdminPage() {
     // these three ever has content for a given person.
     fetch(`/api/admin/submissions/${subId}/student-track?locale=${locale}`)
       .then(r => r.json()).then(d => { if (d?.majors_guidance || d?.exposure_ideas?.length) setAdminStudentTrack(d) }).catch(() => {})
+    fetch(`/api/admin/submissions/${subId}/direction?locale=${locale}`)
+      .then(r => r.json()).then(d => setAdminDirection(d?.selected || null)).catch(() => {})
     fetch(`/api/admin/submissions/${subId}/certifications?locale=${locale}`)
       .then(r => r.json()).then(d => { if (d?.certifications?.length) setAdminCertifications(d) }).catch(() => {})
     fetch(`/api/admin/submissions/${subId}/career-path?locale=${locale}`)
@@ -2376,7 +2388,7 @@ export default function AdminPage() {
                 {!adminCareerRecsLoading && adminCareerRecs.length > 0 && (
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                     <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">AI Career Recommendations</h3>
-                    <p className="text-xs text-slate-400 mb-3">Exact match_score/fit_summary/growth_note/fit_tag/direction_tag shown to this user — review for accuracy and appropriateness.</p>
+                    <p className="text-xs text-slate-400 mb-3">Exact match_score/fit_summary/growth_note/gap/next_action/fit_tag/direction_tag shown to this user — review for accuracy and appropriateness.</p>
                     <div className="space-y-3">
                       {adminCareerRecs.map((c: any, i: number) => (
                         <div key={c.title ?? i} className="border border-slate-100 rounded-xl p-4">
@@ -2395,6 +2407,8 @@ export default function AdminPage() {
                           )}
                           {c.fit_summary && <p className="text-xs text-slate-600 mb-1.5">{c.fit_summary}</p>}
                           {c.growth_note && <p className="text-xs text-slate-500 italic">{c.growth_note}</p>}
+                          {c.gap && <p className="text-xs text-slate-600 mt-1.5"><b>{c.direction_tag === 'new_direction' ? 'What it takes to get there' : 'Gap to close'}:</b> {c.gap}</p>}
+                          {c.next_action && <p className="text-xs text-slate-600 mt-1"><b>What they can do now:</b> {c.next_action}</p>}
                         </div>
                       ))}
                     </div>
@@ -2414,6 +2428,14 @@ export default function AdminPage() {
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                     <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">AI Impact on Careers</h3>
                     <p className="text-sm text-slate-600 mb-4 leading-relaxed">{adminAiImpact.overall_summary}</p>
+                    {adminAiImpact.focus && (
+                      <div className="mb-4 rounded-xl border border-teal-200 bg-teal-50/50 p-4 text-xs text-slate-600 space-y-1">
+                        <p className="font-semibold text-slate-700">Focus: {adminAiImpact.focus.title}</p>
+                        {(adminAiImpact.focus.skills_to_build || []).map((sk: any, i: number) => <p key={i}><b>{sk.skill}</b> — {sk.why}</p>)}
+                        {adminAiImpact.focus.exercise?.task && <p><b>Exercise:</b> {adminAiImpact.focus.exercise.task}</p>}
+                        {adminAiImpact.focus.exercise?.work_sample && <p><b>Work sample:</b> {adminAiImpact.focus.exercise.work_sample}</p>}
+                      </div>
+                    )}
                     <div className="space-y-3">
                       {adminAiImpact.careers?.map((c: any) => (
                         <div key={c.title} className="border border-slate-100 rounded-xl p-4">
@@ -2425,7 +2447,8 @@ export default function AdminPage() {
                               'bg-rose-50 text-rose-700'
                             }`}>{c.ai_risk_level?.toUpperCase()} RISK</span>
                           </div>
-                          <p className="text-xs text-slate-500 mb-2">{c.gcc_outlook}</p>
+                          {c.global_evidence && <p className="text-xs text-slate-500 mb-1"><b>Global evidence:</b> {c.global_evidence}</p>}
+                          <p className="text-xs text-slate-500 mb-2">{c.global_evidence ? <b>In your market: </b> : null}{c.gcc_outlook}</p>
                           {c.protected_skills?.length > 0 && (
                             <div className="mb-2">
                               <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Human skills that stay valuable</p>
@@ -2503,11 +2526,35 @@ export default function AdminPage() {
                   </div>
                 )}
 
+                {adminDirection && (
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">Chosen direction</h3>
+                    <p className="text-sm font-semibold text-slate-800">{adminDirection.label} <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-slate-200 text-slate-500">{adminDirection.source === 'user' ? 'typed by user' : 'suggested match'}</span></p>
+                    {adminDirection.plan ? (
+                      <div className="mt-2 text-xs text-slate-600 space-y-1">
+                        {adminDirection.plan.fit_note && <p>{adminDirection.plan.fit_note}</p>}
+                        {adminDirection.plan.gap && <p><b>Gap:</b> {adminDirection.plan.gap}</p>}
+                        {adminDirection.plan.first_step?.action && <p><b>First step:</b> {adminDirection.plan.first_step.action}</p>}
+                        {(adminDirection.plan.skills_to_build || []).map((sk: any, i: number) => <p key={i}><b>{sk.skill}</b> — {sk.why}</p>)}
+                        {adminDirection.plan.exercise?.task && <p><b>Exercise:</b> {adminDirection.plan.exercise.task}</p>}
+                      </div>
+                    ) : <p className="text-xs text-slate-400 mt-1">No plan in this language yet (plans exist in: {(adminDirection.locales || []).join(', ') || 'none'}).</p>}
+                  </div>
+                )}
+
                 {!adminCareerRecsLoading && adminStudentTrack && (
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                     <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">Majors &amp; Exposure</h3>
                     <p className="text-xs text-slate-400 mb-3">Students' practical track — also shown on the live results page and in the PDF.</p>
                     {adminStudentTrack.majors_guidance && <p className="text-sm text-slate-600 mb-3">{adminStudentTrack.majors_guidance}</p>}
+                    {(adminStudentTrack.majors || []).map((m: any, i: number) => (
+                      <div key={i} className="mb-2 rounded-lg border border-slate-100 p-3 text-xs text-slate-600">
+                        <p className="font-semibold text-slate-700">{m.name}</p>
+                        {m.why_fit && <p>{m.why_fit}</p>}
+                        {m.careers?.length > 0 && <p><b>Leads to:</b> {m.careers.join(' · ')}</p>}
+                        {m.try_it && <p><b>Try it:</b> {m.try_it}</p>}
+                      </div>
+                    ))}
                     <div className="space-y-2">
                       {(adminStudentTrack.exposure_ideas || []).map((idea: any, i: number) => (
                         <div key={i} className="border border-slate-100 rounded-xl p-3">
@@ -4204,6 +4251,36 @@ export default function AdminPage() {
 
         {activeTab === 'betaCareerRecs' && (
           <div className="max-w-3xl mx-auto px-4 py-8 space-y-4">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+              <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Why users rejected careers</h3>
+              <p className="text-xs text-slate-400 mt-1 mb-3">From the &ldquo;Not for me&rdquo; control on each career card. Feedback only: it does not change scores or reports.</p>
+              {!recFeedbackSummary ? (
+                <p className="text-xs text-slate-400">Loading…</p>
+              ) : recFeedbackSummary.total === 0 ? (
+                <p className="text-xs text-slate-400">No feedback yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {['uninterested', 'unqualified', 'unfamiliar', 'impractical'].map(r => (
+                      <span key={r} className="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-50 border border-slate-100 text-slate-600 capitalize">
+                        {r}: <b>{recFeedbackSummary.by_reason?.[r] ?? 0}</b>
+                      </span>
+                    ))}
+                    <span className="text-xs text-slate-400 self-center">{recFeedbackSummary.total} total</span>
+                  </div>
+                  <ul className="space-y-1">
+                    {(recFeedbackSummary.by_career || []).slice(0, 15).map((c: any) => (
+                      <li key={c.career_title} className="text-xs text-slate-600 flex justify-between gap-3 border-b border-slate-50 py-1">
+                        <span className="font-medium text-slate-700">{c.career_title}</span>
+                        <span className="text-slate-400">
+                          {Object.entries(c.reasons || {}).map(([reason, n]) => `${reason} ${n}`).join(' · ')}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-4">
               <div>
                 <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Career Catalog</h3>
