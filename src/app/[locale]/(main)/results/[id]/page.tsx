@@ -142,6 +142,7 @@ export default function ResultsPage() {
   const [dirFailed, setDirFailed] = useState<string | null>(null)
   const [dirRequested, setDirRequested] = useState<string | null>(null)
   const [dirTick, setDirTick] = useState(0)
+  const [dirSlow, setDirSlow] = useState(false)
   const dirPolls = useRef(0)
   // Careers the user marked "not for me": career title -> reason. Feedback only, it never changes scores.
   const [recFeedback, setRecFeedback] = useState<Record<string, string>>({})
@@ -361,10 +362,11 @@ export default function ResultsPage() {
     setDirTick(n => n + 1)
   }
 
-  // Poll while the server builds the plan (up to ~2 minutes), then give up quietly.
+  // Poll while the server builds the plan (up to ~5 minutes: it waits for the main report first, which can take
+  // 2-3 minutes on a fresh assessment), then say it is slow instead of claiming it failed.
   useEffect(() => {
     if (dirPending === null) { dirPolls.current = 0; return }
-    if (dirPolls.current >= 24) { setDirFailed(dirPending); setDirPending(null); return }
+    if (dirPolls.current >= 60) { setDirSlow(true); return }
     const timer = setTimeout(() => {
       dirPolls.current += 1
       apiAuthGet<any>(`/assessment/${id}/direction?locale=${locale}`).then(applyDirection).catch(() => {})
@@ -569,7 +571,7 @@ export default function ResultsPage() {
                 dirFailed ? (
                   <p className="mt-3 text-xs text-charcoal/60">{t('direction.failed')}</p>
                 ) : (
-                  <p className="mt-3 text-xs text-charcoal/60">{t('direction.building')}</p>
+                  <p className="mt-3 text-xs text-charcoal/60">{dirSlow ? t('direction.slow') : t('direction.building')}</p>
                 )
               ) : (
                 <div className="mt-3 space-y-3 text-xs leading-relaxed text-charcoal/70">
