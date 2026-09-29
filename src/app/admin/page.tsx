@@ -2507,10 +2507,11 @@ export default function AdminPage() {
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       {[
+                        ['Weeks 2-4', adminActionPlan.weeks_2_4],
                         ['Month 1', adminActionPlan.month_1],
                         ['Months 2-3', adminActionPlan.months_2_3],
                         ['Months 4-6', adminActionPlan.months_4_6],
-                      ].map(([label, items]) => (
+                      ].filter(([, items]) => ((items as string[]) || []).length > 0).map(([label, items]) => (
                         <div key={label as string}>
                           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">{label}</p>
                           <ul className="space-y-1.5">

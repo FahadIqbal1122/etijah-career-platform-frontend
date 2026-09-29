@@ -700,6 +700,16 @@
       "failed": "We could not build a plan around this field, so your report is based on your assessment answers instead.",
       "lockedCta": "Unlock Full Report"
     },
+    "plan": {
+      "title": "Your plan",
+      "subtitle": "This week, your next 90 days and a skill to practise",
+      "builtAround": "Built around",
+      "topMatch": "Your top match",
+      "weeks2to4": "Weeks 2-4",
+      "days27": "Days 2-7",
+      "next90": "Your next 90 days",
+      "updating": "We are tailoring this plan to the field you named. This section updates when it is ready."
+    },
     "firstStep": {
       "title": "Your first step this week",
       "subtitle": "One thing you can do in the next few days",
@@ -709,8 +719,8 @@
       "worksheet": "Worksheet",
       "followOn": "Then",
       "lockedTag": "Pathfinder",
-      "lockedTitle": "Unlock your 7-day plan",
-      "lockedBody": "Get a day-by-day plan for your first week, with what to do, why it helps and what you will produce each time.",
+      "lockedTitle": "Unlock the rest of your plan",
+      "lockedBody": "Get days 2-7, your 90-day roadmap, and the skills and practice exercise to build for it.",
       "lockedCta": "Unlock Full Report",
       "weekTitle": "Your 7-day plan",
       "weekSubtitle": "What to do, why it helps and what you will have at the end"

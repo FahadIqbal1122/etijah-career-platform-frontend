@@ -323,11 +323,20 @@ export default function ResultsPage() {
     return parts.length ? parts.join(' · ') : null
   }
 
-  // When a direction has been chosen (paid), its first step and 7-day plan replace the generic ones; the
-  // months roadmap (actionPlan.month_*) is unchanged.
-  const shownPlan = direction?.plan && tier !== 'free'
-    ? { ...(actionPlan || {}), first_step: direction.plan.first_step, week_plan: direction.plan.week_plan }
-    : actionPlan
+  // One plan, one focus. With a direction plan (paid) its first step, days 2-7 and 90-day roadmap replace the generic ones
+  // from the main report; otherwise the main report's are used. Older cached reports carry a 5-entry week (day 1
+  // repeated) and Month 1 / 2-3 / 4-6 phases: still shown, without the repeat.
+  const dp = direction?.plan && tier !== 'free' ? direction.plan : null
+  const planSrc = dp || actionPlan || {}
+  const firstStep = (dp?.first_step?.action ? dp.first_step : actionPlan?.first_step) || null
+  let weekPlan: any[] = (dp?.week_plan?.length ? dp.week_plan : actionPlan?.week_plan) || []
+  if (weekPlan.length >= 5) weekPlan = weekPlan.slice(1)
+  const roadmap = ([
+    [t('plan.weeks2to4'), planSrc.weeks_2_4],
+    [t('actionPlan.month1'), planSrc.month_1],
+    [t('actionPlan.months2to3'), planSrc.months_2_3],
+    [t('actionPlan.months4to6'), planSrc.months_4_6],
+  ] as [string, string[] | undefined][]).filter(([, items]) => (items?.length ?? 0) > 0)
 
   async function markCareer(title: string, reason: string) {
     const previous = recFeedback[title]
@@ -552,58 +561,6 @@ export default function ResultsPage() {
             ctaHref="/#pricing"
           />
         )}
-        {dirLoaded && tier !== 'free' && (direction || dirPending !== null || dirFailed) && (
-            <div className="card p-5 border-s-4 border-s-primary">
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div>
-                  <p className="eyebrow mb-1">{t('direction.yourDirection')}</p>
-                  <p className="text-base font-extrabold text-charcoal capitalize">{direction?.label || dirPending || dirFailed}</p>
-                </div>
-                {direction && (
-                  <div className="flex items-center gap-2">
-                    <span className="chip !py-0.5 !text-[11px]">{direction.source === 'user' ? t('direction.badgeYours') : t('direction.badgeSuggested')}</span>
-                    {/* "Change direction" is off while the direction comes from the assessment answer:
-                    <button type="button" onClick={() => { setDirPicking(true); setDirError('') }} className="text-xs text-primary underline">{t('direction.change')}</button> */}
-                  </div>
-                )}
-              </div>
-              {!direction?.plan ? (
-                dirFailed ? (
-                  <p className="mt-3 text-xs text-charcoal/60">{t('direction.failed')}</p>
-                ) : (
-                  <p className="mt-3 text-xs text-charcoal/60">{dirSlow ? t('direction.slow') : t('direction.building')}</p>
-                )
-              ) : (
-                <div className="mt-3 space-y-3 text-xs leading-relaxed text-charcoal/70">
-                  {direction.plan.fit_note && <p>{direction.plan.fit_note}</p>}
-                  {direction.plan.gap && <p><span className="font-bold text-charcoal">{t('direction.gap')}:</span> {direction.plan.gap}</p>}
-                  {direction.plan.steps_to_reach?.length > 0 && (
-                    <div>
-                      <p className="font-bold text-charcoal mb-1">{t('direction.steps')}</p>
-                      <ol className="list-decimal ps-4 space-y-1">
-                        {direction.plan.steps_to_reach.map((st: string, i: number) => <li key={i}>{st}</li>)}
-                      </ol>
-                    </div>
-                  )}
-                  {direction.plan.skills_to_build?.length > 0 && (
-                    <div>
-                      <p className="font-bold text-charcoal mb-1">{t('direction.skills')}</p>
-                      <ul className="space-y-1">
-                        {direction.plan.skills_to_build.map((sk: any, i: number) => <li key={i}><span className="font-bold text-charcoal">{sk.skill}</span> — {sk.why}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                  {direction.plan.exercise?.task && (
-                    <p><span className="font-bold text-charcoal">{t('direction.exercise')}:</span> {direction.plan.exercise.task}
-                      {direction.plan.exercise.work_sample && <> <span className="font-bold text-charcoal">{t('direction.workSample')}:</span> {direction.plan.exercise.work_sample}</>}
-                    </p>
-                  )}
-                  {direction.plan.reality_check && <p className="text-charcoal/50">{direction.plan.reality_check}</p>}
-                  <p className="text-charcoal/50">{t('direction.scoresNote')}</p>
-                </div>
-              )}
-            </div>
-        )}
         {/* The results-page direction picker (suggested matches + typed field) is switched off; the same choice is now
             asked at the end of the assessment. Kept here in case it comes back for signed-in owners:
         {jobs.length > 0 && dirLoaded && tier !== 'free' && (!direction || dirPicking) && (
@@ -652,103 +609,147 @@ export default function ResultsPage() {
         )}
         */}
 
-        {/* First step this week + 7-day plan (paid) */}
-        {shownPlan?.first_step?.action && (
+        {/* Your plan: one section. What it is built around, the first step (day 1), days 2-7, the 90-day roadmap and
+            the skills + practice exercise. Free users get the first step; the rest is one unlock card. */}
+        {(firstStep?.action || dp) && (
           <div className="card p-5 border-s-4 border-s-teal">
             <SectionHead
-              title={t('firstStep.title')}
-              subtitle={t('firstStep.subtitle')}
+              title={t('plan.title')}
+              subtitle={t('plan.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" /></svg>}
             />
-            <p className="text-sm font-bold text-charcoal leading-relaxed">{shownPlan.first_step.action}</p>
-            <div className="mt-3 space-y-1.5 text-xs leading-relaxed text-charcoal/70">
-              {shownPlan.first_step.why && <p><span className="font-bold text-charcoal">{t('firstStep.why')}:</span> {shownPlan.first_step.why}</p>}
-              {shownPlan.first_step.output && <p><span className="font-bold text-charcoal">{t('firstStep.output')}:</span> {shownPlan.first_step.output}</p>}
-              {shownPlan.first_step.when && <p><span className="font-bold text-charcoal">{t('firstStep.when')}:</span> {shownPlan.first_step.when}</p>}
-            </div>
-            {shownPlan.first_step.worksheet?.length > 0 && (
-              <div className="mt-3 rounded-xl bg-teal/5 border border-teal/20 p-3">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-charcoal/60 mb-1.5">{t('firstStep.worksheet')}</p>
-                <ul className="space-y-1 text-xs text-charcoal/75 list-disc ps-4">
-                  {shownPlan.first_step.worksheet.map((w: string, i: number) => <li key={i}>{w}</li>)}
-                </ul>
+
+            {/* What the plan is built around */}
+            <div className="mb-4 rounded-xl border border-primary/15 bg-primary/5 p-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div>
+                  <p className="eyebrow mb-0.5">{dp ? t('direction.yourDirection') : t('plan.builtAround')}</p>
+                  <p className="text-sm font-extrabold text-charcoal capitalize">{dp ? direction.label : (dirPending || jobs[0]?.title || '')}</p>
+                </div>
+                <span className="chip !py-0.5 !text-[11px]">{dp ? (direction.source === 'user' ? t('direction.badgeYours') : t('direction.badgeSuggested')) : t('plan.topMatch')}</span>
               </div>
-            )}
-            {shownPlan.first_step.follow_on && (
-              <p className="mt-3 text-xs text-charcoal/70"><span className="font-bold text-charcoal">{t('firstStep.followOn')}:</span> {shownPlan.first_step.follow_on}</p>
-            )}
-          </div>
-        )}
-
-        {shownPlan?.first_step?.action && (
-          tier === 'free' ? (
-            <LockedSection
-              tag={t('firstStep.lockedTag')}
-              title={t('firstStep.lockedTitle')}
-              body={t('firstStep.lockedBody')}
-              ctaLabel={t('firstStep.lockedCta')}
-              ctaHref="/#pricing"
-            />
-          ) : shownPlan.week_plan?.length > 0 ? (
-            <div className="card p-5">
-              <SectionHead
-                title={t('firstStep.weekTitle')}
-                subtitle={t('firstStep.weekSubtitle')}
-                icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>}
-              />
-              <ol className="space-y-3">
-                {shownPlan.week_plan.map((w: any, i: number) => (
-                  <li key={i} className="flex gap-3">
-                    <span className="shrink-0 w-16 text-[11px] font-bold uppercase tracking-wide text-primary pt-0.5">{w.when}</span>
-                    <div className="text-xs leading-relaxed text-charcoal/70">
-                      <p className="font-bold text-charcoal">{w.action}</p>
-                      {w.why && <p>{w.why}</p>}
-                      {w.output && <p><span className="font-bold text-charcoal">{t('firstStep.output')}:</span> {w.output}</p>}
-                    </div>
-                  </li>
-                ))}
-              </ol>
+              {dp && (
+                <div className="mt-2 space-y-1.5 text-xs leading-relaxed text-charcoal/70">
+                  {dp.fit_note && <p>{dp.fit_note}</p>}
+                  {dp.gap && <p><span className="font-bold text-charcoal">{t('direction.gap')}:</span> {dp.gap}</p>}
+                  {dp.reality_check && <p className="text-charcoal/50">{dp.reality_check}</p>}
+                  <p className="text-charcoal/50">{t('direction.scoresNote')}</p>
+                </div>
+              )}
+              {!dp && tier !== 'free' && dirPending !== null && (
+                <p className="mt-2 text-xs text-charcoal/60">{dirSlow ? t('direction.slow') : t('plan.updating')}</p>
+              )}
+              {!dp && tier !== 'free' && dirFailed && <p className="mt-2 text-xs text-charcoal/60">{t('direction.failed')}</p>}
             </div>
-          ) : null
-        )}
 
-        {/* Action Plan */}
-        {actionPlan && (actionPlan.month_1?.length > 0 || actionPlan.months_2_3?.length > 0 || actionPlan.months_4_6?.length > 0) && (
-          <div className="card p-5">
-            <SectionHead
-              title={t('actionPlan.title')}
-              subtitle={t('actionPlan.subtitle')}
-              icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-            />
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-              {[
-                [t('actionPlan.month1'), actionPlan.month_1],
-                [t('actionPlan.months2to3'), actionPlan.months_2_3],
-                [t('actionPlan.months4to6'), actionPlan.months_4_6],
-              ].map(([label, items], colIdx) => (
-                (items as string[])?.length > 0 && (
-                  <div key={label as string} className="relative">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-[11px] font-bold shrink-0">
-                        {colIdx + 1}
-                      </span>
-                      <p className="text-xs font-bold text-charcoal uppercase tracking-wide">{label}</p>
-                    </div>
-                    {colIdx < 2 && (
-                      <span className="hidden sm:block absolute top-3 left-full w-5 h-px bg-[var(--line-strong)] -translate-x-1" />
-                    )}
-                    <ul className="space-y-2.5 border-l-2 border-primary/15 pl-3.5">
-                      {(items as string[]).map((item, i) => (
-                        <li key={i} className="text-xs leading-relaxed text-charcoal/70 relative">
-                          <span className="absolute -left-[19px] top-1 w-2 h-2 rounded-full bg-teal/80" />
-                          {item}
-                        </li>
-                      ))}
+            {/* First step = day 1 */}
+            {firstStep?.action && (
+              <div>
+                <p className="eyebrow mb-1">{t('firstStep.title')}</p>
+                <p className="text-sm font-bold text-charcoal leading-relaxed">{firstStep.action}</p>
+                <div className="mt-3 space-y-1.5 text-xs leading-relaxed text-charcoal/70">
+                  {firstStep.why && <p><span className="font-bold text-charcoal">{t('firstStep.why')}:</span> {firstStep.why}</p>}
+                  {firstStep.output && <p><span className="font-bold text-charcoal">{t('firstStep.output')}:</span> {firstStep.output}</p>}
+                  {firstStep.when && <p><span className="font-bold text-charcoal">{t('firstStep.when')}:</span> {firstStep.when}</p>}
+                </div>
+                {firstStep.worksheet?.length > 0 && (
+                  <div className="mt-3 rounded-xl bg-teal/5 border border-teal/20 p-3">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-charcoal/60 mb-1.5">{t('firstStep.worksheet')}</p>
+                    <ul className="space-y-1 text-xs text-charcoal/75 list-disc ps-4">
+                      {firstStep.worksheet.map((w: string, i: number) => <li key={i}>{w}</li>)}
                     </ul>
                   </div>
-                )
-              ))}
-            </div>
+                )}
+                {firstStep.follow_on && (
+                  <p className="mt-3 text-xs text-charcoal/70"><span className="font-bold text-charcoal">{t('firstStep.followOn')}:</span> {firstStep.follow_on}</p>
+                )}
+              </div>
+            )}
+
+            {firstStep?.action && tier === 'free' && (
+              <div className="mt-4">
+                <LockedSection
+                  tag={t('firstStep.lockedTag')}
+                  title={t('firstStep.lockedTitle')}
+                  body={t('firstStep.lockedBody')}
+                  ctaLabel={t('firstStep.lockedCta')}
+                  ctaHref="/#pricing"
+                />
+              </div>
+            )}
+
+            {tier !== 'free' && (
+              <>
+                {/* Days 2-7 */}
+                {weekPlan.length > 0 && (
+                  <div className="mt-5">
+                    <p className="eyebrow mb-2">{t('plan.days27')}</p>
+                    <ol className="space-y-3">
+                      {weekPlan.map((w: any, i: number) => (
+                        <li key={i} className="flex gap-3">
+                          <span className="shrink-0 w-16 text-[11px] font-bold uppercase tracking-wide text-primary pt-0.5">{w.when}</span>
+                          <div className="text-xs leading-relaxed text-charcoal/70">
+                            <p className="font-bold text-charcoal">{w.action}</p>
+                            {w.why && <p>{w.why}</p>}
+                            {w.output && <p><span className="font-bold text-charcoal">{t('firstStep.output')}:</span> {w.output}</p>}
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+
+                {/* 90-day roadmap */}
+                {roadmap.length > 0 && (
+                  <div className="mt-5">
+                    <p className="eyebrow mb-3">{t('plan.next90')}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      {roadmap.map(([label, items], colIdx) => (
+                        <div key={label}>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-[11px] font-bold shrink-0">{colIdx + 1}</span>
+                            <p className="text-xs font-bold text-charcoal uppercase tracking-wide">{label}</p>
+                          </div>
+                          <ul className="space-y-2.5 border-l-2 border-primary/15 pl-3.5">
+                            {(items as string[]).map((item, i) => (
+                              <li key={i} className="text-xs leading-relaxed text-charcoal/70 relative">
+                                <span className="absolute -left-[19px] top-1 w-2 h-2 rounded-full bg-teal/80" />
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Skills to build + practice exercise (was inside the AI impact section) */}
+                {aiImpact?.focus && (aiImpact.focus.skills_to_build?.length > 0 || aiImpact.focus.exercise?.task) && (
+                  <div className="mt-5 rounded-xl border border-teal/30 bg-teal/5 p-4">
+                    <p className="text-sm font-bold text-charcoal mb-2">{t('aiImpact.focusTitle')}: {aiImpact.focus.title}</p>
+                    {aiImpact.focus.skills_to_build?.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-[11px] font-semibold text-charcoal/50 uppercase tracking-wide mb-1">{t('aiImpact.skillsLabel')}</p>
+                        <ul className="space-y-1">
+                          {aiImpact.focus.skills_to_build.map((sk: any, i: number) => (
+                            <li key={i} className="text-xs text-charcoal/70"><span className="font-bold text-charcoal">{sk.skill}</span> — {sk.why}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {aiImpact.focus.exercise?.task && (
+                      <div className="text-xs text-charcoal/70 space-y-1">
+                        <p><span className="font-bold text-charcoal">{t('aiImpact.exerciseLabel')}:</span> {aiImpact.focus.exercise.task}</p>
+                        {aiImpact.focus.exercise.work_sample && (
+                          <p><span className="font-bold text-charcoal">{t('aiImpact.workSampleLabel')}:</span> {aiImpact.focus.exercise.work_sample}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
 
@@ -1201,29 +1202,6 @@ export default function ResultsPage() {
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 001.357 2.059l.096.04a2.25 2.25 0 002.635-.701L19.5 9m-9.75-5.896A24.27 24.27 0 0112 3c.607 0 1.207.026 1.8.078" /></svg>}
             />
             <p className="text-sm text-charcoal/70 mb-4 leading-relaxed">{aiImpact.overall_summary}</p>
-            {aiImpact.focus && tier !== 'free' && (
-              <div className="mb-4 rounded-xl border border-teal/30 bg-teal/5 p-4">
-                <p className="text-sm font-bold text-charcoal mb-2">{t('aiImpact.focusTitle')}: {aiImpact.focus.title}</p>
-                {aiImpact.focus.skills_to_build?.length > 0 && (
-                  <div className="mb-3">
-                    <p className="text-[11px] font-semibold text-charcoal/50 uppercase tracking-wide mb-1">{t('aiImpact.skillsLabel')}</p>
-                    <ul className="space-y-1">
-                      {aiImpact.focus.skills_to_build.map((sk: any, i: number) => (
-                        <li key={i} className="text-xs text-charcoal/70"><span className="font-bold text-charcoal">{sk.skill}</span> — {sk.why}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {aiImpact.focus.exercise?.task && (
-                  <div className="text-xs text-charcoal/70 space-y-1">
-                    <p><span className="font-bold text-charcoal">{t('aiImpact.exerciseLabel')}:</span> {aiImpact.focus.exercise.task}</p>
-                    {aiImpact.focus.exercise.work_sample && (
-                      <p><span className="font-bold text-charcoal">{t('aiImpact.workSampleLabel')}:</span> {aiImpact.focus.exercise.work_sample}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
             <div className="space-y-3">
               {aiImpact.careers?.map((c: any) => (
                 <div key={c.title} className="border border-[var(--line)] rounded-xl p-4">
