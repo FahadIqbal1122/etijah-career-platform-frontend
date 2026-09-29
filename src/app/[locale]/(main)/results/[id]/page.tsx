@@ -23,16 +23,33 @@ const levelToWidth: Record<string, string> = {
   high: '88%',
 }
 
+// Small icons for pills and labels (heroicons outline paths).
+const PILL_ICONS = {
+  check: 'M4.5 12.75l6 6 9-13.5',
+  search: 'M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z',
+  sparkles: 'M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z',
+  layers: 'M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3',
+  shield: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z',
+  flag: 'M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5',
+} as const
+function PillIcon({ name, size }: { name: keyof typeof PILL_ICONS; size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden="true" width={size} height={size}>
+      <path strokeLinecap="round" strokeLinejoin="round" d={PILL_ICONS[name]} />
+    </svg>
+  )
+}
+
 // Brand section header (teal icon tile + title/subtitle) used across the report.
 function SectionHead({ icon, title, subtitle }: { icon: ReactNode; title: string; subtitle: string }) {
   return (
-    <div className="flex items-center gap-3 mb-4">
-      <div className="w-9 h-9 rounded-xl bg-lightblue flex items-center justify-center shrink-0 text-primary">
+    <div className="flex items-center gap-3 mb-5">
+      <div className="w-10 h-10 rounded-xl bg-lightblue flex items-center justify-center shrink-0 text-primary">
         {icon}
       </div>
       <div>
-        <h3 className="font-bold text-charcoal text-sm">{title}</h3>
-        <p className="text-xs text-charcoal/45">{subtitle}</p>
+        <h3 className="rp-title text-charcoal">{title}</h3>
+        <p className="rp-sub">{subtitle}</p>
       </div>
     </div>
   )
@@ -47,8 +64,8 @@ function CoursesPlaceholder() {
       {[1, 2, 3].map(i => (
         <div key={i} className="flex items-start justify-between gap-3 border border-[var(--line)] rounded-xl p-3.5">
           <div className="min-w-0">
-            <p className="text-sm font-bold text-charcoal truncate">{t('placeholderTitle')}</p>
-            <p className="text-xs text-charcoal/50 truncate">{t('placeholderMeta')}</p>
+            <p className="rp-h text-charcoal truncate">{t('placeholderTitle')}</p>
+            <p className="rp-sub truncate">{t('placeholderMeta')}</p>
           </div>
           <span className="text-xs font-medium px-2 py-0.5 rounded-full shrink-0 mt-0.5 border bg-lightblue text-primary border-[var(--line)]">{t('paid')}</span>
         </div>
@@ -64,10 +81,10 @@ function CompaniesPlaceholder() {
       {[1, 2, 3, 4].map(i => (
         <div key={i} className="flex items-center justify-between gap-3 border border-[var(--line)] rounded-xl p-3">
           <div className="min-w-0">
-            <p className="text-sm font-bold text-charcoal truncate">{t('placeholderName')}</p>
-            <p className="text-xs text-charcoal/50 truncate">{t('placeholderSector')}</p>
+            <p className="rp-h text-charcoal truncate">{t('placeholderName')}</p>
+            <p className="rp-sub truncate">{t('placeholderSector')}</p>
           </div>
-          <span className="chip !py-0.5 !text-[11px]">{t('view')}</span>
+          <span className="chip !py-0.5 !text-xs">{t('view')}</span>
         </div>
       ))}
     </div>
@@ -81,13 +98,13 @@ function AiImpactDeepDivePlaceholder() {
       {[1, 2, 3].map(i => (
         <div key={i} className="border border-[var(--line)] rounded-xl p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-bold text-charcoal">{t('placeholderTitle')}</span>
+            <span className="rp-h text-charcoal">{t('placeholderTitle')}</span>
             <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-teal/10 text-teal">{t('placeholderRisk')}</span>
           </div>
-          <p className="text-xs text-charcoal/50 mb-2">{t('placeholderOutlook')}</p>
+          <p className="rp-sub mb-2">{t('placeholderOutlook')}</p>
           <div className="flex flex-wrap gap-1.5">
-            <span className="chip chip-teal !py-0.5 !text-[11px]">{t('placeholderSkill')}</span>
-            <span className="chip chip-teal !py-0.5 !text-[11px]">{t('placeholderSkill')}</span>
+            <span className="chip chip-teal !py-0.5 !text-xs">{t('placeholderSkill')}</span>
+            <span className="chip chip-teal !py-0.5 !text-xs">{t('placeholderSkill')}</span>
           </div>
         </div>
       ))}
@@ -579,7 +596,7 @@ export default function ResultsPage() {
                 ))}
               </div>
               <div className="mt-3">
-                <label className="text-xs font-semibold text-charcoal/60">{t('direction.typeLabel')}</label>
+                <label className="text-xs font-semibold text-charcoal/70">{t('direction.typeLabel')}</label>
                 <input
                   type="text"
                   value={dirTyped}
@@ -588,7 +605,7 @@ export default function ResultsPage() {
                   placeholder={t('direction.typePlaceholder')}
                   className="mt-1 w-full rounded-xl border border-[var(--line-strong)] px-3 py-2 text-sm"
                 />
-                <p className="text-[11px] text-charcoal/50 mt-1">{t('direction.typeHint')}</p>
+                <p className="rp-sub mt-1">{t('direction.typeHint')}</p>
               </div>
               {dirError && <p className="text-xs text-rose-500 mt-2">{dirError}</p>}
               <div className="mt-3 flex items-center gap-3">
@@ -602,7 +619,7 @@ export default function ResultsPage() {
                   {dirBusy ? t('direction.building') : t('direction.build')}
                 </button>
                 {direction && (
-                  <button type="button" onClick={() => setDirPicking(false)} className="text-xs text-charcoal/60 underline">{t('direction.cancel')}</button>
+                  <button type="button" onClick={() => setDirPicking(false)} className="rp-sub underline">{t('direction.cancel')}</button>
                 )}
               </div>
             </div>
@@ -610,7 +627,8 @@ export default function ResultsPage() {
         */}
 
         {/* Your plan: one section. What it is built around, the first step (day 1), days 2-7, the 90-day roadmap and
-            the skills + practice exercise. Free users get the first step; the rest is one unlock card. */}
+            the skills + practice exercise. Free users get the first step; the rest is one unlock card.
+            Colours: blue = information, green = do this / you will produce, amber = gap, purple = new idea. */}
         {(firstStep?.action || dp) && (
           <div className="card p-5 border-s-4 border-s-teal">
             <SectionHead
@@ -620,48 +638,65 @@ export default function ResultsPage() {
             />
 
             {/* What the plan is built around */}
-            <div className="mb-4 rounded-xl border border-primary/15 bg-primary/5 p-3">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="rp-note rp-blue mb-5">
+              <div className="flex items-start justify-between gap-2 flex-wrap">
                 <div>
-                  <p className="eyebrow mb-0.5">{dp ? t('direction.yourDirection') : t('plan.builtAround')}</p>
-                  <p className="text-sm font-extrabold text-charcoal capitalize">{dp ? direction.label : (dirPending || jobs[0]?.title || '')}</p>
+                  <span className="rp-note-label">{dp ? t('direction.yourDirection') : t('plan.builtAround')}</span>
+                  <p className="rp-h capitalize text-charcoal">{dp ? direction.label : (dirPending || jobs[0]?.title || '')}</p>
                 </div>
-                <span className="chip !py-0.5 !text-[11px]">{dp ? (direction.source === 'user' ? t('direction.badgeYours') : t('direction.badgeSuggested')) : t('plan.topMatch')}</span>
+                <span className="rp-pill rp-onblue">{dp ? (direction.source === 'user' ? t('direction.badgeYours') : t('direction.badgeSuggested')) : t('plan.topMatch')}</span>
               </div>
               {dp && (
-                <div className="mt-2 space-y-1.5 text-xs leading-relaxed text-charcoal/70">
-                  {dp.fit_note && <p>{dp.fit_note}</p>}
-                  {dp.gap && <p><span className="font-bold text-charcoal">{t('direction.gap')}:</span> {dp.gap}</p>}
-                  {dp.reality_check && <p className="text-charcoal/50">{dp.reality_check}</p>}
-                  <p className="text-charcoal/50">{t('direction.scoresNote')}</p>
+                <div className="mt-2 space-y-2">
+                  {dp.fit_note && <p className="rp-body rp-note-text">{dp.fit_note}</p>}
+                  {dp.gap && (
+                    <div className="rp-note rp-amber">
+                      <span className="rp-note-label">{t('direction.gap')}</span>
+                      <p className="rp-body rp-note-text">{dp.gap}</p>
+                    </div>
+                  )}
+                  {dp.reality_check && <p className="rp-sub">{dp.reality_check}</p>}
+                  <p className="rp-sub">{t('direction.scoresNote')}</p>
                 </div>
               )}
               {!dp && tier !== 'free' && dirPending !== null && (
-                <p className="mt-2 text-xs text-charcoal/60">{dirSlow ? t('direction.slow') : t('plan.updating')}</p>
+                <p className="mt-2 rp-sub">{dirSlow ? t('direction.slow') : t('plan.updating')}</p>
               )}
-              {!dp && tier !== 'free' && dirFailed && <p className="mt-2 text-xs text-charcoal/60">{t('direction.failed')}</p>}
+              {!dp && tier !== 'free' && dirFailed && <p className="mt-2 rp-sub">{t('direction.failed')}</p>}
             </div>
 
             {/* First step = day 1 */}
             {firstStep?.action && (
               <div>
-                <p className="eyebrow mb-1">{t('firstStep.title')}</p>
-                <p className="text-sm font-bold text-charcoal leading-relaxed">{firstStep.action}</p>
-                <div className="mt-3 space-y-1.5 text-xs leading-relaxed text-charcoal/70">
-                  {firstStep.why && <p><span className="font-bold text-charcoal">{t('firstStep.why')}:</span> {firstStep.why}</p>}
-                  {firstStep.output && <p><span className="font-bold text-charcoal">{t('firstStep.output')}:</span> {firstStep.output}</p>}
-                  {firstStep.when && <p><span className="font-bold text-charcoal">{t('firstStep.when')}:</span> {firstStep.when}</p>}
-                </div>
+                <p className="rp-label mb-1.5 flex items-center gap-1.5"><span className="rp-pill rp-green"><PillIcon name="flag" />{t('firstStep.title')}</span></p>
+                <p className="rp-h text-charcoal">{firstStep.action}</p>
+                {firstStep.why && <p className="rp-body text-charcoal/85 mt-2"><span className="font-bold text-charcoal">{t('firstStep.why')}:</span> {firstStep.why}</p>}
+                {(firstStep.output || firstStep.when) && (
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {firstStep.output && (
+                      <div className="rp-note rp-green">
+                        <span className="rp-note-label">{t('firstStep.output')}</span>
+                        <p className="rp-body rp-note-text">{firstStep.output}</p>
+                      </div>
+                    )}
+                    {firstStep.when && (
+                      <div className="rp-note rp-blue">
+                        <span className="rp-note-label">{t('firstStep.when')}</span>
+                        <p className="rp-body rp-note-text">{firstStep.when}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {firstStep.worksheet?.length > 0 && (
-                  <div className="mt-3 rounded-xl bg-teal/5 border border-teal/20 p-3">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-charcoal/60 mb-1.5">{t('firstStep.worksheet')}</p>
-                    <ul className="space-y-1 text-xs text-charcoal/75 list-disc ps-4">
+                  <div className="mt-3 rp-note rp-gray">
+                    <span className="rp-note-label">{t('firstStep.worksheet')}</span>
+                    <ul className="rp-sub list-disc ps-5 space-y-1 mt-1">
                       {firstStep.worksheet.map((w: string, i: number) => <li key={i}>{w}</li>)}
                     </ul>
                   </div>
                 )}
                 {firstStep.follow_on && (
-                  <p className="mt-3 text-xs text-charcoal/70"><span className="font-bold text-charcoal">{t('firstStep.followOn')}:</span> {firstStep.follow_on}</p>
+                  <p className="mt-3 rp-body text-charcoal/85"><span className="font-bold text-charcoal">{t('firstStep.followOn')}:</span> {firstStep.follow_on}</p>
                 )}
               </div>
             )}
@@ -682,16 +717,21 @@ export default function ResultsPage() {
               <>
                 {/* Days 2-7 */}
                 {weekPlan.length > 0 && (
-                  <div className="mt-5">
-                    <p className="eyebrow mb-2">{t('plan.days27')}</p>
-                    <ol className="space-y-3">
+                  <div className="mt-6">
+                    <p className="rp-label mb-2.5">{t('plan.days27')}</p>
+                    <ol className="space-y-3.5">
                       {weekPlan.map((w: any, i: number) => (
-                        <li key={i} className="flex gap-3">
-                          <span className="shrink-0 w-16 text-[11px] font-bold uppercase tracking-wide text-primary pt-0.5">{w.when}</span>
-                          <div className="text-xs leading-relaxed text-charcoal/70">
-                            <p className="font-bold text-charcoal">{w.action}</p>
-                            {w.why && <p>{w.why}</p>}
-                            {w.output && <p><span className="font-bold text-charcoal">{t('firstStep.output')}:</span> {w.output}</p>}
+                        <li key={i} className="flex gap-3 items-start">
+                          <span className="rp-pill rp-blue rp-wrap shrink-0 min-w-[5.5rem] justify-center">{w.when}</span>
+                          <div>
+                            <p className="rp-body font-bold text-charcoal">{w.action}</p>
+                            {w.why && <p className="rp-sub">{w.why}</p>}
+                            {w.output && (
+                              <p className="rp-sub mt-0.5 flex items-start gap-1.5">
+                                <span className="text-[color:var(--rp-green)] mt-0.5 shrink-0"><PillIcon name="check" size={15} /></span>
+                                <span><span className="font-bold text-charcoal">{t('firstStep.output')}:</span> {w.output}</span>
+                              </p>
+                            )}
                           </div>
                         </li>
                       ))}
@@ -701,20 +741,17 @@ export default function ResultsPage() {
 
                 {/* 90-day roadmap */}
                 {roadmap.length > 0 && (
-                  <div className="mt-5">
-                    <p className="eyebrow mb-3">{t('plan.next90')}</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="mt-6">
+                    <p className="rp-label mb-3">{t('plan.next90')}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {roadmap.map(([label, items], colIdx) => (
-                        <div key={label}>
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-[11px] font-bold shrink-0">{colIdx + 1}</span>
-                            <p className="text-xs font-bold text-charcoal uppercase tracking-wide">{label}</p>
-                          </div>
-                          <ul className="space-y-2.5 border-l-2 border-primary/15 pl-3.5">
+                        <div key={label} className="rounded-xl border border-[var(--line)] p-3.5">
+                          <span className={`rp-pill ${['rp-blue', 'rp-green', 'rp-purple', 'rp-gray'][colIdx % 4]}`}>{label}</span>
+                          <ul className="mt-3 space-y-2.5">
                             {(items as string[]).map((item, i) => (
-                              <li key={i} className="text-xs leading-relaxed text-charcoal/70 relative">
-                                <span className="absolute -left-[19px] top-1 w-2 h-2 rounded-full bg-teal/80" />
-                                {item}
+                              <li key={i} className="rp-body text-charcoal/90 flex items-start gap-2">
+                                <span className="mt-2 w-1.5 h-1.5 rounded-full bg-teal shrink-0" />
+                                <span>{item}</span>
                               </li>
                             ))}
                           </ul>
@@ -726,23 +763,24 @@ export default function ResultsPage() {
 
                 {/* Skills to build + practice exercise (was inside the AI impact section) */}
                 {aiImpact?.focus && (aiImpact.focus.skills_to_build?.length > 0 || aiImpact.focus.exercise?.task) && (
-                  <div className="mt-5 rounded-xl border border-teal/30 bg-teal/5 p-4">
-                    <p className="text-sm font-bold text-charcoal mb-2">{t('aiImpact.focusTitle')}: {aiImpact.focus.title}</p>
+                  <div className="mt-6 rp-note rp-green">
+                    <span className="rp-note-label">{t('aiImpact.focusTitle')}</span>
+                    <p className="rp-h capitalize text-charcoal mb-2">{aiImpact.focus.title}</p>
                     {aiImpact.focus.skills_to_build?.length > 0 && (
                       <div className="mb-3">
-                        <p className="text-[11px] font-semibold text-charcoal/50 uppercase tracking-wide mb-1">{t('aiImpact.skillsLabel')}</p>
-                        <ul className="space-y-1">
+                        <p className="rp-label mb-1">{t('aiImpact.skillsLabel')}</p>
+                        <ul className="space-y-1.5">
                           {aiImpact.focus.skills_to_build.map((sk: any, i: number) => (
-                            <li key={i} className="text-xs text-charcoal/70"><span className="font-bold text-charcoal">{sk.skill}</span> — {sk.why}</li>
+                            <li key={i} className="rp-body rp-note-text"><span className="font-bold text-charcoal">{sk.skill}</span> — {sk.why}</li>
                           ))}
                         </ul>
                       </div>
                     )}
                     {aiImpact.focus.exercise?.task && (
-                      <div className="text-xs text-charcoal/70 space-y-1">
-                        <p><span className="font-bold text-charcoal">{t('aiImpact.exerciseLabel')}:</span> {aiImpact.focus.exercise.task}</p>
+                      <div className="space-y-1.5">
+                        <p className="rp-body rp-note-text"><span className="font-bold text-charcoal">{t('aiImpact.exerciseLabel')}:</span> {aiImpact.focus.exercise.task}</p>
                         {aiImpact.focus.exercise.work_sample && (
-                          <p><span className="font-bold text-charcoal">{t('aiImpact.workSampleLabel')}:</span> {aiImpact.focus.exercise.work_sample}</p>
+                          <p className="rp-body rp-note-text"><span className="font-bold text-charcoal">{t('aiImpact.workSampleLabel')}:</span> {aiImpact.focus.exercise.work_sample}</p>
                         )}
                       </div>
                     )}
@@ -775,60 +813,63 @@ export default function ResultsPage() {
                 return (
                   <div
                     key={job.title}
-                    className={`rounded-xl px-3.5 py-3 ${
-                      top ? 'bg-primary text-white' : 'bg-lightblue/50 border border-[var(--line)]'
+                    className={`rounded-2xl px-4 py-4 ${
+                      top ? 'bg-primary text-white'
+                        : `bg-lightblue/40 border border-[var(--line)] border-s-4 ${isNew ? 'border-s-[var(--rp-purple-line)]' : 'border-s-[var(--rp-blue-line)]'}`
                     } ${rejected ? 'opacity-60' : ''}`}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className={`text-sm font-bold capitalize ${top ? 'text-white' : 'text-charcoal'}`}>{job.title}</p>
+                    <div className="flex items-start justify-between gap-3">
+                      <p className={`rp-h capitalize ${top ? 'text-white' : 'text-charcoal'}`}>{job.title}</p>
                       {typeof job.match_score === 'number' && (
-                        <span className={`text-xs font-semibold shrink-0 ${top ? 'text-white/90' : 'text-teal'}`}>
+                        <span className={`rp-pill shrink-0 ${top ? 'rp-ondark' : 'rp-blue'}`}>
                           {job.match_score}% {t('suggestedCareers.matchLabel')}
                         </span>
                       )}
                     </div>
                     {(job.fit_tag || job.direction_tag || aiRisk) && (
-                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      <div className="flex flex-wrap gap-2 mt-2.5">
                         {job.fit_tag && ['strong_fit', 'worth_exploring'].includes(job.fit_tag) && (
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                            top ? 'bg-white/20 text-white' : 'bg-teal/10 text-teal'
-                          }`}>
+                          <span className={`rp-pill ${top ? 'rp-ondark' : job.fit_tag === 'strong_fit' ? 'rp-green' : 'rp-amber'}`}>
+                            <PillIcon name={job.fit_tag === 'strong_fit' ? 'check' : 'search'} />
                             {t(`suggestedCareers.fitTag.${job.fit_tag}`)}
                           </span>
                         )}
                         {job.direction_tag && ['builds_on_background', 'new_direction'].includes(job.direction_tag) && (
-                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
-                            top ? 'border-white/30 text-white/90' : 'border-[var(--line-strong)] text-charcoal/50'
-                          }`}>
+                          <span className={`rp-pill ${top ? 'rp-ondark' : job.direction_tag === 'new_direction' ? 'rp-purple' : 'rp-blue'}`}>
+                            <PillIcon name={job.direction_tag === 'new_direction' ? 'sparkles' : 'layers'} />
                             {t(`suggestedCareers.directionTag.${job.direction_tag}`)}
                           </span>
                         )}
                         {aiRisk && ['low', 'medium', 'high'].includes(aiRisk) && (
-                          <a href="#ai-impact" title={t('suggestedCareers.aiRiskLink')} className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            top ? 'bg-white/20 text-white'
-                              : aiRisk === 'low' ? 'bg-teal/10 text-teal'
-                              : aiRisk === 'medium' ? 'bg-amber-50 text-amber-700'
-                              : 'bg-rose-50 text-rose-700'
+                          <a href="#ai-impact" title={t('suggestedCareers.aiRiskLink')} className={`rp-pill ${
+                            top ? 'rp-ondark' : aiRisk === 'low' ? 'rp-green' : aiRisk === 'medium' ? 'rp-amber' : 'rp-rose'
                           }`}>
+                            <PillIcon name="shield" />
                             {levelLabel(aiRisk).toUpperCase()} {t('aiImpact.riskSuffix')}
                           </a>
                         )}
                       </div>
                     )}
                     {job.fit_summary && (
-                      <p className={`text-xs mt-1 ${top ? 'text-white/80' : 'text-charcoal/60'}`}>{job.fit_summary}</p>
+                      <p className={`rp-body mt-3 ${top ? 'text-white/95' : 'text-charcoal/90'}`}>{job.fit_summary}</p>
                     )}
-                    {job.gap && (
-                      <p className={`text-xs mt-1.5 ${top ? 'text-white/85' : 'text-charcoal/70'}`}>
-                        <span className="font-bold">{t(isNew ? 'suggestedCareers.gapPaths' : 'suggestedCareers.gapBuild')}:</span> {job.gap}
-                      </p>
+                    {(job.gap || job.next_action) && (
+                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {job.gap && (
+                          <div className={`rp-note ${top ? 'rp-ondark-note' : 'rp-amber'}`}>
+                            <span className="rp-note-label">{t(isNew ? 'suggestedCareers.gapPaths' : 'suggestedCareers.gapBuild')}</span>
+                            <p className={`rp-sub ${top ? 'text-white/95!' : 'rp-note-text'}`}>{job.gap}</p>
+                          </div>
+                        )}
+                        {job.next_action && (
+                          <div className={`rp-note ${top ? 'rp-ondark-note' : 'rp-green'}`}>
+                            <span className="rp-note-label">{t('suggestedCareers.nextAction')}</span>
+                            <p className={`rp-sub ${top ? 'text-white/95!' : 'rp-note-text'}`}>{job.next_action}</p>
+                          </div>
+                        )}
+                      </div>
                     )}
-                    {job.next_action && (
-                      <p className={`text-xs mt-1 ${top ? 'text-white/85' : 'text-charcoal/70'}`}>
-                        <span className="font-bold">{t('suggestedCareers.nextAction')}:</span> {job.next_action}
-                      </p>
-                    )}
-                    <div className={`mt-2 flex flex-wrap items-center gap-1.5 text-[11px] ${top ? 'text-white/80' : 'text-charcoal/50'}`}>
+                    <div className={`mt-3 flex flex-wrap items-center gap-2 text-xs ${top ? 'text-white/85' : 'text-charcoal/70'}`}>
                       {rejected ? (
                         <>
                           <span>{t('suggestedCareers.feedback.marked', { reason: t(`suggestedCareers.feedback.${rejected}`) })}</span>
@@ -870,8 +911,11 @@ export default function ResultsPage() {
                 <div className="space-y-5">
                   {groups.filter(g => g.items.length > 0).map(g => (
                     <div key={g.key}>
-                      <p className="text-sm font-extrabold text-charcoal">{g.title}</p>
-                      <p className="text-xs text-charcoal/50 mb-2.5">{g.subtitle}</p>
+                      <div className="flex items-center gap-2.5 mb-1">
+                        <span className={`rp-pill ${g.key === 'paths' ? 'rp-purple' : 'rp-blue'}`}><PillIcon name={g.key === 'paths' ? 'sparkles' : 'layers'} size={15} /></span>
+                        <p className="rp-h text-charcoal">{g.title}</p>
+                      </div>
+                      <p className="rp-sub mb-3">{g.subtitle}</p>
                       <div className="space-y-2.5">{rejectedLast(g.items).map(renderCareer)}</div>
                     </div>
                   ))}
@@ -892,24 +936,30 @@ export default function ResultsPage() {
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.636 50.636 0 00-2.658-.813A59.906 59.906 0 0112 3.493a59.903 59.903 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443" /></svg>}
             />
             {studentTrack.majors_guidance && (
-              <p className="text-sm text-charcoal/70 mb-4">{studentTrack.majors_guidance}</p>
+              <p className="rp-body text-charcoal/85 mb-4">{studentTrack.majors_guidance}</p>
             )}
             {studentTrack.majors?.length > 0 && (
               <div className="space-y-2 mb-4">
                 {studentTrack.majors.map((m: any, i: number) => (
                   <div key={i} className="border border-[var(--line)] border-s-4 border-s-teal rounded-xl p-3.5">
-                    <p className="text-sm font-bold text-charcoal">{m.name}</p>
-                    {m.why_fit && <p className="text-xs text-charcoal/60 mt-0.5">{m.why_fit}</p>}
+                    <p className="rp-h text-charcoal">{m.name}</p>
+                    {m.why_fit && <p className="rp-sub mt-0.5">{m.why_fit}</p>}
                     {m.careers?.length > 0 && (
-                      <p className="text-xs text-charcoal/70 mt-1.5"><span className="font-bold text-charcoal">{t('studentTrack.leadsTo')}:</span> {m.careers.join(' · ')}</p>
+                      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                        <span className="rp-label">{t('studentTrack.leadsTo')}</span>
+                        {m.careers.map((c: string) => <span key={c} className="rp-pill rp-blue">{c}</span>)}
+                      </div>
                     )}
                     {m.try_it && (
-                      <p className="text-xs text-charcoal/70 mt-1"><span className="font-bold text-charcoal">{t('studentTrack.tryIt')}:</span> {m.try_it}</p>
+                      <div className="rp-note rp-green mt-2.5">
+                        <span className="rp-note-label">{t('studentTrack.tryIt')}</span>
+                        <p className="rp-sub rp-note-text">{m.try_it}</p>
+                      </div>
                     )}
                   </div>
                 ))}
                 {tier === 'free' && (
-                  <p className="text-xs text-charcoal/50">{t('studentTrack.lockedMajors')}</p>
+                  <p className="rp-sub">{t('studentTrack.lockedMajors')}</p>
                 )}
               </div>
             )}
@@ -917,8 +967,8 @@ export default function ResultsPage() {
               <div className="space-y-2">
                 {studentTrack.exposure_ideas.map((idea: any, i: number) => (
                   <div key={i} className="border border-[var(--line)] rounded-xl p-3.5">
-                    <p className="text-sm font-bold text-charcoal">{idea.title}</p>
-                    {idea.why && <p className="text-xs text-charcoal/50 mt-0.5">{idea.why}</p>}
+                    <p className="rp-h text-charcoal">{idea.title}</p>
+                    {idea.why && <p className="rp-sub mt-0.5">{idea.why}</p>}
                   </div>
                 ))}
               </div>
@@ -937,13 +987,13 @@ export default function ResultsPage() {
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>}
             />
             <div className="rounded-xl bg-lightblue/60 border-l-4 border-primary px-4 py-3.5 mb-4">
-              <p className="text-sm leading-relaxed text-charcoal/80">{careerPath.narrative}</p>
+              <p className="rp-body text-charcoal/90">{careerPath.narrative}</p>
             </div>
             {careerPath.next_steps?.length > 0 && (
               <div className="space-y-2">
                 {careerPath.next_steps.map((step: string, i: number) => (
-                  <div key={i} className="flex items-start gap-3 text-xs text-charcoal/70 leading-relaxed border border-[var(--line)] rounded-xl p-3 hover:border-primary/30 hover:bg-lightblue/30 transition-colors">
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-teal/15 text-teal text-[10px] font-bold shrink-0 mt-0.5">
+                  <div key={i} className="flex items-start gap-3 rp-body text-charcoal/85 border border-[var(--line)] rounded-xl p-3 hover:border-primary/30 hover:bg-lightblue/30 transition-colors">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[var(--rp-blue-bg)] text-[color:var(--rp-blue)] text-xs font-bold shrink-0">
                       {i + 1}
                     </span>
                     <span>{step}</span>
@@ -971,30 +1021,25 @@ export default function ResultsPage() {
                 {jobListings.map((job: any, i: number) => (
                   <div key={i} className="flex items-start justify-between gap-3 border border-[var(--line)] rounded-xl p-3.5 hover:border-[var(--line-strong)] hover:bg-lightblue/50 transition-colors">
                     <a href={job.url} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 group">
-                      <p className="text-sm font-bold text-charcoal group-hover:text-primary truncate">{job.title}</p>
-                      <p className="text-xs text-charcoal/50 truncate">{job.company} · {job.location}</p>
-                      <p className="text-xs text-charcoal/40 mt-0.5">
-                        {job.is_internship && !listingsAsInternships && <span className="chip !py-0 !text-[10px] me-1.5">{t('liveJobs.internshipTag')}</span>}
+                      <p className="rp-h text-charcoal group-hover:text-primary truncate">{job.title}</p>
+                      <p className="rp-sub truncate">{job.company} · {job.location}</p>
+                      <p className="rp-sub mt-0.5">
                         {t('liveJobs.for')}: {job.matched_career}
                       </p>
-                      {(postedLabel(job.posted_at) || requiresLabel(job)) && (
-                        <p className="text-[11px] text-charcoal/40 mt-0.5">
-                          {postedLabel(job.posted_at) && <>{t('liveJobs.posted', { when: postedLabel(job.posted_at) as string })}</>}
-                          {postedLabel(job.posted_at) && requiresLabel(job) && ' · '}
-                          {requiresLabel(job) && <>{t('liveJobs.requires')}: {requiresLabel(job)}</>}
-                        </p>
+                      {((job.is_internship && !listingsAsInternships) || postedLabel(job.posted_at) || requiresLabel(job)) && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {job.is_internship && !listingsAsInternships && <span className="rp-pill rp-purple">{t('liveJobs.internshipTag')}</span>}
+                          {postedLabel(job.posted_at) && <span className="rp-pill rp-gray">{t('liveJobs.posted', { when: postedLabel(job.posted_at) as string })}</span>}
+                          {requiresLabel(job) && <span className="rp-pill rp-blue rp-wrap">{t('liveJobs.requires')}: {requiresLabel(job)}</span>}
+                        </div>
                       )}
                     </a>
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <span className="chip !py-0.5 !text-[11px]">{job.source}</span>
+                      <span className="rp-pill rp-gray">{job.source}</span>
                       <button
                         onClick={() => saveJob(job, i)}
                         disabled={savedJobs.has(i)}
-                        className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
-                          savedJobs.has(i)
-                            ? 'bg-teal/10 text-teal border-teal/20'
-                            : 'bg-white text-charcoal/50 border-[var(--line-strong)] hover:border-primary hover:text-primary'
-                        }`}
+                        className={`rp-pill ${savedJobs.has(i) ? 'rp-green' : 'rp-onblue hover:border-primary'}`}
                       >
                         {savedJobs.has(i) ? t('liveJobs.saved') : t('liveJobs.save')}
                       </button>
@@ -1018,10 +1063,10 @@ export default function ResultsPage() {
                   {jobListings.map((job: any, i: number) => (
                     <div key={i} className="flex items-start justify-between gap-3 border border-[var(--line)] rounded-xl p-3.5">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-charcoal truncate">{job.title}</p>
-                        <p className="text-xs text-charcoal/50 truncate">{job.company} · {job.location}</p>
+                        <p className="rp-h text-charcoal truncate">{job.title}</p>
+                        <p className="rp-sub truncate">{job.company} · {job.location}</p>
                       </div>
-                      <span className="chip !py-0.5 !text-[11px]">{job.source}</span>
+                      <span className="rp-pill rp-gray">{job.source}</span>
                     </div>
                   ))}
                 </div>
@@ -1064,10 +1109,10 @@ export default function ResultsPage() {
               {certifications.certifications.map((cert: any, i: number) => (
                 <div key={i} className="border border-[var(--line)] rounded-xl p-3.5">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-bold text-charcoal">{cert.title}</p>
-                    {cert.provider_type && <span className="chip !py-0.5 !text-[11px]">{cert.provider_type}</span>}
+                    <p className="rp-h text-charcoal">{cert.title}</p>
+                    {cert.provider_type && <span className="rp-pill rp-gray">{cert.provider_type}</span>}
                   </div>
-                  {cert.why && <p className="text-xs text-charcoal/50 mt-0.5">{cert.why}</p>}
+                  {cert.why && <p className="rp-sub mt-0.5">{cert.why}</p>}
                 </div>
               ))}
             </div>
@@ -1094,10 +1139,10 @@ export default function ResultsPage() {
                   className="flex items-start justify-between gap-3 border border-[var(--line)] rounded-xl p-3.5 hover:border-[var(--line-strong)] hover:bg-lightblue/50 transition-colors group"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-charcoal group-hover:text-primary truncate">{course.title}</p>
-                    <p className="text-xs text-charcoal/50 truncate">{course.provider} · {course.level}{course.duration_hours ? ` · ${course.duration_hours}h` : ''}</p>
+                    <p className="rp-h text-charcoal group-hover:text-primary truncate">{course.title}</p>
+                    <p className="rp-sub truncate">{course.provider} · {course.level}{course.duration_hours ? ` · ${course.duration_hours}h` : ''}</p>
                   </div>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 mt-0.5 border ${course.is_free ? 'bg-teal/10 text-teal border-teal/20' : 'bg-lightblue text-primary border-[var(--line)]'}`}>
+                  <span className={`rp-pill shrink-0 mt-0.5 ${course.is_free ? 'rp-green' : 'rp-blue'}`}>
                     {course.is_free ? t('courses.free') : t('courses.paid')}
                   </span>
                 </a>
@@ -1128,7 +1173,7 @@ export default function ResultsPage() {
           />
         ) : coursesError ? (
           <div className="card p-5 text-center">
-            <p className="text-sm text-charcoal/60 mb-2">{t('error.coursesLoadFailed')}</p>
+            <p className="text-sm text-charcoal/70 mb-2">{t('error.coursesLoadFailed')}</p>
             <button onClick={retry} className="text-sm text-primary hover:underline font-medium">{t('error.tryAgain')}</button>
           </div>
         ) : null}
@@ -1153,10 +1198,10 @@ export default function ResultsPage() {
                   className="flex items-center justify-between gap-3 border border-[var(--line)] rounded-xl p-3 hover:border-[var(--line-strong)] hover:bg-lightblue/50 transition-colors group"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-charcoal group-hover:text-primary truncate">{company.name_en}</p>
-                    <p className="text-xs text-charcoal/50 truncate">{company.sector}{company.is_government ? ` · ${t('companies.government')}` : ''}</p>
+                    <p className="rp-h text-charcoal group-hover:text-primary truncate">{company.name_en}</p>
+                    <p className="rp-sub truncate">{company.sector}{company.is_government ? ` · ${t('companies.government')}` : ''}</p>
                   </div>
-                  <span className="chip !py-0.5 !text-[11px]">{t('companies.view')}</span>
+                  <span className="rp-pill rp-blue">{t('companies.view')}</span>
                 </a>
               ))}
             </div>
@@ -1185,7 +1230,7 @@ export default function ResultsPage() {
           />
         ) : companiesError ? (
           <div className="card p-5 text-center">
-            <p className="text-sm text-charcoal/60 mb-2">{t('error.companiesLoadFailed')}</p>
+            <p className="text-sm text-charcoal/70 mb-2">{t('error.companiesLoadFailed')}</p>
             <button onClick={retry} className="text-sm text-primary hover:underline font-medium">{t('error.tryAgain')}</button>
           </div>
         ) : null}
@@ -1201,43 +1246,44 @@ export default function ResultsPage() {
               subtitle={t('aiImpact.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 001.357 2.059l.096.04a2.25 2.25 0 002.635-.701L19.5 9m-9.75-5.896A24.27 24.27 0 0112 3c.607 0 1.207.026 1.8.078" /></svg>}
             />
-            <p className="text-sm text-charcoal/70 mb-4 leading-relaxed">{aiImpact.overall_summary}</p>
+            <p className="rp-body text-charcoal/85 mb-4">{aiImpact.overall_summary}</p>
             <div className="space-y-3">
               {aiImpact.careers?.map((c: any) => (
                 <div key={c.title} className="border border-[var(--line)] rounded-xl p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-bold text-charcoal">{c.title}</span>
-                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                      c.ai_risk_level === 'low' ? 'bg-teal/10 text-teal' :
-                      c.ai_risk_level === 'medium' ? 'bg-amber-50 text-amber-700' :
-                      'bg-rose-50 text-rose-700'
+                    <span className="rp-h text-charcoal">{c.title}</span>
+                    <span className={`rp-pill ${
+                      c.ai_risk_level === 'low' ? 'rp-green' :
+                      c.ai_risk_level === 'medium' ? 'rp-amber' :
+                      'rp-rose'
                     }`}>
+                      <PillIcon name="shield" />
                       {c.ai_risk_level ? levelLabel(c.ai_risk_level).toUpperCase() : ''} {t('aiImpact.riskSuffix')}
                     </span>
                   </div>
                   {c.global_evidence && (
-                    <p className="text-xs text-charcoal/60 mb-1.5"><span className="font-semibold text-charcoal/70">{t('aiImpact.globalEvidenceLabel')}:</span> {c.global_evidence}</p>
+                    <p className="rp-sub mb-1.5"><span className="font-bold text-charcoal">{t('aiImpact.globalEvidenceLabel')}:</span> {c.global_evidence}</p>
                   )}
-                  <p className="text-xs text-charcoal/50 mb-3">
-                    {c.global_evidence && <span className="font-semibold text-charcoal/70">{t('aiImpact.localOutlookLabel')}: </span>}
+                  <p className="rp-sub mb-3">
+                    {c.global_evidence && <span className="font-bold text-charcoal">{t('aiImpact.localOutlookLabel')}: </span>}
                     {c.gcc_outlook}
                   </p>
                   {c.protected_skills?.length > 0 && (
                     <div className="mb-3">
-                      <p className="text-[11px] font-semibold text-charcoal/40 uppercase tracking-wide mb-1.5">{t('aiImpact.protectedSkillsLabel')}</p>
+                      <p className="rp-label mb-1.5">{t('aiImpact.protectedSkillsLabel')}</p>
                       <div className="flex flex-wrap gap-1.5">
                         {c.protected_skills.map((s: string) => (
-                          <span key={s} className="chip chip-teal !py-0.5 !text-[11px]">{s}</span>
+                          <span key={s} className="rp-pill rp-green rp-wrap">{s}</span>
                         ))}
                       </div>
                     </div>
                   )}
                   {c.upskilling?.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-semibold text-charcoal/40 uppercase tracking-wide mb-1.5">{t('aiImpact.upskillingLabel')}</p>
+                      <p className="rp-label mb-1.5">{t('aiImpact.upskillingLabel')}</p>
                       <ul className="space-y-1">
                         {c.upskilling.map((tip: string) => (
-                          <li key={tip} className="text-xs text-charcoal/50 flex gap-1.5">
+                          <li key={tip} className="rp-sub flex gap-1.5">
                             <span className="text-primary mt-0.5">→</span>
                             {tip}
                           </li>
@@ -1246,9 +1292,10 @@ export default function ResultsPage() {
                     </div>
                   )}
                   {c.what_this_means_for_you && (
-                    <p className="text-xs font-semibold text-charcoal/70 mt-3 pl-2.5 border-l-2 border-teal">
-                      {t('aiImpact.whatThisMeansLabel')}: <span className="font-normal">{c.what_this_means_for_you}</span>
-                    </p>
+                    <div className="rp-note rp-blue mt-3">
+                      <span className="rp-note-label">{t('aiImpact.whatThisMeansLabel')}</span>
+                      <p className="rp-body rp-note-text">{c.what_this_means_for_you}</p>
+                    </div>
                   )}
                 </div>
               ))}
@@ -1333,8 +1380,8 @@ export default function ResultsPage() {
               {Object.entries(summary.big_five).map(([trait, level]: any) => (
                 <div key={trait}>
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs font-medium text-charcoal/70">{traitLabel(trait)}</span>
-                    <span className="chip !py-0.5 !text-[11px]">{levelLabel(level)}</span>
+                    <span className="rp-sub font-medium">{traitLabel(trait)}</span>
+                    <span className="rp-pill rp-blue">{levelLabel(level)}</span>
                   </div>
                   <div className="w-full bg-lightblue rounded-full h-1.5">
                     <div className="bg-primary h-1.5 rounded-full transition-all duration-700" style={{ width: levelToWidth[level] ?? '50%' }} />
@@ -1366,8 +1413,8 @@ export default function ResultsPage() {
               ].map(({ label, low, high, score }) => (
                 <div key={label}>
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs font-medium text-charcoal/50">{label}</span>
-                    <span className="chip chip-teal !py-0.5 !text-[11px]">{score >= 50 ? high : low}</span>
+                    <span className="rp-sub font-medium">{label}</span>
+                    <span className={`rp-pill ${score >= 50 ? 'rp-blue' : 'rp-gray'}`}>{score >= 50 ? high : low}</span>
                   </div>
                   <div className="w-full bg-lightblue rounded-full h-1.5">
                     <div className="bg-teal h-1.5 rounded-full transition-all duration-700" style={{ width: `${score}%` }} />
@@ -1448,8 +1495,8 @@ export default function ResultsPage() {
         {!loggedIn && (
           <div className="card p-5 flex items-center justify-between gap-4 flex-wrap border-l-4 border-l-teal">
             <div>
-              <p className="text-sm font-bold text-charcoal">{t('signup.title')}</p>
-              <p className="text-xs text-charcoal/50 mt-0.5">{t('signup.subtitle')}</p>
+              <p className="rp-h text-charcoal">{t('signup.title')}</p>
+              <p className="rp-sub mt-0.5">{t('signup.subtitle')}</p>
             </div>
             <Link
               href={{ pathname: '/signup', query: email ? { email } : {} }}
@@ -1469,21 +1516,21 @@ export default function ResultsPage() {
           <button
             onClick={reassess}
             disabled={reassessing}
-            className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full border border-[var(--line-strong)] text-charcoal/60 hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full border border-[var(--line-strong)] text-charcoal/70 hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
           >
             <svg className={`w-3.5 h-3.5 ${reassessing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
             </svg>
             {reassessing ? 'Refreshing…' : 'Refresh AI impact & job data'}
           </button>
-          <p className="text-[11px] text-charcoal/35">Pulls the latest market data — your personality profile stays the same</p>
+          <p className="text-xs text-charcoal/70">Pulls the latest market data — your personality profile stays the same</p>
           {reassessError && <p className="text-xs text-rose-500">{reassessError}</p>}
         </div>
         */}
 
         {/* Share */}
         <div className="flex flex-col items-center gap-2 pt-2 pb-4">
-          <p className="text-sm text-charcoal/40">{t('share')}</p>
+          <p className="text-sm text-charcoal/70">{t('share')}</p>
           <CopyLinkButton />
         </div>
 

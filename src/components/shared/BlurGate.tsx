@@ -37,7 +37,7 @@ export function BlurGate({
             </span>
           </div>
           <h3 className="text-base font-extrabold text-charcoal">{title}</h3>
-          <p className="text-sm text-charcoal/60 mt-1">{body}</p>
+          <p className="rp-sub mt-1">{body}</p>
           <Link href={ctaHref} className="cta inline-flex mt-4" style={{ padding: '9px 18px', fontSize: 13, borderRadius: 999 }}>
             {ctaLabel}
           </Link>

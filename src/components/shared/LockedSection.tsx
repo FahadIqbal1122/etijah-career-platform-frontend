@@ -29,16 +29,16 @@ export function LockedSection({
             <path d="M8 11V8a4 4 0 0 1 8 0v3" />
           </svg>
         </span>
-        <span className="chip !bg-amber-50 !text-amber-700 !border-amber-200 !py-0.5 !text-[10px] uppercase tracking-wide">{tag}</span>
+        <span className="rp-pill rp-gray">{tag}</span>
       </div>
       <h3 className="text-lg font-extrabold text-charcoal">{title}</h3>
-      <p className="text-sm text-charcoal/60 mt-1">{body}</p>
+      <p className="rp-sub mt-1">{body}</p>
       {ctaLabel && ctaHref && (
-        <Link href={ctaHref} className="cta cta-teal inline-flex mt-4" style={{ padding: '9px 16px', fontSize: 13, borderRadius: 999 }}>
+        <Link href={ctaHref} className="cta cta-teal inline-flex mt-4" style={{ padding: '10px 18px', fontSize: 14, borderRadius: 999 }}>
           {ctaLabel}
         </Link>
       )}
-      {footer && <span className="inline-block mt-4 text-xs font-medium text-charcoal/45">{footer}</span>}
+      {footer && <span className="inline-block mt-4 text-xs font-medium text-charcoal/70">{footer}</span>}
     </div>
   )
 }

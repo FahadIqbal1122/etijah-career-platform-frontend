@@ -749,3 +749,55 @@ html { scroll-behavior: smooth; }
 .react-tel-input .country-list .country.highlight {
   background-color: var(--lightblue);
 }
+
+/* ── Results report: one type scale and one colour language ─────────────────────────────────────────
+   Sizes: title 20 / card title 17 / body 15 / secondary 14 / label and pill 12 (nothing smaller). Arabic is +1px.
+   Colours have fixed meanings: blue = information / your data, green = good or do this, amber = look closer,
+   rose = careful, purple = a new idea, gray = locked or secondary. Text colours are dark enough for 4.5:1 on
+   their tinted backgrounds. */
+:root {
+  --rp-blue: #0B5C99;   --rp-blue-bg: #E6F1FA;   --rp-blue-line: #9CC7E8;
+  --rp-green: #0A705A;  --rp-green-bg: #E2F6F0;  --rp-green-line: #8FD8C3;
+  --rp-amber: #8A5300;  --rp-amber-bg: #FFF1D1;  --rp-amber-line: #F0C25E;
+  --rp-rose: #AE2440;   --rp-rose-bg: #FDE7EB;   --rp-rose-line: #F0A3B2;
+  --rp-purple: #6A3FA0; --rp-purple-bg: #EFE8FA; --rp-purple-line: #C3A8E6;
+  --rp-gray: #545968;   --rp-gray-bg: #ECEEF2;   --rp-gray-line: #C6CAD4;
+}
+.rp-title { font-size: 20px; line-height: 1.3; font-weight: 800; }
+.rp-h { font-size: 17px; line-height: 1.35; font-weight: 700; }
+.rp-body { font-size: 15px; line-height: 1.6; }
+.rp-sub { font-size: 14px; line-height: 1.55; color: rgb(65 65 66 / 0.78); }
+.rp-label { font-size: 12px; line-height: 1.3; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--rp-gray); }
+[dir="rtl"] .rp-title { font-size: 21px; }
+[dir="rtl"] .rp-h { font-size: 18px; }
+[dir="rtl"] .rp-body { font-size: 16px; }
+[dir="rtl"] .rp-sub { font-size: 15px; }
+[dir="rtl"] .rp-label { font-size: 13px; letter-spacing: 0; text-transform: none; }
+
+.rp-pill {
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px;
+  font-size: 12px; line-height: 1.4; font-weight: 700; border: 1px solid transparent; white-space: nowrap;
+}
+[dir="rtl"] .rp-pill { font-size: 13px; }
+.rp-pill svg { width: 13px; height: 13px; flex-shrink: 0; }
+.rp-blue   { color: var(--rp-blue);   background: var(--rp-blue-bg);   border-color: var(--rp-blue-line); }
+.rp-green  { color: var(--rp-green);  background: var(--rp-green-bg);  border-color: var(--rp-green-line); }
+.rp-amber  { color: var(--rp-amber);  background: var(--rp-amber-bg);  border-color: var(--rp-amber-line); }
+.rp-rose   { color: var(--rp-rose);   background: var(--rp-rose-bg);   border-color: var(--rp-rose-line); }
+.rp-purple { color: var(--rp-purple); background: var(--rp-purple-bg); border-color: var(--rp-purple-line); }
+.rp-gray   { color: var(--rp-gray);   background: var(--rp-gray-bg);   border-color: var(--rp-gray-line); }
+/* on the dark blue "top match" card */
+.rp-ondark { color: #fff; background: rgb(255 255 255 / 0.18); border-color: rgb(255 255 255 / 0.35); }
+
+/* tinted note boxes with a coloured edge: gap = amber, next step / produce = green, information = blue */
+.rp-note { border-radius: 12px; padding: 10px 12px; border-inline-start: 4px solid; }
+.rp-note .rp-note-label { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+[dir="rtl"] .rp-note .rp-note-label { font-size: 13px; letter-spacing: 0; text-transform: none; }
+.rp-note.rp-blue   { border-inline-start-color: var(--rp-blue-line); }
+.rp-note.rp-green  { border-inline-start-color: var(--rp-green); }
+.rp-note.rp-amber  { border-inline-start-color: var(--rp-amber-line); }
+.rp-note.rp-purple { border-inline-start-color: var(--rp-purple-line); }
+.rp-note-text { color: rgb(65 65 66 / 0.92); }
+.rp-ondark-note { background: rgb(255 255 255 / 0.12); border-color: rgb(255 255 255 / 0.5); color: #fff; }
+.rp-onblue { color: var(--rp-blue); background: #fff; border-color: var(--rp-blue-line); }
+.rp-wrap { white-space: normal; }
