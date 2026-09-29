@@ -151,7 +151,8 @@ html { scroll-behavior: smooth; }
   font-size: 9px;
   letter-spacing: .08em;
   color: color-mix(in srgb, #fff 55%, transparent);
-  margin-top: 4px;
+  /* sits in the space reserved at the bottom of .cst-wrap, so it never spills onto the label below */
+  position: absolute; left: 0; right: 0; bottom: 0; line-height: 14px;
 }
 [dir="rtl"] .cst-progress-text {
   font-family: var(--font-tajawal), sans-serif;
@@ -324,7 +325,7 @@ html { scroll-behavior: smooth; }
 .fieldinfo-row-examples { font-size: 12.5px; color: #64748b; line-height: 1.5; }
 
 /* constellation band */
-.cst-wrap { position: relative; z-index: 2; height: 118px; margin: 8px auto 0; width: 100%; max-width: 460px; padding: 0 14px; flex: 0 0 auto; }
+.cst-wrap { position: relative; z-index: 2; height: 118px; margin: 8px auto 0; width: 100%; max-width: 460px; padding: 0 14px 16px; box-sizing: border-box; flex: 0 0 auto; }
 .cst { width: 100%; height: 100%; overflow: visible; }
 .cst-ripple {
   animation-name: ripple; animation-timing-function: cubic-bezier(.2, .6, .3, 1);
@@ -544,7 +545,7 @@ html { scroll-behavior: smooth; }
 
   /* left: brand constellation grows big, with progress context beneath it */
   .assess-aside { flex: 1 1 44%; max-width: 46%; justify-content: center; margin-top: -32px; }
-  .assess-aside .cst-wrap { height: clamp(240px, 34vh, 380px); max-width: 100%; margin: 0; padding: 0; }
+  .assess-aside .cst-wrap { height: clamp(240px, 34vh, 380px); max-width: 100%; margin: 0; padding: 0 0 16px; }
   .assess-aside-context { display: block; text-align: center; margin-top: 8px; }
   .assess-aside-eyebrow {
     font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: .28em;
