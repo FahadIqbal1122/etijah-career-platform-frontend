@@ -367,6 +367,11 @@ export default function AssessmentForm() {
 
   function isAnswerValid(question: Question): boolean {
     const a = answers[question.id]
+    // Optional questions can be skipped (empty); if something is typed it still has to be a real answer.
+    if (question.optional) {
+      const t = String(a ?? '').trim()
+      return t === '' || t.length >= 2
+    }
     if (a === undefined || a === null || a === '') return false
     if (Array.isArray(a)) {
       if (a.length === 0) return false
@@ -556,6 +561,10 @@ export default function AssessmentForm() {
       const v = finalAnswers[id]
       if (!pickedFields[i] || typeof v !== 'string' || !v.startsWith(`${pickedFields[i]}_`)) finalAnswers[id] = ''
     })
+    // Optional "field you have in mind": trimmed, and left out entirely when skipped.
+    const fieldInMind = String(finalAnswers['QOFIELD'] ?? '').trim()
+    if (fieldInMind) finalAnswers['QOFIELD'] = fieldInMind
+    else delete finalAnswers['QOFIELD']
     setSubmitting(true)
     setError('')
     try {
@@ -763,7 +772,8 @@ export default function AssessmentForm() {
                   type={q.type === 'email_input' ? 'email' : 'text'}
                   value={answers[q.id] || ''}
                   onChange={e => setAnswer(q.id, e.target.value)}
-                  placeholder={tForm('placeholder')}
+                  placeholder={q.optional ? tForm('optionalPlaceholder') : tForm('placeholder')}
+                  maxLength={q.optional ? 80 : undefined}
                   autoFocus
                 />
               </>
@@ -813,7 +823,7 @@ export default function AssessmentForm() {
                   {/* tForm('next') already carries a bundled arrow (shared with the legacy
                       form's plain-text buttons) — strip it here since we render our own
                       animated .cta-arrow span. */}
-                  <span>{checking ? '…' : tForm('next').replace(/[→←]\s*$/, '')}</span>
+                  <span>{checking ? '…' : (q.optional && !String(answers[q.id] ?? '').trim() ? tForm('skip') : tForm('next').replace(/[→←]\s*$/, ''))}</span>
                   {!checking && <span className="cta-arrow">{arrow}</span>}
                 </button>
               )}

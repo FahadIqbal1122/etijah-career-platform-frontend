@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { apiGet, apiAuthGet, apiAuthPost, apiAuthDelete, apiAuthGetBlob } from '@/lib/api'
@@ -136,6 +136,13 @@ export default function ResultsPage() {
   const [dirTyped, setDirTyped] = useState('')
   const [dirBusy, setDirBusy] = useState(false)
   const [dirLoaded, setDirLoaded] = useState(false)
+  // The plan is built on the server after the assessment's optional "field you have in mind" answer; while it is
+  // being built the direction endpoint says `pending` and the page polls.
+  const [dirPending, setDirPending] = useState<string | null>(null)
+  const [dirFailed, setDirFailed] = useState<string | null>(null)
+  const [dirRequested, setDirRequested] = useState<string | null>(null)
+  const [dirTick, setDirTick] = useState(0)
+  const dirPolls = useRef(0)
   // Careers the user marked "not for me": career title -> reason. Feedback only, it never changes scores.
   const [recFeedback, setRecFeedback] = useState<Record<string, string>>({})
   const [feedbackOpen, setFeedbackOpen] = useState<string | null>(null)
@@ -215,7 +222,7 @@ export default function ResultsPage() {
         .then(data => setRecFeedback(Object.fromEntries((data?.items || []).map((r: any) => [r.career_title, r.reason]))))
         .catch(() => {})
       apiAuthGet<any>(`/assessment/${id}/direction?locale=${locale}`)
-        .then(data => setDirection(data?.selected || null))
+        .then(applyDirection)
         .catch(() => {})
         .finally(() => setDirLoaded(true))
       apiAuthGet<any>(`/assessment/${id}/career-recommendations?locale=${locale}`)
@@ -345,6 +352,25 @@ export default function ResultsPage() {
       if (previous) setRecFeedback(prev => ({ ...prev, [title]: previous }))
     }
   }
+
+  function applyDirection(data: any) {
+    setDirection(data?.selected || null)
+    setDirPending(data?.pending ? (data.pending_label || data?.selected?.label || '') : null)
+    setDirFailed(data?.failed_label || null)
+    setDirRequested(data?.requested_label || null)
+    setDirTick(n => n + 1)
+  }
+
+  // Poll while the server builds the plan (up to ~2 minutes), then give up quietly.
+  useEffect(() => {
+    if (dirPending === null) { dirPolls.current = 0; return }
+    if (dirPolls.current >= 24) { setDirFailed(dirPending); setDirPending(null); return }
+    const timer = setTimeout(() => {
+      dirPolls.current += 1
+      apiAuthGet<any>(`/assessment/${id}/direction?locale=${locale}`).then(applyDirection).catch(() => {})
+    }, 5000)
+    return () => clearTimeout(timer)
+  }, [dirPending, dirTick, id, locale])
 
   async function buildDirection(label: string, source: 'suggested' | 'user') {
     setDirBusy(true)
@@ -513,17 +539,72 @@ export default function ResultsPage() {
 
       </>),
     plan: (<>
-        {/* Choose your direction: build the plan around one of the suggested careers or a field you type (paid) */}
-        {jobs.length > 0 && dirLoaded && (
-          tier === 'free' ? (
-            <LockedSection
-              tag={t('direction.lockedTag')}
-              title={t('direction.lockedTitle')}
-              body={t('direction.lockedBody')}
-              ctaLabel={t('direction.lockedCta')}
-              ctaHref="/#pricing"
-            />
-          ) : (!direction || dirPicking) ? (
+        {/* Direction plan: built on the server from the optional "field you have in mind" answer at the end of the
+            assessment (paid). Free users who gave one see an unlock card; nobody else sees anything here. */}
+        {dirLoaded && tier === 'free' && dirRequested && (
+          <LockedSection
+            tag={t('direction.lockedTag')}
+            title={t('direction.lockedTitle')}
+            body={t('direction.lockedBody')}
+            ctaLabel={t('direction.lockedCta')}
+            ctaHref="/#pricing"
+          />
+        )}
+        {dirLoaded && tier !== 'free' && (direction || dirPending !== null || dirFailed) && (
+            <div className="card p-5 border-s-4 border-s-primary">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <p className="eyebrow mb-1">{t('direction.yourDirection')}</p>
+                  <p className="text-base font-extrabold text-charcoal capitalize">{direction?.label || dirPending || dirFailed}</p>
+                </div>
+                {direction && (
+                  <div className="flex items-center gap-2">
+                    <span className="chip !py-0.5 !text-[11px]">{direction.source === 'user' ? t('direction.badgeYours') : t('direction.badgeSuggested')}</span>
+                    {/* "Change direction" is off while the direction comes from the assessment answer:
+                    <button type="button" onClick={() => { setDirPicking(true); setDirError('') }} className="text-xs text-primary underline">{t('direction.change')}</button> */}
+                  </div>
+                )}
+              </div>
+              {!direction?.plan ? (
+                dirFailed ? (
+                  <p className="mt-3 text-xs text-charcoal/60">{t('direction.failed')}</p>
+                ) : (
+                  <p className="mt-3 text-xs text-charcoal/60">{t('direction.building')}</p>
+                )
+              ) : (
+                <div className="mt-3 space-y-3 text-xs leading-relaxed text-charcoal/70">
+                  {direction.plan.fit_note && <p>{direction.plan.fit_note}</p>}
+                  {direction.plan.gap && <p><span className="font-bold text-charcoal">{t('direction.gap')}:</span> {direction.plan.gap}</p>}
+                  {direction.plan.steps_to_reach?.length > 0 && (
+                    <div>
+                      <p className="font-bold text-charcoal mb-1">{t('direction.steps')}</p>
+                      <ol className="list-decimal ps-4 space-y-1">
+                        {direction.plan.steps_to_reach.map((st: string, i: number) => <li key={i}>{st}</li>)}
+                      </ol>
+                    </div>
+                  )}
+                  {direction.plan.skills_to_build?.length > 0 && (
+                    <div>
+                      <p className="font-bold text-charcoal mb-1">{t('direction.skills')}</p>
+                      <ul className="space-y-1">
+                        {direction.plan.skills_to_build.map((sk: any, i: number) => <li key={i}><span className="font-bold text-charcoal">{sk.skill}</span> — {sk.why}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                  {direction.plan.exercise?.task && (
+                    <p><span className="font-bold text-charcoal">{t('direction.exercise')}:</span> {direction.plan.exercise.task}
+                      {direction.plan.exercise.work_sample && <> <span className="font-bold text-charcoal">{t('direction.workSample')}:</span> {direction.plan.exercise.work_sample}</>}
+                    </p>
+                  )}
+                  {direction.plan.reality_check && <p className="text-charcoal/50">{direction.plan.reality_check}</p>}
+                  <p className="text-charcoal/50">{t('direction.scoresNote')}</p>
+                </div>
+              )}
+            </div>
+        )}
+        {/* The results-page direction picker (suggested matches + typed field) is switched off; the same choice is now
+            asked at the end of the assessment. Kept here in case it comes back for signed-in owners:
+        {jobs.length > 0 && dirLoaded && tier !== 'free' && (!direction || dirPicking) && (
             <div className="card p-5">
               <SectionHead
                 title={t('direction.title')}
@@ -566,58 +647,8 @@ export default function ResultsPage() {
                 )}
               </div>
             </div>
-          ) : (
-            <div className="card p-5 border-s-4 border-s-primary">
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div>
-                  <p className="eyebrow mb-1">{t('direction.yourDirection')}</p>
-                  <p className="text-base font-extrabold text-charcoal capitalize">{direction.label}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="chip !py-0.5 !text-[11px]">{direction.source === 'user' ? t('direction.badgeYours') : t('direction.badgeSuggested')}</span>
-                  <button type="button" onClick={() => { setDirPicking(true); setDirError('') }} className="text-xs text-primary underline">{t('direction.change')}</button>
-                </div>
-              </div>
-              {!direction.plan ? (
-                <div className="mt-3">
-                  <p className="text-xs text-charcoal/60">{t('direction.notInLanguage')}</p>
-                  {dirError && <p className="text-xs text-rose-500 mt-1">{dirError}</p>}
-                  <button type="button" disabled={dirBusy} onClick={() => buildDirection(direction.label, direction.source)} className="cta cta-teal mt-2 disabled:opacity-50" style={{ padding: '8px 14px', fontSize: 12, borderRadius: 999 }}>
-                    {dirBusy ? t('direction.building') : t('direction.buildHere')}
-                  </button>
-                </div>
-              ) : (
-                <div className="mt-3 space-y-3 text-xs leading-relaxed text-charcoal/70">
-                  {direction.plan.fit_note && <p>{direction.plan.fit_note}</p>}
-                  {direction.plan.gap && <p><span className="font-bold text-charcoal">{t('direction.gap')}:</span> {direction.plan.gap}</p>}
-                  {direction.plan.steps_to_reach?.length > 0 && (
-                    <div>
-                      <p className="font-bold text-charcoal mb-1">{t('direction.steps')}</p>
-                      <ol className="list-decimal ps-4 space-y-1">
-                        {direction.plan.steps_to_reach.map((st: string, i: number) => <li key={i}>{st}</li>)}
-                      </ol>
-                    </div>
-                  )}
-                  {direction.plan.skills_to_build?.length > 0 && (
-                    <div>
-                      <p className="font-bold text-charcoal mb-1">{t('direction.skills')}</p>
-                      <ul className="space-y-1">
-                        {direction.plan.skills_to_build.map((sk: any, i: number) => <li key={i}><span className="font-bold text-charcoal">{sk.skill}</span> — {sk.why}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                  {direction.plan.exercise?.task && (
-                    <p><span className="font-bold text-charcoal">{t('direction.exercise')}:</span> {direction.plan.exercise.task}
-                      {direction.plan.exercise.work_sample && <> <span className="font-bold text-charcoal">{t('direction.workSample')}:</span> {direction.plan.exercise.work_sample}</>}
-                    </p>
-                  )}
-                  {direction.plan.reality_check && <p className="text-charcoal/50">{direction.plan.reality_check}</p>}
-                  <p className="text-charcoal/50">{t('direction.scoresNote')}</p>
-                </div>
-              )}
-            </div>
-          )
         )}
+        */}
 
         {/* First step this week + 7-day plan (paid) */}
         {shownPlan?.first_step?.action && (

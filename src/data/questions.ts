@@ -26,6 +26,8 @@ export interface Question {
   dynamic?: { source: string; index: number }
   // Message-key id when several questions share one set of translations (QO5D1 / QO5D2 -> 'QO5D').
   msgId?: string
+  // May be left empty; the form then offers a skip instead of requiring an answer.
+  optional?: boolean
 }
 
 export const BEHAVIORAL_SCALE = [
@@ -924,5 +926,15 @@ export const questions: Question[] = [
     framework: 'Entrepreneurship',
     text: 'The idea of building something of my own — whether as my main career or alongside a stable job — energizes me, even if it means working harder.',
     type: 'behavioral_scale',
+  },
+  {
+    // Last screen, optional. A field or career they already have in mind: after scoring, the report builds their
+    // first step and 7-day plan around it (paid). Never used for scoring. Stored in answers.QOFIELD.
+    id: 'QOFIELD',
+    section: 'Onboarding',
+    framework: 'Onboarding',
+    text: 'Is there a specific field or career you already have in mind?',
+    type: 'text_input',
+    optional: true,
   },
 ]

@@ -7,6 +7,8 @@
     "submitting": "Submitting...",
     "selectUpTo": "Select up to {max}",
     "placeholder": "Your answer",
+    "optionalPlaceholder": "e.g. Supply chain in healthcare",
+    "skip": "Skip",
     "otherPlaceholder": "Please specify",
     "thankYou": "Thank you!",
     "thankYouMessage": "Your responses have been saved. We will be in touch soon.",
@@ -186,6 +188,9 @@
         "final_year": "Final year",
         "postgraduate": "Postgraduate (master's or PhD)"
       }
+    },
+    "QOFIELD": {
+      "text": "Is there a specific field or career you already have in mind? We'll build your plan around it. It won't change your results."
     },
     "QOTC": {
       "text": "Which country do you want to work in?",
@@ -690,7 +695,8 @@
       "scoresNote": "Your assessment results and match scores are unchanged by your choice.",
       "lockedTag": "Pathfinder",
       "lockedTitle": "Build your plan around your own direction",
-      "lockedBody": "Pick one of your matches or type a field you have in mind, and get a first step, a 7-day plan, skills and a practice exercise for it.",
+      "lockedBody": "You told us about a field you have in mind. Unlock the full report to get a first step, a 7-day plan, skills and a practice exercise built around it.",
+      "failed": "We could not build a plan around this field, so your report is based on your assessment answers instead.",
       "lockedCta": "Unlock Full Report"
     },
     "firstStep": {
