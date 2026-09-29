@@ -5,10 +5,11 @@
 // a rising constellation, periodic encouragement "reveal" takeovers, skip
 // logic, existing-user check, and backend submit.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter, usePathname } from '@/i18n/navigation'
 import { questions, BEHAVIORAL_SCALE, Question } from '@/data/questions'
+import { SPECIALISMS } from '@/data/specialisms'
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { apiAuthPost } from '@/lib/api'
@@ -23,9 +24,23 @@ import { initTelemetry, pushTelemetry, getTelemetrySessionId, rotateTelemetrySes
 import { track, trackOnce } from '@/lib/analytics'
 
 // ── skip / auto-fill rules (identical to the original form) ──────────────────
+// The real (non-"not applicable") study fields picked in QO5, in pick order.
+const realFields = (a: Record<string, any>): string[] =>
+  (Array.isArray(a['QO5']) ? a['QO5'] : []).filter((f: string) => f && f !== 'not_applicable')
+const PRO_STAGES = ['working_exploring', 'career_changer', 'returning', 'between_roles']
 const SKIP_RULES: { condition: (a: Record<string, any>) => boolean; ids: Record<string, any> }[] = [
   { condition: a => a['QO4'] === 'high_school', ids: { QO5: ['not_applicable'], QO5A: '', QO5B: '', QO5C: '' } },
   { condition: a => a['QO5A'] !== 'no', ids: { QO5B: '' } },
+  // Year of study is only asked of university students; the high-school goal question only of high-school users.
+  { condition: a => a['QO4'] !== 'university', ids: { QOYR: '' } },
+  { condition: a => a['QO4'] !== 'high_school', ids: { QO5C_HS: '' } },
+  // Specific-area follow-ups: one per real field picked in QO5 (max 2).
+  { condition: a => realFields(a).length < 1, ids: { QO5D1: '' } },
+  { condition: a => realFields(a).length < 2, ids: { QO5D2: '' } },
+  // Goal question: QO5C for students/graduates, QO5C_PRO (same values, work wording) for everyone
+  // who is working or between roles. Exactly one of the two is shown once QO4 is answered.
+  { condition: a => PRO_STAGES.includes(a['QO4']), ids: { QO5C: '' } },
+  { condition: a => !!a['QO4'] && !PRO_STAGES.includes(a['QO4']), ids: { QO5C_PRO: '' } },
   { condition: a => a['QO7'] === 'employee', ids: { Q69: 1, Q71: 'B', Q73: 1 } },
 ]
 function getAutoFills(answers: Record<string, any>): Record<string, any> {
@@ -303,7 +318,16 @@ export default function AssessmentForm() {
   const skipped = new Set(Object.keys(autoFills))
   const visibleQuestions = questions.filter(q => !skipped.has(q.id))
   const total = visibleQuestions.length
-  const q = visibleQuestions[Math.min(index, total - 1)]
+  const rawQ = visibleQuestions[Math.min(index, total - 1)]
+  // Dynamic questions (QO5D1/2) get their options from the field picked in QO5. Memoised so `q` keeps a
+  // stable identity between renders (effects below depend on it).
+  const dynField = rawQ?.dynamic ? realFields(answers)[rawQ.dynamic.index] : undefined
+  const q = useMemo<Question>(() => {
+    if (!rawQ?.dynamic) return rawQ
+    return { ...rawQ, options: (SPECIALISMS[dynField ?? ''] ?? []).map(k => ({ value: `${dynField}_${k}`, label: k })) }
+  }, [rawQ, dynField])
+  const mid = q?.msgId ?? q?.id
+  const qTextStr = q ? tQ(`${mid}.text`, dynField ? { field: tQ(`QO5.options.${dynField}`) } : undefined) : ''
 
   // Tag Manager: the assessment has begun once question 1 first renders.
   // Keyed by the telemetry session id so a retake (fresh session) counts again
@@ -525,6 +549,13 @@ export default function AssessmentForm() {
   async function handleSubmit() {
     if (submitting) return
     const finalAnswers = { ...answers, ...autoFills }
+    // Drop a specific-area answer that no longer belongs to the field picked at that position (the user went
+    // back and changed their study field after answering it).
+    const pickedFields = realFields(finalAnswers)
+    ;(['QO5D1', 'QO5D2'] as const).forEach((id, i) => {
+      const v = finalAnswers[id]
+      if (!pickedFields[i] || typeof v !== 'string' || !v.startsWith(`${pickedFields[i]}_`)) finalAnswers[id] = ''
+    })
     setSubmitting(true)
     setError('')
     try {
@@ -540,7 +571,7 @@ export default function AssessmentForm() {
         education_field: finalAnswers['QO5'] || [],
         major_was_own_choice: finalAnswers['QO5A'] || null,
         major_choice_reason: finalAnswers['QO5A'] === 'no' ? (finalAnswers['QO5B'] || null) : null,
-        career_direction: finalAnswers['QO5C'] || null,
+        career_direction: finalAnswers['QO5C'] || finalAnswers['QO5C_PRO'] || finalAnswers['QO5C_HS'] || null,
         sectors_of_interest: answers['QO6'] || [],
         career_structure: answers['QO7'],
         languages: answers['QO8'] || [],
@@ -634,7 +665,7 @@ export default function AssessmentForm() {
 
             {q.type === 'behavioral_scale' && (
               <>
-                <div className="qcard"><p className="qtext">{tQ(`${q.id}.text`)}</p></div>
+                <div className="qcard"><p className="qtext">{qTextStr}</p></div>
                 <div className="pills">
                   {BEHAVIORAL_SCALE.map(opt => (
                     <button key={opt.value} className={`pill ${sel === opt.value ? 'sel' : ''}`} onClick={() => pick(opt.value)}>
@@ -648,7 +679,7 @@ export default function AssessmentForm() {
 
             {q.type === 'forced_choice' && (
               <div className="choice-wrap">
-                <p className="choice-prompt">{tQ(`${q.id}.text`)}</p>
+                <p className="choice-prompt">{qTextStr}</p>
                 <div className="choices">
                   {q.options?.map(opt => (
                     <button
@@ -657,7 +688,7 @@ export default function AssessmentForm() {
                       onClick={() => pick(opt.value)}
                     >
                       <span className="choice-tag">{opt.value}</span>
-                      <span className="choice-text">{tQ(`${q.id}.options.${opt.value}`)}</span>
+                      <span className="choice-text">{tQ(`${mid}.options.${opt.value}`)}</span>
                     </button>
                   ))}
                 </div>
@@ -666,11 +697,11 @@ export default function AssessmentForm() {
 
             {q.type === 'single_select' && (
               <>
-                <div className="qcard"><p className="qtext">{tQ(`${q.id}.text`)}</p></div>
+                <div className="qcard"><p className="qtext">{qTextStr}</p></div>
                 <div className="pills">
                   {q.options?.map(opt => (
                     <button key={opt.value} className={`pill ${sel === opt.value ? 'sel' : ''}`} onClick={() => pick(opt.value)}>
-                      <span className="pill-label">{tQ(`${q.id}.options.${opt.value}`)}</span>
+                      <span className="pill-label">{tQ(`${mid}.options.${opt.value}`)}</span>
                     </button>
                   ))}
                 </div>
@@ -690,12 +721,12 @@ export default function AssessmentForm() {
 
             {q.type === 'multi_select' && (
               <>
-                <div className="qcard"><p className="qtext">{tQ(`${q.id}.text`)}</p></div>
+                <div className="qcard"><p className="qtext">{qTextStr}</p></div>
                 {q.maxSelect && <p className={`qsection ${maxSelectHit ? 'shake' : ''}`} style={{ marginBottom: 12 }}>{tForm('selectUpTo', { max: q.maxSelect })}</p>}
                 {q.id === 'QO5' && (
                   <FieldOfStudyInfo
                     locale={locale === 'ar' ? 'ar' : 'en'}
-                    optionLabels={(q.options || []).map(opt => ({ value: opt.value, label: tQ(`${q.id}.options.${opt.value}`) }))}
+                    optionLabels={(q.options || []).map(opt => ({ value: opt.value, label: tQ(`${mid}.options.${opt.value}`) }))}
                   />
                 )}
                 <div className="pills">
@@ -705,7 +736,7 @@ export default function AssessmentForm() {
                     return (
                       <button key={opt.value} className={`pill ${on ? 'sel' : ''}`} onClick={() => toggleMulti(opt.value, q.maxSelect)}>
                         <span className="pill-check">{on && '✓'}</span>
-                        <span className="pill-label">{tQ(`${q.id}.options.${opt.value}`)}</span>
+                        <span className="pill-label">{tQ(`${mid}.options.${opt.value}`)}</span>
                       </button>
                     )
                   })}
@@ -726,7 +757,7 @@ export default function AssessmentForm() {
 
             {(q.type === 'text_input' || q.type === 'email_input') && (
               <>
-                <div className="qcard"><p className="qtext">{tQ(`${q.id}.text`)}</p></div>
+                <div className="qcard"><p className="qtext">{qTextStr}</p></div>
                 <input
                   className="qinput"
                   type={q.type === 'email_input' ? 'email' : 'text'}
@@ -740,7 +771,7 @@ export default function AssessmentForm() {
 
             {q.type === 'number_input' && (
               <>
-                <div className="qcard"><p className="qtext">{tQ(`${q.id}.text`)}</p></div>
+                <div className="qcard"><p className="qtext">{qTextStr}</p></div>
                 <input
                   className="qinput"
                   type="number"
@@ -758,7 +789,7 @@ export default function AssessmentForm() {
 
             {q.type === 'phone_input' && (
               <>
-                <div className="qcard"><p className="qtext">{tQ(`${q.id}.text`)}</p></div>
+                <div className="qcard"><p className="qtext">{qTextStr}</p></div>
                 <PhoneInput
                   country={'bh'}
                   value={answers[q.id] || ''}

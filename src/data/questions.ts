@@ -21,6 +21,11 @@ export interface Question {
   type: QuestionType
   options?: Option[]
   maxSelect?: number // for multi_select
+  // Options come from another answer: the Nth (index) field picked in `source` (QO5) -> the specific areas
+  // for that field (see data/specialisms.ts). Resolved in AssessmentForm.
+  dynamic?: { source: string; index: number }
+  // Message-key id when several questions share one set of translations (QO5D1 / QO5D2 -> 'QO5D').
+  msgId?: string
 }
 
 export const BEHAVIORAL_SCALE = [
@@ -115,6 +120,21 @@ export const questions: Question[] = [
     ],
   },
   {
+    id: 'QOYR',
+    section: 'Onboarding',
+    framework: 'Onboarding',
+    text: 'Which year of your degree are you in?',
+    type: 'single_select',
+    options: [
+      { value: 'year_1', label: '1st year' },
+      { value: 'year_2', label: '2nd year' },
+      { value: 'year_3', label: '3rd year' },
+      { value: 'year_4', label: '4th year' },
+      { value: 'final_year', label: 'Final year' },
+      { value: 'postgraduate', label: "Postgraduate (master's or PhD)" },
+    ],
+  },
+  {
     id: 'QO3B',
     section: 'Onboarding',
     framework: 'Onboarding',
@@ -149,6 +169,26 @@ export const questions: Question[] = [
     ],
   },
   {
+    id: 'QO5D1',
+    section: 'Onboarding',
+    framework: 'Onboarding',
+    text: 'Within your first field, what is your specific area?',
+    type: 'single_select',
+    options: [],
+    dynamic: { source: 'QO5', index: 0 },
+    msgId: 'QO5D',
+  },
+  {
+    id: 'QO5D2',
+    section: 'Onboarding',
+    framework: 'Onboarding',
+    text: 'Within your second field, what is your specific area?',
+    type: 'single_select',
+    options: [],
+    dynamic: { source: 'QO5', index: 1 },
+    msgId: 'QO5D',
+  },
+  {
     id: 'QO5A',
     section: 'Onboarding',
     framework: 'Onboarding',
@@ -170,12 +210,43 @@ export const questions: Question[] = [
     id: 'QO5C',
     section: 'Onboarding',
     framework: 'Onboarding',
-    text: 'When it comes to your career, do you want to...',
+    text: 'What would you like Etijahi to help you do?',
+    type: 'single_select',
+    // Values are stored in assessment_responses.career_direction. stay_in_field / change_field / not_sure
+    // keep their original meaning so older rows still score the same; unsure_subject is new.
+    options: [
+      { value: 'stay_in_field', label: 'Find career options related to what I am studying' },
+      { value: 'unsure_subject', label: 'Explore my options because I am unsure about my subject' },
+      { value: 'change_field', label: 'Explore a different direction' },
+      { value: 'not_sure', label: 'I am not sure yet' },
+    ],
+  },
+  {
+    // Same question and stored values as QO5C, worded for people who are working / between roles
+    // (shown instead of QO5C — see SKIP_RULES in AssessmentForm.tsx).
+    id: 'QO5C_PRO',
+    section: 'Onboarding',
+    framework: 'Onboarding',
+    text: 'What would you like Etijahi to help you do?',
     type: 'single_select',
     options: [
-      { value: 'stay_in_field', label: 'Stay close to my field' },
-      { value: 'change_field', label: 'Move into something different' },
-      { value: 'not_sure', label: 'Not sure yet' },
+      { value: 'stay_in_field', label: 'Find career options related to my current work' },
+      { value: 'unsure_subject', label: 'Explore my options because I am unsure about my current path' },
+      { value: 'change_field', label: 'Explore a different direction' },
+      { value: 'not_sure', label: 'I am not sure yet' },
+    ],
+  },
+  {
+    // High-school version of the goal question (no field of study yet). Stored in career_direction like QO5C.
+    id: 'QO5C_HS',
+    section: 'Onboarding',
+    framework: 'Onboarding',
+    text: 'What would you like Etijahi to help you do?',
+    type: 'single_select',
+    options: [
+      { value: 'choosing_major', label: 'Choose what to study' },
+      { value: 'explore_careers', label: 'Explore careers that suit me' },
+      { value: 'not_sure', label: 'I am not sure yet' },
     ],
   },
   {
@@ -243,6 +314,25 @@ export const questions: Question[] = [
       { value: 'yes_gcc', label: 'Yes, but ideally regional (GCC)' },
       { value: 'maybe', label: 'Maybe, depends' },
       { value: 'no', label: 'No, I want to stay local' },
+    ],
+  },
+  {
+    // Where they want to work (used for job search, companies and market context). Falls back to where they live.
+    id: 'QOTC',
+    section: 'Onboarding',
+    framework: 'Onboarding',
+    text: 'Which country do you want to work in?',
+    type: 'single_select',
+    options: [
+      { value: 'same_as_current', label: 'The country I live in now' },
+      { value: 'saudi_arabia', label: 'Saudi Arabia' },
+      { value: 'bahrain', label: 'Bahrain' },
+      { value: 'uae', label: 'UAE' },
+      { value: 'kuwait', label: 'Kuwait' },
+      { value: 'qatar', label: 'Qatar' },
+      { value: 'oman', label: 'Oman' },
+      { value: 'anywhere_gcc', label: 'Anywhere in the GCC' },
+      { value: 'other', label: 'Another country' },
     ],
   },
   {
