@@ -108,6 +108,107 @@
         "not_applicable": "غير ذلك"
       }
     },
+    "QO5D": {
+      "text": "ضمن مجال {field}، ما تخصصك الدقيق؟",
+      "options": {
+        "business_marketing": "التسويق",
+        "business_finance": "التمويل والمالية",
+        "business_accounting": "المحاسبة",
+        "business_hr": "الموارد البشرية",
+        "business_supply_chain": "سلاسل الإمداد واللوجستيات",
+        "business_management": "الإدارة العامة وإدارة الأعمال",
+        "business_entrepreneurship": "ريادة الأعمال",
+        "business_economics": "الاقتصاد",
+        "business_other": "أخرى / غير مذكور",
+        "engineering_civil": "الهندسة المدنية",
+        "engineering_mechanical": "الهندسة الميكانيكية",
+        "engineering_electrical": "الهندسة الكهربائية",
+        "engineering_chemical_petroleum": "الهندسة الكيميائية والبترول",
+        "engineering_industrial": "الهندسة الصناعية",
+        "engineering_biomedical": "الهندسة الطبية الحيوية",
+        "engineering_environmental": "الهندسة البيئية",
+        "engineering_other": "أخرى / غير مذكور",
+        "computer_science_software": "تطوير البرمجيات",
+        "computer_science_data_ai": "علم البيانات والذكاء الاصطناعي",
+        "computer_science_cybersecurity": "الأمن السيبراني",
+        "computer_science_networks_it": "الشبكات وتقنية المعلومات",
+        "computer_science_information_systems": "نظم المعلومات",
+        "computer_science_other": "أخرى / غير مذكور",
+        "medicine_general_medicine": "الطب العام",
+        "medicine_nursing": "التمريض",
+        "medicine_pharmacy": "الصيدلة",
+        "medicine_dentistry": "طب الأسنان",
+        "medicine_public_health": "الصحة العامة والإدارة الصحية",
+        "medicine_allied_health": "العلوم الصحية المساندة",
+        "medicine_other": "أخرى / غير مذكور",
+        "sciences_biology": "الأحياء",
+        "sciences_chemistry": "الكيمياء",
+        "sciences_physics": "الفيزياء",
+        "sciences_math_stats": "الرياضيات والإحصاء",
+        "sciences_environmental": "علوم البيئة",
+        "sciences_geology": "الجيولوجيا",
+        "sciences_other": "أخرى / غير مذكور",
+        "humanities_psychology": "علم النفس",
+        "humanities_sociology": "علم الاجتماع",
+        "humanities_media_communication": "الإعلام والاتصال",
+        "humanities_languages": "اللغات والأدب",
+        "humanities_history": "التاريخ",
+        "humanities_political_science": "العلوم السياسية",
+        "humanities_other": "أخرى / غير مذكور",
+        "arts_graphic_design": "التصميم الجرافيكي",
+        "arts_architecture_interior": "العمارة والتصميم الداخلي",
+        "arts_fine_arts": "الفنون الجميلة",
+        "arts_film_media": "الإنتاج السينمائي والإعلامي",
+        "arts_music_performing": "الموسيقى والفنون الأدائية",
+        "arts_fashion": "تصميم الأزياء",
+        "arts_other": "أخرى / غير مذكور",
+        "education_early_childhood": "الطفولة المبكرة",
+        "education_primary": "التعليم الابتدائي",
+        "education_secondary": "التعليم الثانوي (مادة تخصصية)",
+        "education_special_needs": "التربية الخاصة",
+        "education_leadership": "الإدارة والقيادة التربوية",
+        "education_other": "أخرى / غير مذكور",
+        "law_general": "القانون العام",
+        "law_corporate": "قانون الشركات والتجارة",
+        "law_criminal": "القانون الجنائي",
+        "law_sharia": "الشريعة",
+        "law_international": "القانون الدولي",
+        "law_other": "أخرى / غير مذكور"
+      }
+    },
+    "QOYR": {
+      "text": "في أي سنة دراسية أنت؟",
+      "options": {
+        "year_1": "السنة الأولى",
+        "year_2": "السنة الثانية",
+        "year_3": "السنة الثالثة",
+        "year_4": "السنة الرابعة",
+        "final_year": "السنة الأخيرة",
+        "postgraduate": "دراسات عليا (ماجستير أو دكتوراه)"
+      }
+    },
+    "QOTC": {
+      "text": "في أي دولة تريد أن تعمل؟",
+      "options": {
+        "same_as_current": "الدولة التي أعيش فيها حالياً",
+        "saudi_arabia": "المملكة العربية السعودية",
+        "bahrain": "البحرين",
+        "uae": "الإمارات العربية المتحدة",
+        "kuwait": "الكويت",
+        "qatar": "قطر",
+        "oman": "عُمان",
+        "anywhere_gcc": "أي دولة في دول مجلس التعاون",
+        "other": "دولة أخرى"
+      }
+    },
+    "QO5C_HS": {
+      "text": "ما الذي تودّ أن تساعدك «إتجاهي» على فعله؟",
+      "options": {
+        "choosing_major": "أن أختار ما أدرسه",
+        "explore_careers": "أن أستكشف المهن التي تناسبني",
+        "not_sure": "لست متأكداً بعد"
+      }
+    },
     "QO5A": {
       "text": "هل كان اختيار هذا التخصص قرارك الخاص بشكل رئيسي؟",
       "options": {
@@ -119,10 +220,20 @@
       "text": "ما هو السبب الرئيسي في أنه لم يكن قرارك؟"
     },
     "QO5C": {
-      "text": "فيما يتعلق بمسارك المهني، هل تريد أن...",
+      "text": "ما الذي تودّ أن تساعدك «إتجاهي» على فعله؟",
       "options": {
-        "stay_in_field": "تبقى قريباً من مجالك الحالي",
-        "change_field": "تنتقل إلى شيء مختلف",
+        "stay_in_field": "أن أجد خيارات مهنية مرتبطة بما أدرسه",
+        "unsure_subject": "أن أستكشف خياراتي لأنني لست متأكداً من تخصصي",
+        "change_field": "أن أستكشف اتجاهاً مختلفاً",
+        "not_sure": "لست متأكداً بعد"
+      }
+    },
+    "QO5C_PRO": {
+      "text": "ما الذي تودّ أن تساعدك «إتجاهي» على فعله؟",
+      "options": {
+        "stay_in_field": "أن أجد خيارات مهنية مرتبطة بعملي الحالي",
+        "unsure_subject": "أن أستكشف خياراتي لأنني لست متأكداً من مساري الحالي",
+        "change_field": "أن أستكشف اتجاهاً مختلفاً",
         "not_sure": "لست متأكداً بعد"
       }
     },
@@ -544,7 +655,43 @@
     "suggestedCareers": {
       "title": "مسارات مهنية مقترحة", "subtitle": "مطابقة لملفك الكامل", "matchLabel": "تطابق",
       "fitTag": { "strong_fit": "تطابق قوي", "worth_exploring": "يستحق الاستكشاف" },
-      "directionTag": { "builds_on_background": "يبني على خلفيتك", "new_direction": "اتجاه جديد" }
+      "directionTag": { "builds_on_background": "يبني على خلفيتك", "new_direction": "اتجاه جديد" },
+      "groupBuild": "ابنِ على ما لديك",
+      "groupBuildSub": "خيارات ضمن مجالك الحالي أو قريبة منه",
+      "groupPaths": "مسارات ربما لم تفكر بها",
+      "groupPathsSub": "خيارات أوسع، وما يلزم للوصول إليها",
+      "gapBuild": "الفجوة التي تسدّها",
+      "gapPaths": "ما يلزم للوصول إليه",
+      "nextAction": "ما يمكنك فعله الآن",
+      "aiRiskLink": "اطّلع أدناه على تأثير الذكاء الاصطناعي في هذا المسار",
+      "feedback": {"button": "لا يناسبني", "why": "لماذا؟", "uninterested": "غير مهتم", "unqualified": "غير مؤهل", "unfamiliar": "لا أعرفه", "impractical": "غير عملي", "marked": "تم التحديد: {reason}", "undo": "تراجع", "cancel": "إلغاء"}
+    },
+    "direction": {
+      "title": "اختر اتجاهك",
+      "subtitle": "ابنِ خطتك حول أحد المسارات المقترحة لك، أو مجال تفكر فيه",
+      "typeLabel": "أو اكتب مجالك بنفسك",
+      "typePlaceholder": "مثال: سلاسل الإمداد في القطاع الصحي",
+      "typeHint": "اسم مجال أو مهنة قصير. نبني خطة حوله، وتبقى نتائج تقييمك كما هي.",
+      "build": "ابنِ خطتي",
+      "building": "جارٍ بناء خطتك… قد يستغرق ذلك دقيقة",
+      "cancel": "إلغاء",
+      "error": "تعذّر بناء خطتك. يرجى المحاولة مرة أخرى.",
+      "yourDirection": "الاتجاه الذي اخترته",
+      "badgeYours": "اختيارك",
+      "badgeSuggested": "مسار مقترح",
+      "change": "تغيير الاتجاه",
+      "notInLanguage": "لم تُبنَ خطتك لهذا الاتجاه بهذه اللغة بعد.",
+      "buildHere": "ابنِها بهذه اللغة",
+      "gap": "الفجوة التي تسدّها",
+      "steps": "خطوات للوصول إليه",
+      "skills": "مهارات تبنيها",
+      "exercise": "تمرين تطبيقي",
+      "workSample": "ستحصل على",
+      "scoresNote": "نتائج تقييمك ودرجات التطابق لا تتغير باختيارك.",
+      "lockedTag": "مرشد المسار",
+      "lockedTitle": "ابنِ خطتك حول اتجاهك الخاص",
+      "lockedBody": "اختر أحد المسارات المقترحة أو اكتب مجالاً تفكر فيه، واحصل على خطوة أولى وخطة لمدة ٧ أيام ومهارات وتمرين تطبيقي له.",
+      "lockedCta": "افتح التقرير الكامل"
     },
     "firstStep": {
       "title": "خطوتك الأولى هذا الأسبوع",
@@ -569,6 +716,13 @@
       "months4to6": "الشهر ٤-٦"
     },
     "liveJobs": {
+      "internshipTag": "تدريب",
+      "posted": "نُشرت {when}",
+      "requires": "المطلوب",
+      "noExperience": "بلا خبرة",
+      "expMonths": "خبرة {n} أشهر",
+      "expYears": "خبرة {n}+ سنوات",
+      "education": { "high_school": "الثانوية", "associates": "دبلوم", "bachelors": "بكالوريوس", "postgraduate": "دراسات عليا" },
       "title": "فرص وظيفية حالية",
       "subtitle": "وظائف شاغرة مطابقة لمساراتك المهنية",
       "for": "لـ",
@@ -576,9 +730,9 @@
       "saved": "تم الحفظ ✓",
       "signupTitle": "سجّل لرؤية الوظائف الشاغرة الحالية",
       "signupBody": "أنشئ حساباً مجانياً لفتح الوظائف الشاغرة المطابقة لأفضل مساراتك المهنية.",
-      "lockedTag": "لونشباد",
+      "lockedTag": "مرشد المسار",
       "lockedTitle": "افتح فرص الوظائف الحالية",
-      "lockedBody": "اطّلع على الوظائف الشاغرة المطابقة لأفضل مساراتك المهنية، مُحدَّثة يومياً.",
+      "lockedBody": "اطّلع على الوظائف الشاغرة المطابقة لأفضل مساراتك المهنية.",
       "lockedCta": "افتح التقرير الكامل"
     },
     "internships": {
@@ -587,15 +741,22 @@
       "signupTitle": "سجّل لرؤية فرص التدريب المطابقة",
       "signupBody": "أنشئ حساباً مجانياً لفتح فرص التدريب المطابقة لأفضل مساراتك المهنية.",
       "lockedTitle": "افتح فرص التدريب المطابقة",
-      "lockedBody": "اطّلع على فرص التدريب المطابقة لأفضل مساراتك المهنية، مُحدَّثة يومياً."
+      "lockedBody": "اطّلع على فرص التدريب المطابقة لأفضل مساراتك المهنية."
     },
     "studentTrack": {
       "title": "التخصصات والتعرّف على المجال",
-      "subtitle": "كيف تستكشف مساراتك المهنية المقترحة قبل الالتزام بوظيفة"
+      "subtitle": "كيف تستكشف مساراتك المهنية المقترحة قبل الالتزام بوظيفة",
+      "leadsTo": "يقود إلى",
+      "tryIt": "جرّبه",
+      "lockedMajors": "افتح التقرير الكامل لترى المسارات المهنية التي يقود إليها كل تخصص وكيف تجرّبه."
     },
     "certifications": {
       "title": "شهادات يُنصح بها",
-      "subtitle": "تميّز في التقديم للوظائف المبتدئة في مساراتك المقترحة"
+      "subtitle": "شهادات تجعلك متميزاً في مساراتك المهنية المقترحة",
+      "lockedTag": "مرشد المسار",
+      "lockedTitle": "افتح الشهادات المقترحة لك",
+      "lockedBody": "احصل على شهادات ودورات مقترحة تجعلك متميزاً في مساراتك المهنية.",
+      "lockedCta": "افتح التقرير الكامل"
     },
     "careerPath": {
       "title": "مسارك المهني القادم",
@@ -610,6 +771,12 @@
       "protectedSkillsLabel": "مهارات إنسانية تبقى ذات قيمة",
       "upskillingLabel": "كيف تستعد",
       "whatThisMeansLabel": "ما الذي يعنيه هذا لك",
+      "globalEvidenceLabel": "الدلائل عالمياً",
+      "localOutlookLabel": "في سوقك",
+      "focusTitle": "مهارات تبنيها وتمرين تطبيقي لمسار",
+      "skillsLabel": "مهارات تبنيها",
+      "exerciseLabel": "تمرين تطبيقي",
+      "workSampleLabel": "ستحصل على",
       "signupTitle": "سجّل لرؤية تحليل تأثير الذكاء الاصطناعي كاملاً",
       "signupBody": "أنشئ حساباً مجانياً، ثم افتح التحليل الكامل — جميع مساراتك الخمسة، توقعات لمدة ١-٣ سنوات، والمهارات الإنسانية التي تزداد أهميتها.",
       "lockedTag": "باثفايندر",

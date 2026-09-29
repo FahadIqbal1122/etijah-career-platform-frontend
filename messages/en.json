@@ -108,6 +108,107 @@
         "not_applicable": "Not applicable"
       }
     },
+    "QO5D": {
+      "text": "Within {field}, what is your specific area?",
+      "options": {
+        "business_marketing": "Marketing",
+        "business_finance": "Finance",
+        "business_accounting": "Accounting",
+        "business_hr": "Human resources",
+        "business_supply_chain": "Supply chain & logistics",
+        "business_management": "General management / business administration",
+        "business_entrepreneurship": "Entrepreneurship",
+        "business_economics": "Economics",
+        "business_other": "Other / not listed",
+        "engineering_civil": "Civil engineering",
+        "engineering_mechanical": "Mechanical engineering",
+        "engineering_electrical": "Electrical engineering",
+        "engineering_chemical_petroleum": "Chemical / petroleum engineering",
+        "engineering_industrial": "Industrial / systems engineering",
+        "engineering_biomedical": "Biomedical engineering",
+        "engineering_environmental": "Environmental engineering",
+        "engineering_other": "Other / not listed",
+        "computer_science_software": "Software development",
+        "computer_science_data_ai": "Data science / AI",
+        "computer_science_cybersecurity": "Cybersecurity",
+        "computer_science_networks_it": "Networks / IT",
+        "computer_science_information_systems": "Information systems",
+        "computer_science_other": "Other / not listed",
+        "medicine_general_medicine": "General medicine",
+        "medicine_nursing": "Nursing",
+        "medicine_pharmacy": "Pharmacy",
+        "medicine_dentistry": "Dentistry",
+        "medicine_public_health": "Public health / health management",
+        "medicine_allied_health": "Allied health / lab sciences",
+        "medicine_other": "Other / not listed",
+        "sciences_biology": "Biology",
+        "sciences_chemistry": "Chemistry",
+        "sciences_physics": "Physics",
+        "sciences_math_stats": "Mathematics / statistics",
+        "sciences_environmental": "Environmental science",
+        "sciences_geology": "Geology / earth science",
+        "sciences_other": "Other / not listed",
+        "humanities_psychology": "Psychology",
+        "humanities_sociology": "Sociology",
+        "humanities_media_communication": "Media & communication",
+        "humanities_languages": "Languages & literature",
+        "humanities_history": "History",
+        "humanities_political_science": "Political science",
+        "humanities_other": "Other / not listed",
+        "arts_graphic_design": "Graphic design",
+        "arts_architecture_interior": "Architecture / interior design",
+        "arts_fine_arts": "Fine arts",
+        "arts_film_media": "Film & media production",
+        "arts_music_performing": "Music / performing arts",
+        "arts_fashion": "Fashion design",
+        "arts_other": "Other / not listed",
+        "education_early_childhood": "Early childhood",
+        "education_primary": "Primary education",
+        "education_secondary": "Secondary education (subject specialist)",
+        "education_special_needs": "Special needs education",
+        "education_leadership": "Educational leadership",
+        "education_other": "Other / not listed",
+        "law_general": "General law",
+        "law_corporate": "Corporate / commercial law",
+        "law_criminal": "Criminal law",
+        "law_sharia": "Sharia",
+        "law_international": "International law",
+        "law_other": "Other / not listed"
+      }
+    },
+    "QOYR": {
+      "text": "Which year of your degree are you in?",
+      "options": {
+        "year_1": "1st year",
+        "year_2": "2nd year",
+        "year_3": "3rd year",
+        "year_4": "4th year",
+        "final_year": "Final year",
+        "postgraduate": "Postgraduate (master's or PhD)"
+      }
+    },
+    "QOTC": {
+      "text": "Which country do you want to work in?",
+      "options": {
+        "same_as_current": "The country I live in now",
+        "saudi_arabia": "Saudi Arabia",
+        "bahrain": "Bahrain",
+        "uae": "UAE",
+        "kuwait": "Kuwait",
+        "qatar": "Qatar",
+        "oman": "Oman",
+        "anywhere_gcc": "Anywhere in the GCC",
+        "other": "Another country"
+      }
+    },
+    "QO5C_HS": {
+      "text": "What would you like Etijahi to help you do?",
+      "options": {
+        "choosing_major": "Choose what to study",
+        "explore_careers": "Explore careers that suit me",
+        "not_sure": "I am not sure yet"
+      }
+    },
     "QO5A": {
       "text": "Was choosing this field of study mainly your own decision?",
       "options": {
@@ -119,11 +220,21 @@
       "text": "What was the main reason it wasn't your choice?"
     },
     "QO5C": {
-      "text": "When it comes to your career, do you want to...",
+      "text": "What would you like Etijahi to help you do?",
       "options": {
-        "stay_in_field": "Stay close to my field",
-        "change_field": "Move into something different",
-        "not_sure": "Not sure yet"
+        "stay_in_field": "Find career options related to what I am studying",
+        "unsure_subject": "Explore my options because I am unsure about my subject",
+        "change_field": "Explore a different direction",
+        "not_sure": "I am not sure yet"
+      }
+    },
+    "QO5C_PRO": {
+      "text": "What would you like Etijahi to help you do?",
+      "options": {
+        "stay_in_field": "Find career options related to my current work",
+        "unsure_subject": "Explore my options because I am unsure about my current path",
+        "change_field": "Explore a different direction",
+        "not_sure": "I am not sure yet"
       }
     },
     "QO6": {
@@ -544,7 +655,43 @@
     "suggestedCareers": {
       "title": "Suggested Careers", "subtitle": "Matched across your full profile", "matchLabel": "match",
       "fitTag": { "strong_fit": "Strong fit", "worth_exploring": "Worth exploring" },
-      "directionTag": { "builds_on_background": "Builds on your background", "new_direction": "New direction" }
+      "directionTag": { "builds_on_background": "Builds on your background", "new_direction": "New direction" },
+      "groupBuild": "Build on what you have",
+      "groupBuildSub": "Options within or close to your current field",
+      "groupPaths": "Paths you may not have considered",
+      "groupPathsSub": "Broader options, and what it takes to reach them",
+      "gapBuild": "Gap to close",
+      "gapPaths": "What it takes to get there",
+      "nextAction": "What you can do now",
+      "aiRiskLink": "See how AI affects this career below",
+      "feedback": {"button": "Not for me", "why": "Why?", "uninterested": "Not interested", "unqualified": "Not qualified", "unfamiliar": "Not familiar with it", "impractical": "Not practical", "marked": "Marked: {reason}", "undo": "Undo", "cancel": "Cancel"}
+    },
+    "direction": {
+      "title": "Choose your direction",
+      "subtitle": "Build your plan around one of your matches, or a field you have in mind",
+      "typeLabel": "Or type your own field",
+      "typePlaceholder": "e.g. Supply chain in healthcare",
+      "typeHint": "A short field or career name. We build a plan around it; your assessment results stay the same.",
+      "build": "Build my plan",
+      "building": "Building your plan… this can take a minute",
+      "cancel": "Cancel",
+      "error": "We could not build your plan. Please try again.",
+      "yourDirection": "Your chosen direction",
+      "badgeYours": "Your choice",
+      "badgeSuggested": "Suggested match",
+      "change": "Change direction",
+      "notInLanguage": "Your plan for this direction has not been built in this language yet.",
+      "buildHere": "Build it in this language",
+      "gap": "Gap to close",
+      "steps": "Steps to reach it",
+      "skills": "Skills to build",
+      "exercise": "Practice exercise",
+      "workSample": "You will have",
+      "scoresNote": "Your assessment results and match scores are unchanged by your choice.",
+      "lockedTag": "Pathfinder",
+      "lockedTitle": "Build your plan around your own direction",
+      "lockedBody": "Pick one of your matches or type a field you have in mind, and get a first step, a 7-day plan, skills and a practice exercise for it.",
+      "lockedCta": "Unlock Full Report"
     },
     "firstStep": {
       "title": "Your first step this week",
@@ -569,6 +716,13 @@
       "months4to6": "Months 4-6"
     },
     "liveJobs": {
+      "internshipTag": "Internship",
+      "posted": "Posted {when}",
+      "requires": "Requires",
+      "noExperience": "no experience",
+      "expMonths": "{n} months' experience",
+      "expYears": "{n, plural, one {# year's} other {#+ years'}} experience",
+      "education": { "high_school": "High school", "associates": "Diploma", "bachelors": "Bachelor's degree", "postgraduate": "Postgraduate degree" },
       "title": "Live Job Postings",
       "subtitle": "Current openings matched to your careers",
       "for": "for",
@@ -576,9 +730,9 @@
       "saved": "Saved ✓",
       "signupTitle": "Sign up to see live job postings",
       "signupBody": "Create a free account to unlock current openings matched to your top career matches.",
-      "lockedTag": "Launchpad",
+      "lockedTag": "Pathfinder",
       "lockedTitle": "Unlock live job postings",
-      "lockedBody": "See current openings matched to your top career matches, updated daily.",
+      "lockedBody": "See current openings matched to your top career matches.",
       "lockedCta": "Unlock Full Report"
     },
     "internships": {
@@ -587,15 +741,22 @@
       "signupTitle": "Sign up to see matched internships",
       "signupBody": "Create a free account to unlock internship openings matched to your top career matches.",
       "lockedTitle": "Unlock matched internships",
-      "lockedBody": "See internship openings matched to your top career matches, updated daily."
+      "lockedBody": "See internship openings matched to your top career matches."
     },
     "studentTrack": {
       "title": "Majors & Exposure",
-      "subtitle": "How to explore your matched careers before committing to a job"
+      "subtitle": "How to explore your matched careers before committing to a job",
+      "leadsTo": "Leads to",
+      "tryIt": "Try it",
+      "lockedMajors": "Unlock the full report to see the careers each major leads to and how to try it."
     },
     "certifications": {
       "title": "Certifications to Pursue",
-      "subtitle": "Stand out for entry-level roles in your matched careers"
+      "subtitle": "Credentials that make you stand out in your matched careers",
+      "lockedTag": "Pathfinder",
+      "lockedTitle": "Unlock certifications to pursue",
+      "lockedBody": "Get certification and course picks that make you stand out in your matched careers.",
+      "lockedCta": "Unlock Full Report"
     },
     "careerPath": {
       "title": "Your Path Forward",
@@ -610,6 +771,12 @@
       "protectedSkillsLabel": "Human skills that stay valuable",
       "upskillingLabel": "How to prepare",
       "whatThisMeansLabel": "What this means for you",
+      "globalEvidenceLabel": "Global evidence",
+      "localOutlookLabel": "In your market",
+      "focusTitle": "Skills to build and a practice exercise for",
+      "skillsLabel": "Skills to build",
+      "exerciseLabel": "Practice exercise",
+      "workSampleLabel": "You will have",
       "signupTitle": "Sign up to see your full AI-impact breakdown",
       "signupBody": "Create a free account, then unlock the full deep dive — all 5 top matches, a 1–3 year outlook, and which human skills gain value.",
       "lockedTag": "Pathfinder",
