@@ -15,6 +15,7 @@ import { startCheckout, type PlanCode } from '@/lib/api'
 import PartnerModal from '@/components/shared/PartnerModal'
 import { LANDING_VARIANTS, type VariantSlug } from '@/data/landingVariants'
 import { setLandingVariant } from '@/lib/analytics'
+import { formatPrice, readCurrencyCookie, type Currency } from '@/lib/pricing'
 
 // Render a headline, tealing the `hl` phrase inside it. Uses indexOf so text
 // after a repeated phrase is never dropped.
@@ -109,6 +110,10 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
   const arrow = dir === 'rtl' ? '←' : '→'
   const [checkingOut, setCheckingOut] = useState<PlanCode | null>(null)
   const [showPartnerModal, setShowPartnerModal] = useState(false)
+  // Display currency comes from the proxy's geo cookie; read after mount to avoid a hydration mismatch.
+  // Unknown -> SAR (the billing currency).
+  const [currency, setCurrency] = useState<Currency>('SAR')
+  useEffect(() => { setCurrency(readCurrencyCookie() ?? 'SAR') }, [])
 
   async function handlePlanCta(planCode: PlanCode) {
     // Re-check the session fresh at click time rather than trusting `loggedIn`
@@ -425,12 +430,16 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           <Reveal className="pcard-paid rounded-[26px] p-7 relative" style={{ transitionDelay: '90ms' }}>
             <span className="pcard-badge absolute -top-3.5 start-1/2 -translate-x-1/2 rtl:translate-x-1/2">{c.pricing.paid.badge}</span>
             <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.paid.label}</p>
-            {/*
-            <div className="mt-3 flex items-baseline gap-2">
+            {/* <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-extrabold text-white">{c.pricing.paid.price}</span>
               <span className="text-xs text-white/70">{c.pricing.paid.priceSub}</span>
+            </div> */}
+            <div className="mt-3 flex items-baseline gap-2 flex-wrap">
+              <span className="text-3xl font-extrabold text-white">{formatPrice('pathfinder', currency, locale)}</span>
+              <span className="text-xs text-white/70">
+                {locale === 'ar' ? 'سعر تعريفي · ثم ' : 'Introductory price · then '}{formatPrice('pathfinder_standard', currency, locale)}
+              </span>
             </div>
-            */}
             <p className="mt-3 text-lg font-bold text-white">{c.pricing.paid.priceNote}</p>
             <p className="mt-3 text-sm text-white/80 leading-relaxed">{c.pricing.paid.for}</p>
             <div className="h-px bg-white/16 my-6" />

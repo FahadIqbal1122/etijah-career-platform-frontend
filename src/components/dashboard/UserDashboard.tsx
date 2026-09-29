@@ -14,6 +14,7 @@ import { useRouter, usePathname, Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
 import { apiAuthGet, apiAuthGetBlob, apiAuthPost, apiAuthPatch, apiAuthDelete, startCheckout, type PlanCode } from '@/lib/api'
 import { trackOnce } from '@/lib/analytics'
+import { formatPrice, readCurrencyCookie, type Currency } from '@/lib/pricing'
 import Logomark from '@/components/brand/Logomark'
 import { LockedSection } from '@/components/shared/LockedSection'
 
@@ -198,6 +199,9 @@ export default function UserDashboard() {
   const [jobMatches, setJobMatches] = useState<JobMatch[]>([])
   const [jobMatchesLoading, setJobMatchesLoading] = useState(true)
   const [buying, setBuying] = useState(false)
+  // Display-only currency from the proxy's geo cookie (checkout is charged in SAR); read after mount.
+  const [displayCurrency, setDisplayCurrency] = useState<Currency>('SAR')
+  useEffect(() => { setDisplayCurrency(readCurrencyCookie() ?? 'SAR') }, [])
   const [topMatch, setTopMatch] = useState<string | null>(null)
   const [notifs, setNotifs] = useState(NOTIF.map(n => n.on))
   const [active, setActive] = useState('home')
@@ -606,7 +610,7 @@ export default function UserDashboard() {
                   {plan?.tier === 'free' && (
                     <button onClick={() => handleBuyPlan('pathfinder')} disabled={buying}
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary text-primary text-sm font-medium disabled:opacity-50">
-                      {buying ? '…' : 'Unlock Full Report — 149 SAR'}
+                      {buying ? '…' : `Unlock Full Report — ${formatPrice('pathfinder', displayCurrency, 'en')}`}
                     </button>
                   )}
                   {plan?.tier !== 'launchpad' && (

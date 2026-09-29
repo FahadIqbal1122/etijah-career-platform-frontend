@@ -1789,7 +1789,7 @@ export default function AdminPage() {
     fetch(`/api/admin/submissions/${subId}/ai-impact?locale=${locale}`)
       .then(r => r.json()).then(d => setAdminAiImpact(d)).catch(() => {}).finally(() => setAdminAiLoading(false))
     // AI-generated career_recommendations (match_score/fit_summary/growth_note/fit_tag/
-    // direction_tag) and the 90-day action_plan shown to the user in-app / in the PDF —
+    // direction_tag) and the action_plan (first step, 7-day plan, months roadmap) shown to the user in-app / in the PDF —
     // surfaced here so an admin can spot-check the actual reasoning text a real user
     // saw, not just the rule-based title list above.
     fetch(`/api/admin/submissions/${subId}/career-recommendations?locale=${locale}`)
@@ -2457,8 +2457,31 @@ export default function AdminPage() {
 
                 {!adminCareerRecsLoading && adminActionPlan && (
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                    <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">90-Day Action Plan</h3>
-                    <p className="text-xs text-slate-400 mb-3">Also shown on the user's live results page and in the downloaded PDF.</p>
+                    <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">Action Plan</h3>
+                    <p className="text-xs text-slate-400 mb-3">Also shown on the user's live results page and in the downloaded PDF. The 7-day plan is paid-tier only, so it is missing here for free-tier users.</p>
+                    {adminActionPlan.first_step?.action && (
+                      <div className="mb-4 rounded-xl border border-teal-200 bg-teal-50/50 p-4 text-xs text-slate-600 space-y-1">
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">First step this week</p>
+                        <p className="font-semibold text-slate-700">{adminActionPlan.first_step.action}</p>
+                        {adminActionPlan.first_step.why && <p><b>Why:</b> {adminActionPlan.first_step.why}</p>}
+                        {adminActionPlan.first_step.output && <p><b>Produces:</b> {adminActionPlan.first_step.output}</p>}
+                        {adminActionPlan.first_step.when && <p><b>When:</b> {adminActionPlan.first_step.when}</p>}
+                        {adminActionPlan.first_step.worksheet?.length > 0 && <p><b>Worksheet:</b> {adminActionPlan.first_step.worksheet.join(' · ')}</p>}
+                        {adminActionPlan.first_step.follow_on && <p><b>Then:</b> {adminActionPlan.first_step.follow_on}</p>}
+                      </div>
+                    )}
+                    {adminActionPlan.week_plan?.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">7-day plan</p>
+                        <ul className="space-y-1.5">
+                          {adminActionPlan.week_plan.map((w: any, i: number) => (
+                            <li key={i} className="text-xs text-slate-600">
+                              <b>{w.when}</b> — {w.action} <span className="text-slate-400">({w.why}{w.output ? ` · Produces: ${w.output}` : ''})</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       {[
                         ['Month 1', adminActionPlan.month_1],

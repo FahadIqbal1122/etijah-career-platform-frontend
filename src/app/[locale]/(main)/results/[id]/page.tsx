@@ -486,6 +486,66 @@ export default function ResultsPage() {
           ))}
         </div>
 
+        {/* First step this week + 7-day plan (paid) */}
+        {actionPlan?.first_step?.action && (
+          <div className="card p-5 border-s-4 border-s-teal">
+            <SectionHead
+              title={t('firstStep.title')}
+              subtitle={t('firstStep.subtitle')}
+              icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5" /></svg>}
+            />
+            <p className="text-sm font-bold text-charcoal leading-relaxed">{actionPlan.first_step.action}</p>
+            <div className="mt-3 space-y-1.5 text-xs leading-relaxed text-charcoal/70">
+              {actionPlan.first_step.why && <p><span className="font-bold text-charcoal">{t('firstStep.why')}:</span> {actionPlan.first_step.why}</p>}
+              {actionPlan.first_step.output && <p><span className="font-bold text-charcoal">{t('firstStep.output')}:</span> {actionPlan.first_step.output}</p>}
+              {actionPlan.first_step.when && <p><span className="font-bold text-charcoal">{t('firstStep.when')}:</span> {actionPlan.first_step.when}</p>}
+            </div>
+            {actionPlan.first_step.worksheet?.length > 0 && (
+              <div className="mt-3 rounded-xl bg-teal/5 border border-teal/20 p-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-charcoal/60 mb-1.5">{t('firstStep.worksheet')}</p>
+                <ul className="space-y-1 text-xs text-charcoal/75 list-disc ps-4">
+                  {actionPlan.first_step.worksheet.map((w: string, i: number) => <li key={i}>{w}</li>)}
+                </ul>
+              </div>
+            )}
+            {actionPlan.first_step.follow_on && (
+              <p className="mt-3 text-xs text-charcoal/70"><span className="font-bold text-charcoal">{t('firstStep.followOn')}:</span> {actionPlan.first_step.follow_on}</p>
+            )}
+          </div>
+        )}
+
+        {actionPlan?.first_step?.action && (
+          tier === 'free' ? (
+            <LockedSection
+              tag={t('firstStep.lockedTag')}
+              title={t('firstStep.lockedTitle')}
+              body={t('firstStep.lockedBody')}
+              ctaLabel={t('firstStep.lockedCta')}
+              ctaHref="/#pricing"
+            />
+          ) : actionPlan.week_plan?.length > 0 ? (
+            <div className="card p-5">
+              <SectionHead
+                title={t('firstStep.weekTitle')}
+                subtitle={t('firstStep.weekSubtitle')}
+                icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>}
+              />
+              <ol className="space-y-3">
+                {actionPlan.week_plan.map((w: any, i: number) => (
+                  <li key={i} className="flex gap-3">
+                    <span className="shrink-0 w-16 text-[11px] font-bold uppercase tracking-wide text-primary pt-0.5">{w.when}</span>
+                    <div className="text-xs leading-relaxed text-charcoal/70">
+                      <p className="font-bold text-charcoal">{w.action}</p>
+                      {w.why && <p>{w.why}</p>}
+                      {w.output && <p><span className="font-bold text-charcoal">{t('firstStep.output')}:</span> {w.output}</p>}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null
+        )}
+
         {/* Career Types + Values + Strengths + Personality */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
