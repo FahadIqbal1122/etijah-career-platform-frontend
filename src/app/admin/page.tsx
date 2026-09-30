@@ -76,7 +76,7 @@ type Submission = {
   current_stage: string
   completed: boolean
   created_at: string
-  cohort_override: 'beta' | 'beta_v2' | null
+  cohort_override: CohortKey | null
 }
 
 // Resolves a raw stored answer (option value(s), a 1-6 scale number, or free
@@ -143,38 +143,44 @@ function isBetaSubmission(sub: Pick<Submission, 'created_at'>) {
   return new Date(sub.created_at) >= BETA_COHORT_START
 }
 
-// Second wave of the same beta cohort, starting once the round of fixes/
-// features shipped on 2026-09-08 went live — lets us compare behavior
-// before/after that batch of changes without touching anything already
-// tagged plain "beta".
+// Cohorts, oldest first. Each starts at its date and runs until the next one.
+// beta v2: the round of fixes/features shipped 2026-09-08.
+// beta v3: the 2026-09-29 rebuild (direction asked in the assessment, one plan
+// section, new report design, Careers & AI impact merged) — new submissions only.
+type CohortKey = 'beta' | 'beta_v2' | 'beta_v3'
 const BETA_V2_START = new Date('2026-09-08T11:37:56Z')
-function isBetaV2(createdAt: string) {
-  return new Date(createdAt) >= BETA_V2_START
+const BETA_V3_START = new Date('2026-09-30T05:50:00Z')
+const COHORT_LABELS: Record<CohortKey, string> = { beta: 'beta', beta_v2: 'beta v2', beta_v3: 'beta v3' }
+
+function cohortKey(row: { created_at: string; cohort_override?: CohortKey | null }): CohortKey {
+  if (row.cohort_override) return row.cohort_override
+  const t = new Date(row.created_at)
+  if (t >= BETA_V3_START) return 'beta_v3'
+  if (t >= BETA_V2_START) return 'beta_v2'
+  return 'beta'
 }
 
-// Display label for the beta/beta-v2 badge — `cohort_override` (set by hand via
-// SQL for the rare case someone's timestamp landed on the wrong side of the
-// cutoff) always wins over the date-based default.
-function cohortLabel(row: { created_at: string; cohort_override?: 'beta' | 'beta_v2' | null }): 'beta' | 'beta v2' {
-  if (row.cohort_override === 'beta') return 'beta'
-  if (row.cohort_override === 'beta_v2') return 'beta v2'
-  return isBetaV2(row.created_at) ? 'beta v2' : 'beta'
+// Display label for the cohort badge — `cohort_override` (set by hand via SQL
+// for the rare case someone's timestamp landed on the wrong side of a cutoff)
+// always wins over the date-based default.
+function cohortLabel(row: { created_at: string; cohort_override?: CohortKey | null }): string {
+  return COHORT_LABELS[cohortKey(row)]
 }
 
-// 'all' matches everything (including pre-beta rows); 'beta'/'beta_v2' only
-// match rows that are actually part of the beta cohort in the first place —
+// 'all' matches everything (including pre-beta rows); a cohort filter only
+// matches rows that are actually part of the beta in the first place —
 // a pre-beta submission has no cohort at all, so it's excluded either way.
-function matchesCohortFilter(row: { created_at: string; cohort_override?: 'beta' | 'beta_v2' | null }, filter: 'all' | 'beta' | 'beta_v2'): boolean {
+function matchesCohortFilter(row: { created_at: string; cohort_override?: CohortKey | null }, filter: 'all' | CohortKey): boolean {
   if (filter === 'all') return true
   if (!isBetaSubmission(row)) return false
-  return cohortLabel(row) === (filter === 'beta_v2' ? 'beta v2' : 'beta')
+  return cohortKey(row) === filter
 }
 
-function CohortFilterPills({ value, onChange }: { value: 'all' | 'beta' | 'beta_v2'; onChange: (v: 'all' | 'beta' | 'beta_v2') => void }) {
-  const labels = { all: 'All cohorts', beta: 'Beta', beta_v2: 'Beta v2' } as const
+function CohortFilterPills({ value, onChange }: { value: 'all' | CohortKey; onChange: (v: 'all' | CohortKey) => void }) {
+  const labels = { all: 'All cohorts', beta: 'Beta', beta_v2: 'Beta v2', beta_v3: 'Beta v3' } as const
   return (
     <div className="flex gap-2">
-      {(['all', 'beta', 'beta_v2'] as const).map(key => (
+      {(['all', 'beta', 'beta_v2', 'beta_v3'] as const).map(key => (
         <button
           key={key}
           type="button"
@@ -1027,7 +1033,7 @@ type BetaFeedbackEntry = {
   not_me_text: string | null
   other_text: string | null
   created_at: string
-  assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null; nationality: string | null; age: number | null; age_bracket: string | null; experience_level: string | null; current_stage: string | null; cohort_override: 'beta' | 'beta_v2' | null } | null
+  assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null; nationality: string | null; age: number | null; age_bracket: string | null; experience_level: string | null; current_stage: string | null; cohort_override: CohortKey | null } | null
 }
 
 type BugReport = {
@@ -1194,7 +1200,7 @@ export default function AdminPage() {
   // Testing dashboard — lets staff isolate "beta v2" (the round of fixes/
   // features shipped 2026-09-08 onward) from the original "beta" cohort,
   // instead of eyeballing the per-row cohort badge across every list.
-  const [cohortFilter, setCohortFilter] = useState<'all' | 'beta' | 'beta_v2'>('all')
+  const [cohortFilter, setCohortFilter] = useState<'all' | CohortKey>('all')
   // Submissions tab: filter by how far (if at all) each respondent got into
   // the beta feedback flow, joined in via betaFeedbackByResponseId below.
   const [submissionFeedbackFilter, setSubmissionFeedbackFilter] = useState<SubmissionFeedbackFilter>('all')
@@ -4592,8 +4598,8 @@ export default function AdminPage() {
                               <tr key={bf.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
                                 <td className="px-4 py-3 font-medium text-slate-800">
                                   <span>{bf.assessment_responses?.full_name || '—'}</span>
-                                  {cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }) === 'beta v2' && (
-                                    <span className="ml-2 text-xs font-semibold bg-lightblue text-primary px-1.5 py-0.5 rounded-full">beta v2</span>
+                                  {cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }) !== 'beta' && (
+                                    <span className="ml-2 text-xs font-semibold bg-lightblue text-primary px-1.5 py-0.5 rounded-full">{cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override })}</span>
                                   )}
                                 </td>
                                 <td className="px-4 py-3 text-slate-500">{bf.assessment_responses?.email || '—'}</td>
