@@ -1308,22 +1308,35 @@ export default function ResultsPage() {
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>}
             />
             <div className="space-y-2">
-              {courses.map((course: any) => (
-                <a
-                  key={course.id}
-                  href={course.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-start justify-between gap-3 border border-[var(--line)] rounded-xl p-3.5 hover:border-[var(--line-strong)] hover:bg-lightblue/50 transition-colors group"
-                >
-                  <div className="min-w-0">
-                    <p className="rp-h text-charcoal group-hover:text-primary truncate">{course.title}</p>
-                    <p className="rp-sub truncate">{course.provider} · {course.level}{course.duration_hours ? ` · ${course.duration_hours}h` : ''}</p>
-                  </div>
-                  <span className={`rp-pill shrink-0 mt-0.5 ${course.is_free ? 'rp-green' : 'rp-blue'}`}>
-                    {course.is_free ? t('courses.free') : t('courses.paid')}
-                  </span>
-                </a>
+              {courses.map((course: any, ci: number) => (
+                <div key={course.id}>
+                  {/* Courses come grouped by the career they are for */}
+                  {course.for_career && course.for_career !== courses[ci - 1]?.for_career && (
+                    <p className={`rp-label ${ci > 0 ? 'mt-4' : ''} mb-2`}>{t('courses.forCareer', { career: course.for_career })}</p>
+                  )}
+                  <a
+                    href={course.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block border border-[var(--line)] rounded-xl p-3.5 hover:border-[var(--line-strong)] hover:bg-lightblue/50 transition-colors group"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="rp-h text-charcoal group-hover:text-primary">{course.title}</p>
+                        <p className="rp-sub">{course.provider} · {course.level}{course.duration_hours ? ` · ${course.duration_hours}h` : ''}</p>
+                      </div>
+                      <span className={`rp-pill shrink-0 mt-0.5 ${course.is_free ? 'rp-green' : 'rp-blue'}`}>
+                        {course.is_free ? t('courses.free') : t('courses.paid')}
+                      </span>
+                    </div>
+                    {course.about && (
+                      <p className="rp-sub mt-2"><span className="font-bold text-charcoal">{t('courses.about')}:</span> {course.about}</p>
+                    )}
+                    {course.why && (
+                      <p className="rp-sub mt-1"><span className="font-bold text-charcoal">{t('courses.why')}:</span> {course.why}</p>
+                    )}
+                  </a>
+                </div>
               ))}
             </div>
           </div>
