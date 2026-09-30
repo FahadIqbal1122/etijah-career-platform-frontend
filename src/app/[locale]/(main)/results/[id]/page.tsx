@@ -406,7 +406,8 @@ export default function ResultsPage() {
     return () => clearTimeout(timer)
   }, [dirPending, dirTick, id, locale])
 
-  async function buildDirection(label: string, source: 'suggested' | 'user') {
+  // Returns null on success, or the error message.
+  async function buildDirection(label: string, source: 'suggested' | 'user'): Promise<string | null> {
     setDirBusy(true)
     setDirError('')
     try {
@@ -414,12 +415,29 @@ export default function ResultsPage() {
       setDirection(r?.selected || null)
       setDirPicking(false)
       setDirTyped('')
+      return null
     } catch (e: any) {
-      setDirError(e?.message || t('direction.error'))
+      const msg = e?.message || t('direction.error')
+      setDirError(msg)
+      return msg
     } finally {
       setDirBusy(false)
     }
   }
+
+  // Working people: build the full plan for one of their top careers, then bring them to it.
+  const [planBuilding, setPlanBuilding] = useState<string | null>(null)
+  const [planError, setPlanError] = useState('')
+  function scrollToPlan() { document.getElementById('plan-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
+  async function buildCareerPlan(title: string) {
+    setPlanBuilding(title)
+    setPlanError('')
+    const err = await buildDirection(title, 'suggested')
+    if (err) { setPlanError(err); return }
+    setPlanBuilding(null)
+    setTimeout(scrollToPlan, 100)
+  }
+  const canBuildPlans = route === 'next_move' && tier !== 'free' && loggedIn
 
   if (!allLoaded || awaitingStage1) {
     // Match the assessment's blue gradient (brand-hero) instead of the light
@@ -653,7 +671,7 @@ export default function ResultsPage() {
             the skills + practice exercise. Free users get the first step; the rest is one unlock card.
             Colours: blue = information, green = do this / you will produce, amber = gap, purple = new idea. */}
         {(firstStep?.action || dp) && (
-          <div className="card p-5 border-s-4 border-s-teal">
+          <div id="plan-section" className="card p-5 border-s-4 border-s-teal">
             <SectionHead
               title={t('plan.title')}
               subtitle={t('plan.subtitle')}
@@ -842,6 +860,9 @@ export default function ResultsPage() {
                 const aiCareer: any = aiImpact?.careers?.find((c: any) => String(c.title || '').toLowerCase() === String(job.title || '').toLowerCase())
                 const aiRisk: string | undefined = aiCareer?.ai_risk_level
                 const aiIsOpen = aiOpen[job.title] ?? (i === 0)
+                const hasSteps = Array.isArray(job.next_steps) && job.next_steps.length > 0
+                // The plan section shows this career's plan when it was built for it, or (no plan built yet) the top match's.
+                const planIsShown = dp ? String(direction?.label || '').toLowerCase() === String(job.title || '').toLowerCase() : i === 0
                 return (
                   <div
                     key={job.title}
@@ -885,20 +906,53 @@ export default function ResultsPage() {
                     {job.fit_summary && (
                       <p className={`rp-body mt-3 ${top ? 'text-white/95' : 'text-charcoal/90'}`}>{job.fit_summary}</p>
                     )}
-                    {(job.gap || job.next_action) && (
-                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {(job.gap || job.next_action || hasSteps) && (
+                      <div className={`mt-3 grid grid-cols-1 ${hasSteps ? '' : 'sm:grid-cols-2'} gap-2.5`}>
                         {job.gap && (
                           <div className={`rp-note ${top ? 'rp-ondark-note' : 'rp-amber'}`}>
                             <span className="rp-note-label">{t(isNew ? 'suggestedCareers.gapPaths' : 'suggestedCareers.gapBuild')}</span>
                             <p className={`rp-sub ${top ? 'text-white/95!' : 'rp-note-text'}`}>{job.gap}</p>
                           </div>
                         )}
-                        {job.next_action && (
+                        {hasSteps ? (
+                          // Students / new graduates: three ordered steps, each with why it matters, replace the single action.
+                          <div className={`rp-note ${top ? 'rp-ondark-note' : 'rp-green'}`}>
+                            <span className="rp-note-label">{t('suggestedCareers.nextSteps')}</span>
+                            <ol className="mt-1 space-y-2">
+                              {job.next_steps.slice(0, 3).map((s: any, si: number) => (
+                                <li key={si} className={`rp-sub flex gap-2 ${top ? 'text-white/95!' : 'rp-note-text'}`}>
+                                  <span className="font-bold shrink-0">{si + 1}.</span>
+                                  <span><span className="font-bold">{s.step}</span>{s.why ? <> — {s.why}</> : null}</span>
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
+                        ) : job.next_action && (
                           <div className={`rp-note ${top ? 'rp-ondark-note' : 'rp-green'}`}>
                             <span className="rp-note-label">{t('suggestedCareers.nextAction')}</span>
                             <p className={`rp-sub ${top ? 'text-white/95!' : 'rp-note-text'}`}>{job.next_action}</p>
                           </div>
                         )}
+                      </div>
+                    )}
+                    {/* Working people (paid): a full plan for each of the top 3 careers, built when they ask for it. */}
+                    {canBuildPlans && i < 3 && !rejected && (
+                      <div className="mt-3">
+                        {planIsShown ? (
+                          <button type="button" onClick={scrollToPlan} className={`text-xs font-semibold underline ${top ? 'text-white' : 'text-primary'}`}>
+                            {t('suggestedCareers.planShown')}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={dirBusy}
+                            onClick={() => buildCareerPlan(job.title)}
+                            className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold disabled:opacity-60 ${top ? 'border-white/50 text-white hover:bg-white/10' : 'border-primary text-primary hover:bg-primary/5'}`}
+                          >
+                            {planBuilding === job.title ? t('suggestedCareers.planBuilding') : t('suggestedCareers.planBuild')}
+                          </button>
+                        )}
+                        {planError && planBuilding === job.title && <p className="mt-1.5 text-xs text-rose-500">{planError}</p>}
                       </div>
                     )}
                     {aiCareer && (
