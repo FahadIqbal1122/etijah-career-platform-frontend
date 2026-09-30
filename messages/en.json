@@ -10,6 +10,8 @@
     "optionalPlaceholder": "e.g. Supply chain in healthcare",
     "skip": "Skip",
     "otherPlaceholder": "Please specify",
+    "searchLanguages": "Search or pick your languages",
+    "noMatch": "No match — choose \"Other\" to type it in",
     "thankYou": "Thank you!",
     "thankYouMessage": "Your responses have been saved. We will be in touch soon.",
     "ofTotal": "{current} of {total}",

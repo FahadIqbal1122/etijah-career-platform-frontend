@@ -19,6 +19,7 @@ import Constellation, { CONSTELLATION } from '@/components/brand/Constellation'
 import BreakPanel from '@/components/BreakPanel'
 import BugReportModal from '@/components/BugReportModal'
 import FieldOfStudyInfo from '@/components/FieldOfStudyInfo'
+import LanguageSelect from '@/components/LanguageSelect'
 import { frameworkOf, buildReveal, REVEAL_FRAMEWORKS } from '@/data/revealScoring'
 import { initTelemetry, pushTelemetry, getTelemetrySessionId, rotateTelemetrySession, flush as flushTelemetry } from '@/lib/telemetry'
 import { track, trackOnce } from '@/lib/analytics'
@@ -743,6 +744,16 @@ export default function AssessmentForm() {
                     optionLabels={(q.options || []).map(opt => ({ value: opt.value, label: tQ(`${mid}.options.${opt.value}`) }))}
                   />
                 )}
+                {q.id === 'QO8' ? (
+                  <LanguageSelect
+                    options={(q.options || []).map(opt => ({ value: opt.value, label: tQ(`${mid}.options.${opt.value}`) }))}
+                    selected={answers[q.id] || []}
+                    onToggle={v => toggleMulti(v, q.maxSelect)}
+                    locale={locale}
+                    searchPlaceholder={tForm('searchLanguages')}
+                    noMatch={tForm('noMatch')}
+                  />
+                ) : (
                 <div className="pills">
                   {q.options?.map(opt => {
                     const selected: string[] = answers[q.id] || []
@@ -755,6 +766,7 @@ export default function AssessmentForm() {
                     )
                   })}
                 </div>
+                )}
                 {(answers[q.id] || []).includes('other') && (
                   <input
                     className="qinput"

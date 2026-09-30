@@ -10,6 +10,8 @@
     "optionalPlaceholder": "مثال: سلاسل الإمداد في القطاع الصحي",
     "skip": "تخطَّ",
     "otherPlaceholder": "يرجى التحديد",
+    "searchLanguages": "ابحث أو اختر لغاتك",
+    "noMatch": "لا توجد نتيجة — اختر «أخرى» واكتبها",
     "thankYou": "شكراً لك!",
     "thankYouMessage": "تم حفظ إجاباتك. سنتواصل معك قريباً.",
     "ofTotal": "{current} من {total}",
