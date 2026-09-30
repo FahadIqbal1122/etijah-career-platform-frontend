@@ -26,7 +26,7 @@ import { track, trackOnce } from '@/lib/analytics'
 // ── skip / auto-fill rules (identical to the original form) ──────────────────
 // The real (non-"not applicable") study fields picked in QO5, in pick order.
 const realFields = (a: Record<string, any>): string[] =>
-  (Array.isArray(a['QO5']) ? a['QO5'] : []).filter((f: string) => f && f !== 'not_applicable')
+  (Array.isArray(a['QO5']) ? a['QO5'] : []).filter((f: string) => f && f !== 'not_applicable' && f !== 'other')
 const PRO_STAGES = ['working_exploring', 'career_changer', 'returning', 'between_roles']
 const SKIP_RULES: { condition: (a: Record<string, any>) => boolean; ids: Record<string, any> }[] = [
   { condition: a => a['QO4'] === 'high_school', ids: { QO5: ['not_applicable'], QO5A: '', QO5B: '', QO5C: '' } },

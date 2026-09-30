@@ -314,10 +314,10 @@ function ageToBracket(age: number | null | undefined): string | null {
 }
 // 'student'/'fresh_grad' are legacy values from before QO3B was reworked (10/13 Sept) —
 // still shown here so older submissions display correctly; new submissions use 'no_experience'.
-const EXPERIENCE_LEVEL_ORDER = ['student', 'fresh_grad', 'no_experience', 'up_to_1yr', 'up_to_3yrs', 'up_to_5yrs', '10yrs_plus']
+const EXPERIENCE_LEVEL_ORDER = ['student', 'fresh_grad', 'no_experience', 'up_to_1yr', 'up_to_3yrs', 'up_to_5yrs', 'up_to_10yrs', '10yrs_plus']
 const EXPERIENCE_LEVEL_LABEL: Record<string, string> = {
-  student: 'Still a student', fresh_grad: 'Fresh graduate', no_experience: 'No work experience yet', up_to_1yr: 'Up to 1 year',
-  up_to_3yrs: 'Up to 3 years', up_to_5yrs: 'Up to 5 years', '10yrs_plus': '10+ years',
+  student: 'Still a student', fresh_grad: 'Fresh graduate', no_experience: 'No work experience yet', up_to_1yr: 'Less than 1 year',
+  up_to_3yrs: '1–3 years', up_to_5yrs: '3–5 years', up_to_10yrs: '5–10 years', '10yrs_plus': '10+ years',
 }
 const CAREER_DIRECTION_LABEL: Record<string, string> = {
   stay_in_field: 'Options related to studies / current work', unsure_subject: 'Unsure about subject / current path', change_field: 'Explore a different direction', not_sure: 'Not sure yet',

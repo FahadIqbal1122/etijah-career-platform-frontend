@@ -77,9 +77,10 @@
       "text": "How much work experience do you have?",
       "options": {
         "no_experience": "No work experience yet",
-        "up_to_1yr": "Up to 1 year",
-        "up_to_3yrs": "Up to 3 years",
-        "up_to_5yrs": "Up to 5 years",
+        "up_to_1yr": "Less than 1 year",
+        "up_to_3yrs": "1–3 years",
+        "up_to_5yrs": "3–5 years",
+        "up_to_10yrs": "5–10 years",
         "10yrs_plus": "10+ years"
       }
     },
@@ -89,14 +90,14 @@
         "high_school": "High school",
         "university": "University student",
         "recent_graduate": "Recent graduate (0–2 yrs)",
-        "working_exploring": "Working but exploring",
-        "career_changer": "Career changer",
-        "returning": "Returning to work",
-        "between_roles": "Between roles"
+        "working_exploring": "Working, but exploring other options",
+        "career_changer": "Looking to change careers",
+        "returning": "Returning to work after a break",
+        "between_roles": "Between jobs right now"
       }
     },
     "QO5": {
-      "text": "If you are studying or have studied at university, what is your field?",
+      "text": "What are you studying, or what did you study, at university?",
       "options": {
         "business": "Business",
         "engineering": "Engineering",
@@ -107,7 +108,8 @@
         "arts": "Arts",
         "education": "Education",
         "law": "Law",
-        "not_applicable": "Not applicable"
+        "other": "Other (type your own)",
+        "not_applicable": "I have not studied at university"
       }
     },
     "QO5D": {
@@ -215,14 +217,14 @@
       }
     },
     "QO5A": {
-      "text": "Was choosing this field of study mainly your own decision?",
+      "text": "There are no wrong answers here. Was choosing this field of study mainly your own decision?",
       "options": {
         "yes": "Yes, it was my choice",
-        "no": "No, it was decided for me"
+        "no": "Not really — it was decided or strongly influenced by others"
       }
     },
     "QO5B": {
-      "text": "What was the main reason it wasn't your choice?"
+      "text": "What was the main reason? For example family, scholarship, or admission results."
     },
     "QO5C": {
       "text": "What would you like Etijahi to help you do?",
@@ -259,6 +261,7 @@
         "retail": "Retail",
         "sports": "Sports",
         "nonprofit": "Non-profit",
+        "other": "Other (type your own)",
         "not_sure": "Not sure yet"
       }
     },
@@ -272,7 +275,7 @@
       }
     },
     "QO8": {
-      "text": "What languages do you speak at home?",
+      "text": "Which languages do you speak?",
       "options": {
         "arabic": "Arabic",
         "english": "English",
@@ -280,7 +283,14 @@
         "hindi": "Hindi",
         "tagalog": "Tagalog",
         "french": "French",
-        "other": "Other"
+        "bengali": "Bengali",
+        "tamil": "Tamil",
+        "malayalam": "Malayalam",
+        "persian": "Persian",
+        "turkish": "Turkish",
+        "russian": "Russian",
+        "spanish": "Spanish",
+        "other": "Other (type your own)"
       }
     },
     "QO9": {
