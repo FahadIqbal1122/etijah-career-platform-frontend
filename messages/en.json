@@ -639,7 +639,7 @@
     "hero": {
       "eyebrow": "Career Assessment Results",
       "title": "Your Career Profile",
-      "subtitle": "Personalised breakdown based on your responses",
+      "subtitle": "Here is what your answers say about you, the careers that fit, and what to do next",
       "typeLabel": "{type} type",
       "riasecCode": "RIASEC: {code}",
       "downloadPdf": "Download PDF Report",
@@ -652,18 +652,26 @@
       "subtitle": "Create a free account to keep this report and use the job tracker",
       "cta": "Create account"
     },
+    "howToRead": {
+      "title": "How to read this report",
+      "intro": "This is not a test with right or wrong answers. It shows what your answers say about you and what that could mean for your future.",
+      "careers": "Careers that fit you: how well each one matches you, what to build, one thing to do now, and how AI may change it.",
+      "majors": "Subjects to explore: university subjects that lead to those careers, with a simple way to try each one before you choose.",
+      "plan": "Your plan: one small step for this week, then a 90-day path.",
+      "profile": "Your profile, at the end: your interests, values, strengths and work style. This is why the careers were chosen."
+    },
     "quickCards": {
       "careerType": "Career Type",
       "topValue": "Top Value",
       "topStrength": "Top Strength"
     },
-    "careerTypes": { "title": "Career Types", "subtitle": "RIASEC profile" },
-    "coreValues": { "title": "Core Values", "subtitle": "What drives you" },
-    "topStrengths": { "title": "Top Strengths", "subtitle": "Natural advantages" },
-    "personality": { "title": "Personality", "subtitle": "Big Five traits" },
+    "careerTypes": { "title": "Your interests", "subtitle": "The kinds of work you enjoy most (your RIASEC profile)" },
+    "coreValues": { "title": "What matters to you", "subtitle": "What you want from work and life" },
+    "topStrengths": { "title": "What you are good at", "subtitle": "Your natural strengths" },
+    "personality": { "title": "How you think and act", "subtitle": "Your personality, using the Big Five traits" },
     "workStyle": {
-      "title": "Work Style & Resilience",
-      "subtitle": "How you work best",
+      "title": "How you like to work",
+      "subtitle": "Your pace, setting and how you handle pressure",
       "pace": "Pace",
       "environment": "Environment",
       "sector": "Sector",
@@ -684,13 +692,13 @@
       "bouncesBack": "Bounces back"
     },
     "suggestedCareers": {
-      "title": "Careers & AI Impact", "subtitle": "Matched across your full profile, with how AI may change each one", "matchLabel": "match",
+      "title": "Careers that fit you", "subtitle": "We compared your personality, values and strengths with each career. The percentage shows how close the fit is. Each card also shows how AI may change that career.", "matchLabel": "match",
       "fitTag": { "strong_fit": "Strong fit", "worth_exploring": "Worth exploring" },
       "directionTag": { "builds_on_background": "Builds on your background", "new_direction": "New direction" },
       "groupBuild": "Build on what you have",
-      "groupBuildSub": "Options within or close to your current field",
+      "groupBuildSub": "Careers close to what you already study or do, so you build on what you have",
       "groupPaths": "Paths you may not have considered",
-      "groupPathsSub": "Broader options, and what it takes to reach them",
+      "groupPathsSub": "Different careers that also fit you, and what it takes to get there",
       "gapBuild": "Gap to close",
       "gapPaths": "What it takes to get there",
       "nextAction": "What you can do now",
@@ -728,7 +736,7 @@
     },
     "plan": {
       "title": "Your plan",
-      "subtitle": "This week, your next 90 days and a skill to practise",
+      "subtitle": "One small step for this week, then a simple 90-day path, built around your top career match",
       "builtAround": "Built around",
       "topMatch": "Your top match",
       "weeks2to4": "Weeks 2-4",
@@ -787,8 +795,8 @@
       "lockedBody": "See internship openings matched to your top career matches."
     },
     "studentTrack": {
-      "title": "Majors & Exposure",
-      "subtitle": "How to explore your matched careers before committing to a job",
+      "title": "Subjects and ways to explore",
+      "subtitle": "Ways to explore before you choose. Each idea leads to the careers above, and you can try it before you commit.",
       "findIt": "Search for it",
       "openSite": "Open the site",
       "findPrograms": "Find degree programs",
@@ -798,7 +806,7 @@
     },
     "certifications": {
       "title": "Certifications to Pursue",
-      "subtitle": "Credentials that make you stand out in your matched careers",
+      "subtitle": "Short qualifications employers recognise, chosen to fit your matched careers",
       "lockedTag": "Pathfinder",
       "lockedTitle": "Unlock certifications to pursue",
       "lockedBody": "Get certification and course picks that make you stand out in your matched careers.",
@@ -811,8 +819,8 @@
       "subtitleBalanced": "Next steps that keep your options open"
     },
     "aiImpact": {
-      "title": "AI Impact on Your Careers",
-      "subtitle": "How automation affects your top matches",
+      "title": "How AI may change your careers",
+      "subtitle": "Which tasks may change, which human skills stay valuable, and how to prepare",
       "rowTitle": "How AI may change this career",
       "atRiskLabel": "Tasks that are changing",
       "overallLabel": "AI and your top careers",
@@ -839,7 +847,7 @@
     },
     "courses": {
       "title": "Recommended Courses",
-      "subtitle": "Matched to your strengths and career paths",
+      "subtitle": "Courses that build the skills your matched careers need",
       "free": "Free",
       "paid": "Paid",
       "signupTitle": "Sign up to see your course recommendations",
@@ -853,7 +861,7 @@
     },
     "companies": {
       "title": "Companies to Target",
-      "subtitle": "Hiring in your sector and country",
+      "subtitle": "Employers hiring in your field and country. Use them to see what real jobs ask for.",
       "government": "Government",
       "view": "View",
       "signupTitle": "Sign up to see companies hiring in your sector",

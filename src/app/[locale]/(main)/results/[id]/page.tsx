@@ -557,6 +557,23 @@ export default function ResultsPage() {
   // then the AI context, then the detailed profile. Each block still hides itself when it does not apply.
   const sectionBlocks: Record<string, ReactNode> = {
     summary: (<>
+        {/* Short guide to what is on the page, in plain language (the report used to start with data and no explanation) */}
+        <div className="card p-5">
+          <p className="rp-title text-charcoal mb-1">{t('howToRead.title')}</p>
+          <p className="rp-sub mb-3">{t('howToRead.intro')}</p>
+          <ul className="space-y-2">
+            {(['careers', ...(route === 'choosing_studies' ? ['majors'] : []), 'plan', 'profile'] as const).map(k => {
+              const [head, ...rest] = t(`howToRead.${k}`).split(': ')
+              return (
+                <li key={k} className="rp-body text-charcoal/90 flex gap-2">
+                  <span className="text-primary mt-0.5" aria-hidden="true">→</span>
+                  <span><span className="font-bold text-charcoal">{head}:</span> {rest.join(': ')}</span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+
         {/* Top 3 quick cards */}
         <div className="grid grid-cols-3 gap-4">
           {[
