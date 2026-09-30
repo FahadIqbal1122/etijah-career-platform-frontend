@@ -11,6 +11,8 @@
     "skip": "Skip",
     "otherPlaceholder": "Please specify",
     "searchLanguages": "Search or pick your languages",
+    "searchFields": "Search your field, e.g. marketing, civil, nursing",
+    "noMatchField": "No match — choose \"Other\" below to type it in",
     "noMatch": "No match — choose \"Other\" to type it in",
     "thankYou": "Thank you!",
     "thankYouMessage": "Your responses have been saved. We will be in touch soon.",
@@ -95,7 +97,8 @@
         "working_exploring": "Working, but exploring other options",
         "career_changer": "Looking to change careers",
         "returning": "Returning to work after a break",
-        "between_roles": "Between jobs right now"
+        "between_roles": "Between jobs right now",
+        "other": "Other (type your own)"
       }
     },
     "QO5": {
@@ -210,11 +213,19 @@
         "other": "Another country"
       }
     },
+    "QOFS": {
+      "text": "What are you studying, or what did you study, at university?",
+      "options": {
+        "other": "Other (type your own)",
+        "not_applicable": "I have not studied at university"
+      }
+    },
     "QO5C_HS": {
       "text": "What would you like Etijahi to help you do?",
       "options": {
         "choosing_major": "Choose what to study",
         "explore_careers": "Explore careers that suit me",
+        "other": "Other (type your own)",
         "not_sure": "I am not sure yet"
       }
     },
@@ -234,6 +245,7 @@
         "stay_in_field": "Find career options related to what I am studying",
         "unsure_subject": "Explore my options because I am unsure about my subject",
         "change_field": "Explore a different direction",
+        "other": "Other (type your own)",
         "not_sure": "I am not sure yet"
       }
     },
@@ -243,6 +255,7 @@
         "stay_in_field": "Find career options related to my current work",
         "unsure_subject": "Explore my options because I am unsure about my current path",
         "change_field": "Explore a different direction",
+        "other": "Other (type your own)",
         "not_sure": "I am not sure yet"
       }
     },
@@ -273,6 +286,7 @@
         "employee": "Working within an organization (employee, manager, eventually leader)",
         "founder": "Building my own business or startup as my main work",
         "blend": "A blend — having a stable role AND a side business or independent project",
+        "other": "Other (type your own)",
         "not_sure": "Not sure yet"
       }
     },

@@ -20,6 +20,7 @@ import BreakPanel from '@/components/BreakPanel'
 import BugReportModal from '@/components/BugReportModal'
 import FieldOfStudyInfo from '@/components/FieldOfStudyInfo'
 import LanguageSelect from '@/components/LanguageSelect'
+import FieldOfStudySelect from '@/components/FieldOfStudySelect'
 import { frameworkOf, buildReveal, REVEAL_FRAMEWORKS } from '@/data/revealScoring'
 import { initTelemetry, pushTelemetry, getTelemetrySessionId, rotateTelemetrySession, flush as flushTelemetry } from '@/lib/telemetry'
 import { track, trackOnce } from '@/lib/analytics'
@@ -28,9 +29,12 @@ import { track, trackOnce } from '@/lib/analytics'
 // The real (non-"not applicable") study fields picked in QO5, in pick order.
 const realFields = (a: Record<string, any>): string[] =>
   (Array.isArray(a['QO5']) ? a['QO5'] : []).filter((f: string) => f && f !== 'not_applicable' && f !== 'other')
-const PRO_STAGES = ['working_exploring', 'career_changer', 'returning', 'between_roles']
+const PRO_STAGES = ['working_exploring', 'career_changer', 'returning', 'between_roles', 'other']
 const SKIP_RULES: { condition: (a: Record<string, any>) => boolean; ids: Record<string, any> }[] = [
-  { condition: a => a['QO4'] === 'high_school', ids: { QO5: ['not_applicable'], QO5A: '', QO5B: '', QO5C: '' } },
+  // The old two-step field-of-study questions (QO5, then QO5D1/QO5D2) are replaced by the single QOFS list; they
+  // stay defined in questions.ts but are never shown. (Must come before the high-school rule, which sets QO5.)
+  { condition: () => true, ids: { QO5: [], QO5D1: '', QO5D2: '' } },
+  { condition: a => a['QO4'] === 'high_school', ids: { QO5: ['not_applicable'], QOFS: [], QO5A: '', QO5B: '', QO5C: '' } },
   { condition: a => a['QO5A'] !== 'no', ids: { QO5B: '' } },
   // Year of study is only asked of university students; the high-school goal question only of high-school users.
   { condition: a => a['QO4'] !== 'university', ids: { QOYR: '' } },
@@ -546,6 +550,26 @@ export default function AssessmentForm() {
     setAnswer(q.id, [...current, value])
   }
 
+  // Field-of-study picks (QOFS): up to 2, and "I have not studied at university" excludes everything else.
+  function toggleField(value: string) {
+    const current: string[] = answersRef.current['QOFS'] || []
+    if (value === 'not_applicable') {
+      setAnswer('QOFS', current.includes(value) ? [] : [value])
+      return
+    }
+    const base = current.filter(v => v !== 'not_applicable')
+    if (base.includes(value)) {
+      setAnswer('QOFS', base.filter(v => v !== value))
+      return
+    }
+    if (base.length >= 2) {
+      setMaxSelectHit(true)
+      after(400, () => setMaxSelectHit(false))
+      return
+    }
+    setAnswer('QOFS', [...base, value])
+  }
+
   function continueFromReveal() {
     const next = pendingRef.current
     if (next >= total) setPhase('finish')
@@ -560,17 +584,29 @@ export default function AssessmentForm() {
   async function handleSubmit() {
     if (submitting) return
     const finalAnswers = { ...answers, ...autoFills }
-    // Drop a specific-area answer that no longer belongs to the field picked at that position (the user went
-    // back and changed their study field after answering it).
-    const pickedFields = realFields(finalAnswers)
-    ;(['QO5D1', 'QO5D2'] as const).forEach((id, i) => {
-      const v = finalAnswers[id]
-      if (!pickedFields[i] || typeof v !== 'string' || !v.startsWith(`${pickedFields[i]}_`)) finalAnswers[id] = ''
-    })
+    // Field of study: the single QOFS list is turned into the same three values the old QO5 / QO5D1 / QO5D2
+    // questions produced (broad fields, then up to two specific areas), so the backend and reports are unchanged.
+    // Only picks that really exist in SPECIALISMS are kept.
+    const fsPicks: string[] = Array.isArray(finalAnswers['QOFS']) ? finalAnswers['QOFS'].slice(0, 2) : []
+    const fsFields: string[] = []
+    const fsAreas: string[] = []
+    for (const p of fsPicks) {
+      if (p === 'other') { if (!fsFields.includes('other')) fsFields.push('other'); continue }
+      const field = Object.keys(SPECIALISMS).find(f => p.startsWith(`${f}_`) && SPECIALISMS[f].includes(p.slice(f.length + 1)))
+      if (!field) continue
+      if (!fsFields.includes(field)) fsFields.push(field)
+      fsAreas.push(p)
+    }
+    finalAnswers['QO5'] = fsFields.length ? fsFields : ['not_applicable']
+    finalAnswers['QO5D1'] = fsAreas[0] ?? ''
+    finalAnswers['QO5D2'] = fsAreas[1] ?? ''
+    if (fsFields.includes('other')) finalAnswers['QO5_other'] = String(finalAnswers['QOFS_other'] ?? '').trim()
+    else delete finalAnswers['QO5_other']
     // Optional "field you have in mind": trimmed, and left out entirely when skipped.
     const fieldInMind = String(finalAnswers['QOFIELD'] ?? '').trim()
     if (fieldInMind) finalAnswers['QOFIELD'] = fieldInMind
     else delete finalAnswers['QOFIELD']
+    const goalAnswer = finalAnswers['QO5C'] || finalAnswers['QO5C_PRO'] || finalAnswers['QO5C_HS'] || ''
     setSubmitting(true)
     setError('')
     try {
@@ -586,12 +622,13 @@ export default function AssessmentForm() {
         education_field: finalAnswers['QO5'] || [],
         major_was_own_choice: finalAnswers['QO5A'] || null,
         major_choice_reason: finalAnswers['QO5A'] === 'no' ? (finalAnswers['QO5B'] || null) : null,
-        career_direction: finalAnswers['QO5C'] || finalAnswers['QO5C_PRO'] || finalAnswers['QO5C_HS'] || null,
+        // "Other (type your own)" on the goal question is scored as "not sure"; the typed text travels in answers.
+        career_direction: goalAnswer === 'other' ? 'not_sure' : (goalAnswer || null),
         sectors_of_interest: answers['QO6'] || [],
         career_structure: answers['QO7'],
         languages: answers['QO8'] || [],
         geographic_openness: answers['QO9'],
-        why_here: finalAnswers['QO10'] || finalAnswers['QO5C'] || finalAnswers['QO5C_PRO'] || finalAnswers['QO5C_HS'] || 'not_asked',
+        why_here: finalAnswers['QO10'] || goalAnswer || 'not_asked',
         answers: finalAnswers,
         completed: true,
         locale,
@@ -744,7 +781,20 @@ export default function AssessmentForm() {
                     optionLabels={(q.options || []).map(opt => ({ value: opt.value, label: tQ(`${mid}.options.${opt.value}`) }))}
                   />
                 )}
-                {q.id === 'QO8' ? (
+                {q.id === 'QOFS' ? (
+                  <FieldOfStudySelect
+                    groups={Object.entries(SPECIALISMS).map(([field, areas]) => ({
+                      field,
+                      title: tQ(`QO5.options.${field}`),
+                      items: areas.map(a => ({ value: `${field}_${a}`, label: tQ(`QO5D.options.${field}_${a}`) })),
+                    }))}
+                    extras={(q.options || []).map(opt => ({ value: opt.value, label: tQ(`${mid}.options.${opt.value}`) }))}
+                    selected={answers[q.id] || []}
+                    onToggle={toggleField}
+                    searchPlaceholder={tForm('searchFields')}
+                    noMatch={tForm('noMatchField')}
+                  />
+                ) : q.id === 'QO8' ? (
                   <LanguageSelect
                     options={(q.options || []).map(opt => ({ value: opt.value, label: tQ(`${mid}.options.${opt.value}`) }))}
                     selected={answers[q.id] || []}

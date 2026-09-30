@@ -119,6 +119,7 @@ export const questions: Question[] = [
       { value: 'career_changer', label: 'Looking to change careers' },
       { value: 'returning', label: 'Returning to work after a break' },
       { value: 'between_roles', label: 'Between jobs right now' },
+      { value: 'other', label: 'Other (type your own)' },
     ],
   },
   {
@@ -173,6 +174,23 @@ export const questions: Question[] = [
     ],
   },
   {
+    // Replaces QO5 + QO5D1 + QO5D2 (those three stay defined but are always skipped — see SKIP_RULES in
+    // AssessmentForm.tsx). One searchable list of every specific area, grouped by broad field. Values are the
+    // same `${field}_${area}` strings QO5D used, plus 'other' (typed text in answers.QOFS_other) and
+    // 'not_applicable'. At submit the form derives education_field, QO5D1 and QO5D2 from it, so the stored data
+    // and the backend are unchanged. The options are built by FieldOfStudySelect from data/specialisms.ts.
+    id: 'QOFS',
+    section: 'Onboarding',
+    framework: 'Onboarding',
+    text: 'What are you studying, or what did you study, at university? Pick up to 2.',
+    type: 'multi_select',
+    maxSelect: 2,
+    options: [
+      { value: 'other', label: 'Other (type your own)' },
+      { value: 'not_applicable', label: 'I have not studied at university' },
+    ],
+  },
+  {
     id: 'QO5D1',
     section: 'Onboarding',
     framework: 'Onboarding',
@@ -222,6 +240,7 @@ export const questions: Question[] = [
       { value: 'stay_in_field', label: 'Find career options related to what I am studying' },
       { value: 'unsure_subject', label: 'Explore my options because I am unsure about my subject' },
       { value: 'change_field', label: 'Explore a different direction' },
+      { value: 'other', label: 'Other (type your own)' },
       { value: 'not_sure', label: 'I am not sure yet' },
     ],
   },
@@ -237,6 +256,7 @@ export const questions: Question[] = [
       { value: 'stay_in_field', label: 'Find career options related to my current work' },
       { value: 'unsure_subject', label: 'Explore my options because I am unsure about my current path' },
       { value: 'change_field', label: 'Explore a different direction' },
+      { value: 'other', label: 'Other (type your own)' },
       { value: 'not_sure', label: 'I am not sure yet' },
     ],
   },
@@ -250,6 +270,7 @@ export const questions: Question[] = [
     options: [
       { value: 'choosing_major', label: 'Choose what to study' },
       { value: 'explore_careers', label: 'Explore careers that suit me' },
+      { value: 'other', label: 'Other (type your own)' },
       { value: 'not_sure', label: 'I am not sure yet' },
     ],
   },
@@ -289,6 +310,7 @@ export const questions: Question[] = [
       { value: 'employee', label: 'Working within an organization (employee, manager, eventually leader)' },
       { value: 'founder', label: 'Building my own business or startup as my main work' },
       { value: 'blend', label: 'A blend — having a stable role AND a side business or independent project' },
+      { value: 'other', label: 'Other (type your own)' },
       { value: 'not_sure', label: 'Not sure yet' },
     ],
   },
