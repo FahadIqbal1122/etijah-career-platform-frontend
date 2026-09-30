@@ -1303,12 +1303,25 @@ export default function ResultsPage() {
             />
             <div className="space-y-2">
               {certifications.certifications.map((cert: any, i: number) => (
-                <div key={i} className="border border-[var(--line)] rounded-xl p-3.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="rp-h text-charcoal">{cert.title}</p>
-                    {cert.provider_type && <span className="rp-pill rp-gray">{cert.provider_type}</span>}
+                <div key={i}>
+                  {/* Grouped by the career each certification is for (reports saved before this have no career) */}
+                  {cert.for_career && cert.for_career !== certifications.certifications[i - 1]?.for_career && (
+                    <p className={`rp-label ${i > 0 ? 'mt-4' : ''} mb-2`}>{t('courses.forCareer', { career: cert.for_career })}</p>
+                  )}
+                  <div className="border border-[var(--line)] rounded-xl p-3.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="rp-h text-charcoal">{cert.title}</p>
+                      {cert.provider_type && <span className="rp-pill rp-gray">{cert.provider_type}</span>}
+                    </div>
+                    {cert.about && (
+                      <p className="rp-sub mt-1.5"><span className="font-bold text-charcoal">{t('courses.about')}:</span> {cert.about}</p>
+                    )}
+                    {cert.why && (
+                      cert.for_career
+                        ? <p className="rp-sub mt-1"><span className="font-bold text-charcoal">{t('courses.why')}:</span> {cert.why}</p>
+                        : <p className="rp-sub mt-0.5">{cert.why}</p>
+                    )}
                   </div>
-                  {cert.why && <p className="rp-sub mt-0.5">{cert.why}</p>}
                 </div>
               ))}
             </div>
