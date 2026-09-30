@@ -633,6 +633,9 @@
       "refreshFailed": "Failed to refresh — try again shortly",
       "downloadFailed": "Failed to download report",
       "signInToSave": "Sign in to save jobs to your tracker",
+      "signInToViewTitle": "Sign in to see this report",
+      "signInToViewBody": "This report belongs to an account. Sign in with the account that took the assessment to open it.",
+      "signInToViewCta": "Sign in",
       "coursesLoadFailed": "Couldn't load course recommendations.",
       "companiesLoadFailed": "Couldn't load company suggestions."
     },

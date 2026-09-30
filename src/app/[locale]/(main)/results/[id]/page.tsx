@@ -199,6 +199,9 @@ export default function ResultsPage() {
   const [downloadError, setDownloadError] = useState('')
   const [reportLocale, setReportLocale] = useState<'en' | 'ar'>('en')
   const [retryKey, setRetryKey] = useState(0)
+  // (state for the per-career plan buttons; hooks must stay above the early returns below)
+  const [planBuilding, setPlanBuilding] = useState<string | null>(null)
+  const [planError, setPlanError] = useState('')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -298,7 +301,35 @@ export default function ResultsPage() {
   }, [])
 
 
+  // (hooks stay above the early returns below: a changing hook count crashes the page)
+  // Poll while the server builds the plan (up to ~5 minutes: it waits for the main report first, which can take
+  // 2-3 minutes on a fresh assessment), then say it is slow instead of claiming it failed.
+  useEffect(() => {
+    if (dirPending === null) { dirPolls.current = 0; return }
+    if (dirPolls.current >= 60) { setDirSlow(true); return }
+    const timer = setTimeout(() => {
+      dirPolls.current += 1
+      apiAuthGet<any>(`/assessment/${id}/direction?locale=${locale}`).then(applyDirection).catch(() => {})
+    }, 5000)
+    return () => clearTimeout(timer)
+  }, [dirPending, dirTick, id, locale])
+
   if (error) {
+    // A report that belongs to an account can only be opened by that account (or an admin): with no session the
+    // server answers "Sign in to view this response". Say that plainly and offer the sign-in, instead of a bare error.
+    if (/sign in/i.test(error)) {
+      return (
+        <div className="min-h-screen brand-surface flex items-center justify-center px-4">
+          <div className="text-center max-w-sm">
+            <p className="rp-title text-charcoal mb-2">{t('error.signInToViewTitle')}</p>
+            <p className="rp-body text-charcoal/80 mb-5">{t('error.signInToViewBody')}</p>
+            <Link href={`/login?next=${encodeURIComponent(`/results/${id}`)}`} className="cta" style={{ padding: '10px 20px', fontSize: 14, borderRadius: 12 }}>
+              {t('error.signInToViewCta')}
+            </Link>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="min-h-screen brand-surface flex items-center justify-center px-4">
         <div className="text-center">
@@ -394,17 +425,6 @@ export default function ResultsPage() {
     setDirTick(n => n + 1)
   }
 
-  // Poll while the server builds the plan (up to ~5 minutes: it waits for the main report first, which can take
-  // 2-3 minutes on a fresh assessment), then say it is slow instead of claiming it failed.
-  useEffect(() => {
-    if (dirPending === null) { dirPolls.current = 0; return }
-    if (dirPolls.current >= 60) { setDirSlow(true); return }
-    const timer = setTimeout(() => {
-      dirPolls.current += 1
-      apiAuthGet<any>(`/assessment/${id}/direction?locale=${locale}`).then(applyDirection).catch(() => {})
-    }, 5000)
-    return () => clearTimeout(timer)
-  }, [dirPending, dirTick, id, locale])
 
   // Returns null on success, or the error message.
   async function buildDirection(label: string, source: 'suggested' | 'user'): Promise<string | null> {
@@ -426,8 +446,6 @@ export default function ResultsPage() {
   }
 
   // Working people: build the full plan for one of their top careers, then bring them to it.
-  const [planBuilding, setPlanBuilding] = useState<string | null>(null)
-  const [planError, setPlanError] = useState('')
   function scrollToPlan() { document.getElementById('plan-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
   async function buildCareerPlan(title: string) {
     setPlanBuilding(title)
