@@ -42,6 +42,11 @@ const SKIP_RULES: { condition: (a: Record<string, any>) => boolean; ids: Record<
   { condition: a => PRO_STAGES.includes(a['QO4']), ids: { QO5C: '' } },
   { condition: a => !!a['QO4'] && !PRO_STAGES.includes(a['QO4']), ids: { QO5C_PRO: '' } },
   { condition: a => a['QO7'] === 'employee', ids: { Q69: 1, Q71: 'B', Q73: 1 } },
+  // Someone who wants to stay local is not asked which country to work in: it is where they live now.
+  { condition: a => a['QO9'] === 'no', ids: { QOTC: 'same_as_current' } },
+  // "What brought you here today" overlapped the goal question, so it is no longer asked (kept in questions.ts;
+  // why_here is filled from the goal answer at submit).
+  { condition: () => true, ids: { QO10: '' } },
 ]
 function getAutoFills(answers: Record<string, any>): Record<string, any> {
   return SKIP_RULES.filter(r => r.condition(answers)).reduce((acc, r) => ({ ...acc, ...r.ids }), {})
@@ -585,7 +590,7 @@ export default function AssessmentForm() {
         career_structure: answers['QO7'],
         languages: answers['QO8'] || [],
         geographic_openness: answers['QO9'],
-        why_here: answers['QO10'],
+        why_here: finalAnswers['QO10'] || finalAnswers['QO5C'] || finalAnswers['QO5C_PRO'] || finalAnswers['QO5C_HS'] || 'not_asked',
         answers: finalAnswers,
         completed: true,
         locale,
