@@ -9,7 +9,7 @@ import { useMemo, useState } from 'react'
 export type FieldGroup = { field: string; title: string; items: { value: string; label: string }[] }
 
 export default function FieldOfStudySelect({
-  groups, extras, selected, onToggle, searchPlaceholder, noMatch,
+  groups, extras, selected, onToggle, searchPlaceholder, noMatch, extrasTitle,
 }: {
   groups: FieldGroup[]
   extras: { value: string; label: string }[]
@@ -17,6 +17,7 @@ export default function FieldOfStudySelect({
   onToggle: (value: string) => void
   searchPlaceholder: string
   noMatch: string
+  extrasTitle?: string
 }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -101,7 +102,13 @@ export default function FieldOfStudySelect({
               {g.items.map(i => row(i.value, i.label))}
             </div>
           ))}
-          {shownExtras.length > 0 && <div style={{ marginTop: 8 }}>{shownExtras.map(e => row(e.value, e.label))}</div>}
+          {shownExtras.length > 0 && (
+            // set apart from the fields above (own divider and heading) so "Other" and "I did not study" do not read as part of the last field
+            <div style={{ marginTop: 14, paddingTop: 10, borderTop: '2px solid var(--line-strong)' }}>
+              {extrasTitle && <p style={{ margin: '0 8px 8px', fontSize: 12, fontWeight: 600, letterSpacing: '.04em', textTransform: 'uppercase', opacity: 0.6 }}>{extrasTitle}</p>}
+              {shownExtras.map(e => row(e.value, e.label))}
+            </div>
+          )}
         </div>
       )}
     </div>

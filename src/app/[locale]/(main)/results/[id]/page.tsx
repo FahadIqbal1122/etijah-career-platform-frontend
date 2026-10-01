@@ -1067,7 +1067,7 @@ export default function ResultsPage() {
                     )}
                     {careerCourses(job.title).length > 0 && (
                       <div className="mt-3">
-                        <p className={`rp-label mb-2 ${top ? 'text-white/85' : ''}`}>{t('courses.forThisCareer')}</p>
+                        <p className="rp-label mb-2" style={top ? { color: 'rgba(255,255,255,.9)' } : undefined}>{t('courses.forThisCareer')}</p>
                         <div className="space-y-2">{careerCourses(job.title).map((c: any) => courseCard(c))}</div>
                       </div>
                     )}

@@ -793,6 +793,7 @@ export default function AssessmentForm() {
                     onToggle={toggleField}
                     searchPlaceholder={tForm('searchFields')}
                     noMatch={tForm('noMatchField')}
+                    extrasTitle={tForm('fieldExtrasTitle')}
                   />
                 ) : q.id === 'QO8' ? (
                   <LanguageSelect
