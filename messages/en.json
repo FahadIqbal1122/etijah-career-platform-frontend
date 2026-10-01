@@ -232,10 +232,13 @@
       }
     },
     "QO5A": {
-      "text": "There are no wrong answers here. Was choosing this field of study mainly your own decision?",
+      "text": "How much does your current field of study reflect what you actually wanted for yourself?",
       "options": {
-        "yes": "Yes, it was my choice",
-        "no": "Not really — it was decided or strongly influenced by others"
+        "wanted": "It reflects a choice I made for myself.",
+        "guided": "It reflects my choice, but others influenced me.",
+        "still_deciding": "It wasn't exactly my choice, and I'm still exploring how I feel about it.",
+        "not_chosen": "It was mostly chosen for me by circumstances or other people.",
+        "other": "Something else (type it)"
       }
     },
     "QO5B": {

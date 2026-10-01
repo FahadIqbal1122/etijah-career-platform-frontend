@@ -215,11 +215,15 @@ export const questions: Question[] = [
     id: 'QO5A',
     section: 'Onboarding',
     framework: 'Onboarding',
-    text: 'There are no wrong answers here. Was choosing this field of study mainly your own decision?',
+    text: "How much does your current field of study reflect what you actually wanted for yourself?",
     type: 'single_select',
+    // Saved as yes/no (major_was_own_choice) at submit: wanted + guided = yes, still_deciding + not_chosen = no; other = not set.
     options: [
-      { value: 'yes', label: 'Yes, it was my choice' },
-      { value: 'no', label: 'Not really — it was decided or strongly influenced by others' },
+      { value: 'wanted', label: "It reflects a choice I made for myself." },
+      { value: 'guided', label: "It reflects my choice, but others influenced me." },
+      { value: 'still_deciding', label: "It wasn't exactly my choice, and I'm still exploring how I feel about it." },
+      { value: 'not_chosen', label: "It was mostly chosen for me by circumstances or other people." },
+      { value: 'other', label: "Something else (type it)" },
     ],
   },
   {

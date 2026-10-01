@@ -35,7 +35,7 @@ const SKIP_RULES: { condition: (a: Record<string, any>) => boolean; ids: Record<
   // stay defined in questions.ts but are never shown. (Must come before the high-school rule, which sets QO5.)
   { condition: () => true, ids: { QO5: [], QO5D1: '', QO5D2: '' } },
   { condition: a => a['QO4'] === 'high_school', ids: { QO5: ['not_applicable'], QOFS: [], QO5A: '', QO5B: '', QO5C: '' } },
-  { condition: a => a['QO5A'] !== 'no', ids: { QO5B: '' } },
+  { condition: a => !['still_deciding', 'not_chosen'].includes(a['QO5A']), ids: { QO5B: '' } },
   // Year of study is only asked of university students; the high-school goal question only of high-school users.
   { condition: a => a['QO4'] !== 'university', ids: { QOYR: '' } },
   { condition: a => a['QO4'] !== 'high_school', ids: { QO5C_HS: '' } },
@@ -607,6 +607,9 @@ export default function AssessmentForm() {
     if (fieldInMind) finalAnswers['QOFIELD'] = fieldInMind
     else delete finalAnswers['QOFIELD']
     const goalAnswer = finalAnswers['QO5C'] || finalAnswers['QO5C_PRO'] || finalAnswers['QO5C_HS'] || ''
+    // How they came to their field (QO5A) is stored as yes/no; "something else" stays unset and its typed text travels in answers.
+    const ownChoice = ['wanted', 'guided'].includes(finalAnswers['QO5A']) ? 'yes'
+      : ['still_deciding', 'not_chosen'].includes(finalAnswers['QO5A']) ? 'no' : null
     setSubmitting(true)
     setError('')
     try {
@@ -620,8 +623,8 @@ export default function AssessmentForm() {
         experience_level: answers['QO3B'],
         current_stage: answers['QO4'],
         education_field: finalAnswers['QO5'] || [],
-        major_was_own_choice: finalAnswers['QO5A'] || null,
-        major_choice_reason: finalAnswers['QO5A'] === 'no' ? (finalAnswers['QO5B'] || null) : null,
+        major_was_own_choice: ownChoice,
+        major_choice_reason: ownChoice === 'no' ? (finalAnswers['QO5B'] || null) : null,
         // "Other (type your own)" on the goal question is scored as "not sure"; the typed text travels in answers.
         career_direction: goalAnswer === 'other' ? 'not_sure' : (goalAnswer || null),
         sectors_of_interest: answers['QO6'] || [],
