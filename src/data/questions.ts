@@ -135,6 +135,7 @@ export const questions: Question[] = [
       { value: 'year_4', label: '4th year' },
       { value: 'final_year', label: 'Final year' },
       { value: 'postgraduate', label: "Postgraduate (master's or PhD)" },
+      { value: 'other', label: 'Longer than that, or something else (type it)' },
     ],
   },
   {

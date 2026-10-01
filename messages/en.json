@@ -193,7 +193,8 @@
         "year_3": "3rd year",
         "year_4": "4th year",
         "final_year": "Final year",
-        "postgraduate": "Postgraduate (master's or PhD)"
+        "postgraduate": "Postgraduate (master's or PhD)",
+        "other": "Longer than that, or something else (type it)"
       }
     },
     "QOFIELD": {
@@ -659,7 +660,7 @@
       "title": "How to read this report",
       "intro": "This is not a test with right or wrong answers. It shows what your answers say about you and what that could mean for your future.",
       "careers": "Careers that fit you: how well each one matches you, what to build, one thing to do now, and how AI may change it.",
-      "majors": "Subjects to explore: university subjects that lead to those careers, with a simple way to try each one before you choose.",
+      "majors": "Fields of study to explore: degrees and fields that lead to those careers, with a simple way to try each one before you choose.",
       "plan": "Your plan: one small step for this week, then a 90-day path.",
       "profile": "Your profile, at the end: your interests, values, strengths and work style. This is why the careers were chosen."
     },
@@ -802,7 +803,7 @@
       "lockedBody": "See internship openings matched to your top career matches."
     },
     "studentTrack": {
-      "title": "Subjects and ways to explore",
+      "title": "Fields of study and ways to explore",
       "subtitle": "Ways to explore before you choose. Each idea leads to the careers above, and you can try it before you commit.",
       "findIt": "Search for it",
       "openSite": "Open the site",
