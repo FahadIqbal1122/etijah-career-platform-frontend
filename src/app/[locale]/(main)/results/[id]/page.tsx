@@ -591,6 +591,38 @@ export default function ResultsPage() {
   // Report sections as named blocks, rendered in the order the backend returns for this person (section_order,
   // shared with the PDF): what decides and what to do next first, then the stage-specific "build / apply" sections,
   // then the AI context, then the detailed profile. Each block still hides itself when it does not apply.
+  // Match a career across lists: AI text sometimes adds the sector, e.g. "Systems Analyst (Technology)".
+  const normTitle = (v: any) => String(v || '').replace(/\s*\([^)]*\)\s*$/, '').trim().toLowerCase()
+  const careerCourses = (title: string) => courses.filter((c: any) => normTitle(c.for_career) === normTitle(title))
+  // Courses whose career is not one of the cards stay in their own block, so none is lost.
+  const orphanCourses = courses.filter((c: any) => !jobs.some((j: any) => normTitle(j.title) === normTitle(c.for_career)))
+  const coursesMerged = courses.length > 0 && orphanCourses.length === 0
+  const courseCard = (course: any) => (
+    <a
+      key={course.id}
+      href={course.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block border border-[var(--line)] rounded-xl p-3.5 hover:border-[var(--line-strong)] hover:bg-lightblue/50 transition-colors group bg-white text-charcoal"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="rp-h text-charcoal group-hover:text-primary">{course.title}</p>
+          <p className="rp-sub">{course.provider} · {course.level}{course.duration_hours ? ` · ${course.duration_hours}h` : ''}</p>
+        </div>
+        <span className={`rp-pill shrink-0 mt-0.5 ${course.is_free ? 'rp-green' : 'rp-blue'}`}>
+          {course.is_free ? t('courses.free') : t('courses.paid')}
+        </span>
+      </div>
+      {course.about && (
+        <p className="rp-sub mt-2"><span className="font-bold text-charcoal">{t('courses.about')}:</span> {course.about}</p>
+      )}
+      {course.why && (
+        <p className="rp-sub mt-1"><span className="font-bold text-charcoal">{t('courses.why')}:</span> {course.why}</p>
+      )}
+    </a>
+  )
+
   const sectionBlocks: Record<string, ReactNode> = {
     summary: (<>
         {/* Short guide to what is on the page, in plain language (the report used to start with data and no explanation) */}
@@ -875,7 +907,7 @@ export default function ResultsPage() {
                 const top = i === 0 && !rejected
                 // AI impact for this career (top matches only): the risk pill sits on the card and the detail is a
                 // collapsible panel at the bottom of it (the top match starts open).
-                const aiCareer: any = aiImpact?.careers?.find((c: any) => String(c.title || '').toLowerCase() === String(job.title || '').toLowerCase())
+                const aiCareer: any = aiImpact?.careers?.find((c: any) => normTitle(c.title) === normTitle(job.title))
                 const aiRisk: string | undefined = aiCareer?.ai_risk_level
                 const aiIsOpen = aiOpen[job.title] ?? (i === 0)
                 const hasSteps = Array.isArray(job.next_steps) && job.next_steps.length > 0
@@ -1031,6 +1063,12 @@ export default function ResultsPage() {
                             )}
                           </div>
                         )}
+                      </div>
+                    )}
+                    {careerCourses(job.title).length > 0 && (
+                      <div className="mt-3">
+                        <p className={`rp-label mb-2 ${top ? 'text-white/85' : ''}`}>{t('courses.forThisCareer')}</p>
+                        <div className="space-y-2">{careerCourses(job.title).map((c: any) => courseCard(c))}</div>
                       </div>
                     )}
                     <div className={`mt-3 flex flex-wrap items-center gap-2 text-xs ${top ? 'text-white/85' : 'text-charcoal/70'}`}>
@@ -1331,7 +1369,7 @@ export default function ResultsPage() {
       </>),
     courses: (<>
         {/* Course Recommendations */}
-        {courses.length > 0 ? (
+        {coursesMerged ? null : courses.length > 0 ? (
           <div className="card p-5">
             <SectionHead
               title={t('courses.title')}
@@ -1339,10 +1377,10 @@ export default function ResultsPage() {
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>}
             />
             <div className="space-y-2">
-              {courses.map((course: any, ci: number) => (
+              {orphanCourses.map((course: any, ci: number) => (
                 <div key={course.id}>
                   {/* Courses come grouped by the career they are for */}
-                  {course.for_career && course.for_career !== courses[ci - 1]?.for_career && (
+                  {course.for_career && course.for_career !== orphanCourses[ci - 1]?.for_career && (
                     <p className={`rp-label ${ci > 0 ? 'mt-4' : ''} mb-2`}>{t('courses.forCareer', { career: course.for_career })}</p>
                   )}
                   <a

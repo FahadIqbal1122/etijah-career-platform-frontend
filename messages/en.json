@@ -858,6 +858,7 @@
       "free": "Free",
       "paid": "Paid",
       "forCareer": "For: {career}",
+      "forThisCareer": "Courses for this career",
       "about": "What it is about",
       "why": "Why it is suggested",
       "signupTitle": "Sign up to see your course recommendations",
