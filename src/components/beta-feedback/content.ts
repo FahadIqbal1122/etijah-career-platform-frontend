@@ -35,6 +35,11 @@ export const stage1Intro: Bi = {
   ar: 'جارٍ إعداد تقريرك… وأنت تنتظر، سؤالان سريعان: كيف كانت التجربة؟',
 }
 
+export const stage1Thanks: Bi = {
+  en: 'Thank you for your quick feedback. Once you see your results, we will ask you for a short full feedback form.',
+  ar: 'شكراً لك على ملاحظاتك السريعة. بعد أن ترى نتائجك، سنطلب منك تعبئة نموذج تقييم كامل وقصير.',
+}
+
 export const stage1Questions: { key: 's1_clarity' | 's1_feeling' | 's1_understood'; label: Bi }[] = [
   { key: 's1_clarity', label: {
     en: 'The questions were clear and easy to follow.',

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { apiAuthPost } from '@/lib/api'
-import { STAGE1_FORM_VERSION, stage1Intro, stage1IntentLabel, stage1IntentOptions, stage1Questions, type Locale } from './content'
+import { STAGE1_FORM_VERSION, stage1Intro, stage1Thanks, stage1IntentLabel, stage1IntentOptions, stage1Questions, type Locale } from './content'
 
 type Answers = Partial<Record<'s1_clarity' | 's1_feeling' | 's1_understood', number>> & { s1_intent?: string }
 const TOTAL_STAGE1_QUESTIONS = stage1Questions.length + 1
@@ -47,7 +47,13 @@ export default function BetaFeedbackStage1({ responseId, locale, onAnswered, onC
     }
   }
 
-  if (done) return null
+  if (done) {
+    return (
+      <div className="mt-8 bg-white/10 border border-white/20 rounded-2xl p-5 max-w-sm mx-auto text-center" dir={locale === 'ar' ? 'rtl' : 'ltr'} role="status">
+        <p className="text-white/90 text-sm">{stage1Thanks[locale]}</p>
+      </div>
+    )
+  }
 
   return (
     <div className="mt-8 bg-white/10 border border-white/20 rounded-2xl p-5 max-w-sm mx-auto text-start" dir={locale === 'ar' ? 'rtl' : 'ltr'}>

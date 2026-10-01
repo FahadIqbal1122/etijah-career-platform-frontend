@@ -353,7 +353,7 @@ export const questions: Question[] = [
       { value: 'yes_anywhere', label: 'Yes, I want to' },
       { value: 'yes_gcc', label: 'Yes, but ideally regional (GCC)' },
       { value: 'maybe', label: 'Maybe, depends' },
-      { value: 'no', label: 'No, I want to stay local' },
+      { value: 'no', label: 'No, I want to stay in my country' },
     ],
   },
   {
