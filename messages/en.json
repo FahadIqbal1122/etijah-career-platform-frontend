@@ -82,6 +82,7 @@
       "text": "How much work experience do you have?",
       "options": {
         "no_experience": "No work experience yet",
+        "internships_only": "Only internships or training placements",
         "up_to_1yr": "Less than 1 year",
         "up_to_3yrs": "1–3 years",
         "up_to_5yrs": "3–5 years",
@@ -794,7 +795,7 @@
       "expMonths": "{n} months' experience",
       "expYears": "{n, plural, one {# year's} other {#+ years'}} experience",
       "education": { "high_school": "High school", "associates": "Diploma", "bachelors": "Bachelor's degree", "postgraduate": "Postgraduate degree" },
-      "title": "Live Job Postings",
+      "title": "Proposed Jobs",
       "subtitle": "Current openings matched to your careers",
       "for": "for",
       "save": "Save to tracker",
@@ -807,7 +808,7 @@
       "lockedCta": "Unlock Full Report"
     },
     "internships": {
-      "title": "Internships & Exposure",
+      "title": "Proposed Internships",
       "subtitle": "Internship openings matched to your careers — a first step before full-time jobs",
       "signupTitle": "Sign up to see matched internships",
       "signupBody": "Create a free account to unlock internship openings matched to your top career matches.",
@@ -825,7 +826,7 @@
       "lockedMajors": "Unlock the full report to see the careers each major leads to and how to try it."
     },
     "certifications": {
-      "title": "Certifications to Pursue",
+      "title": "Recommended Certifications",
       "subtitle": "Short qualifications employers recognise, chosen to fit your matched careers",
       "lockedTag": "Pathfinder",
       "lockedTitle": "Unlock certifications to pursue",

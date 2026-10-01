@@ -128,6 +128,8 @@ export default function ResultsPage() {
   const levelLabel = (level: string) => t.has(`levels.${level}`) ? t(`levels.${level}` as any) : level
 
   const [summary, setSummary] = useState<any>(null)
+  // 0-100 score per dimension (same numbers the PDF shows), so the profile can show a percentage for each type
+  const [scoreMap, setScoreMap] = useState<Record<string, number>>({})
   const [recentCompletions, setRecentCompletions] = useState<number | null>(null)
   const [tier, setTier] = useState<'free' | 'pathfinder' | 'launchpad'>('launchpad')
   const [betaMode, setBetaMode] = useState(false)
@@ -186,7 +188,7 @@ export default function ResultsPage() {
   const [aiLoading, setAiLoading] = useState(true)
   const [jobsLoading, setJobsLoading] = useState(true)
   const [companies, setCompanies] = useState<any[]>([])
-  const [companiesLoading, setCompaniesLoading] = useState(true)
+  const [companiesLoading, setCompaniesLoading] = useState(false)
   const [companiesError, setCompaniesError] = useState(false)
   const [courses, setCourses] = useState<any[]>([])
   const [coursesLoading, setCoursesLoading] = useState(true)
@@ -223,6 +225,7 @@ export default function ResultsPage() {
       apiAuthGet<any>(`/assessment/${id}/results`)
         .then(data => {
           setSummary(data.summary)
+          setScoreMap(Object.fromEntries((data.results || []).map((r: any) => [r.dimension, Math.round(Number(r.normalized_score) || 0)])))
           setEmail(data.email || '')
           if (data.tier === 'free' || data.tier === 'pathfinder' || data.tier === 'launchpad') setTier(data.tier)
           setIsStillEnrolled(!!data.is_still_enrolled)
@@ -279,10 +282,11 @@ export default function ResultsPage() {
       apiAuthGet<any>(`/assessment/${id}/career-path?locale=${locale}`)
         .then(data => { if (data && data.narrative) setCareerPath(data) })
         .catch(() => {})
-      apiAuthGet<any[]>(`/assessment/${id}/companies`)
-        .then(data => { setCompanies(data || []); setCompaniesError(false) })
-        .catch(() => setCompaniesError(true))
-        .finally(() => setCompaniesLoading(false))
+      // Companies to Target was removed from the report (1 Oct 2026); not fetched any more.
+      // apiAuthGet<any[]>(`/assessment/${id}/companies`)
+      //   .then(data => { setCompanies(data || []); setCompaniesError(false) })
+      //   .catch(() => setCompaniesError(true))
+      //   .finally(() => setCompaniesLoading(false))
       apiAuthGet<any[]>(`/assessment/${id}/courses`)
         .then(data => { setCourses(data || []); setCoursesError(false) })
         .catch(() => setCoursesError(true))
@@ -476,7 +480,6 @@ export default function ResultsPage() {
       { done: !jobsSuggestionsLoading, label: t('loading.stages.careers') },
       { done: !aiLoading, label: t('loading.stages.impact') },
       { done: !jobsLoading, label: t('loading.stages.jobs') },
-      { done: !companiesLoading, label: t('loading.stages.companies') },
       { done: !coursesLoading, label: t('loading.stages.courses') },
     ]
     const completedCount = stages.filter(s => s.done).length
@@ -628,6 +631,19 @@ export default function ResultsPage() {
         <p className="rp-sub mt-1"><span className="font-bold text-charcoal">{t('courses.why')}:</span> {course.why}</p>
       )}
     </a>
+  )
+
+  // One profile line: name, percentage, bar. Every type looks the same; only the order shows which is highest.
+  const scoreRow = (label: string, pct: number) => (
+    <div key={label}>
+      <div className="flex justify-between items-center mb-1">
+        <span className="rp-sub font-medium">{label}</span>
+        <span className="rp-pill rp-blue">{pct}%</span>
+      </div>
+      <div className="w-full bg-lightblue rounded-full h-1.5">
+        <div className="bg-primary h-1.5 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
   )
 
   const sectionBlocks: Record<string, ReactNode> = {
@@ -1601,10 +1617,17 @@ export default function ResultsPage() {
               subtitle={t('careerTypes.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.07A2.25 2.25 0 0118 20.47H6a2.25 2.25 0 01-2.25-2.25v-4.07M15.75 9.75V6a3.75 3.75 0 00-7.5 0v3.75M3.75 9.75h16.5" /></svg>}
             />
-            <div className="flex gap-2 flex-wrap">
-              {summary.riasec.top_types.map((rt: string, i: number) => (
-                <span key={rt} className={i === 0 ? 'chip chip-solid' : 'chip'}>{riasecLabel(rt)}</span>
-              ))}
+            {/* All six types, same look, highest first, each with its percentage (no single "main" type) */}
+            <div className="space-y-2.5">
+              {['realistic', 'investigative', 'artistic', 'social', 'enterprising', 'conventional']
+                .filter(rt => scoreMap[rt] !== undefined)
+                .sort((a, b) => scoreMap[b] - scoreMap[a])
+                .map(rt => scoreRow(riasecLabel(rt), scoreMap[rt]))}
+              {Object.keys(scoreMap).length === 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {summary.riasec.top_types.map((rt: string) => <span key={rt} className="chip">{riasecLabel(rt)}</span>)}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1615,10 +1638,10 @@ export default function ResultsPage() {
               subtitle={t('coreValues.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>}
             />
-            <div className="flex gap-2 flex-wrap">
-              {summary.values.top_values.map((v: string, i: number) => (
-                <span key={v} className={i === 0 ? 'chip chip-teal font-bold' : 'chip'}>{valueLabel(v)}</span>
-              ))}
+            <div className="space-y-2.5">
+              {summary.values.top_values.map((v: string) => scoreMap[v] !== undefined
+                ? scoreRow(valueLabel(v), scoreMap[v])
+                : <span key={v} className="chip">{valueLabel(v)}</span>)}
             </div>
           </div>
 
@@ -1629,10 +1652,10 @@ export default function ResultsPage() {
               subtitle={t('topStrengths.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>}
             />
-            <div className="flex gap-2 flex-wrap">
-              {summary.strengths.top_strengths.map((s: string, i: number) => (
-                <span key={s} className={i === 0 ? 'chip chip-solid' : 'chip'}>{strengthLabel(s)}</span>
-              ))}
+            <div className="space-y-2.5">
+              {summary.strengths.top_strengths.map((st: string) => scoreMap[st] !== undefined
+                ? scoreRow(strengthLabel(st), scoreMap[st])
+                : <span key={st} className="chip">{strengthLabel(st)}</span>)}
             </div>
           </div>
 
@@ -1694,7 +1717,7 @@ export default function ResultsPage() {
 
       </>),
   }
-  const DEFAULT_ORDER = ['summary', 'careers', 'plan', 'jobs', 'courses', 'companies', 'ai', 'profile']
+  const DEFAULT_ORDER = ['summary', 'careers', 'plan', 'jobs', 'courses', 'ai', 'profile']
   const knownKeys = Object.keys(sectionBlocks)
   const baseOrder = (sectionOrder && sectionOrder.length ? sectionOrder : DEFAULT_ORDER).filter(k => knownKeys.includes(k))
   // 'ai' is merged into the careers section (a collapsible panel on each career); the PDF still has its own AI page.
@@ -1754,11 +1777,6 @@ export default function ResultsPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-6 mt-8 pb-16 space-y-4 relative z-10">
-
-        {/* Result Stage feedback — non-blocking, shows on every visit until answered */}
-        {betaMode && (
-          <BetaFeedbackResultStage responseId={id} locale={locale} initiallyDone={resultStageDone} />
-        )}
 
         {/* Signup CTA */}
         {!loggedIn && (
@@ -1838,6 +1856,11 @@ export default function ResultsPage() {
           <p className="text-sm text-charcoal/70">{t('share')}</p>
           <CopyLinkButton />
         </div>
+
+        {/* Result Stage feedback — non-blocking, at the end of the report (moved from the top 1 Oct 2026); shows on every visit until answered */}
+        {betaMode && (
+          <BetaFeedbackResultStage responseId={id} locale={locale} initiallyDone={resultStageDone} />
+        )}
 
       </div>
     </div>

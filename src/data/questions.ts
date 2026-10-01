@@ -146,6 +146,7 @@ export const questions: Question[] = [
     type: 'single_select',
     options: [
       { value: 'no_experience', label: 'No work experience yet' },
+      { value: 'internships_only', label: 'Only internships or training placements' },
       { value: 'up_to_1yr', label: 'Less than 1 year' },
       { value: 'up_to_3yrs', label: '1–3 years' },
       { value: 'up_to_5yrs', label: '3–5 years' },
