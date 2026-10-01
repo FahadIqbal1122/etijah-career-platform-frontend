@@ -631,6 +631,7 @@
         "courses": "Curating learning resources"
       },
       "recentCompletions": "{count, plural, one {# person} other {# people}} completed their assessment in the last hour",
+      "leaveNote": "We are working on your results and report. You can wait here until they are ready, or you can leave. We will email you a link to your results once they are ready.",
       "scrollForFeedback": "Scroll down to answer 3 quick questions and unlock your report"
     },
     "error": {

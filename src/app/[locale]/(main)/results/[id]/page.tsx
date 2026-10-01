@@ -500,6 +500,7 @@ export default function ResultsPage() {
                 {!!recentCompletions && (
                   <p className="text-teal text-sm font-medium">✦ {t('loading.recentCompletions', { count: recentCompletions })}</p>
                 )}
+                <p className="text-white/75 text-sm leading-relaxed max-w-sm">{t('loading.leaveNote')}</p>
               </>
             )}
             {showFeedbackCol && (
