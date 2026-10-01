@@ -614,6 +614,12 @@
     }
   },
   "results": {
+    "sections": {
+      "summary": "نظرة عامة",
+      "profile": "ملفك الشخصي",
+      "expandAll": "فتح الكل",
+      "collapseAll": "طي الكل"
+    },
     "loading": {
       "preparing": "جاري تجهيز تقريرك…",
       "readyAwaitingFeedback": "تقريرك جاهز! أجب عن 3 أسئلة سريعة لفتحه:",
@@ -839,6 +845,7 @@
       "atRiskLabel": "مهام تتغيّر",
       "overallLabel": "الذكاء الاصطناعي ومساراتك",
       "riskSuffix": "المخاطر",
+      "riskLabel": "خطر تأثير الذكاء الاصطناعي",
       "protectedSkillsLabel": "مهارات إنسانية تبقى ذات قيمة",
       "upskillingLabel": "كيف تستعد",
       "whatThisMeansLabel": "ما الذي يعنيه هذا لك",

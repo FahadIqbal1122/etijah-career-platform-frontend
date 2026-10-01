@@ -803,3 +803,6 @@ html { scroll-behavior: smooth; }
 .rp-ondark-note { background: rgb(255 255 255 / 0.12); border-color: rgb(255 255 255 / 0.5); color: #fff; }
 .rp-onblue { color: var(--rp-blue); background: #fff; border-color: var(--rp-blue-line); }
 .rp-wrap { white-space: normal; }
+
+/* A report section with nothing inside (e.g. courses that moved into the career cards) hides its own bar. */
+.report-section:not(:has(.report-section-body > *)) { display: none; }

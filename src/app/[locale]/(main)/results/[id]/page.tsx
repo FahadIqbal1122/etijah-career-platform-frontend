@@ -177,6 +177,8 @@ export default function ResultsPage() {
   const [isStillEnrolled, setIsStillEnrolled] = useState(false)
   const [route, setRoute] = useState<string>('')
   const [sectionOrder, setSectionOrder] = useState<string[] | null>(null)
+  // Sections the reader has folded away (all open by default).
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
   const [careerDirection, setCareerDirection] = useState<string | null>(null)
   const [studentTrack, setStudentTrack] = useState<any>(null)
   const [certifications, setCertifications] = useState<any>(null)
@@ -446,7 +448,11 @@ export default function ResultsPage() {
   }
 
   // Working people: build the full plan for one of their top careers, then bring them to it.
-  function scrollToPlan() { document.getElementById('plan-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
+  function scrollToPlan() {
+    // open the plan section first if the reader had folded it away
+    setCollapsedSections(prev => ({ ...prev, plan: false }))
+    setTimeout(() => document.getElementById('plan-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
+  }
   async function buildCareerPlan(title: string) {
     setPlanBuilding(title)
     setPlanError('')
@@ -949,7 +955,7 @@ export default function ResultsPage() {
                             top ? 'rp-ondark' : aiRisk === 'low' ? 'rp-green' : aiRisk === 'medium' ? 'rp-amber' : 'rp-rose'
                           }`}>
                             <PillIcon name="shield" />
-                            {levelLabel(aiRisk).toUpperCase()} {t('aiImpact.riskSuffix')}
+                            {t('aiImpact.riskLabel')}: {levelLabel(aiRisk)}
                           </button>
                         )}
                       </div>
@@ -1017,7 +1023,7 @@ export default function ResultsPage() {
                           <span className="flex items-center gap-2 rp-body font-bold"><PillIcon name="shield" size={16} />{t('aiImpact.rowTitle')}</span>
                           <span className="flex items-center gap-2">
                             {aiRisk && ['low', 'medium', 'high'].includes(aiRisk) && (
-                              <span className={`rp-pill ${aiRisk === 'low' ? 'rp-green' : aiRisk === 'medium' ? 'rp-amber' : 'rp-rose'}`}>{levelLabel(aiRisk).toUpperCase()} {t('aiImpact.riskSuffix')}</span>
+                              <span className={`rp-pill ${aiRisk === 'low' ? 'rp-green' : aiRisk === 'medium' ? 'rp-amber' : 'rp-rose'}`}>{t('aiImpact.riskLabel')}: {levelLabel(aiRisk)}</span>
                             )}
                             <span aria-hidden="true" className={`transition-transform ${aiIsOpen ? 'rotate-180' : ''}`}>▾</span>
                           </span>
@@ -1519,7 +1525,7 @@ export default function ResultsPage() {
                       'rp-rose'
                     }`}>
                       <PillIcon name="shield" />
-                      {c.ai_risk_level ? levelLabel(c.ai_risk_level).toUpperCase() : ''} {t('aiImpact.riskSuffix')}
+                      {t('aiImpact.riskLabel')}: {c.ai_risk_level ? levelLabel(c.ai_risk_level) : ''}
                     </span>
                   </div>
                   {c.global_evidence && (
@@ -1771,7 +1777,43 @@ export default function ResultsPage() {
           </div>
         )}
 
-        {orderedKeys.map(k => <Fragment key={k}>{sectionBlocks[k]}</Fragment>)}
+        {/* Every section can be folded away; all start open. A section with nothing to show hides its bar too. */}
+        <div className="flex justify-end gap-3 text-xs text-charcoal/70">
+          <button type="button" className="underline" onClick={() => setCollapsedSections({})}>{t('sections.expandAll')}</button>
+          <button type="button" className="underline" onClick={() => setCollapsedSections(Object.fromEntries(orderedKeys.map(k => [k, true])))}>{t('sections.collapseAll')}</button>
+        </div>
+        {orderedKeys.map(k => {
+          const closed = !!collapsedSections[k]
+          const barTitle =
+            k === 'summary' ? t('sections.summary')
+            : k === 'profile' ? t('sections.profile')
+            : k === 'careers' ? t('suggestedCareers.title')
+            : k === 'plan' ? t('plan.title')
+            : k === 'majors' ? t('studentTrack.title')
+            : k === 'path' ? t('careerPath.title')
+            : k === 'jobs' ? t(listingsAsInternships ? 'internships.title' : 'liveJobs.title')
+            : k === 'certs' ? t('certifications.title')
+            : k === 'courses' ? t('courses.title')
+            : k === 'companies' ? t('companies.title')
+            : ''
+          return (
+            <div key={k} className="report-section space-y-4">
+              <button
+                type="button"
+                aria-expanded={!closed}
+                aria-controls={`section-${k}`}
+                onClick={() => setCollapsedSections(prev => ({ ...prev, [k]: !closed }))}
+                className="report-section-bar w-full flex items-center justify-between gap-3 rounded-xl bg-white/70 border border-[var(--line)] px-4 py-2.5 text-start"
+              >
+                <span className="rp-h text-charcoal">{barTitle}</span>
+                <span aria-hidden="true" className={`transition-transform ${closed ? '' : 'rotate-180'}`}>▾</span>
+              </button>
+              <div id={`section-${k}`} className="report-section-body space-y-4" hidden={closed}>
+                <Fragment>{sectionBlocks[k]}</Fragment>
+              </div>
+            </div>
+          )
+        })}
 
         {/* Reassess */}
         {/*
