@@ -1,12 +1,12 @@
 'use client'
 
-// Searchable multi-select dropdown for the languages question. Arabic and English come first (the most
-// common in the GCC), every other language follows in alphabetical order for the current UI language, and
-// "Other" is always last — so no language is ranked above another.
+// Searchable multi-select dropdown for the languages question. Arabic, English, French, Spanish and German come
+// first, in that order; every other language follows in alphabetical order for the current UI language, and
+// "Other" is always last — so none of the remaining languages is ranked above another.
 
 import { useMemo, useRef, useState } from 'react'
 
-const PINNED = ['arabic', 'english']
+const PINNED = ['arabic', 'english', 'french', 'spanish', 'german']
 
 export default function LanguageSelect({
   options, selected, onToggle, locale, searchPlaceholder, noMatch,

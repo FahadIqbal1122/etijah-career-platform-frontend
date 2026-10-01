@@ -330,6 +330,7 @@ export const questions: Question[] = [
       { value: 'english', label: 'English' },
       { value: 'bengali', label: 'Bengali' },
       { value: 'french', label: 'French' },
+      { value: 'german', label: 'German' },
       { value: 'hindi', label: 'Hindi' },
       { value: 'malayalam', label: 'Malayalam' },
       { value: 'persian', label: 'Persian' },
