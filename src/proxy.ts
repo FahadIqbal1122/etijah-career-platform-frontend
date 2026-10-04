@@ -32,7 +32,7 @@ export function proxy(request: Parameters<typeof intlMiddleware>[0]) {
         const clean = request.nextUrl.clone()
         clean.searchParams.delete('preview')
         const redirect = NextResponse.redirect(clean)
-        redirect.cookies.set('beta_preview', preview, { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'lax' })
+        redirect.cookies.set('beta_preview', preview, { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' })
         return redirect
     }
     const response = intlMiddleware(request)
