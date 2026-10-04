@@ -274,7 +274,7 @@ export default function ResultsPage() {
         .catch(() => {})
         .finally(() => setJobsLoading(false))
       apiAuthGet<any>(`/assessment/${id}/student-track?locale=${locale}`)
-        .then(data => { if (data && (data.majors_guidance || data.exposure_ideas?.length)) setStudentTrack(data) })
+        .then(data => { if (data && (data.locked || data.majors_guidance || data.exposure_ideas?.length)) setStudentTrack(data) })
         .catch(() => {})
       apiAuthGet<any>(`/assessment/${id}/certifications?locale=${locale}`)
         .then(data => { if (data?.certifications?.length) setCertifications(data) })
