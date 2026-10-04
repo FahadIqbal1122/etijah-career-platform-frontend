@@ -11,7 +11,7 @@ import { L } from '@/data/landing'
 import Logomark, { Wordmark } from '@/components/brand/Logomark'
 import LandingConstellation from '@/components/brand/LandingConstellation'
 import { supabase } from '@/lib/supabase'
-import { startCheckout, type PlanCode } from '@/lib/api'
+import { startCheckout, apiAuthGet, apiAuthPost, type PlanCode } from '@/lib/api'
 import PartnerModal from '@/components/shared/PartnerModal'
 import { LANDING_VARIANTS, type VariantSlug } from '@/data/landingVariants'
 import { setLandingVariant } from '@/lib/analytics'
@@ -127,9 +127,16 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
     }
     setCheckingOut(planCode)
     try {
+      // The paid report is built from an assessment, so someone who has not taken one goes there first.
+      try {
+        await apiAuthPost('/assessment/link-by-email', {}).catch(() => {})
+        const mine = await apiAuthGet<unknown[]>('/assessment/my-assessments')
+        if (!mine.length) { router.push('/assessment'); return }
+      } catch {}
       const { checkout_url } = await startCheckout(planCode)
       window.location.href = checkout_url
-    } catch {
+    } catch (e) {
+      if (e instanceof Error && e.message === 'assessment_required') { router.push('/assessment'); return }
       setCheckingOut(null)
     }
   }

@@ -288,6 +288,8 @@ export default function UserDashboard() {
     }
   }
   async function handleBuyPlan(planCode: PlanCode) {
+    // The paid report is built from an assessment — send people who have none to take it first.
+    if (!assessments.length) { navRouter.push(`/${locale}/assessment`); return }
     setBuying(true)
     try {
       const { checkout_url } = await startCheckout(planCode)
@@ -311,13 +313,14 @@ export default function UserDashboard() {
     // stale/bookmarked ?buy=launchpad_* link instead of firing checkout and surfacing that
     // as a raw error.
     if (buy === 'pathfinder') {
+      if (assessmentsLoading) return  // wait until we know whether they have an assessment
       navRouter.replace(`/${locale}/dashboard`)
       handleBuyPlan(buy)
     } else if (buy === 'launchpad_monthly' || buy === 'launchpad_yearly') {
       navRouter.replace(`/${locale}/dashboard`)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user, assessmentsLoading])
 
   // The shop redirects the buyer back with ?order_ref=…&status=paid. That redirect is unsigned,
   // so it is only a cue to look — the signed webhook is what marks the order paid, and it can land
@@ -607,7 +610,13 @@ export default function UserDashboard() {
                   </p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                  {plan?.tier === 'free' && (
+                  {plan?.tier === 'free' && !assessmentsLoading && !assessments.length && (
+                    <Link href="/assessment"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary text-primary text-sm font-medium">
+                      Take the assessment to unlock your full report
+                    </Link>
+                  )}
+                  {plan?.tier === 'free' && assessments.length > 0 && (
                     <button onClick={() => handleBuyPlan('pathfinder')} disabled={buying}
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary text-primary text-sm font-medium disabled:opacity-50">
                       {buying ? '…' : `Unlock Full Report — ${formatPrice('pathfinder', displayCurrency, 'en')}`}
