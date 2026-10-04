@@ -52,7 +52,7 @@ export const L = {
       blocks: [
         { head: 'What it is', body: 'Etijahi is your personal career guide in digital form. It helps you understand yourself, find the paths that genuinely fit, and see how AI is already reshaping each one, so you can choose with your eyes open.' },
         { head: 'What makes it different', body: 'Any tool can run a test. We do something harder: we read your results through 15 years of real career guidance and show you how AI is reshaping every path in front of you — which roles are growing and which are quietly disappearing — so you don’t pour years into a major or career your market won’t need.' },
-        { head: 'What you get', body: 'A 15-minute assessment → a clear report: your strengths, your values, the careers that fit you best, and an honest AI-impact outlook for each → then real help getting there — job matches in your market, a stronger CV, interview practice, and a real coach whenever you want one.' },
+        { head: 'What you get', body: 'A 15-minute assessment → a clear report: your strengths, your values, the careers that fit you best, and an honest AI-impact outlook for each → then real help getting there — a 90-day plan, courses and certifications, live job and internship listings, and a real coach for a 1:1 session whenever you want one.' },
       ],
     },
     // ── SECTION 3B — NOT JUST WHAT PAYS ───────────────────────────────
@@ -80,7 +80,7 @@ export const L = {
       steps: [
         { n: '01', title: 'Tell us who you are.', body: 'A 15-minute assessment, available in Arabic and English, built on five proven frameworks, adapted by our own coaches for the realities of the Gulf. No jargon, no 200-question forms — just honest questions that surface what matters.' },
         { n: '02', title: 'See your full picture. And where it’s heading.', body: 'Your personality, strengths, and values come together with real labour-market data from your region, and an honest read on how AI is reshaping each path, in one plain-language report — written the way a coach would explain it, not the way a machine would print it.' },
-        { n: '03', title: 'Move with support that stays.', body: 'Career paths ranked by fit, a future-proof outlook for each, course recommendations, daily job matches in your market — and a real coach one step away whenever you want a human in the room. We walk with you past the first step.' },
+        { n: '03', title: 'Move with support that stays.', body: 'Career paths ranked by fit, a future-proof outlook for each, course recommendations, live job and internship listings in your market — and a real coach one step away whenever you want a human in the room. We walk with you past the first step.' },
       ],
       cta: 'Start my assessment →',
     },
@@ -231,7 +231,7 @@ export const L = {
         { q: 'Is everything available in Arabic?', a: 'Fully. Etijahi is available in Arabic and English from day one — the platform, the assessment, and your report.' },
         { q: 'Is a real human involved, or is it all AI?', a: 'Both. The platform is designed and supervised by Etijah’s coaches, the frameworks come from 15 years of real coaching, and you can add a 1:1 session with a real coach whenever you want a human in the conversation.' },
         { q: 'Is my data private and secure?', a: 'Yes. Your data is stored securely and is never sold to third parties. Your profile and results belong to you.' },
-        { q: 'I already know what career I want. Is Etijahi still useful?', a: 'Often the hardest part isn’t choosing the direction — it’s getting there. The job matching, CV analysis, interview practice, and AI-impact outlook are built exactly for people who know where they’re going and need momentum.' },
+        { q: 'I already know what career I want. Is Etijahi still useful?', a: 'Often the hardest part isn’t choosing the direction — it’s getting there. The matched careers, the 90-day plan, live job listings, and AI-impact outlook are built exactly for people who know where they’re going and need momentum.' },
         { q: 'Based elsewhere in the GCC? Is Etijahi suitable for me?', a: 'Yes. Etijahi is built for the whole GCC, with career context for your market. Our local intelligence is deepest where we’ve worked longest, and coverage across the rest of the GCC is expanding, with international markets on the roadmap.' },
       ],
     },
@@ -310,7 +310,7 @@ export const L = {
       blocks: [
         { head: 'ما هو', body: 'إتجاهي هو مرشدك المهني الشخصي في قالبٍ رقمي ذكي؛ يساعدك على فهم ذاتك بعمق، واكتشاف المسارات التي تشبهك وتناسبك حقاً، وإدراك كيف يعيد الذكاء الاصطناعي تشكيل كل مسار اليوم، لتبني قرارك على وعيٍ لا على تخمين.' },
         { head: 'ما الذي يميزه', body: 'أي أداة يمكنها إجراء اختبار. لكننا نقوم بما هو أصعب وأعمق: نأخذ نتائجك ونقرؤها بعين الخبرة الممتدة لـ ١٥ عاماً من الإرشاد المهني الفعلي. ونكشف لك بوضوح كيف يعيد الذكاء الاصطناعي تشكيل كل مسار مهني أمامك، وما هي الوظائف التي تنمو وتزدهر وتلك التي تتلاشى في صمت؛ لتتجنب هدر سنوات من عمرك في تخصص أو مهنة قد لا يحتاجها سوق العمل مستقبلاً.' },
-        { head: 'ما الذي ستحصل عليه', body: 'تقييم في ١٥ دقيقة ← تقرير واضح: نقاط قوتك، وقيمك الشخصية، والمهن الأنسب لك، ونظرة صادقة على أثر الذكاء الاصطناعي في كلٍّ منها ← ثم دعم حقيقي للوصول: وظائف تناسب سوقك، وسيرة ذاتية أقوى، وتدريب عملي على المقابلات، ومرشد حقيقي بجانبك وقتما تشاء.' },
+        { head: 'ما الذي ستحصل عليه', body: 'تقييم في ١٥ دقيقة ← تقرير واضح: نقاط قوتك، وقيمك الشخصية، والمهن الأنسب لك، ونظرة صادقة على أثر الذكاء الاصطناعي في كلٍّ منها ← ثم دعم حقيقي للوصول: خطة لـ ٩٠ يوماً، ودورات وشهادات، ووظائف وفرص تدريب حالية تناسب سوقك، وجلسة (1:1) مع مرشد حقيقي وقتما تشاء.' },
       ],
     },
     notJustWhatPays: {
@@ -335,7 +335,7 @@ export const L = {
       steps: [
         { n: '١', title: 'أخبرنا من أنت.', body: 'تقييم من ١٥ دقيقة، متوفر باللغتين العربية والإنجليزية، مبنيّ على خمسة أساليب عمل علمية معتمدة طوّرها مرشدونا لتناسب واقع منطقتنا الخليجية. لا مصطلحات معقدة، ولا استبيانات بـ ٢٠٠ سؤال؛ فقط أسئلة صادقة تلمس جوهر ما يهمك.' },
         { n: '٢', title: 'شاهد صورتك الكاملة، وإلى أين تتجه.', body: 'شخصيتك، نقاط قوتك، وقيمك تتكامل مع بيانات سوق العمل الحقيقية في منطقتك، مع قراءة واقعية وصادقة لكيفية إعادة تشكيل الذكاء الاصطناعي لكل مسار، في تقرير واحد سهل ومباشر — مكتوب بأسلوب مرشد مهني يشرح لك التفاصيل بوضوح، لا بأسلوب آلة تطبع كلمات جافة.' },
-        { n: '٣', title: 'تقدَّم بثقة.. مع دعم مستمر لا يتركك.', body: 'مسارات مهنية مرتبة حسب ملاءمتها لك، مع رؤية للمستقبل، وتوصيات للدورات المناسبة، وفرص عمل يومية متطابقة مع سوقك — ومرشد حقيقي على بعد خطوة واحدة منك متى ما أردت شخصاً تتحدث إليه ويوجهك. نحن نسير معك إلى ما بعد خطوتك الأولى.' },
+        { n: '٣', title: 'تقدَّم بثقة.. مع دعم مستمر لا يتركك.', body: 'مسارات مهنية مرتبة حسب ملاءمتها لك، مع رؤية للمستقبل، وتوصيات للدورات المناسبة، ووظائف وفرص تدريب حالية تناسب سوقك — ومرشد حقيقي على بعد خطوة واحدة منك متى ما أردت شخصاً تتحدث إليه ويوجهك. نحن نسير معك إلى ما بعد خطوتك الأولى.' },
       ],
       cta: 'ابدأ التقييم ←',
     },
@@ -479,7 +479,7 @@ export const L = {
         { q: 'هل كل شيء متاح باللغة العربية؟', a: 'بالكامل. اتجاهي متاحة بالعربية والإنجليزية منذ اليوم الأول — المنصة والتقييم وتقريرك، جميعها.' },
         { q: 'هل هناك إنسان حقيقي، أم أن كل شيء ذكاء اصطناعي؟', a: 'الاثنان معاً. المنصة صمَّمها ويشرف عليها مرشدو اتجاه، والأطر العلمية مستمدة من ١٥ عاماً من الإرشاد الحقيقي، ويمكنك إضافة جلسة فردية مع مرشد حقيقي متى أردت إنساناً في الحوار.' },
         { q: 'هل بياناتي خاصة وآمنة؟', a: 'نعم. تُخزَّن بياناتك بأمان ولا تُباع لأي طرف ثالث أبداً. ملفك ونتائجك ملك لك.' },
-        { q: 'أعرف بالفعل المسار الذي أريده. هل تفيدني اتجاهي؟', a: 'غالباً ليست الصعوبة في اختيار الاتجاه — بل في الوصول إليه. مطابقة الوظائف وتحليل السيرة الذاتية وتمارين المقابلات وتحليل تأثير الذكاء الاصطناعي، كلها صُمِّمت تحديداً لمن يعرف وجهته ويحتاج إلى دفعة.' },
+        { q: 'أعرف بالفعل المسار الذي أريده. هل تفيدني اتجاهي؟', a: 'غالباً ليست الصعوبة في اختيار الاتجاه — بل في الوصول إليه. المسارات المهنية المطابقة، والخطة لـ ٩٠ يوماً، والوظائف الحالية، وتحليل تأثير الذكاء الاصطناعي، كلها صُمِّمت تحديداً لمن يعرف وجهته ويحتاج إلى دفعة.' },
         { q: 'أنا في مكان آخر بالخليج؟ هل اتجاهي مناسبة لي؟', a: 'نعم. صُمِّمت اتجاهي للخليج كله، مع سياق مهني لسوقك. بياناتنا المحلية أعمق في الأسواق التي عملنا بها لسنوات طويلة، وتتوسع تغطيتنا في بقية دول الخليج، والأسواق العالمية على خارطة الطريق.' },
       ],
     },
