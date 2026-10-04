@@ -968,7 +968,7 @@ export const questions: Question[] = [
   },
   {
     // Last screen, optional. A field or career they already have in mind: after scoring, the report builds their
-    // first step and 7-day plan around it (paid). Never used for scoring. Stored in answers.QOFIELD.
+    // first step and 7-day plan around it (paid). Boosts matching careers in scoring. Stored in answers.QOFIELD.
     id: 'QOFIELD',
     section: 'Onboarding',
     framework: 'Onboarding',
