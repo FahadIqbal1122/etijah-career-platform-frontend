@@ -25,6 +25,16 @@ export function proxy(request: Parameters<typeof intlMiddleware>[0]) {
     if (pathname.startsWith('/admin') || pathname.startsWith('/api/') || pathname.startsWith('/stats/')) {
         return NextResponse.next()
     }
+    // Tester preview link for the closed beta: /assessment?preview=<secret> stores the secret in a
+    // cookie (read by the assessment page and sent with assessment API calls), then drops it from the URL.
+    const preview = request.nextUrl.searchParams.get('preview')
+    if (preview && /^(\/(en|ar))?\/assessment\/?$/.test(pathname)) {
+        const clean = request.nextUrl.clone()
+        clean.searchParams.delete('preview')
+        const redirect = NextResponse.redirect(clean)
+        redirect.cookies.set('beta_preview', preview, { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'lax' })
+        return redirect
+    }
     const response = intlMiddleware(request)
     const currency = geoCurrency(request)
     if (currency && request.cookies.get(CURRENCY_COOKIE)?.value !== currency) {

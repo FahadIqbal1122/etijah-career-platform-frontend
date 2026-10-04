@@ -26,7 +26,8 @@ function wait(ms: number): Promise<void> {
 // just adds latency before the real error/redirect-to-login surfaces.
 async function requestWithRetry(path: string, init: RequestInit, getHeaders: () => Promise<Record<string, string>>): Promise<Response> {
     async function attempt(): Promise<Response> {
-        const headers = { ...init.headers, ...(await getHeaders()) }
+        const preview = readCookie('beta_preview')
+        const headers = { ...init.headers, ...(preview ? { 'X-Beta-Preview': preview } : {}), ...(await getHeaders()) }
         return fetch(`${BASE_URL}${path}`, { ...init, headers })
     }
 

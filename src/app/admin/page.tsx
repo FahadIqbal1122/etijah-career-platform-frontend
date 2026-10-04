@@ -1134,7 +1134,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('dashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -1283,6 +1283,11 @@ export default function AdminPage() {
   const [testModeError, setTestModeError] = useState('')
 
   const [homepageMode, setHomepageMode] = useState<'landing' | 'waitlist'>('landing')
+  const [betaClosed, setBetaClosed] = useState(false)
+  const [betaPreviewSecret, setBetaPreviewSecret] = useState('')
+  const [betaBusy, setBetaBusy] = useState(false)
+  const [betaError, setBetaError] = useState('')
+  const [betaCopied, setBetaCopied] = useState(false)
   const [homepageModeLoading, setHomepageModeLoading] = useState(false)
   const [homepageModeSaving, setHomepageModeSaving] = useState(false)
   const [homepageModeError, setHomepageModeError] = useState('')
@@ -1636,6 +1641,54 @@ export default function AdminPage() {
     }
   }
 
+  const fetchBetaClosed = useCallback(async () => {
+    setBetaError('')
+    try {
+      const res = await fetch('/api/admin/beta-closed')
+      if (!res.ok) throw new Error('Failed to load beta status')
+      const data = await res.json()
+      setBetaClosed(!!data.closed)
+      setBetaPreviewSecret(data.preview_secret || '')
+    } catch (err: any) {
+      setBetaError(err.message)
+    }
+  }, [])
+
+  async function saveBetaClosed(closed: boolean) {
+    setBetaBusy(true)
+    setBetaError('')
+    try {
+      const res = await fetch('/api/admin/beta-closed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ closed }),
+      })
+      if (!res.ok) throw new Error('Failed to save beta status')
+      const data = await res.json()
+      setBetaClosed(!!data.closed)
+      setBetaPreviewSecret(data.preview_secret || '')
+    } catch (err: any) {
+      setBetaError(err.message)
+    } finally {
+      setBetaBusy(false)
+    }
+  }
+
+  async function regenerateBetaSecret() {
+    if (!window.confirm('Generate a new preview link? The old link stops working.')) return
+    setBetaBusy(true)
+    setBetaError('')
+    try {
+      const res = await fetch('/api/admin/beta-closed/regenerate', { method: 'POST' })
+      if (!res.ok) throw new Error('Failed to regenerate')
+      setBetaPreviewSecret((await res.json()).preview_secret || '')
+    } catch (err: any) {
+      setBetaError(err.message)
+    } finally {
+      setBetaBusy(false)
+    }
+  }
+
   const fetchAiProvider = useCallback(async () => {
     setAiProviderLoading(true)
     setAiProviderError('')
@@ -1738,9 +1791,10 @@ export default function AdminPage() {
       fetchMarketTrends()
       fetchTestMode()
       fetchHomepageMode()
+      fetchBetaClosed()
       fetchAiProvider()
     }
-  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchBetaFeedback, fetchAllCareerRecs, fetchCareersCatalog, fetchTelemetry, fetchBugReports, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchAiProvider])
+  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchBetaFeedback, fetchAllCareerRecs, fetchCareersCatalog, fetchTelemetry, fetchBugReports, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchBetaClosed, fetchAiProvider])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -3549,6 +3603,7 @@ export default function AdminPage() {
               tabs: [
                 { key: 'testmode', label: 'Test Mode', color: 'bg-cyan-600', badge: testModeEnabled ? 'ON' : undefined, onSelect: fetchTestMode },
                 { key: 'homepage', label: 'Homepage', color: 'bg-fuchsia-600', badge: homepageMode, onSelect: fetchHomepageMode },
+                { key: 'betaclosed', label: 'Beta Access', color: 'bg-red-600', badge: betaClosed ? 'CLOSED' : undefined, onSelect: fetchBetaClosed },
                 { key: 'templates', label: 'Email Templates', color: 'bg-pink-600' },
                 { key: 'emailScheduler', label: 'Email Scheduler', color: 'bg-rose-600' },
                 { key: 'smtp', label: 'SMTP Settings', color: 'bg-cyan-700' },
@@ -5771,6 +5826,80 @@ export default function AdminPage() {
               </button>
             </div>
             {homepageModeError && <p className="text-xs text-red-500 mt-3">{homepageModeError}</p>}
+          </div>
+        </div>
+      )}
+
+      {/* ── Beta Access Tab ── */}
+      {activeTab === 'betaclosed' && (
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <h2 className="text-xl font-bold text-slate-800 mb-1">Beta Access</h2>
+          <p className="text-sm text-slate-400 mb-6">
+            When closed, <span className="font-mono">/assessment</span> shows a "beta has ended" page and the backend
+            refuses new assessment submissions. Anyone who already finished an assessment can still open their saved
+            results. Testers get in with the preview link below. Takes effect within about 10 seconds.
+          </p>
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <p className="font-semibold text-slate-800">
+              The assessment is currently{' '}
+              <span className={betaClosed ? 'text-red-600' : 'text-emerald-600'}>{betaClosed ? 'CLOSED' : 'OPEN'}</span>
+            </p>
+            <div className="flex gap-2 mt-4">
+              <button
+                disabled={betaBusy}
+                onClick={() => saveBetaClosed(false)}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+                  !betaClosed ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Open
+              </button>
+              <button
+                disabled={betaBusy}
+                onClick={() => saveBetaClosed(true)}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+                  betaClosed ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Closed
+              </button>
+            </div>
+            <div className="mt-6 pt-5 border-t border-slate-100">
+              <p className="text-sm font-semibold text-slate-700 mb-1">Tester preview link</p>
+              <p className="text-xs text-slate-400 mb-2">Open it once in a browser; that browser can then take the assessment while it is closed (valid 7 days).</p>
+              {betaPreviewSecret ? (
+                <div className="flex gap-2">
+                  <input
+                    readOnly
+                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/assessment?preview=${betaPreviewSecret}`}
+                    className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-slate-200 text-xs font-mono text-slate-600 bg-slate-50"
+                    onFocus={(e) => e.currentTarget.select()}
+                  />
+                  <button
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(`${window.location.origin}/assessment?preview=${betaPreviewSecret}`)
+                        setBetaCopied(true)
+                        setTimeout(() => setBetaCopied(false), 1500)
+                      } catch {}
+                    }}
+                    className="px-3 py-2 rounded-lg bg-slate-100 text-slate-600 text-xs font-semibold hover:bg-slate-200"
+                  >
+                    {betaCopied ? 'Copied' : 'Copy'}
+                  </button>
+                  <button
+                    disabled={betaBusy}
+                    onClick={regenerateBetaSecret}
+                    className="px-3 py-2 rounded-lg bg-slate-100 text-slate-600 text-xs font-semibold hover:bg-slate-200 disabled:opacity-50"
+                  >
+                    Regenerate
+                  </button>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400">Loading…</p>
+              )}
+            </div>
+            {betaError && <p className="text-xs text-red-500 mt-3">{betaError}</p>}
           </div>
         </div>
       )}
