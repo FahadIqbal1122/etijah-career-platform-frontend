@@ -50,6 +50,12 @@ const STAGES: { key: Application['status']; label: string }[] = [
   { key: 'interview', label: 'Interview' }, { key: 'offer', label: 'Offer' }, { key: 'rejected', label: 'Rejected' },
 ]
 
+// Product scope, 4 Oct 2026: Pathfinder = the full report; Launchpad = a 1:1 coaching session. Job matching, the saved-jobs
+// tracker and the notification preferences are switched off here (not deleted). Set a flag to true to bring one back.
+// See Documents/Removed_Features_4Oct2026.md.
+const SHOW_JOB_MATCHES = false
+const SHOW_NOTIFICATIONS = false
+
 const NAV: { id: string; icon: string; en: string; ar: string; locked?: boolean }[] = [
   { id: 'home', icon: 'home', en: 'Home', ar: 'الرئيسية' },
   { id: 'report', icon: 'report', en: 'My Report', ar: 'تقريري' },
@@ -518,7 +524,8 @@ export default function UserDashboard() {
             </div>
           )}
 
-          {/* job matches: real for Launchpad, locked preview otherwise */}
+          {/* job matches: real for Launchpad, locked preview otherwise. Hidden: see SHOW_JOB_MATCHES */}
+          {SHOW_JOB_MATCHES && (
           <section id="sec-jobs" className="space-y-4 scroll-mt-4">
             {planLoading ? (
               <div className="card p-5 animate-pulse">
@@ -620,6 +627,7 @@ export default function UserDashboard() {
             </div>
             */}
           </section>
+          )}
 
           {/* billing (preview) — replaced by real Buy Plan flow below, kept for reference
           <section id="sec-billing" className="card p-6">
@@ -696,7 +704,8 @@ export default function UserDashboard() {
             )}
           </section>
 
-          {/* notifications (preview) */}
+          {/* notifications (preview). Hidden: see SHOW_NOTIFICATIONS */}
+          {SHOW_NOTIFICATIONS && (
           <section id="sec-notifications" className="card p-6 scroll-mt-4">
             <div className="flex items-center gap-2"><h3 className="font-bold text-charcoal">{t.notifHead}</h3><PreviewTag label={t.preview} /></div>
             <p className="text-xs text-charcoal/45 mb-4">{t.notifSub}</p>
@@ -709,6 +718,7 @@ export default function UserDashboard() {
               ))}
             </div>
           </section>
+          )}
 
           {/* account */}
           <section id="sec-account" className="card p-6 scroll-mt-4">
