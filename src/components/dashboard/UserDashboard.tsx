@@ -62,7 +62,12 @@ const T = {
   en: {
     welcome: 'Welcome back,', explorer: 'Explorer', preview: 'Preview',
     reportReadyEyebrow: 'Your report', reportReadyHead: 'Your full report is ready',
-    reportReadySub: 'Career matches · AI impact · courses · companies to target',
+    reportReadySub: 'Career matches · AI impact · plan · courses · certifications',
+    reportReadyHeadFree: 'Your report is ready', reportReadySubFree: 'Your top career matches and your profile',
+    fullBuildingHead: 'We’re building your full report',
+    fullBuildingSub: 'Thank you for your purchase. This usually takes a few minutes. You can leave this page; we’ll email you when it’s ready.',
+    fullReadyHead: 'Your full report is ready',
+    fullReadySub: 'Your plan, courses, certifications and the AI-impact analysis are now unlocked.',
     viewReport: 'View report', download: 'Download PDF', downloading: 'Downloading…',
     downloadAr: 'Download Arabic PDF', downloadEn: 'Download English PDF',
     noReportHead: 'You haven’t taken the assessment yet', noReportSub: 'It takes about 15 minutes and it’s free.',
@@ -88,7 +93,12 @@ const T = {
   ar: {
     welcome: 'مرحباً بعودتك،', explorer: 'المُكتشِف', preview: 'معاينة',
     reportReadyEyebrow: 'تقريرك', reportReadyHead: 'تقريرك الكامل جاهز',
-    reportReadySub: 'مسارات مهنية · أثر الذكاء الاصطناعي · دورات · شركات مستهدفة',
+    reportReadySub: 'مسارات مهنية · أثر الذكاء الاصطناعي · خطة · دورات · شهادات',
+    reportReadyHeadFree: 'تقريرك جاهز', reportReadySubFree: 'أفضل مساراتك المهنية وملفّك الشخصي',
+    fullBuildingHead: 'نجهّز تقريرك الكامل',
+    fullBuildingSub: 'شكراً لشرائك. يستغرق ذلك عادةً بضع دقائق. يمكنك مغادرة هذه الصفحة وسنرسل لك رسالة بريد عند اكتماله.',
+    fullReadyHead: 'تقريرك الكامل جاهز',
+    fullReadySub: 'خطتك والدورات والشهادات وتحليل أثر الذكاء الاصطناعي أصبحت متاحة الآن.',
     viewReport: 'عرض التقرير', download: 'تحميل PDF', downloading: 'جاري التحميل…',
     downloadAr: 'تحميل النسخة العربية PDF', downloadEn: 'تحميل النسخة الإنجليزية PDF',
     noReportHead: 'لم تُجرِ التقييم بعد', noReportSub: 'يستغرق حوالي ١٥ دقيقة وهو مجاني.',
@@ -345,6 +355,31 @@ export default function UserDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- searchParams is read once on arrival
   }, [user])
 
+  // After a purchase the full report is built in the background (see the payment webhook). While that runs, and for an hour
+  // after paying, show a short notice with the state: building, then ready.
+  const [fullReport, setFullReport] = useState<'idle' | 'building' | 'ready'>('idle')
+  useEffect(() => {
+    const target = assessments[0]
+    if (!target || !plan || plan.tier === 'free') return
+    const recentlyPaid = transactions.some(txn => PAID_STATUSES.includes(txn.status.toLowerCase()) && Date.now() - new Date(txn.created_at).getTime() < 60 * 60 * 1000)
+    if (!recentlyPaid) return
+    let stopped = false
+    let tries = 0
+    const check = async (): Promise<boolean> => {
+      try {
+        const r = await apiAuthGet<{ ready: boolean }>(`/assessment/${target.id}/full-report-status?locale=${target.locale === 'ar' ? 'ar' : 'en'}`)
+        if (!stopped) setFullReport(r.ready ? 'ready' : 'building')
+        return r.ready
+      } catch { return false }
+    }
+    check()
+    const id = window.setInterval(async () => {
+      tries += 1
+      if ((await check()) || tries >= 90) window.clearInterval(id)
+    }, 10000)
+    return () => { stopped = true; window.clearInterval(id) }
+  }, [assessments, plan, transactions])
+
   function go(id: string) {
     setActive(id)
     document.getElementById(`sec-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -405,6 +440,19 @@ export default function UserDashboard() {
             </div>
           </header>
 
+          {fullReport !== 'idle' && latest && (
+            <div className={`card p-5 flex items-start gap-3 ${fullReport === 'ready' ? 'border border-teal' : ''}`}>
+              {fullReport === 'building' && <div className="w-5 h-5 mt-0.5 border-2 border-primary border-t-transparent rounded-full animate-spin shrink-0" />}
+              <div>
+                <p className="font-bold text-charcoal">{fullReport === 'ready' ? t.fullReadyHead : t.fullBuildingHead}</p>
+                <p className="text-sm text-charcoal/60 mt-0.5">{fullReport === 'ready' ? t.fullReadySub : t.fullBuildingSub}</p>
+                {fullReport === 'ready' && (
+                  <Link href={`/results/${latest.id}`} className="cta mt-3 inline-flex" style={{ padding: '9px 16px', fontSize: 14, borderRadius: 12 }}>{t.viewReport}</Link>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* report status */}
           <section id="sec-report" className="card p-6 scroll-mt-4">
             {assessmentsLoading ? (
@@ -426,8 +474,8 @@ export default function UserDashboard() {
                   <span className="eyebrow">{t.reportReadyEyebrow}</span>
                   <Logomark size={34} />
                 </div>
-                <h2 className="text-xl font-extrabold text-charcoal mt-2">{t.reportReadyHead}</h2>
-                <p className="text-sm text-charcoal/60 mt-1">{t.reportReadySub}</p>
+                <h2 className="text-xl font-extrabold text-charcoal mt-2">{plan && plan.tier !== 'free' ? t.reportReadyHead : t.reportReadyHeadFree}</h2>
+                <p className="text-sm text-charcoal/60 mt-1">{plan && plan.tier !== 'free' ? t.reportReadySub : t.reportReadySubFree}</p>
                 <div className="flex flex-wrap gap-3 mt-5">
                   <Link href={`/results/${latest.id}`} className="cta" style={{ padding: '11px 18px', fontSize: 14, borderRadius: 12 }}>
                     <span>{t.viewReport}</span><span className="cta-arrow">{dir === 'rtl' ? '←' : '→'}</span>
