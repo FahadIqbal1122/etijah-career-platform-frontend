@@ -7,7 +7,7 @@ const VARIANT_KEY = 'etijahi_landing_variant'
 type DataLayerWindow = Window & { dataLayer?: Record<string, unknown>[] }
 
 // Remembered per browser tab so every later event can be attributed to the
-// /start/<variant> landing page the visitor entered through.
+// ad landing page (/students, /parents, /career-changer, /coach) the visitor entered through.
 export function setLandingVariant(variant: string): void {
   try { window.sessionStorage.setItem(VARIANT_KEY, variant) } catch {}
 }

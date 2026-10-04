@@ -103,7 +103,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
   const router = useRouter()
   const pathname = usePathname()
   const base = (L as any)[locale] ?? L.en
-  // Campaign variants (/start/<variant>) override only the hero headline + first paragraph.
+  // Campaign variants (/students, /parents, /career-changer, /coach) override only the hero text.
   const heroOverride = variant ? LANDING_VARIANTS[variant]?.[locale === 'ar' ? 'ar' : 'en'] ?? {} : {}
   const c = variant ? { ...base, hero: { ...base.hero, ...Object.fromEntries(Object.entries(heroOverride).filter(([, v]) => v !== undefined)) } } : base
   useEffect(() => { if (variant) setLandingVariant(variant) }, [variant])

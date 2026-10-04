@@ -13,6 +13,13 @@ const nextConfig: NextConfig = {
     return [
       { source: '/account/billing', destination: '/dashboard', permanent: false },
       { source: '/:locale(en|ar)/account/billing', destination: '/:locale/dashboard', permanent: false },
+      // The first campaign links used /start/<name>; the ad pages now live at /students, /parents, /career-changer, /coach.
+      { source: '/start/majors', destination: '/students', permanent: false },
+      { source: '/start/career-change', destination: '/career-changer', permanent: false },
+      { source: '/start/coach', destination: '/coach', permanent: false },
+      { source: '/:locale(en|ar)/start/majors', destination: '/:locale/students', permanent: false },
+      { source: '/:locale(en|ar)/start/career-change', destination: '/:locale/career-changer', permanent: false },
+      { source: '/:locale(en|ar)/start/coach', destination: '/:locale/coach', permanent: false },
     ]
   },
   async headers() {
