@@ -34,6 +34,7 @@ type Plan = {
   subscription_plan_code: string | null
   subscription_status: string | null
   subscription_current_period_end: string | null
+  booking_url?: string | null
 }
 // Hub transaction statuses that mean money was received — confirm against the values the shop actually sends.
 const PAID_STATUSES = ['paid', 'captured', 'succeeded', 'success', 'completed']
@@ -690,7 +691,18 @@ export default function UserDashboard() {
             {plan?.tier === 'launchpad' && (
               <div className="mt-4 pt-4 border-t border-[var(--line)]">
                 <p className="text-sm font-bold text-charcoal">Your 1:1 coaching session</p>
-                <p className="text-xs text-charcoal/55 mt-1">To book your session, contact us and we will find a time that suits you. We have also been notified of your purchase.</p>
+                {plan.booking_url ? (
+                  <>
+                    <p className="text-xs text-charcoal/55 mt-1">Pick a time that suits you. We have also been notified of your purchase.</p>
+                    <a href={plan.booking_url} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 mt-3 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium">
+                      Book your session
+                    </a>
+                    <p className="text-xs text-charcoal/45 mt-3">Need help? Contact us:</p>
+                  </>
+                ) : (
+                  <p className="text-xs text-charcoal/55 mt-1">To book your session, contact us and we will find a time that suits you. We have also been notified of your purchase.</p>
+                )}
                 <div className="flex flex-wrap gap-3 mt-3">
                   <a href="tel:+97335082446" dir="ltr" className="chip">+973 3508 2446</a>
                   <a href="mailto:projects@etijahcoaching.com" dir="ltr" className="chip">projects@etijahcoaching.com</a>
