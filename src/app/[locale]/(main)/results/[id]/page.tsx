@@ -743,7 +743,19 @@ export default function ResultsPage() {
         {/* Your plan: one section. What it is built around, the first step (day 1), days 2-7, the 90-day roadmap and
             the skills + practice exercise. Free users get the first step; the rest is one unlock card.
             Colours: blue = information, green = do this / you will produce, amber = gap, purple = new idea. */}
-        {(firstStep?.action || dp) && (
+        {tier === 'free' && jobs.length > 0 && (
+          <div id="plan-section">
+            <LockedSection
+              tag={t('firstStep.lockedTag')}
+              title={t('firstStep.lockedTitle')}
+              body={t('firstStep.lockedBody')}
+              ctaLabel={t('firstStep.lockedCta')}
+              ctaHref="/#pricing"
+            />
+          </div>
+        )}
+        {/* cast: TS would otherwise narrow `tier` inside, making the free-tier branches below look unreachable */}
+        {(tier as string) !== 'free' && (firstStep?.action || dp) && (
           <div id="plan-section" className="card p-5 border-s-4 border-s-teal">
             <SectionHead
               title={t('plan.title')}
@@ -1175,7 +1187,31 @@ export default function ResultsPage() {
       </>),
     majors: (<>
         {/* Majors & Exposure — students' practical track, alongside Internships & Exposure above */}
-        {studentTrack && (
+        {studentTrack?.locked && (
+          <BlurGate
+            title={loggedIn ? t('studentTrack.lockedTitle') : t('studentTrack.signupTitle')}
+            body={loggedIn ? t('studentTrack.lockedBody') : t('studentTrack.signupBody')}
+            ctaLabel={loggedIn ? t('studentTrack.lockedCta') : undefined}
+            ctaHref={loggedIn ? '/#pricing' : undefined}
+          >
+            <div className="card p-5">
+              <SectionHead
+                title={t('studentTrack.title')}
+                subtitle={t('studentTrack.subtitle')}
+                icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>}
+              />
+              <div className="space-y-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="border border-[var(--line)] rounded-xl p-3.5">
+                    <p className="rp-h text-charcoal">{t('studentTrack.placeholderTitle')}</p>
+                    <p className="rp-sub mt-0.5">{t('studentTrack.placeholderBody')}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </BlurGate>
+        )}
+        {studentTrack && !studentTrack.locked && (
           <div className="card p-5">
             <SectionHead
               title={t('studentTrack.title')}

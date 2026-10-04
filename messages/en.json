@@ -774,8 +774,8 @@
       "worksheet": "Worksheet",
       "followOn": "Then",
       "lockedTag": "Pathfinder",
-      "lockedTitle": "Unlock the rest of your plan",
-      "lockedBody": "Get days 2-7, your 90-day roadmap, and the skills and practice exercise to build for it.",
+      "lockedTitle": "Unlock your plan",
+      "lockedBody": "Get your first step for this week, days 2-7, your 90-day roadmap, and the skills and practice exercise to build for it.",
       "lockedCta": "Unlock Full Report",
       "weekTitle": "Your 7-day plan",
       "weekSubtitle": "What to do, why it helps and what you will have at the end"
@@ -823,7 +823,14 @@
       "findPrograms": "Find degree programs",
       "leadsTo": "Leads to",
       "tryIt": "Try it",
-      "lockedMajors": "Unlock the full report to see the careers each major leads to and how to try it."
+      "lockedMajors": "Unlock the full report to see the careers each major leads to and how to try it.",
+      "signupTitle": "Sign up to see ways to explore",
+      "signupBody": "Create a free account, then unlock fields of study and practical ways to explore them before you choose.",
+      "lockedTitle": "Unlock ways to explore",
+      "lockedBody": "Get fields of study and practical ways to try them before you choose.",
+      "lockedCta": "Unlock Full Report",
+      "placeholderTitle": "A way to explore this field",
+      "placeholderBody": "A short description of what it is and how it helps you decide."
     },
     "certifications": {
       "title": "Recommended Certifications",
