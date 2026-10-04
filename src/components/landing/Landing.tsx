@@ -412,7 +412,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
       {/* ── PRICING ──────────────────────────────────────────────────── */}
       <Section id="pricing" eyebrow={c.pricing.label} tint center>
         <Reveal><h2 className="section-h max-w-3xl mx-auto">{<Highlight text={c.pricing.headline} hl={c.pricing.hl} />}</h2></Reveal>
-        <div className="mt-10 grid md:grid-cols-2 gap-6 max-w-3xl mx-auto items-start text-start">
+        <div className="mt-10 grid md:grid-cols-3 gap-6 max-w-6xl mx-auto items-start text-start">
           <Reveal className="card p-7 relative">
             <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.free.label}</p>
             {/*
@@ -466,17 +466,13 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               {checkingOut === c.pricing.paid.code ? '…' : c.pricing.paid.cta}
             </button>
           </Reveal>
-          {/*
-          <Reveal className="card p-7 relative opacity-70" style={{ transitionDelay: '150ms' }}>
-            <span className="absolute -top-3.5 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 rounded-full bg-charcoal/80 text-white text-[11px] font-bold uppercase tracking-widest px-3 py-1">
-              Coming Soon
-            </span>
+          {/* Launchpad (enabled 4 Oct 2026): Pathfinder plus a 1:1 coaching session */}
+          <Reveal className="card p-7 relative" style={{ transitionDelay: '180ms' }}>
             <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.subscription.label}</p>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-charcoal">{c.pricing.subscription.price}</span>
+            <div className="mt-3 flex items-baseline gap-2 flex-wrap">
+              <span className="text-3xl font-extrabold text-charcoal">{formatPrice('launchpad', currency, locale)}</span>
               <span className="text-xs text-charcoal/45">{c.pricing.subscription.priceSub}</span>
             </div>
-            <p className="mt-1 text-xs text-charcoal/45">{c.pricing.subscription.priceAlt}</p>
             <p className="mt-3 text-sm text-charcoal/65 leading-relaxed">{c.pricing.subscription.for}</p>
             <div className="h-px bg-[var(--line)] my-6" />
             <ul className="space-y-3.5 flex-1">
@@ -487,11 +483,14 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
                 </li>
               ))}
             </ul>
-            <button disabled className="cta cta-outline mt-7 w-full opacity-50 cursor-not-allowed">
-              Coming Soon
+            <button
+              onClick={() => handlePlanCta(c.pricing.subscription.code)}
+              disabled={checkingOut === c.pricing.subscription.code}
+              className="cta cta-outline mt-7 w-full"
+            >
+              {checkingOut === c.pricing.subscription.code ? '…' : c.pricing.subscription.cta}
             </button>
           </Reveal>
-          */}
         </div>
         <Reveal className="mt-8 max-w-2xl mx-auto text-center card p-6">
           <p className="font-bold text-charcoal">{c.pricing.addOn.title}</p>

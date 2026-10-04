@@ -325,14 +325,12 @@ export default function UserDashboard() {
       return
     }
     const buy = searchParams.get('buy')
-    // Launchpad isn't purchasable yet (backend rejects it with 400 regardless) — drop a
-    // stale/bookmarked ?buy=launchpad_* link instead of firing checkout and surfacing that
-    // as a raw error.
-    if (buy === 'pathfinder') {
+    // launchpad_yearly no longer exists (Launchpad is a one-time purchase), so a stale link to it is dropped.
+    if (buy === 'pathfinder' || buy === 'launchpad_monthly') {
       if (assessmentsLoading) return  // wait until we know whether they have an assessment
       navRouter.replace(`/${locale}/dashboard`)
       handleBuyPlan(buy)
-    } else if (buy === 'launchpad_monthly' || buy === 'launchpad_yearly') {
+    } else if (buy === 'launchpad_yearly') {
       navRouter.replace(`/${locale}/dashboard`)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -660,8 +658,8 @@ export default function UserDashboard() {
                     {t.currentPlan}: {plan?.tier === 'launchpad' ? 'Launchpad' : plan?.tier === 'pathfinder' ? 'Pathfinder' : t.explorer}
                   </p>
                   <p className="text-2xl font-extrabold text-primary mt-1">
-                    {plan?.tier === 'launchpad' && plan.subscription_current_period_end
-                      ? <span className="text-sm font-medium text-charcoal/60">Renews {new Date(plan.subscription_current_period_end).toLocaleDateString()}</span>
+                    {plan?.tier === 'launchpad'
+                      ? <span className="text-sm font-medium text-charcoal/60">Full report + a 1:1 coaching session</span>
                       : plan?.tier === 'pathfinder'
                         ? <span className="text-sm font-medium text-charcoal/60">Unlocked for life</span>
                         : <>{t.free}<span className="text-xs font-medium text-charcoal/40 ms-1">{t.always}</span></>}
@@ -680,12 +678,22 @@ export default function UserDashboard() {
                       {buying ? '…' : `Unlock Full Report — ${formatPrice('pathfinder', displayCurrency, 'en')}`}
                     </button>
                   )}
-                  {plan?.tier !== 'launchpad' && (
-                    <button disabled
-                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium opacity-50 cursor-not-allowed">
-                      Launchpad — Coming Soon
+                  {plan?.tier !== 'launchpad' && assessments.length > 0 && (
+                    <button onClick={() => handleBuyPlan('launchpad_monthly')} disabled={buying}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-50">
+                      {buying ? '…' : `Get Launchpad (adds a 1:1 coaching session) — ${formatPrice('launchpad', displayCurrency, 'en')}`}
                     </button>
                   )}
+                </div>
+              </div>
+            )}
+            {plan?.tier === 'launchpad' && (
+              <div className="mt-4 pt-4 border-t border-[var(--line)]">
+                <p className="text-sm font-bold text-charcoal">Your 1:1 coaching session</p>
+                <p className="text-xs text-charcoal/55 mt-1">To book your session, contact us and we will find a time that suits you. We have also been notified of your purchase.</p>
+                <div className="flex flex-wrap gap-3 mt-3">
+                  <a href="tel:+97335082446" dir="ltr" className="chip">+973 3508 2446</a>
+                  <a href="mailto:projects@etijahcoaching.com" dir="ltr" className="chip">projects@etijahcoaching.com</a>
                 </div>
               </div>
             )}

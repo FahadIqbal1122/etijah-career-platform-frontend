@@ -206,7 +206,7 @@ export const L = {
           'Everything in Pathfinder',
           'A 1:1 session with a real coach to talk through your results and your next step',
         ],
-        cta: 'Subscribe Now',
+        cta: 'Get Launchpad',
       },
       addOn: {
         title: 'Add a 1:1 session with a real coach to any tier.',
@@ -456,7 +456,7 @@ export const L = {
           'كل ما في «مرشد المسار»',
           'جلسة توجيه شخصية (1:1) مع مرشد حقيقي لمناقشة نتائجك وخطوتك التالية',
         ],
-        cta: 'اشترك الآن',
+        cta: 'احصل على منصة الانطلاق',
       },
       addOn: {
         title: 'أضف جلسة توجيه شخصية (1:1) مع مرشد حقيقي لأي باقة اخترتها.',
