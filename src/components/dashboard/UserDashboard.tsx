@@ -608,6 +608,7 @@ export default function UserDashboard() {
               )}
             </div>
 
+            {/* "More on the way" cards (CV rebuild, WhatsApp, outreach, interview practice) hidden 4 Oct 2026: those features are no longer planned.
             <div>
               <h3 className="font-bold text-charcoal mb-3">{t.comingSoonHead}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -617,6 +618,7 @@ export default function UserDashboard() {
                 <LockedSection tag={t.comingSoon} title={t.interviewHead} body={t.interviewBody} footer={t.notBuilt} />
               </div>
             </div>
+            */}
           </section>
 
           {/* billing (preview) — replaced by real Buy Plan flow below, kept for reference
