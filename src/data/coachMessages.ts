@@ -1,0 +1,39 @@
+// One-way "coach" bubble copy. Ambient, not assessment content — inline bilingual
+// objects, same precedent as breakActivities.ts.
+export interface Bi { en: string; ar: string }
+
+export const COACH_BREAK: Bi[] = [
+  { en: 'Feel free to take a short break. Your answers are saved.', ar: 'خذ استراحة قصيرة إن أردت، إجاباتك محفوظة.' },
+  { en: 'Stretch your shoulders and take a deep breath, then carry on.', ar: 'مدّد كتفيك وخذ نفساً عميقاً ثم أكمل.' },
+  { en: 'A sip of water goes a long way. We will be here.', ar: 'رشفة ماء تصنع فرقاً. سنكون هنا بانتظارك.' },
+]
+
+export const COACH_MOTIVATION: Bi[] = [
+  { en: 'There are no right or wrong answers, just be honest.', ar: 'لا توجد إجابات صحيحة أو خاطئة، كن صادقاً فقط.' },
+  { en: 'Your first instinct is usually the most accurate one.', ar: 'انطباعك الأول هو غالباً الأدق.' },
+  { en: 'You are doing great. Every answer sharpens your picture.', ar: 'أنت تبلي بلاءً حسناً. كل إجابة توضّح صورتك أكثر.' },
+  { en: 'Taking time to know yourself is a real investment.', ar: 'أخذ الوقت لفهم نفسك استثمار حقيقي.' },
+]
+
+// Results-page advice, built from the user's own results.
+export function resultsAdvice(p: {
+  topType: string; topStrength: string; resilience?: number
+}): Bi[] {
+  const out: Bi[] = [
+    {
+      en: `Your strongest career type is ${p.topType}. Start with the careers tagged to it and compare how each one feels.`,
+      ar: `نمطك المهني الأقوى هو ${p.topType}. ابدأ بالمهن المرتبطة به وقارن بينها.`,
+    },
+    {
+      en: `${p.topStrength} is a standout strength. Look for roles and projects where you can use it daily.`,
+      ar: `${p.topStrength} نقطة قوة بارزة لديك. ابحث عن أدوار ومشاريع تستخدمها فيها يومياً.`,
+    },
+  ]
+  if (typeof p.resilience === 'number' && p.resilience < 50) {
+    out.push({
+      en: 'Build support around you. A mentor or a peer group will make hard stretches easier.',
+      ar: 'ابنِ حولك دعماً: مرشد أو مجموعة أقران يجعلان الفترات الصعبة أسهل.',
+    })
+  }
+  return out
+}

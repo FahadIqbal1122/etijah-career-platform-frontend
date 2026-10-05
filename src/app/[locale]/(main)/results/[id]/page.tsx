@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { apiGet, apiAuthGet, apiAuthPost, apiAuthDelete, apiAuthGetBlob } from '@/lib/api'
@@ -13,6 +13,8 @@ import { LockedSection } from '@/components/shared/LockedSection'
 import { BlurGate } from '@/components/shared/BlurGate'
 import BetaFeedbackStage1 from '@/components/beta-feedback/BetaFeedbackStage1'
 import BreakPanel from '@/components/BreakPanel'
+import CoachBubble from '@/components/CoachBubble'
+import { resultsAdvice, type Bi } from '@/data/coachMessages'
 import BetaFeedbackResultStage from '@/components/beta-feedback/BetaFeedbackResultStage'
 
 const levelToWidth: Record<string, string> = {
@@ -131,6 +133,10 @@ export default function ResultsPage() {
   // 0-100 score per dimension (same numbers the PDF shows), so the profile can show a percentage for each type
   const [scoreMap, setScoreMap] = useState<Record<string, number>>({})
   const [recentCompletions, setRecentCompletions] = useState<number | null>(null)
+  // One-way coach bubble: one tip built from the user's own results, shown once per visit
+  const [coachMsg, setCoachMsg] = useState<Bi | null>(null)
+  const coachShown = useRef(false)
+  const dismissCoach = useCallback(() => setCoachMsg(null), [])
   const [tier, setTier] = useState<'free' | 'pathfinder' | 'launchpad'>('launchpad')
   const [betaMode, setBetaMode] = useState(false)
   const [stage1Done, setStage1Done] = useState(false)
@@ -319,6 +325,21 @@ export default function ResultsPage() {
     }, 5000)
     return () => clearTimeout(timer)
   }, [dirPending, dirTick, id, locale])
+
+  useEffect(() => {
+    if (!summary || coachShown.current) return
+    const type = summary.riasec?.top_types?.[0]
+    const strength = summary.strengths?.top_strengths?.[0]
+    if (!type || !strength) return
+    coachShown.current = true
+    const tips = resultsAdvice({
+      topType: riasecLabel(type),
+      topStrength: strengthLabel(strength),
+      resilience: summary.resilience?.workplace_resilience,
+    })
+    const id = setTimeout(() => setCoachMsg(tips[Math.floor(Math.random() * tips.length)]), 2500)
+    return () => clearTimeout(id)
+  }, [summary])
 
   if (error) {
     // A report that belongs to an account can only be opened by that account (or an admin): with no session the
@@ -1899,6 +1920,7 @@ export default function ResultsPage() {
         )}
 
       </div>
+      <CoachBubble locale={locale as 'en' | 'ar'} message={coachMsg} onDismiss={dismissCoach} autoHideMs={14000} />
     </div>
   )
 }

@@ -5,7 +5,7 @@
 // a rising constellation, periodic encouragement "reveal" takeovers, skip
 // logic, existing-user check, and backend submit.
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter, usePathname } from '@/i18n/navigation'
 import { questions, BEHAVIORAL_SCALE, Question } from '@/data/questions'
@@ -17,6 +17,13 @@ import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 import Constellation, { CONSTELLATION } from '@/components/brand/Constellation'
 import BreakPanel from '@/components/BreakPanel'
+import CoachBubble from '@/components/CoachBubble'
+import { COACH_BREAK, COACH_MOTIVATION, type Bi } from '@/data/coachMessages'
+
+// module-level so the random call stays out of render (only used in an effect)
+function pickCoachPool(): Bi[] {
+  return Math.random() < 0.35 ? COACH_BREAK : COACH_MOTIVATION
+}
 import BugReportModal from '@/components/BugReportModal'
 import FieldOfStudyInfo from '@/components/FieldOfStudyInfo'
 import LanguageSelect from '@/components/LanguageSelect'
@@ -240,6 +247,22 @@ export default function AssessmentForm() {
   const [existingResultId, setExistingResultId] = useState<string | null>(null)
   const [showClaimedModal, setShowClaimedModal] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
+
+  // One-way coach bubble: a random break/motivation nudge every 4–7 questions
+  // (first around Q4–6), never during reveal/finish, each message at most once.
+  const [coachMsg, setCoachMsg] = useState<Bi | null>(null)
+  const coachNextAt = useRef(3 + Math.floor(Math.random() * 3))
+  const coachUsed = useRef<Set<string>>(new Set())
+  const dismissCoach = useCallback(() => setCoachMsg(null), [])
+  useEffect(() => {
+    if (phase !== 'question' || index < coachNextAt.current) return
+    const pool = pickCoachPool().filter(m => !coachUsed.current.has(m.en))
+    coachNextAt.current = index + 4 + Math.floor(Math.random() * 4)
+    if (!pool.length) return
+    const pick = pool[Math.floor(Math.random() * pool.length)]
+    coachUsed.current.add(pick.en)
+    setCoachMsg(pick)
+  }, [index, phase])
 
   const pendingRef = useRef(0)
   const answersRef = useRef<Record<string, any>>({}) // latest answers, for choice-based reveals
@@ -1035,6 +1058,7 @@ export default function AssessmentForm() {
           </div>
         </div>
       )}
+      <CoachBubble locale={locale as 'en' | 'ar'} message={phase === 'question' ? coachMsg : null} onDismiss={dismissCoach} />
     </div>
   )
 }
