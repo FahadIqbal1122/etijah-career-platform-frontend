@@ -141,6 +141,7 @@ const B = {
     coachBook: 'Book your session', coachHelp: 'Need help? Contact us:',
     coachContact: 'To book your session, contact us and we will find a time that suits you. We have also been notified of your purchase.',
     history: 'Payment history', typeWord: 'type',
+    agreeHead: 'Before you pay', agreeText: 'I have read and agree to the', agreeTerms: 'Terms and Conditions', agreeAnd: 'and the', agreePrivacy: 'Privacy Policy', agreeContinue: 'Continue to payment', agreeCancel: 'Cancel',
   },
   ar: {
     plan: { launchpad: 'منصة الانطلاق', pathfinder: 'مرشد المسار' },
@@ -151,6 +152,7 @@ const B = {
     coachBook: 'احجز جلستك', coachHelp: 'تحتاج مساعدة؟ تواصل معنا:',
     coachContact: 'لحجز جلستك، تواصل معنا وسنحدد وقتاً يناسبك. وقد وصلنا إشعار بعملية الشراء.',
     history: 'سجل المدفوعات', typeWord: '',
+    agreeHead: 'قبل الدفع', agreeText: 'لقد قرأت وأوافق على', agreeTerms: 'الشروط والأحكام', agreeAnd: 'و', agreePrivacy: 'سياسة الخصوصية', agreeContinue: 'المتابعة إلى الدفع', agreeCancel: 'إلغاء',
   },
 } as const
 const RIASEC_AR: Record<string, string> = { realistic: 'الباني', investigative: 'المحلل', artistic: 'المبدع', social: 'المُعين', enterprising: 'القائد', conventional: 'المنظّم' }
@@ -335,15 +337,24 @@ export default function UserDashboard() {
       setDownloadingReport(false)
     }
   }
-  async function handleBuyPlan(planCode: PlanCode) {
+  // Before the payment page the buyer must tick that they agree to the terms and privacy policy.
+  const [confirmPlan, setConfirmPlan] = useState<PlanCode | null>(null)
+  const [agreed, setAgreed] = useState(false)
+  function handleBuyPlan(planCode: PlanCode) {
     // The paid report is built from an assessment — send people who have none to take it first.
     if (!assessments.length) { navRouter.push(`/${locale}/assessment`); return }
+    setAgreed(false)
+    setConfirmPlan(planCode)
+  }
+  async function proceedToPayment() {
+    if (!confirmPlan || !agreed) return
     setBuying(true)
     try {
-      const { checkout_url } = await startCheckout(planCode)
+      const { checkout_url } = await startCheckout(confirmPlan)
       window.location.href = checkout_url
     } catch (e: unknown) {
       setBuying(false)
+      setConfirmPlan(null)
       setError(e instanceof Error ? e.message : 'Could not start checkout')
     }
   }
@@ -804,6 +815,29 @@ export default function UserDashboard() {
           </section>
         </main>
       </div>
+
+      {confirmPlan && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4" role="dialog" aria-modal="true">
+          <div className="card p-6 max-w-md w-full" dir={dir}>
+            <h3 className="font-bold text-charcoal text-lg">{b.agreeHead}</h3>
+            <label className="flex items-start gap-3 mt-4 cursor-pointer">
+              <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} className="mt-1 w-4 h-4 shrink-0" />
+              <span className="text-sm text-charcoal/80 leading-relaxed">
+                {b.agreeText}{' '}
+                <a href="https://shop.etijahcoaching.com/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">{b.agreeTerms}</a>
+                {' '}{b.agreeAnd}{' '}
+                <a href="https://shop.etijahcoaching.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">{b.agreePrivacy}</a>.
+              </span>
+            </label>
+            <div className="flex gap-3 mt-5 justify-end">
+              <button onClick={() => setConfirmPlan(null)} disabled={buying}
+                className="px-4 py-2.5 rounded-xl border border-[var(--line-strong)] text-charcoal/70 text-sm font-medium disabled:opacity-50">{b.agreeCancel}</button>
+              <button data-track="dashboard_confirm_payment" onClick={proceedToPayment} disabled={!agreed || buying}
+                className="px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-40">{buying ? '…' : b.agreeContinue}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* mobile bottom tabs */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-[var(--line)] flex px-1">

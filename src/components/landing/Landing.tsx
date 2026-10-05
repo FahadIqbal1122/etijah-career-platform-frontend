@@ -125,6 +125,11 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
       router.push(`/login?next=${encodeURIComponent(`/dashboard?buy=${planCode}`)}`)
       return
     }
+    // Logged-in buyers go to the dashboard, which asks them to agree to the terms and privacy policy before the payment
+    // page (and sends people who have not taken the assessment to take it first).
+    router.push(`/dashboard?buy=${planCode}`)
+    return
+    /* previous direct checkout, replaced by the dashboard confirmation step:
     setCheckingOut(planCode)
     try {
       // The paid report is built from an assessment, so someone who has not taken one goes there first.
@@ -139,6 +144,8 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
       if (e instanceof Error && e.message === 'assessment_required') { router.push('/assessment'); return }
       setCheckingOut(null)
     }
+  }
+    */
   }
 
   return (
