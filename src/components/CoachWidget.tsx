@@ -10,6 +10,9 @@ import { createPortal } from 'react-dom'
 import { apiAuthPost } from '@/lib/api'
 import type { Bi } from '@/data/coachMessages'
 import CoachFeedback, { feedbackThanks, type FeedbackKind } from '@/components/CoachFeedback'
+import BreakGame, { pickNextGame, type GameState } from '@/components/BreakGame'
+import { breakCopy } from '@/data/breakActivities'
+import { pushTelemetry } from '@/lib/telemetry'
 
 type Role = 'user' | 'coach'
 interface Msg { role: Role; text: string }
@@ -36,6 +39,12 @@ interface Props {
   // assessment mode: the question currently on screen, so she can explain it (called when a message is sent)
   getQuestion?: () => { text: string; type?: string; options?: string[] } | null
   place?: 'end' | 'start' | 'center'      // which bottom spot she is at; changing it glides her across
+  // Desktop: render her inside this element (the assessment's left panel, under the stars) instead of a screen corner.
+  // On narrow screens that panel is not shown, so she falls back to the corner.
+  anchorEl?: HTMLElement | null
+  // Offer the riddle / mini-games (they play inside her panel). tipOffersGame adds the button to the current tip.
+  games?: boolean
+  tipOffersGame?: boolean
   tip?: Bi | null
   onTipDismiss?: () => void
   tipAutoHideMs?: number
@@ -59,12 +68,14 @@ const T = {
   error: { en: 'I couldn’t answer that just now. Please try again in a moment.', ar: 'لم أستطع الإجابة الآن. حاول مرة أخرى بعد قليل.' },
   limited: { en: 'I’ll take a short rest from chatting now. Keep going, you’re doing great!', ar: 'سآخذ استراحة قصيرة من الدردشة الآن. واصل، أنت تبلي بلاءً حسناً!' },
   askInstead: { en: 'Ask Sarah a question instead', ar: 'اسأل سارة سؤالاً بدلاً من ذلك' },
+  backToChat: { en: 'Back to chat', ar: 'العودة إلى المحادثة' },
   tooMany: { en: 'You’ve asked a lot of questions. Please try again a bit later.', ar: 'لقد سألت الكثير من الأسئلة. حاول مرة أخرى لاحقاً.' },
 } satisfies Record<string, Bi>
 
 export default function CoachWidget({
   locale, mode, responseId, sessionId, questionIndex, questionTotal, getQuestion,
-  place = 'end', tip = null, onTipDismiss, tipAutoHideMs = 9000, feedback,
+  place = 'end', anchorEl = null, games = false, tipOffersGame = false,
+  tip = null, onTipDismiss, tipAutoHideMs = 9000, feedback,
 }: Props) {
   const isAr = locale === 'ar'
   const tr = (b: Bi) => b[locale]
@@ -85,6 +96,15 @@ export default function CoachWidget({
   // would otherwise become the containing block for position:fixed and make her scroll away with the page.
   const inBrowser = useSyncExternalStore(() => () => {}, () => true, () => false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  // Riddle / mini-game shown inside the panel (null = normal chat view)
+  const [game, setGame] = useState<GameState | null>(null)
+  // The anchor (left panel) only exists on wide screens; below 900px she stays in the corner.
+  const wide = useSyncExternalStore(
+    cb => { const mq = window.matchMedia('(min-width: 900px)'); mq.addEventListener('change', cb); return () => mq.removeEventListener('change', cb) },
+    () => window.matchMedia('(min-width: 900px)').matches,
+    () => false,
+  )
+  const inline = !!anchorEl && wide
 
   // Derived-state updates during render (keeps these out of effects).
   if (feedback?.autoOpen && !autoOpened) { setAutoOpened(true); setOpen(true) }
@@ -118,6 +138,14 @@ export default function CoachWidget({
   const bubbleText = !open ? (nudge ? tr(nudge) : tip ? tr(tip) : null) : null
   const bubbleVisible = !!bubbleText
   const bubbleShown = nudge ? tr(nudge) : shownTip ? tr(shownTip) : ''
+
+  function startGame() {
+    const next = pickNextGame(game)
+    setGame(next)
+    setOpen(true)
+    if (tip) onTipDismiss?.()
+    pushTelemetry({ event_type: 'break_open', activity_kind: next.kind })
+  }
 
   function toggleOpen() {
     if (open) { if (!required) setOpen(false); return }   // a required feedback card keeps the panel open
@@ -156,7 +184,7 @@ export default function CoachWidget({
   }
 
   const widget = (
-    <div className={`coach-widget ${open ? 'is-open' : ''}`} data-place={place} dir={isAr ? 'rtl' : 'ltr'}>
+    <div className={`coach-widget ${open ? 'is-open' : ''} ${inline ? 'coach-inline' : ''}`} data-place={inline ? 'inline' : place} dir={isAr ? 'rtl' : 'ltr'}>
       {open && (
         <div className="coach-panel" role="dialog" aria-label="Sarah">
           {!required && (
@@ -176,6 +204,13 @@ export default function CoachWidget({
               </div>
               <button type="button" className="coach-link" onClick={() => setChatInstead(true)}>{tr(T.askInstead)}</button>
             </div>
+          ) : game ? (
+            <div className="coach-panel-scroll coach-panel-game">
+              <BreakGame
+                key={game.n} locale={locale} game={game}
+                onAnother={startGame} onExit={() => setGame(null)} exitLabel={tr(T.backToChat)}
+              />
+            </div>
           ) : (
             <>
               <div className="coach-panel-scroll" ref={scrollRef}>
@@ -185,6 +220,11 @@ export default function CoachWidget({
                 ))}
                 {sending && <div className="coach-msg coach-msg-coach coach-typing">{tr(T.thinking)}</div>}
               </div>
+              {games && (
+                <div className="coach-chips">
+                  <button type="button" onClick={startGame}>{breakCopy.trigger[locale]}</button>
+                </div>
+              )}
               <form className="coach-input" onSubmit={e => { e.preventDefault(); void send() }}>
                 <input
                   value={input} onChange={e => setInput(e.target.value)} maxLength={500}
@@ -203,6 +243,9 @@ export default function CoachWidget({
             <button className="coach-close" onClick={onTipDismiss} aria-label={tr(T.close)}>✕</button>
           )}
           <p>{bubbleShown}</p>
+          {games && tipOffersGame && tip && !nudge && (
+            <button type="button" className="coach-tip-action" onClick={startGame}>{breakCopy.trigger[locale]}</button>
+          )}
         </div>
       )}
 
@@ -216,5 +259,5 @@ export default function CoachWidget({
       </button>
     </div>
   )
-  return inBrowser ? createPortal(widget, document.body) : null
+  return inBrowser ? createPortal(widget, inline && anchorEl ? anchorEl : document.body) : null
 }

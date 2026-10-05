@@ -332,7 +332,7 @@ html { scroll-behavior: smooth; }
 .fieldinfo-row-examples { font-size: 12.5px; color: #64748b; line-height: 1.5; }
 
 /* constellation band */
-.cst-wrap { position: relative; z-index: 2; height: 118px; margin: 8px auto 0; width: 100%; max-width: 460px; padding: 0 14px 16px; box-sizing: border-box; flex: 0 0 auto; }
+.cst-wrap { position: relative; z-index: 2; height: 150px; margin: 8px auto 0; width: 100%; max-width: 460px; padding: 0 14px 16px; box-sizing: border-box; flex: 0 0 auto; }
 .cst { width: 100%; height: 100%; overflow: visible; }
 .cst-ripple {
   animation-name: ripple; animation-timing-function: cubic-bezier(.2, .6, .3, 1);
@@ -552,7 +552,7 @@ html { scroll-behavior: smooth; }
 
   /* left: brand constellation grows big, with progress context beneath it */
   .assess-aside { flex: 1 1 44%; max-width: 46%; justify-content: center; margin-top: -32px; }
-  .assess-aside .cst-wrap { height: clamp(240px, 34vh, 380px); max-width: 100%; margin: 0; padding: 0 0 16px; }
+  .assess-aside .cst-wrap { height: clamp(300px, 42vh, 470px); max-width: 100%; margin: 0; padding: 0 0 16px; }
   .assess-aside-context { display: block; text-align: center; margin-top: 8px; }
   .assess-aside-eyebrow {
     font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: .28em;
@@ -933,3 +933,36 @@ html { scroll-behavior: smooth; }
 
 .coach-panel-feedback { padding-top: 22px; }
 .coach-link { align-self: center; background: none; border: 0; color: var(--primary); font-size: 13.5px; cursor: pointer; text-decoration: underline; padding: 4px; }
+
+/* Coach inside the assessment's left panel (desktop): sits with the stars and text, not in a corner */
+.coach-slot { width: 100%; display: flex; justify-content: center; position: relative; z-index: 6; }
+.coach-widget.coach-inline {
+  position: relative; inset: auto; bottom: auto; width: min(340px, 100%); margin-top: 22px;
+  align-items: center; animation: coach-pop-in .5s cubic-bezier(.2, .8, .2, 1) both; transition: none;
+}
+@keyframes coach-pop-in { from { opacity: 0; transform: translateY(14px) scale(.9); } to { opacity: 1; transform: none; } }
+.coach-inline .coach-speech::after { inset-inline-end: calc(50% - 8px); inset-inline-start: auto; }
+/* the chat panel floats above her instead of pushing the layout down */
+.coach-inline .coach-panel { position: absolute; bottom: calc(100% + 12px); left: 50%; transform: translateX(-50%); width: min(380px, 92vw); z-index: 70; }
+.coach-inline.is-open .coach-avatar { position: relative; }
+
+.coach-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 8px; }
+.coach-chips button, .coach-tip-action {
+  appearance: none; border: 1px solid rgba(0, 201, 167, .5); background: rgba(0, 201, 167, .1); color: #05766a;
+  border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.coach-tip-action { margin-top: 8px; }
+.coach-chips button:hover, .coach-tip-action:hover { background: rgba(0, 201, 167, .2); }
+
+/* the riddle / games were styled for the blue assessment background; recolour them for the white panel */
+.coach-panel-game { padding: 18px 14px 14px; align-items: center; }
+.coach-game.assess-break { position: static; inset: auto; z-index: auto; display: block; padding: 0; background: none; text-align: center; animation: none; max-width: none; }
+.coach-game .assess-break-eyebrow { color: #64748b; }
+.coach-game .assess-break-prompt { color: #1f2937; margin-inline: auto; }
+.coach-game .assess-break-answer { color: var(--primary); }
+.coach-game .assess-break-status { color: #1f2937; }
+.coach-game .assess-break-action.ghost { background: #eef4fa; color: #1f2937; }
+.coach-game .assess-break-back { color: #64748b; }
+.coach-game .ttt-cell, .coach-game .rps-choice, .coach-game .mm-card { background: #eef4fa; border-color: #d5e3ee; color: #1f2937; }
+.coach-game .ttt-cell:not(:disabled):hover, .coach-game .rps-choice:hover { background: #dfeaf5; }
+.coach-game .mm-card.flipped, .coach-game .mm-card.matched { background: #cdebe5; }

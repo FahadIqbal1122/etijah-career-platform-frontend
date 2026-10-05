@@ -99,7 +99,7 @@ export default function Constellation({
               x2={nodes[b].x}
               y2={nodes[b].y}
               stroke={on ? litStroke : dimStroke}
-              strokeWidth={on ? 1.4 : 0.8}
+              strokeWidth={on ? 1.8 : 1}
               strokeLinecap="round"
               style={{ transition: `stroke ${dur(0.6)} ease` }}
             />
@@ -112,7 +112,7 @@ export default function Constellation({
           const on = isLit(i)
           const isFrontier = i === frontier
           const isNorth = i === total - 1
-          const r = isNorth ? 4.2 : 3
+          const r = isNorth ? 5.4 : 3.9
           const fill = on ? (isNorth ? litDest : litPath) : dimNode
           return (
             <g key={i}>

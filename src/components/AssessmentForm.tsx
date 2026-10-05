@@ -25,8 +25,9 @@ import { COACH_BREAK, COACH_MOTIVATION, COACH_REVEAL, type Bi } from '@/data/coa
 function pickCoachReveal(): Bi {
   return COACH_REVEAL[Math.floor(Math.random() * COACH_REVEAL.length)]
 }
-function pickCoachPool(): Bi[] {
-  return Math.random() < 0.35 ? COACH_BREAK : COACH_MOTIVATION
+function pickCoachPool(): { pool: Bi[]; isBreak: boolean } {
+  const isBreak = Math.random() < 0.35
+  return { pool: isBreak ? COACH_BREAK : COACH_MOTIVATION, isBreak }
 }
 import BugReportModal from '@/components/BugReportModal'
 import FieldOfStudyInfo from '@/components/FieldOfStudyInfo'
@@ -261,15 +262,20 @@ export default function AssessmentForm() {
   // of the screen on the green reveal screen with an encouraging line (revealTip).
   const [coachSide, setCoachSide] = useState<'end' | 'start'>('end')
   const [revealTip, setRevealTip] = useState<Bi | null>(null)
+  const [coachTipGame, setCoachTipGame] = useState(false)
+  // Desktop: Sarah lives in the left panel under the stars (not a screen corner); this is that spot.
+  const [coachSlot, setCoachSlot] = useState<HTMLElement | null>(null)
   const dismissCoach = useCallback(() => { setCoachMsg(null); setRevealTip(null) }, [])
   useEffect(() => {
     if (phase !== 'question' || index < coachNextAt.current) return
-    const pool = pickCoachPool().filter(m => !coachUsed.current.has(m.en))
+    const { pool: basePool, isBreak } = pickCoachPool()
+    const pool = basePool.filter(m => !coachUsed.current.has(m.en))
     coachNextAt.current = index + 4 + Math.floor(Math.random() * 4)
     if (!pool.length) return
     const pick = pool[Math.floor(Math.random() * pool.length)]
     coachUsed.current.add(pick.en)
     setCoachSide(s => (s === 'end' ? 'start' : 'end'))
+    setCoachTipGame(isBreak)   // break tips also offer the riddle / games
     setCoachMsg(pick)
   }, [index, phase])
 
@@ -714,7 +720,7 @@ export default function AssessmentForm() {
         <>
           <div className="assess-progress-label">{progressMsg}</div>
           <div className="assess-break-mobile-slot">
-            <BreakPanel locale={locale as 'en' | 'ar'} eyebrow={chrome.asideEyebrow} progressMsg={progressMsg} questionIndex={index} compact />
+            <BreakPanel locale={locale as 'en' | 'ar'} eyebrow={chrome.asideEyebrow} progressMsg={progressMsg} questionIndex={index} compact hideTrigger />
           </div>
         </>
       )}
@@ -733,11 +739,12 @@ export default function AssessmentForm() {
           {/* desktop-only progress context beneath the constellation */}
           <div className="assess-aside-context">
             {phase === 'question' ? (
-              <BreakPanel locale={locale as 'en' | 'ar'} eyebrow={chrome.asideEyebrow} progressMsg={progressMsg} questionIndex={index} />
+              <BreakPanel locale={locale as 'en' | 'ar'} eyebrow={chrome.asideEyebrow} progressMsg={progressMsg} questionIndex={index} hideTrigger />
             ) : (
               <div className="assess-aside-eyebrow">{chrome.asideEyebrow}</div>
             )}
           </div>
+          <div className="coach-slot" ref={setCoachSlot} />
         </aside>
 
         {/* ── question ──────────────────────────────────────────────────── */}
@@ -1081,6 +1088,8 @@ export default function AssessmentForm() {
           }
         }}
         place={phase === 'question' ? coachSide : 'center'}
+        anchorEl={phase === 'question' ? coachSlot : null}
+        games tipOffersGame={phase === 'question' && coachTipGame}
         tip={phase === 'question' ? coachMsg : phase === 'reveal' ? revealTip : null}
         tipAutoHideMs={phase === 'reveal' ? 0 : 9000} onTipDismiss={dismissCoach}
       />
