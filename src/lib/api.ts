@@ -130,6 +130,8 @@ export async function startCheckout(planCode: PlanCode): Promise<{ checkout_url:
         plan_code: planCode,
         fbp: readCookie('_fbp'),
         fbc: readCookie('_fbc'),
+        // so the shop sends the buyer back to the page in the language they were using
+        locale: typeof window !== 'undefined' && /^\/ar(\/|$)/.test(window.location.pathname) ? 'ar' : 'en',
     })
 }
 

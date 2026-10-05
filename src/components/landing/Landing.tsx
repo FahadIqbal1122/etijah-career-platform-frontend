@@ -560,7 +560,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           </div>
           <FooterCol head={c.footer.colPlatform.head} links={c.footer.colPlatform.links} hrefs={['/assessment', '#how', '#report', '#pricing']} />
           {/* <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about']} /> */}
-          <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about', 'https://etijahcoaching.com', 'mailto:projects@etijahcoaching.com']} />
+          <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about', 'https://etijahcoaching.com', 'mailto:info@etijahcoaching.com']} />
           <div>
             <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.colLegal.head}</p>
             <p className="text-sm text-white/85 font-semibold mb-2">{c.footer.copyright}</p>

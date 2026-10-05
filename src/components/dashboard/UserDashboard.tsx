@@ -130,6 +130,32 @@ const T = {
   },
 } as const
 
+// Billing / coaching / contact wording (kept apart from T so the plan names and prices read in the page language).
+const B = {
+  en: {
+    plan: { launchpad: 'Launchpad', pathfinder: 'Pathfinder' },
+    launchpadLine: 'Full report + a 1:1 coaching session', lifetimeLine: 'Unlocked for life',
+    takeAssessment: 'Take the assessment to unlock your full report',
+    unlockFull: 'Unlock Full Report', getLaunchpad: 'Get Launchpad (adds a 1:1 coaching session)',
+    coachHead: 'Your 1:1 coaching session', coachPick: 'Pick a time that suits you. We have also been notified of your purchase.',
+    coachBook: 'Book your session', coachHelp: 'Need help? Contact us:',
+    coachContact: 'To book your session, contact us and we will find a time that suits you. We have also been notified of your purchase.',
+    history: 'Payment history', typeWord: 'type',
+  },
+  ar: {
+    plan: { launchpad: 'منصة الانطلاق', pathfinder: 'مرشد المسار' },
+    launchpadLine: 'التقرير الكامل + جلسة تدريب فردية', lifetimeLine: 'مفتوح مدى الحياة',
+    takeAssessment: 'أجرِ التقييم لفتح تقريرك الكامل',
+    unlockFull: 'افتح التقرير الكامل', getLaunchpad: 'احصل على منصة الانطلاق (تضيف جلسة تدريب فردية)',
+    coachHead: 'جلستك التدريبية الفردية', coachPick: 'اختر الوقت الذي يناسبك. وقد وصلنا إشعار بعملية الشراء.',
+    coachBook: 'احجز جلستك', coachHelp: 'تحتاج مساعدة؟ تواصل معنا:',
+    coachContact: 'لحجز جلستك، تواصل معنا وسنحدد وقتاً يناسبك. وقد وصلنا إشعار بعملية الشراء.',
+    history: 'سجل المدفوعات', typeWord: '',
+  },
+} as const
+const RIASEC_AR: Record<string, string> = { realistic: 'الباني', investigative: 'المحلل', artistic: 'المبدع', social: 'المُعين', enterprising: 'القائد', conventional: 'المنظّم' }
+const CONTACT_EMAIL = 'info@etijahcoaching.com'
+
 const NOTIF = [
   { id: 'jobEmail', en: 'Monthly job market email', ar: 'بريد سوق العمل الشهري', on: true },
   { id: 'reportUpd', en: 'Report updates', ar: 'تحديثات التقرير', on: true },
@@ -268,6 +294,11 @@ export default function UserDashboard() {
           if (latest) {
             apiAuthGet<any>(`/assessment/${latest.id}/career-suggestions`)
               .then(d => setTopMatch(d.suggestions?.[0]?.title ?? null)).catch(() => {})
+            // In Arabic, show the same career title the (Arabic) report uses, when that report exists.
+            if (locale === 'ar') {
+              apiAuthGet<any>(`/assessment/${latest.id}/career-recommendations?locale=ar`)
+                .then(d => { const tt = d.career_recommendations?.[0]?.title; if (tt) setTopMatch(tt) }).catch(() => {})
+            }
           }
         })
         .catch(() => {})
@@ -402,13 +433,15 @@ export default function UserDashboard() {
   const retakeDays = completedDate ? 365 - daysBetween(completedDate, new Date()) : null
   const dateFmt = (d: Date) => d.toLocaleDateString(locale === 'ar' ? 'ar' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
+  const lang = locale === 'ar' ? 'ar' : 'en'
+  const b = B[lang]
+  const typeLabel = (v: string) => lang === 'ar' ? `نوع ${RIASEC_AR[v] || v}` : `${v} type`
+
   const stats = [
     { icon: 'check', label: t.statCompleted, value: completedDate ? dateFmt(completedDate) : '—' },
-    { icon: 'target', label: t.statMatch, value: topMatch || (topType ? `${topType} type` : '—'), accent: true },
+    { icon: 'target', label: t.statMatch, value: topMatch || (topType ? typeLabel(topType) : '—'), accent: true },
     { icon: 'refresh', label: t.statRetake, value: retakeDays != null ? (locale === 'ar' ? `بعد ${Math.max(0, retakeDays)} يوماً` : `in ${Math.max(0, retakeDays)} days`) : '—' },
   ]
-
-  const lang = locale === 'ar' ? 'ar' : 'en'
 
   return (
     <div className="min-h-screen brand-surface" dir={dir}>
@@ -441,22 +474,11 @@ export default function UserDashboard() {
           <header id="sec-home" className="flex items-center justify-between gap-4 flex-wrap scroll-mt-4">
             <div>
               <h1 className="text-2xl font-extrabold text-charcoal">{t.welcome} {firstName}</h1>
-              {topType && <span className="chip chip-teal capitalize mt-2">✦ {topType} type</span>}
+              {topType && <span className="chip chip-teal capitalize mt-2">✦ {typeLabel(topType)}</span>}
             </div>
           </header>
 
-          {fullReport !== 'idle' && latest && (
-            <div className={`card p-5 flex items-start gap-3 ${fullReport === 'ready' ? 'border border-teal' : ''}`}>
-              {fullReport === 'building' && <div className="w-5 h-5 mt-0.5 border-2 border-primary border-t-transparent rounded-full animate-spin shrink-0" />}
-              <div>
-                <p className="font-bold text-charcoal">{fullReport === 'ready' ? t.fullReadyHead : t.fullBuildingHead}</p>
-                <p className="text-sm text-charcoal/60 mt-0.5">{fullReport === 'ready' ? t.fullReadySub : t.fullBuildingSub}</p>
-                {fullReport === 'ready' && (
-                  <Link href={`/results/${latest.id}`} className="cta mt-3 inline-flex" style={{ padding: '9px 16px', fontSize: 14, borderRadius: 12 }}>{t.viewReport}</Link>
-                )}
-              </div>
-            </div>
-          )}
+          {/* The separate 'we are building your full report' notice was merged into the report card below (one box, no duplicate). */}
 
           {/* report status */}
           <section id="sec-report" className="card p-6 scroll-mt-4">
@@ -479,8 +501,11 @@ export default function UserDashboard() {
                   <span className="eyebrow">{t.reportReadyEyebrow}</span>
                   <Logomark size={34} />
                 </div>
-                <h2 className="text-xl font-extrabold text-charcoal mt-2">{plan && plan.tier !== 'free' ? t.reportReadyHead : t.reportReadyHeadFree}</h2>
-                <p className="text-sm text-charcoal/60 mt-1">{plan && plan.tier !== 'free' ? t.reportReadySub : t.reportReadySubFree}</p>
+                <h2 className="text-xl font-extrabold text-charcoal mt-2 flex items-center gap-2">
+                  {fullReport === 'building' && <span className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin shrink-0" />}
+                  {fullReport === 'building' ? t.fullBuildingHead : plan && plan.tier !== 'free' ? t.reportReadyHead : t.reportReadyHeadFree}
+                </h2>
+                <p className="text-sm text-charcoal/60 mt-1">{fullReport === 'building' ? t.fullBuildingSub : plan && plan.tier !== 'free' ? t.reportReadySub : t.reportReadySubFree}</p>
                 <div className="flex flex-wrap gap-3 mt-5">
                   <Link href={`/results/${latest.id}`} className="cta" style={{ padding: '11px 18px', fontSize: 14, borderRadius: 12 }}>
                     <span>{t.viewReport}</span><span className="cta-arrow">{dir === 'rtl' ? '←' : '→'}</span>
@@ -657,13 +682,13 @@ export default function UserDashboard() {
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
                   <p className="font-bold text-charcoal">
-                    {t.currentPlan}: {plan?.tier === 'launchpad' ? 'Launchpad' : plan?.tier === 'pathfinder' ? 'Pathfinder' : t.explorer}
+                    {t.currentPlan}: {plan?.tier === 'launchpad' ? b.plan.launchpad : plan?.tier === 'pathfinder' ? b.plan.pathfinder : t.explorer}
                   </p>
                   <p className="text-2xl font-extrabold text-primary mt-1">
                     {plan?.tier === 'launchpad'
-                      ? <span className="text-sm font-medium text-charcoal/60">Full report + a 1:1 coaching session</span>
+                      ? <span className="text-sm font-medium text-charcoal/60">{b.launchpadLine}</span>
                       : plan?.tier === 'pathfinder'
-                        ? <span className="text-sm font-medium text-charcoal/60">Unlocked for life</span>
+                        ? <span className="text-sm font-medium text-charcoal/60">{b.lifetimeLine}</span>
                         : <>{t.free}<span className="text-xs font-medium text-charcoal/40 ms-1">{t.always}</span></>}
                   </p>
                 </div>
@@ -671,19 +696,19 @@ export default function UserDashboard() {
                   {plan?.tier === 'free' && !assessmentsLoading && !assessments.length && (
                     <Link href="/assessment" data-track="dashboard_take_assessment"
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary text-primary text-sm font-medium">
-                      Take the assessment to unlock your full report
+                      {b.takeAssessment}
                     </Link>
                   )}
                   {plan?.tier === 'free' && assessments.length > 0 && (
                     <button data-track="dashboard_unlock_pathfinder" onClick={() => handleBuyPlan('pathfinder')} disabled={buying}
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary text-primary text-sm font-medium disabled:opacity-50">
-                      {buying ? '…' : `Unlock Full Report — ${formatPrice('pathfinder', displayCurrency, 'en')}`}
+                      {buying ? '…' : `${b.unlockFull} — ${formatPrice('pathfinder', displayCurrency, lang)}`}
                     </button>
                   )}
                   {plan?.tier !== 'launchpad' && assessments.length > 0 && (
                     <button data-track="dashboard_unlock_launchpad" onClick={() => handleBuyPlan('launchpad_monthly')} disabled={buying}
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-50">
-                      {buying ? '…' : `Get Launchpad (adds a 1:1 coaching session) — ${formatPrice('launchpad', displayCurrency, 'en')}`}
+                      {buying ? '…' : `${b.getLaunchpad} — ${formatPrice('launchpad', displayCurrency, lang)}`}
                     </button>
                   )}
                 </div>
@@ -691,33 +716,33 @@ export default function UserDashboard() {
             )}
             {plan?.tier === 'launchpad' && (
               <div className="mt-4 pt-4 border-t border-[var(--line)]">
-                <p className="text-sm font-bold text-charcoal">Your 1:1 coaching session</p>
+                <p className="text-sm font-bold text-charcoal">{b.coachHead}</p>
                 {plan.booking_url ? (
                   <>
-                    <p className="text-xs text-charcoal/55 mt-1">Pick a time that suits you. We have also been notified of your purchase.</p>
+                    <p className="text-xs text-charcoal/55 mt-1">{b.coachPick}</p>
                     <a href={plan.booking_url} target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 mt-3 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium">
-                      Book your session
+                      {b.coachBook}
                     </a>
-                    <p className="text-xs text-charcoal/45 mt-3">Need help? Contact us:</p>
+                    <p className="text-xs text-charcoal/45 mt-3">{b.coachHelp}</p>
                   </>
                 ) : (
-                  <p className="text-xs text-charcoal/55 mt-1">To book your session, contact us and we will find a time that suits you. We have also been notified of your purchase.</p>
+                  <p className="text-xs text-charcoal/55 mt-1">{b.coachContact}</p>
                 )}
                 <div className="flex flex-wrap gap-3 mt-3">
                   <a href="tel:+97335082446" dir="ltr" className="chip">+973 3508 2446</a>
-                  <a href="mailto:projects@etijahcoaching.com" dir="ltr" className="chip">projects@etijahcoaching.com</a>
+                  <a href={`mailto:${CONTACT_EMAIL}`} dir="ltr" className="chip">{CONTACT_EMAIL}</a>
                 </div>
               </div>
             )}
             {transactions.length > 0 && (
               <div className="mt-4 pt-4 border-t border-[var(--line)]">
-                <p className="text-xs text-charcoal/45 mb-2">Payment history</p>
+                <p className="text-xs text-charcoal/45 mb-2">{b.history}</p>
                 <div className="space-y-1">
                   {transactions.map(txn => (
                     <div key={txn.order_ref} className="flex justify-between text-xs text-charcoal/70">
                       <span>{txn.plan_code} · {txn.status}</span>
-                      <span>{txn.amount} {txn.currency} · {new Date(txn.created_at).toLocaleDateString()}</span>
+                      <span>{txn.amount} {txn.currency} · {new Date(txn.created_at).toLocaleDateString(lang === 'ar' ? 'ar' : 'en-GB')}</span>
                     </div>
                   ))}
                 </div>
@@ -774,7 +799,7 @@ export default function UserDashboard() {
             <p className="text-xs text-charcoal/45 mb-3">{t.contactSub}</p>
             <div className="flex flex-wrap gap-3">
               <a href="tel:+97335082446" dir="ltr" className="chip">+973 3508 2446</a>
-              <a href="mailto:projects@etijahcoaching.com" dir="ltr" className="chip">projects@etijahcoaching.com</a>
+              <a href={`mailto:${CONTACT_EMAIL}`} dir="ltr" className="chip">{CONTACT_EMAIL}</a>
             </div>
           </section>
         </main>
