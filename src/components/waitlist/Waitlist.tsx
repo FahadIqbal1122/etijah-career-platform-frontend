@@ -618,13 +618,13 @@ export default function Waitlist() {
             <p className="mt-3 text-xs text-white/45">{c.footer.brandPowered}</p>
             <div className="mt-5">
               <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.contactHead}</p>
-              <a href="tel:+97335082446" dir="ltr" onClick={() => trackEvent('click', 'footer_phone', locale)} className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.phone}</a>
+              <a href="tel:+966550770711" dir="ltr" onClick={() => trackEvent('click', 'footer_phone', locale)} className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.phone}</a>
               <a href={`mailto:${c.footer.email}`} onClick={() => trackEvent('click', 'footer_email', locale)} className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.email}</a>
             </div>
           </div>
           <FooterCol head={c.footer.colPlatform.head} links={c.footer.colPlatform.links} hrefs={['#how', '#report']} locale={locale} />
           {/* <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about']} locale={locale} /> */}
-          <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about', 'https://etijahcoaching.com', 'mailto:info@etijahcoaching.com']} locale={locale} />
+          <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about', 'https://etijahcoaching.com', 'mailto:info@myetijahi.com']} locale={locale} />
           <div>
             <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.colLegal.head}</p>
             <p className="text-sm text-white/85 font-semibold mb-2">{c.footer.copyright}</p>

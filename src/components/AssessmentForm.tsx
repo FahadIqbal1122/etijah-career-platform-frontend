@@ -1072,6 +1072,14 @@ export default function AssessmentForm() {
       <CoachWidget
         locale={locale as 'en' | 'ar'} mode="assessment" sessionId={getTelemetrySessionId}
         questionIndex={index + 1} questionTotal={total}
+        getQuestion={() => {
+          if (phase !== 'question' || !q || !qTextStr) return null
+          const hasChoices = q.type === 'single_select' || q.type === 'multi_select' || q.type === 'forced_choice'
+          return {
+            text: qTextStr, type: q.type,
+            options: hasChoices ? (q.options || []).slice(0, 10).map(o => (rawQ?.dynamic ? o.label : tQ(`${mid}.options.${o.value}`))) : undefined,
+          }
+        }}
         place={phase === 'question' ? coachSide : 'center'}
         tip={phase === 'question' ? coachMsg : phase === 'reveal' ? revealTip : null}
         tipAutoHideMs={phase === 'reveal' ? 0 : 9000} onTipDismiss={dismissCoach}

@@ -849,7 +849,7 @@ html { scroll-behavior: smooth; }
 }
 .coach-bubble[dir="rtl"] .coach-speech::after { transform: rotate(45deg); }
 .coach-speech p { margin: 0; font-size: 16px; line-height: 1.5; color: #1f2937; }
-.coach-avatar { width: 88px; height: 88px; border-radius: 50%; background: var(--teal);
+.coach-avatar { width: 112px; height: 112px; border-radius: 50%; background: var(--teal);
   border: 3px solid var(--teal); overflow: hidden; flex-shrink: 0;
   box-shadow: 0 10px 28px -10px rgba(0, 201, 167, 0.6); }
 .coach-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; display: block; transform: scale(1.65); transform-origin: 51% 24%; }
@@ -924,7 +924,7 @@ html { scroll-behavior: smooth; }
 
 @media (max-width: 640px) {
   .coach-widget { bottom: 12px; inset-inline-end: 12px; }
-  .coach-widget .coach-avatar { width: 64px; height: 64px; }
+  .coach-widget .coach-avatar { width: 80px; height: 80px; }
   .coach-panel { max-height: 62vh; }
 }
 @media (prefers-reduced-motion: reduce) {

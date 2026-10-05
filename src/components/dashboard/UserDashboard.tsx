@@ -156,7 +156,7 @@ const B = {
   },
 } as const
 const RIASEC_AR: Record<string, string> = { realistic: 'الباني', investigative: 'المحلل', artistic: 'المبدع', social: 'المُعين', enterprising: 'القائد', conventional: 'المنظّم' }
-const CONTACT_EMAIL = 'info@etijahcoaching.com'
+const CONTACT_EMAIL = 'info@myetijahi.com'
 
 const NOTIF = [
   { id: 'jobEmail', en: 'Monthly job market email', ar: 'بريد سوق العمل الشهري', on: true },
@@ -742,7 +742,7 @@ export default function UserDashboard() {
                   <p className="text-xs text-charcoal/55 mt-1">{b.coachContact}</p>
                 )}
                 <div className="flex flex-wrap gap-3 mt-3">
-                  <a href="tel:+97335082446" dir="ltr" className="chip">+973 3508 2446</a>
+                  <a href="tel:+966550770711" dir="ltr" className="chip">+966 55 077 0711</a>
                   <a href={`mailto:${CONTACT_EMAIL}`} dir="ltr" className="chip">{CONTACT_EMAIL}</a>
                 </div>
               </div>
@@ -810,7 +810,7 @@ export default function UserDashboard() {
             <h3 className="font-bold text-charcoal">{t.contactHead}</h3>
             <p className="text-xs text-charcoal/45 mb-3">{t.contactSub}</p>
             <div className="flex flex-wrap gap-3">
-              <a href="tel:+97335082446" dir="ltr" className="chip">+973 3508 2446</a>
+              <a href="tel:+966550770711" dir="ltr" className="chip">+966 55 077 0711</a>
               <a href={`mailto:${CONTACT_EMAIL}`} dir="ltr" className="chip">{CONTACT_EMAIL}</a>
             </div>
           </section>

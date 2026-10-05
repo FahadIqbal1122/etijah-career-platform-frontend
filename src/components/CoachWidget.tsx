@@ -33,6 +33,8 @@ interface Props {
   sessionId?: () => string               // assessment mode: stable per-browser id (rate limiting only)
   questionIndex?: number                 // assessment mode, 1-based
   questionTotal?: number
+  // assessment mode: the question currently on screen, so she can explain it (called when a message is sent)
+  getQuestion?: () => { text: string; type?: string; options?: string[] } | null
   place?: 'end' | 'start' | 'center'      // which bottom spot she is at; changing it glides her across
   tip?: Bi | null
   onTipDismiss?: () => void
@@ -61,7 +63,7 @@ const T = {
 } satisfies Record<string, Bi>
 
 export default function CoachWidget({
-  locale, mode, responseId, sessionId, questionIndex, questionTotal,
+  locale, mode, responseId, sessionId, questionIndex, questionTotal, getQuestion,
   place = 'end', tip = null, onTipDismiss, tipAutoHideMs = 9000, feedback,
 }: Props) {
   const isAr = locale === 'ar'
@@ -127,6 +129,7 @@ export default function CoachWidget({
     const text = input.trim()
     if (!text || sending || rested) return
     const history = msgs.slice(-6)
+    const qc = mode === 'assessment' ? getQuestion?.() ?? null : null
     setMsgs(m => [...m, { role: 'user', text }])
     setInput('')
     setSending(true)
@@ -136,6 +139,7 @@ export default function CoachWidget({
         response_id: mode === 'results' ? responseId : undefined,
         session_id: mode === 'assessment' ? sessionId?.() : undefined,
         question_index: questionIndex, question_total: questionTotal,
+        question_text: qc?.text || undefined, question_type: qc?.type, question_options: qc?.options,
       })
       if (res.limited || !res.reply) {
         setRested(true)
@@ -208,7 +212,7 @@ export default function CoachWidget({
         aria-label={tr(T.open)} aria-expanded={open}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/coach-avatar.jpg" alt="" width={88} height={88} />
+        <img src="/coach-avatar.jpg" alt="" width={112} height={112} />
       </button>
     </div>
   )
