@@ -810,18 +810,30 @@ html { scroll-behavior: smooth; }
 /* Coach bubble: one-way motivational / advice bubble (assessment + results) */
 .coach-bubble {
   position: fixed; bottom: 20px; inset-inline-end: 20px; z-index: 60;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
   max-width: min(340px, calc(100vw - 32px));
-  display: flex; gap: 10px; align-items: flex-start;
-  background: #fff; border: 1px solid var(--line); border-radius: 18px;
-  padding: 12px 14px; box-shadow: 0 14px 40px -12px rgba(7, 112, 186, 0.35);
   transition: opacity .35s ease, transform .35s ease;
 }
+.coach-bubble[dir="rtl"] { align-items: flex-start; }
 .coach-bubble.is-in  { opacity: 1; transform: translateY(0); }
 .coach-bubble.is-out { opacity: 0; transform: translateY(12px); pointer-events: none; }
-.coach-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--teal);
-  border: 2px solid var(--teal); overflow: hidden; flex-shrink: 0; }
+.coach-speech {
+  position: relative; background: #fff; border: 1px solid var(--line); border-radius: 20px;
+  padding: 16px 38px 16px 18px; box-shadow: 0 14px 40px -12px rgba(7, 112, 186, 0.35);
+}
+.coach-bubble[dir="rtl"] .coach-speech { padding: 16px 18px 16px 38px; }
+/* tail pointing down at the avatar */
+.coach-speech::after {
+  content: ''; position: absolute; bottom: -9px; inset-inline-end: 34px; width: 16px; height: 16px;
+  background: #fff; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  transform: rotate(45deg);
+}
+.coach-bubble[dir="rtl"] .coach-speech::after { transform: rotate(45deg); }
+.coach-speech p { margin: 0; font-size: 16px; line-height: 1.5; color: #1f2937; }
+.coach-avatar { width: 88px; height: 88px; border-radius: 50%; background: var(--teal);
+  border: 3px solid var(--teal); overflow: hidden; flex-shrink: 0;
+  box-shadow: 0 10px 28px -10px rgba(0, 201, 167, 0.6); }
 .coach-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; display: block; }
-.coach-name { font-size: 11px; font-weight: 700; color: var(--primary); letter-spacing: .04em; text-transform: uppercase; }
-.coach-text p { margin: 2px 0 0; font-size: 14px; line-height: 1.45; color: #1f2937; }
-.coach-close { background: none; border: 0; color: #9ca3af; cursor: pointer; font-size: 13px; padding: 2px; }
+.coach-close { position: absolute; top: 8px; inset-inline-end: 10px; background: none; border: 0;
+  color: #9ca3af; cursor: pointer; font-size: 13px; padding: 2px; }
 @media (prefers-reduced-motion: reduce) { .coach-bubble { transition: none; } }

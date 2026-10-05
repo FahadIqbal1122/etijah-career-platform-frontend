@@ -26,15 +26,14 @@ export default function CoachBubble({ locale, message, onDismiss, autoHideMs = 9
   return (
     <div className={`coach-bubble ${message ? 'is-in' : 'is-out'}`} role="status" aria-live="polite"
          dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-      <div className="coach-avatar" aria-hidden="true">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/coach-avatar.jpg" alt="" width={44} height={44} />
-      </div>
-      <div className="coach-text">
-        <span className="coach-name">{locale === 'ar' ? 'المدرّب' : 'Coach'}</span>
+      <div className="coach-speech">
+        <button className="coach-close" onClick={onDismiss} aria-label={locale === 'ar' ? 'إغلاق' : 'Dismiss'}>✕</button>
         <p>{locale === 'ar' ? shown.ar : shown.en}</p>
       </div>
-      <button className="coach-close" onClick={onDismiss} aria-label={locale === 'ar' ? 'إغلاق' : 'Dismiss'}>✕</button>
+      <div className="coach-avatar" aria-hidden="true">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/coach-avatar.jpg" alt="" width={88} height={88} />
+      </div>
     </div>
   )
 }
