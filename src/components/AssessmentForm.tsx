@@ -258,13 +258,18 @@ export default function AssessmentForm() {
   const [coachMsg, setCoachMsg] = useState<Bi | null>(null)
   const coachNextAt = useRef(3 + Math.floor(Math.random() * 3))
   const coachUsed = useRef<Set<string>>(new Set())
-  // Sarah moves around: she hops to the other bottom corner each time she has a tip, and comes to the middle
-  // of the screen on the green reveal screen with an encouraging line (revealTip).
+  // Sarah moves around so she is never parked in one place: on desktop she glides between a few spots (under the
+  // text, in the sky above the stars, over the top of the question card), on phones she hops between the two
+  // bottom corners. She changes spot every time she has a tip, and comes to the middle of the screen on the green
+  // reveal screen with an encouraging line (revealTip).
   const [coachSide, setCoachSide] = useState<'end' | 'start'>('end')
+  const [coachSpot, setCoachSpot] = useState(0)
   const [revealTip, setRevealTip] = useState<Bi | null>(null)
   const [coachTipGame, setCoachTipGame] = useState(false)
-  // Desktop: Sarah lives in the left panel under the stars (not a screen corner); this is that spot.
+  // Desktop spots she can stand on (elements she glides to): under the text, in the sky above the stars, beside the text.
   const [coachSlot, setCoachSlot] = useState<HTMLElement | null>(null)
+  const [coachStarsSlot, setCoachStarsSlot] = useState<HTMLElement | null>(null)
+  const [coachTextSlot, setCoachTextSlot] = useState<HTMLElement | null>(null)
   const dismissCoach = useCallback(() => { setCoachMsg(null); setRevealTip(null) }, [])
   useEffect(() => {
     if (phase !== 'question' || index < coachNextAt.current) return
@@ -275,6 +280,7 @@ export default function AssessmentForm() {
     const pick = pool[Math.floor(Math.random() * pool.length)]
     coachUsed.current.add(pick.en)
     setCoachSide(s => (s === 'end' ? 'start' : 'end'))
+    setCoachSpot(n => n + 1)
     setCoachTipGame(isBreak)   // break tips also offer the riddle / games
     setCoachMsg(pick)
   }, [index, phase])
@@ -729,6 +735,7 @@ export default function AssessmentForm() {
       <div className="assess-main">
         <aside className="assess-aside">
           <div className="cst-wrap">
+            <div className="coach-spot coach-spot-stars" ref={setCoachStarsSlot} />
             <Constellation litCount={litCount} theme={phase === 'reveal' ? 'teal' : 'dark'} rippleKey={rippleKey} accent="#00C9A7" />
             {phase === 'question' && (
               <div className="cst-progress-text">
@@ -738,6 +745,7 @@ export default function AssessmentForm() {
           </div>
           {/* desktop-only progress context beneath the constellation */}
           <div className="assess-aside-context">
+            <div className="coach-spot coach-spot-text" ref={setCoachTextSlot} />
             {phase === 'question' ? (
               <BreakPanel locale={locale as 'en' | 'ar'} eyebrow={chrome.asideEyebrow} progressMsg={progressMsg} questionIndex={index} hideTrigger />
             ) : (
@@ -1088,7 +1096,8 @@ export default function AssessmentForm() {
           }
         }}
         place={phase === 'question' ? coachSide : 'center'}
-        anchorEl={phase === 'question' ? coachSlot : null}
+        spots={phase === 'question' ? { wide: [coachSlot, coachStarsSlot, coachTextSlot], narrow: [] } : undefined}
+        spotIndex={coachSpot}
         games tipOffersGame={phase === 'question' && coachTipGame}
         tip={phase === 'question' ? coachMsg : phase === 'reveal' ? revealTip : null}
         tipAutoHideMs={phase === 'reveal' ? 0 : 9000} onTipDismiss={dismissCoach}

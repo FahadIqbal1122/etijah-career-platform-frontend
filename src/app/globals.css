@@ -935,16 +935,35 @@ html { scroll-behavior: smooth; }
 .coach-link { align-self: center; background: none; border: 0; color: var(--primary); font-size: 13.5px; cursor: pointer; text-decoration: underline; padding: 4px; }
 
 /* Coach inside the assessment's left panel (desktop): sits with the stars and text, not in a corner */
-.coach-slot { width: 100%; display: flex; justify-content: center; position: relative; z-index: 6; }
-.coach-widget.coach-inline {
-  position: relative; inset: auto; bottom: auto; width: min(340px, 100%); margin-top: 22px;
-  align-items: center; animation: coach-pop-in .5s cubic-bezier(.2, .8, .2, 1) both; transition: none;
+/* Desktop spots she can stand on during the assessment. The widget measures these and glides to them. */
+.coach-slot { width: 100%; min-height: 112px; margin-top: 22px; position: relative; }
+@media (max-width: 899px) { .coach-slot { display: none; } }   /* phones: no spots, she hops between the corners */
+.coach-spot { position: absolute; width: 1px; height: 1px; pointer-events: none; }
+.coach-spot-stars { left: 15%; top: 24%; }                      /* the empty sky above the rising stars */
+.assess-aside-context { position: relative; }
+.coach-spot-text { left: calc(50% - 240px); top: 50%; }          /* just left of the progress text */
+@media (max-width: 1099px) { .coach-spot-text { display: none; } }   /* not enough room beside the text on narrow desktops */
+
+/* Target mode: fixed, centred on a spot, gliding between spots. Bubble and panel hang off her. */
+.coach-widget[data-place="target"] {
+  inset-inline-end: auto; right: auto; bottom: auto; width: 112px; height: 112px; display: block;
+  transform: translate(-50%, -50%);
+  animation: coach-fade-in .5s ease both;
+  transition: left 1s cubic-bezier(.45, 0, .2, 1), top 1s cubic-bezier(.45, 0, .2, 1), opacity .3s ease;
 }
-@keyframes coach-pop-in { from { opacity: 0; transform: translateY(14px) scale(.9); } to { opacity: 1; transform: none; } }
-.coach-inline .coach-speech::after { inset-inline-end: calc(50% - 8px); inset-inline-start: auto; }
-/* the chat panel floats above her instead of pushing the layout down */
-.coach-inline .coach-panel { position: absolute; bottom: calc(100% + 12px); left: 50%; transform: translateX(-50%); width: min(380px, 92vw); z-index: 70; }
-.coach-inline.is-open .coach-avatar { position: relative; }
+@keyframes coach-fade-in { from { opacity: 0; } to { opacity: 1; } }
+.coach-widget[data-place="target"] .coach-speech-tip {
+  position: absolute; bottom: calc(100% + 12px); left: 50%; width: max-content; max-width: 280px;
+  transform: translateX(calc(-50% + var(--shift-tip, 0px)));
+}
+.coach-widget[data-place="target"].tip-below .coach-speech-tip { bottom: auto; top: calc(100% + 12px); }
+.coach-widget[data-place="target"] .coach-speech::after { inset-inline-end: auto; left: calc(50% - 8px - var(--shift-tip, 0px)); }
+.coach-widget[data-place="target"].tip-below .coach-speech::after { display: none; }
+.coach-widget[data-place="target"] .coach-panel {
+  position: absolute; left: 50%; bottom: calc(100% + 12px); z-index: 70;
+  width: min(380px, calc(100vw - 24px)); transform: translateX(calc(-50% + var(--shift-panel, 0px)));
+}
+.coach-widget[data-place="target"].panel-below .coach-panel { bottom: auto; top: calc(100% + 12px); }
 
 .coach-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 8px; }
 .coach-chips button, .coach-tip-action {

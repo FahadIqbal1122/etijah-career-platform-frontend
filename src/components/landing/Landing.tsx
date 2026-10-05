@@ -462,7 +462,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               <span className="text-xl font-semibold text-white/60 line-through decoration-2 decoration-white/70">{formatPrice('pathfinder_standard', currency, locale)}</span>
               <span className="text-4xl font-extrabold text-white leading-none">{formatPrice('pathfinder', currency, locale)}</span>
             </div>
-            <span className="mt-3 inline-block rounded-full bg-teal/20 border border-teal/50 px-3 py-1 text-xs font-bold text-teal">
+            <span className="mt-3 inline-block rounded-full bg-white/15 border border-white/40 px-3 py-1 text-xs font-bold text-white">
               {locale === 'ar' ? 'عرض تعريفي لفترة محدودة' : 'Limited-time introductory offer'}
             </span>
             <p className="mt-3 text-lg font-bold text-white">{c.pricing.paid.priceNote}</p>

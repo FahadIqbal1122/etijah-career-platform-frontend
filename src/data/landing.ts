@@ -162,7 +162,8 @@ export const L = {
         bullets: [
           'The full 15-minute assessment across five frameworks',
           'Your personality profile, top strengths, and core values — in plain language',
-          'Your top 5 matched career paths, with context for your market',
+          // 'Your top 5 matched career paths, with context for your market',
+          'Your top 3 matched career paths, with context for your market',
           'A preview of AI’s impact on your top 2 matches',
           'A shareable results link for family or mentors',
         ],
@@ -414,7 +415,8 @@ export const L = {
         bullets: [
           'التقييم الكامل (١٥ دقيقة) عبر خمسة أطر علمية',
           'ملفك الشخصي وأبرز نقاط قوتك وقيمك الجوهرية — بلغة واضحة',
-          'أفضل ٥ مسارات مهنية تناسبك، مع سياق سوقك',
+          // 'أفضل ٥ مسارات مهنية تناسبك، مع سياق سوقك',
+          'أفضل ٣ مسارات مهنية تناسبك، مع سياق سوقك',
           'نظرة عامة على تأثير الذكاء الاصطناعي على أفضل مسارَين لديك',
           'رابط لمشاركة نتائجك مع العائلة أو المرشدين',
         ],

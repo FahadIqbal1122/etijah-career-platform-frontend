@@ -29,6 +29,8 @@ export interface CoachFeedbackConfig {
   required?: boolean
 }
 
+export type Spot = HTMLElement | 'start' | 'end' | null
+
 interface Props {
   locale: 'en' | 'ar'
   mode: 'assessment' | 'results'
@@ -39,9 +41,10 @@ interface Props {
   // assessment mode: the question currently on screen, so she can explain it (called when a message is sent)
   getQuestion?: () => { text: string; type?: string; options?: string[] } | null
   place?: 'end' | 'start' | 'center'      // which bottom spot she is at; changing it glides her across
-  // Desktop: render her inside this element (the assessment's left panel, under the stars) instead of a screen corner.
-  // On narrow screens that panel is not shown, so she falls back to the corner.
-  anchorEl?: HTMLElement | null
+  // Places she can stand during the assessment, rotated by spotIndex (she moves on every tip): an element to glide
+  // to (she stands centred on it) or a screen corner. `wide` is used at >= 900px, `narrow` below.
+  spots?: { wide: Spot[]; narrow: Spot[] }
+  spotIndex?: number
   // Offer the riddle / mini-games (they play inside her panel). tipOffersGame adds the button to the current tip.
   games?: boolean
   tipOffersGame?: boolean
@@ -74,7 +77,7 @@ const T = {
 
 export default function CoachWidget({
   locale, mode, responseId, sessionId, questionIndex, questionTotal, getQuestion,
-  place = 'end', anchorEl = null, games = false, tipOffersGame = false,
+  place = 'end', spots, spotIndex = 0, games = false, tipOffersGame = false,
   tip = null, onTipDismiss, tipAutoHideMs = 9000, feedback,
 }: Props) {
   const isAr = locale === 'ar'
@@ -104,7 +107,31 @@ export default function CoachWidget({
     () => window.matchMedia('(min-width: 900px)').matches,
     () => false,
   )
-  const inline = !!anchorEl && wide
+  // A spot whose element is not displayed (hidden by CSS on this screen size) is skipped.
+  const list = spots ? (wide ? spots.wide : spots.narrow).filter((x): x is NonNullable<Spot> => !!x && (typeof x !== 'object' || x.offsetParent !== null)) : []
+  const spot = list.length ? list[spotIndex % list.length] : null
+  const target = spot && typeof spot === 'object' ? spot : null
+  const effPlace: 'end' | 'start' | 'center' | 'target' = spot === 'start' || spot === 'end' ? spot : target ? 'target' : place
+
+  // Where the target element is on screen (she is centred on it and glides there). Measured in observer/event
+  // callbacks, which also fire once on observe.
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+  useEffect(() => {
+    if (!target) return
+    const measure = () => {
+      const r = target.getBoundingClientRect()
+      // keep her clear of the top bar (logo, report a bug, language) and the screen edges
+      setPos({
+        x: Math.min(Math.max(r.left + r.width / 2, 70), window.innerWidth - 70),
+        y: Math.min(Math.max(r.top + r.height / 2, 150), window.innerHeight - 70),
+      })
+    }
+    const ro = new ResizeObserver(measure)
+    ro.observe(target); ro.observe(document.body)
+    window.addEventListener('resize', measure)
+    window.addEventListener('scroll', measure, true)
+    return () => { ro.disconnect(); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true) }
+  }, [target])
 
   // Derived-state updates during render (keeps these out of effects).
   if (feedback?.autoOpen && !autoOpened) { setAutoOpened(true); setOpen(true) }
@@ -132,6 +159,23 @@ export default function CoachWidget({
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [msgs, sending, open, fbDone])
+
+  // Keep the bubble / panel on screen when she stands near an edge, and flip them below her near the top.
+  const vw = inBrowser ? window.innerWidth : 0
+  const clampShift = (width: number) => {
+    if (!pos) return 0
+    const w = Math.min(width, vw - 24)
+    const want = pos.x - w / 2
+    return Math.max(12, Math.min(want, vw - w - 12)) - want
+  }
+  const targetStyle = effPlace === 'target'
+    ? ({
+        left: pos?.x ?? -999, top: pos?.y ?? -999, opacity: pos ? undefined : 0,
+        '--shift-panel': `${clampShift(380)}px`, '--shift-tip': `${clampShift(280)}px`,
+      } as React.CSSProperties)
+    : undefined
+  const panelBelow = effPlace === 'target' && !!pos && pos.y - 56 < 440
+  const tipBelow = effPlace === 'target' && !!pos && pos.y - 56 < 130
 
   const greeting = mode === 'results' ? tr(T.greetResults) : tr(T.greetAssessment)
   const nudge = feedbackActive && !open ? feedback?.nudge : undefined
@@ -184,7 +228,7 @@ export default function CoachWidget({
   }
 
   const widget = (
-    <div className={`coach-widget ${open ? 'is-open' : ''} ${inline ? 'coach-inline' : ''}`} data-place={inline ? 'inline' : place} dir={isAr ? 'rtl' : 'ltr'}>
+    <div className={`coach-widget ${open ? 'is-open' : ''} ${panelBelow ? 'panel-below' : ''} ${tipBelow ? 'tip-below' : ''}`} data-place={effPlace} style={targetStyle} dir={isAr ? 'rtl' : 'ltr'}>
       {open && (
         <div className="coach-panel" role="dialog" aria-label="Sarah">
           {!required && (
@@ -259,5 +303,5 @@ export default function CoachWidget({
       </button>
     </div>
   )
-  return inBrowser ? createPortal(widget, inline && anchorEl ? anchorEl : document.body) : null
+  return inBrowser ? createPortal(widget, document.body) : null
 }
