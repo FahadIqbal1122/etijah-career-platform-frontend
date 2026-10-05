@@ -198,6 +198,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
                 <span className="cta-arrow">{arrow}</span>
               </Link>
               <a href="#report" className="text-sm font-semibold text-charcoal hover:text-teal">{c.hero.secondary}</a>
+              <a href="#pricing" data-track="landing_hero_view_packages" className="text-sm font-semibold text-charcoal hover:text-teal">{c.hero.viewPackages}</a>
             </div>
             <p className="mt-3 text-sm text-charcoal/65">{c.hero.microcopy}</p>
           </Reveal>
@@ -558,7 +559,8 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             </div>
           </div>
           <FooterCol head={c.footer.colPlatform.head} links={c.footer.colPlatform.links} hrefs={['/assessment', '#how', '#report', '#pricing']} />
-          <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about']} />
+          {/* <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about']} /> */}
+          <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about', 'https://etijahcoaching.com', 'mailto:projects@etijahcoaching.com']} />
           <div>
             <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.colLegal.head}</p>
             <p className="text-sm text-white/85 font-semibold mb-2">{c.footer.copyright}</p>

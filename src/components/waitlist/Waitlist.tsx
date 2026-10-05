@@ -623,7 +623,8 @@ export default function Waitlist() {
             </div>
           </div>
           <FooterCol head={c.footer.colPlatform.head} links={c.footer.colPlatform.links} hrefs={['#how', '#report']} locale={locale} />
-          <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about']} locale={locale} />
+          {/* <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about']} locale={locale} /> */}
+          <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about', 'https://etijahcoaching.com', 'mailto:projects@etijahcoaching.com']} locale={locale} />
           <div>
             <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.colLegal.head}</p>
             <p className="text-sm text-white/85 font-semibold mb-2">{c.footer.copyright}</p>
