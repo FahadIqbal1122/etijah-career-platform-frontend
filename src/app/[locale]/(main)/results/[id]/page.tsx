@@ -13,7 +13,8 @@ import { LockedSection } from '@/components/shared/LockedSection'
 import { BlurGate } from '@/components/shared/BlurGate'
 import BetaFeedbackStage1 from '@/components/beta-feedback/BetaFeedbackStage1'
 import BreakPanel from '@/components/BreakPanel'
-import CoachBubble from '@/components/CoachBubble'
+// import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
+import CoachWidget from '@/components/CoachWidget'
 import { resultsAdvice, type Bi } from '@/data/coachMessages'
 import BetaFeedbackResultStage from '@/components/beta-feedback/BetaFeedbackResultStage'
 
@@ -118,6 +119,13 @@ function AiImpactDeepDivePlaceholder() {
   )
 }
 
+// true = the coach asks the beta feedback questions (CoachFeedback); false = the original form cards
+// (BetaFeedbackStage1 on the loading screen, BetaFeedbackResultStage at the end of the report).
+const COACH_FEEDBACK = true
+
+const COACH_NUDGE_STAGE1 = { en: 'Two quick taps and I’ll show your report', ar: 'نقرتان سريعتان وسأعرض لك تقريرك' }
+const COACH_NUDGE_RESULT = { en: 'One quick question before you go?', ar: 'سؤال سريع قبل أن تغادر؟' }
+
 export default function ResultsPage() {
   const params = useParams()
   const id = params.id as string
@@ -141,6 +149,24 @@ export default function ResultsPage() {
   const [betaMode, setBetaMode] = useState(false)
   const [stage1Done, setStage1Done] = useState(false)
   const [resultStageDone, setResultStageDone] = useState(false)
+  // Local "already answered" markers, same keys the original form cards write.
+  const [stage1Marker] = useState(() => {
+    try { return typeof window !== 'undefined' && window.localStorage.getItem(`betaStage1Done:${id}`) === '1' } catch { return false }
+  })
+  const [resultMarker] = useState(() => {
+    try { return typeof window !== 'undefined' && window.localStorage.getItem(`betaResultStageDone:${id}`) === '1' } catch { return false }
+  })
+  const [resultFeedbackDone, setResultFeedbackDone] = useState(false)
+  // The coach drifts over to the feedback question once the reader reaches the end of the report.
+  const [resultFeedbackReached, setResultFeedbackReached] = useState(false)
+  const feedbackAnchorRef = useCallback((el: HTMLDivElement | null) => {
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(entries => {
+      if (entries.some(e => e.isIntersecting)) { setResultFeedbackReached(true); io.disconnect() }
+    }, { threshold: 0.2 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
   // Only true right after AssessmentForm's submit redirect sets this flag — a
   // revisit of the same results link (bookmark, email) later should not show
   // the inline beta feedback survey again.
@@ -376,7 +402,7 @@ export default function ResultsPage() {
   // itself is ready — this is the only time the survey shows, so it's also
   // the only time we gate on it. A later revisit (justCompleted false)
   // always falls straight through to the report once loaded.
-  const awaitingStage1 = betaMode && justCompleted && !stage1Done
+  const awaitingStage1 = betaMode && justCompleted && !stage1Done && !(COACH_FEEDBACK && stage1Marker)
 
   // Listings are titled "Internships" only when every listing is an internship. Final-year students and recent
   // graduates get internships and entry-level jobs together, which is titled "Live Job Postings" with an
@@ -547,10 +573,19 @@ export default function ResultsPage() {
           {showFeedbackCol && (
             <div className="report-loading-col report-loading-right" id="report-loading-feedback">
               <BreakPanel locale={locale} eyebrow="" progressMsg="" questionIndex={0} compact forceVisible />
-              <BetaFeedbackStage1 responseId={id} locale={locale} onComplete={() => setStage1Done(true)} />
+              {!COACH_FEEDBACK && <BetaFeedbackStage1 responseId={id} locale={locale} onComplete={() => setStage1Done(true)} />}
             </div>
           )}
         </div>
+        {COACH_FEEDBACK && showFeedbackCol && !stage1Marker && (
+          <CoachWidget
+            locale={locale as 'en' | 'ar'} mode="results" responseId={id}
+            feedback={{
+              kind: 'stage1', responseId: id, autoOpen: true, required: reportReadyButAwaitingFeedback,
+              nudge: COACH_NUDGE_STAGE1, onDone: () => setStage1Done(true),
+            }}
+          />
+        )}
       </div>
     )
   }
@@ -1915,12 +1950,22 @@ export default function ResultsPage() {
         </div>
 
         {/* Result Stage feedback — non-blocking, at the end of the report (moved from the top 1 Oct 2026); shows on every visit until answered */}
-        {betaMode && (
+        {betaMode && !COACH_FEEDBACK && (
           <BetaFeedbackResultStage responseId={id} locale={locale} initiallyDone={resultStageDone} />
         )}
+        <div ref={feedbackAnchorRef} aria-hidden="true" style={{ height: 1 }} />
 
       </div>
-      <CoachBubble locale={locale as 'en' | 'ar'} message={coachMsg} onDismiss={dismissCoach} autoHideMs={14000} />
+      {/* <CoachBubble locale={locale as 'en' | 'ar'} message={coachMsg} onDismiss={dismissCoach} autoHideMs={14000} /> */}
+      <CoachWidget
+        locale={locale as 'en' | 'ar'} mode="results" responseId={id}
+        tip={coachMsg} onTipDismiss={dismissCoach} tipAutoHideMs={14000}
+        feedback={COACH_FEEDBACK && betaMode && !resultStageDone && !resultMarker && !resultFeedbackDone ? {
+          kind: 'result', responseId: id, autoOpen: resultFeedbackReached,
+          nudge: resultFeedbackReached ? COACH_NUDGE_RESULT : undefined,
+          onDone: () => setResultFeedbackDone(true),
+        } : undefined}
+      />
     </div>
   )
 }

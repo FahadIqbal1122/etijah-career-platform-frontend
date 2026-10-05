@@ -17,7 +17,8 @@ import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 import Constellation, { CONSTELLATION } from '@/components/brand/Constellation'
 import BreakPanel from '@/components/BreakPanel'
-import CoachBubble from '@/components/CoachBubble'
+// import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
+import CoachWidget from '@/components/CoachWidget'
 import { COACH_BREAK, COACH_MOTIVATION, type Bi } from '@/data/coachMessages'
 
 // module-level so the random call stays out of render (only used in an effect)
@@ -1058,7 +1059,12 @@ export default function AssessmentForm() {
           </div>
         </div>
       )}
-      <CoachBubble locale={locale as 'en' | 'ar'} message={phase === 'question' ? coachMsg : null} onDismiss={dismissCoach} />
+      {/* <CoachBubble locale={locale as 'en' | 'ar'} message={phase === 'question' ? coachMsg : null} onDismiss={dismissCoach} /> */}
+      <CoachWidget
+        locale={locale as 'en' | 'ar'} mode="assessment" sessionId={getTelemetrySessionId}
+        questionIndex={index + 1} questionTotal={total}
+        tip={phase === 'question' ? coachMsg : null} onTipDismiss={dismissCoach}
+      />
     </div>
   )
 }
