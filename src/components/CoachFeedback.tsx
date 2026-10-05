@@ -31,6 +31,8 @@ const DONE: Bi = { en: 'Done', ar: 'تم' }
 const SKIP: Bi = { en: 'Skip', ar: 'تخطي' }
 const RESULT_THANKS: Bi = { en: 'Thank you, that really helps us. 💙', ar: 'شكراً لك، هذا يساعدنا كثيراً. 💙' }
 
+export const feedbackThanks = (kind: FeedbackKind, locale: Locale) => (kind === 'stage1' ? stage1Thanks : RESULT_THANKS)[locale]
+
 export const feedbackDoneKey = (kind: FeedbackKind, responseId: string) =>
   kind === 'stage1' ? `betaStage1Done:${responseId}` : `betaResultStageDone:${responseId}`
 
@@ -88,7 +90,7 @@ export default function CoachFeedback({ kind, responseId, locale, onDone }: {
   }
 
   if (finished) {
-    return <p className="coach-fb-thanks">{(kind === 'stage1' ? stage1Thanks : RESULT_THANKS)[locale]}</p>
+    return <p className="coach-fb-thanks">{feedbackThanks(kind, locale)}</p>
   }
 
   return (

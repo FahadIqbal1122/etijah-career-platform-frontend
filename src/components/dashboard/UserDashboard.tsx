@@ -466,7 +466,8 @@ export default function UserDashboard() {
             <p className="text-sm font-semibold text-white truncate">{fullName}</p>
             <TierPill label={t.explorer} />
           </div>
-          <button onClick={handleLogout} title={t.signOut} className="ms-auto text-white/50 hover:text-white text-xs">✕</button>
+          {/* <button onClick={handleLogout} title={t.signOut} className="ms-auto text-white/50 hover:text-white text-xs">✕</button> */}
+          <button onClick={handleLogout} title={t.signOut} className="ms-auto shrink-0 rounded-full border border-white/30 px-3 py-1.5 text-xs font-semibold text-white/85 hover:bg-white/10 hover:text-white transition-colors">{t.signOut}</button>
         </div>
       </aside>
 

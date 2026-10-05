@@ -542,10 +542,12 @@ export default function ResultsPage() {
           <div className="report-loading-col report-loading-left">
             <div className="report-loading-logo inline-flex"><Logomark size={44} tone="dark" glow /></div>
             {reportReadyButAwaitingFeedback ? (
-              <p className="text-white/80 text-xl font-semibold">{t('loading.readyAwaitingFeedback')}</p>
+              // <p className="text-white/80 text-xl font-semibold">{t('loading.readyAwaitingFeedback')}</p>
+              <p className="report-loading-title">{t('loading.readyAwaitingFeedback')}</p>
             ) : (
               <>
-                <p className="text-white/80 text-xl font-semibold">{t('loading.preparing')}</p>
+                {/* <p className="text-white/80 text-xl font-semibold">{t('loading.preparing')}</p> */}
+                <p className="report-loading-title">{t('loading.preparing')}</p>
                 <div className="cst-wrap"><Constellation litCount={litCount} rippleKey={completedCount} theme="dark" accent="#00C9A7" /></div>
                 <ul className="loading-checklist">
                   {stages.map((s, i) => (
@@ -556,9 +558,11 @@ export default function ResultsPage() {
                   ))}
                 </ul>
                 {!!recentCompletions && (
-                  <p className="text-teal text-sm font-medium">✦ {t('loading.recentCompletions', { count: recentCompletions })}</p>
+                  // <p className="text-teal text-sm font-medium">✦ {t('loading.recentCompletions', { count: recentCompletions })}</p>
+                  <p className="report-loading-social">✦ {t('loading.recentCompletions', { count: recentCompletions })}</p>
                 )}
-                <p className="text-white/75 text-sm leading-relaxed max-w-sm">{t('loading.leaveNote')}</p>
+                {/* <p className="text-white/75 text-sm leading-relaxed max-w-sm">{t('loading.leaveNote')}</p> */}
+                <p className="report-loading-note">{t('loading.leaveNote')}</p>
               </>
             )}
             {showFeedbackCol && (

@@ -190,7 +190,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
       <header className="relative overflow-hidden">
         <div className="max-w-6xl mx-auto px-5 pt-16 pb-14 grid lg:grid-cols-2 gap-12 items-center">
           <Reveal>
-            <p className="eyebrow mb-4">{c.hero.eyebrow}</p>
+            <p className="eyebrow landing-eyebrow mb-4">{c.hero.eyebrow}</p>
             <h1 className="text-4xl sm:text-5xl font-extrabold leading-[1.1] tracking-tight text-charcoal">
               {c.hero.headline[0]}<br />
               <Highlight text={c.hero.headline[1]} hl={c.hero.hl} />
@@ -204,8 +204,10 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
                 <span>{c.hero.cta}</span>
                 <span className="cta-arrow">{arrow}</span>
               </Link>
-              <a href="#report" className="text-sm font-semibold text-charcoal hover:text-teal">{c.hero.secondary}</a>
-              <a href="#pricing" data-track="landing_hero_view_packages" className="text-sm font-semibold text-charcoal hover:text-teal">{c.hero.viewPackages}</a>
+              {/* <a href="#report" className="text-sm font-semibold text-charcoal hover:text-teal">{c.hero.secondary}</a> */}
+              <a href="#report" className="cta cta-outline cta-sm">{c.hero.secondary}</a>
+              {/* <a href="#pricing" data-track="landing_hero_view_packages" className="text-sm font-semibold text-charcoal hover:text-teal">{c.hero.viewPackages}</a> */}
+              <a href="#pricing" data-track="landing_hero_view_packages" className="cta cta-outline cta-sm">{c.hero.viewPackages}</a>
             </div>
             <p className="mt-3 text-sm text-charcoal/65">{c.hero.microcopy}</p>
           </Reveal>
@@ -374,7 +376,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
       <section id="about" className="sec-charcoal scroll-mt-20">
         <div className="max-w-6xl mx-auto px-5 py-16">
           <Reveal>
-            <p className="eyebrow !text-white/70">{c.heritage.label}</p>
+            <p className="eyebrow landing-eyebrow !text-white/70">{c.heritage.label}</p>
             <h2 className="mt-3 text-3xl sm:text-4xl font-extrabold leading-tight max-w-2xl">
               {c.heritage.headline[0]}<br />
               <span className="text-teal">{c.heritage.headline[1]}</span>
@@ -513,7 +515,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
       <section className="bg-white border-y border-[var(--line)]">
         <div className="max-w-4xl mx-auto px-5 py-14 text-center">
           <Reveal>
-            <p className="eyebrow mb-3">{c.institutions.label}</p>
+            <p className="eyebrow landing-eyebrow mb-3">{c.institutions.label}</p>
             <h2 className="section-h max-w-2xl mx-auto">{c.institutions.headline}</h2>
             <p className="mt-4 text-charcoal/70 leading-relaxed max-w-2xl mx-auto">{c.institutions.body}</p>
             <button data-track="landing_institutions_partner" onClick={() => setShowPartnerModal(true)} className="cta cta-outline mt-7 inline-flex">{c.institutions.cta}</button>
@@ -605,7 +607,7 @@ function Section({
     <section id={id} className={`scroll-mt-20 ${tint ? 'bg-white' : ''}`}>
       <div className="max-w-6xl mx-auto px-5 py-16 sm:py-20">
         <div className={center ? 'text-center' : ''}>
-          <p className="eyebrow mb-3">{eyebrow}</p>
+          <p className="eyebrow landing-eyebrow mb-3">{eyebrow}</p>
         </div>
         {children}
       </div>

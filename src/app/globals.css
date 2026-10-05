@@ -66,6 +66,13 @@ html { scroll-behavior: smooth; }
   text-transform: none;
 }
 
+/* Landing-page section headings (FAQ, Pricing, How it works…) — larger than the
+   generic eyebrow, which stays small for cards and other pages. */
+.landing-eyebrow { font-size: 16px; font-weight: 700; letter-spacing: 0.22em; }
+@media (min-width: 640px) { .landing-eyebrow { font-size: 19px; } }
+[dir="rtl"] .landing-eyebrow { font-size: 21px; letter-spacing: 0.02em; }
+@media (min-width: 640px) { [dir="rtl"] .landing-eyebrow { font-size: 24px; } }
+
 /* ── Brand CTA button ──────────────────────────────────────────────────── */
 .cta {
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
@@ -619,6 +626,8 @@ html { scroll-behavior: smooth; }
   box-shadow: inset 0 0 0 1.5px rgba(65, 65, 66, 0.32);
 }
 .cta-outline:hover { background: rgba(65, 65, 66, 0.045); box-shadow: inset 0 0 0 1.5px var(--charcoal); }
+/* compact size for secondary buttons that sit beside a full-size .cta */
+.cta-sm { padding: 15px 20px; font-size: 15px; border-radius: 14px; box-shadow: inset 0 0 0 1.5px rgba(65, 65, 66, 0.32); }
 .cta-onteal { background: #fff; color: var(--charcoal); box-shadow: 0 18px 44px -14px rgba(0, 40, 36, 0.45); }
 .cta-onteal:hover { box-shadow: 0 24px 58px -14px rgba(0, 40, 36, 0.55); }
 
@@ -650,17 +659,27 @@ html { scroll-behavior: smooth; }
 }
 @media (prefers-reduced-motion: reduce) { .report-loading-logo { animation: none; } }
 
-.loading-checklist { text-align: start; margin: 4px auto 0; max-width: 320px; display: flex; flex-direction: column; gap: 8px; }
+.loading-checklist { text-align: start; margin: 4px auto 0; max-width: 380px; display: flex; flex-direction: column; gap: 12px; }
 .loading-checklist li {
   display: flex; align-items: center; gap: 10px;
-  color: rgba(255,255,255,0.55); font-size: 14px; transition: color .3s ease;
+  color: rgba(255,255,255,0.6); font-size: 17px; line-height: 1.35; transition: color .3s ease;
 }
 .loading-checklist li.done { color: rgba(255,255,255,0.9); }
 .loading-checklist-icon {
-  width: 18px; height: 18px; flex: 0 0 auto; border-radius: 50%;
+  width: 22px; height: 22px; flex: 0 0 auto; border-radius: 50%;
   border: 1px solid rgba(255,255,255,0.35); display: flex; align-items: center; justify-content: center;
-  font-size: 11px; transition: background .3s ease, border-color .3s ease;
+  font-size: 13px; transition: background .3s ease, border-color .3s ease;
 }
+
+/* Typography matches the assessment's green "progress" screens: large bold white
+   headline, readable body copy. Tajawal is inherited from body. */
+.report-loading-title {
+  color: #fff; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2;
+  font-size: clamp(26px, 3vw, 34px);
+}
+.report-loading-social { color: var(--teal); font-size: 16px; font-weight: 600; }
+.report-loading-note { color: rgba(255,255,255,0.85); font-size: 16px; line-height: 1.6; max-width: 420px; }
+.report-loading-right .assess-break-trigger { font-size: 17px; padding: 15px 32px; }
 .loading-checklist li.done .loading-checklist-icon { background: #00C9A7; border-color: #00C9A7; color: #06263A; }
 
 /* Mobile-first: one centered column — generation status, then (if beta
@@ -691,10 +710,10 @@ html { scroll-behavior: smooth; }
 
 @media (min-width: 900px) {
   .report-loading-grid {
-    flex-direction: row; align-items: flex-start; justify-content: center;
-    max-width: 900px; gap: 60px;
+    flex-direction: row; align-items: center; justify-content: center;
+    max-width: 960px; gap: 72px;
   }
-  .report-loading-col { flex: 1 1 380px; max-width: 380px; }
+  .report-loading-col { flex: 1 1 420px; max-width: 420px; }
   /* the columns are already side by side, so the "scroll down" cue is
      mobile-only — nothing is below the fold to scroll to. */
   .report-loading-scroll-hint { display: none; }
@@ -911,3 +930,6 @@ html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) {
   .coach-widget, .coach-avatar-btn.is-nudging { animation: none; transition: none; }
 }
+
+.coach-panel-feedback { padding-top: 22px; }
+.coach-link { align-self: center; background: none; border: 0; color: var(--primary); font-size: 13.5px; cursor: pointer; text-decoration: underline; padding: 4px; }

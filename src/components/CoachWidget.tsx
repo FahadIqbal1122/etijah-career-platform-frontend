@@ -5,10 +5,11 @@
 // what the model may know: nothing during the assessment, only the profile summary on results.
 // The same panel also hosts the beta feedback questions (see CoachFeedback).
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { createPortal } from 'react-dom'
 import { apiAuthPost } from '@/lib/api'
 import type { Bi } from '@/data/coachMessages'
-import CoachFeedback, { type FeedbackKind } from '@/components/CoachFeedback'
+import CoachFeedback, { feedbackThanks, type FeedbackKind } from '@/components/CoachFeedback'
 
 type Role = 'user' | 'coach'
 interface Msg { role: Role; text: string }
@@ -55,6 +56,7 @@ const T = {
   thinking: { en: '…', ar: '…' },
   error: { en: 'I couldn’t answer that just now. Please try again in a moment.', ar: 'لم أستطع الإجابة الآن. حاول مرة أخرى بعد قليل.' },
   limited: { en: 'I’ll take a short rest from chatting now. Keep going, you’re doing great!', ar: 'سآخذ استراحة قصيرة من الدردشة الآن. واصل، أنت تبلي بلاءً حسناً!' },
+  askInstead: { en: 'Ask Sarah a question instead', ar: 'اسأل سارة سؤالاً بدلاً من ذلك' },
   tooMany: { en: 'You’ve asked a lot of questions. Please try again a bit later.', ar: 'لقد سألت الكثير من الأسئلة. حاول مرة أخرى لاحقاً.' },
 } satisfies Record<string, Bi>
 
@@ -73,6 +75,13 @@ export default function CoachWidget({
   const [fbDone, setFbDone] = useState(false)
   const [autoOpened, setAutoOpened] = useState(false)
   const [shownTip, setShownTip] = useState<Bi | null>(null)
+  // When the feedback questions are showing, the panel is feedback-only; this lets the reader switch to chat instead.
+  const [chatInstead, setChatInstead] = useState(false)
+  // After the last answer the thank-you stays up for a moment, then the panel closes.
+  const [thanksKind, setThanksKind] = useState<FeedbackKind | null>(null)
+  // Rendered through a portal into <body>: an ancestor with an animation/transform (the results page's fade-in)
+  // would otherwise become the containing block for position:fixed and make her scroll away with the page.
+  const inBrowser = useSyncExternalStore(() => () => {}, () => true, () => false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Derived-state updates during render (keeps these out of effects).
@@ -80,6 +89,9 @@ export default function CoachWidget({
   if (tip && tip !== shownTip) setShownTip(tip)
 
   const feedbackActive = !!feedback && !fbDone
+  // Feedback-only panel: shown once the feedback has been triggered (loading screen, or the reader reached the
+  // end of the report). Before that, and after it is answered, the panel is the normal chat.
+  const feedbackMode = feedbackActive && !!feedback?.autoOpen && !chatInstead
   const required = feedbackActive && !!feedback?.required
 
   // Tip auto-hide (only while the panel is closed).
@@ -88,6 +100,12 @@ export default function CoachWidget({
     const id = setTimeout(onTipDismiss, tipAutoHideMs)
     return () => clearTimeout(id)
   }, [tip, tipAutoHideMs, open, onTipDismiss])
+
+  useEffect(() => {
+    if (!thanksKind) return
+    const id = setTimeout(() => { setThanksKind(null); setOpen(false) }, 2600)
+    return () => clearTimeout(id)
+  }, [thanksKind])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
@@ -133,35 +151,45 @@ export default function CoachWidget({
     }
   }
 
-  return (
+  const widget = (
     <div className={`coach-widget ${open ? 'is-open' : ''}`} data-place={place} dir={isAr ? 'rtl' : 'ltr'}>
       {open && (
         <div className="coach-panel" role="dialog" aria-label="Sarah">
           {!required && (
             <button className="coach-close" onClick={() => setOpen(false)} aria-label={tr(T.close)}>✕</button>
           )}
-          <div className="coach-panel-scroll" ref={scrollRef}>
-            {feedbackActive && feedback && (
+          {thanksKind ? (
+            <div className="coach-panel-scroll coach-panel-feedback">
+              <div className="coach-msg coach-msg-coach coach-msg-card"><p className="coach-fb-thanks">{feedbackThanks(thanksKind, locale)}</p></div>
+            </div>
+          ) : feedbackMode && feedback ? (
+            <div className="coach-panel-scroll coach-panel-feedback">
               <div className="coach-msg coach-msg-coach coach-msg-card">
                 <CoachFeedback
                   kind={feedback.kind} responseId={feedback.responseId} locale={locale}
-                  onDone={() => { setFbDone(true); feedback.onDone() }}
+                  onDone={() => { setThanksKind(feedback.kind); setFbDone(true); feedback.onDone() }}
                 />
               </div>
-            )}
-            <div className="coach-msg coach-msg-coach">{greeting}</div>
-            {msgs.map((m, i) => (
-              <div key={i} className={`coach-msg ${m.role === 'user' ? 'coach-msg-user' : 'coach-msg-coach'}`}>{m.text}</div>
-            ))}
-            {sending && <div className="coach-msg coach-msg-coach coach-typing">{tr(T.thinking)}</div>}
-          </div>
-          <form className="coach-input" onSubmit={e => { e.preventDefault(); void send() }}>
-            <input
-              value={input} onChange={e => setInput(e.target.value)} maxLength={500}
-              placeholder={tr(T.placeholder)} disabled={rested} aria-label={tr(T.placeholder)}
-            />
-            <button type="submit" disabled={sending || rested || !input.trim()}>{tr(T.send)}</button>
-          </form>
+              <button type="button" className="coach-link" onClick={() => setChatInstead(true)}>{tr(T.askInstead)}</button>
+            </div>
+          ) : (
+            <>
+              <div className="coach-panel-scroll" ref={scrollRef}>
+                <div className="coach-msg coach-msg-coach">{greeting}</div>
+                {msgs.map((m, i) => (
+                  <div key={i} className={`coach-msg ${m.role === 'user' ? 'coach-msg-user' : 'coach-msg-coach'}`}>{m.text}</div>
+                ))}
+                {sending && <div className="coach-msg coach-msg-coach coach-typing">{tr(T.thinking)}</div>}
+              </div>
+              <form className="coach-input" onSubmit={e => { e.preventDefault(); void send() }}>
+                <input
+                  value={input} onChange={e => setInput(e.target.value)} maxLength={500}
+                  placeholder={tr(T.placeholder)} disabled={rested} aria-label={tr(T.placeholder)}
+                />
+                <button type="submit" disabled={sending || rested || !input.trim()}>{tr(T.send)}</button>
+              </form>
+            </>
+          )}
         </div>
       )}
 
@@ -184,4 +212,5 @@ export default function CoachWidget({
       </button>
     </div>
   )
+  return inBrowser ? createPortal(widget, document.body) : null
 }
