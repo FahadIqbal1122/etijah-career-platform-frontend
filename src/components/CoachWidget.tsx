@@ -32,6 +32,7 @@ interface Props {
   sessionId?: () => string               // assessment mode: stable per-browser id (rate limiting only)
   questionIndex?: number                 // assessment mode, 1-based
   questionTotal?: number
+  place?: 'end' | 'start' | 'center'      // which bottom spot she is at; changing it glides her across
   tip?: Bi | null
   onTipDismiss?: () => void
   tipAutoHideMs?: number
@@ -59,7 +60,7 @@ const T = {
 
 export default function CoachWidget({
   locale, mode, responseId, sessionId, questionIndex, questionTotal,
-  tip = null, onTipDismiss, tipAutoHideMs = 9000, feedback,
+  place = 'end', tip = null, onTipDismiss, tipAutoHideMs = 9000, feedback,
 }: Props) {
   const isAr = locale === 'ar'
   const tr = (b: Bi) => b[locale]
@@ -133,7 +134,7 @@ export default function CoachWidget({
   }
 
   return (
-    <div className={`coach-widget ${open ? 'is-open' : ''}`} dir={isAr ? 'rtl' : 'ltr'}>
+    <div className={`coach-widget ${open ? 'is-open' : ''}`} data-place={place} dir={isAr ? 'rtl' : 'ltr'}>
       {open && (
         <div className="coach-panel" role="dialog" aria-label="Sarah">
           {!required && (

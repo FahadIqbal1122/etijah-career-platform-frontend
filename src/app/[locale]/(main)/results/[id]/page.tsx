@@ -533,7 +533,9 @@ export default function ResultsPage() {
     // Mirrors AssessmentForm's litCount math (progress -> 8 constellation nodes),
     // so the results-page loader reads as a continuation of the same animation.
     const litCount = Math.max(1, Math.round((completedCount / stages.length) * 7) + 1)
-    const showFeedbackCol = betaMode && justCompleted
+    // Feedback shows for every fresh completion, not just in beta. Only the hold-back (awaitingStage1) stays beta-only.
+    // const showFeedbackCol = betaMode && justCompleted
+    const showFeedbackCol = justCompleted
     return (
       <div className="min-h-screen brand-hero flex items-center justify-center px-6 py-10">
         <div className="report-loading-grid">
@@ -577,13 +579,13 @@ export default function ResultsPage() {
             </div>
           )}
         </div>
-        {COACH_FEEDBACK && showFeedbackCol && !stage1Marker && (
+        {COACH_FEEDBACK && (
           <CoachWidget
             locale={locale as 'en' | 'ar'} mode="results" responseId={id}
-            feedback={{
+            feedback={showFeedbackCol && !stage1Marker ? {
               kind: 'stage1', responseId: id, autoOpen: true, required: reportReadyButAwaitingFeedback,
               nudge: COACH_NUDGE_STAGE1, onDone: () => setStage1Done(true),
-            }}
+            } : undefined}
           />
         )}
       </div>
@@ -1950,7 +1952,7 @@ export default function ResultsPage() {
         </div>
 
         {/* Result Stage feedback — non-blocking, at the end of the report (moved from the top 1 Oct 2026); shows on every visit until answered */}
-        {betaMode && !COACH_FEEDBACK && (
+        {!COACH_FEEDBACK && (
           <BetaFeedbackResultStage responseId={id} locale={locale} initiallyDone={resultStageDone} />
         )}
         <div ref={feedbackAnchorRef} aria-hidden="true" style={{ height: 1 }} />
@@ -1960,7 +1962,7 @@ export default function ResultsPage() {
       <CoachWidget
         locale={locale as 'en' | 'ar'} mode="results" responseId={id}
         tip={coachMsg} onTipDismiss={dismissCoach} tipAutoHideMs={14000}
-        feedback={COACH_FEEDBACK && betaMode && !resultStageDone && !resultMarker && !resultFeedbackDone ? {
+        feedback={COACH_FEEDBACK && !resultStageDone && !resultMarker && !resultFeedbackDone ? {
           kind: 'result', responseId: id, autoOpen: resultFeedbackReached,
           nudge: resultFeedbackReached ? COACH_NUDGE_RESULT : undefined,
           onDone: () => setResultFeedbackDone(true),

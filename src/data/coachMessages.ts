@@ -15,6 +15,14 @@ export const COACH_MOTIVATION: Bi[] = [
   { en: 'Taking time to know yourself is a real investment.', ar: 'أخذ الوقت لفهم نفسك استثمار حقيقي.' },
 ]
 
+// Shown when Sarah comes to the middle of the green reveal screen between question blocks.
+export const COACH_REVEAL: Bi[] = [
+  { en: 'You are doing great. Every answer is building your personal picture.', ar: 'أنت تبلي بلاءً حسناً. كل إجابة تبني صورتك الشخصية.' },
+  { en: 'Nice work! Take a breath, then keep going.', ar: 'عمل رائع! خذ نفساً عميقاً ثم واصل.' },
+  { en: 'Being honest with yourself is exactly what makes your results accurate.', ar: 'صدقك مع نفسك هو ما يجعل نتائجك دقيقة.' },
+  { en: 'A real pattern is starting to show. I can’t wait for you to see it.', ar: 'بدأ نمط حقيقي بالظهور. متحمسة لأن تراه.' },
+]
+
 // Results-page advice, built from the user's own results.
 export function resultsAdvice(p: {
   topType: string; topStrength: string; resilience?: number

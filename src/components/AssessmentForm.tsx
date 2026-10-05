@@ -19,9 +19,12 @@ import Constellation, { CONSTELLATION } from '@/components/brand/Constellation'
 import BreakPanel from '@/components/BreakPanel'
 // import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
 import CoachWidget from '@/components/CoachWidget'
-import { COACH_BREAK, COACH_MOTIVATION, type Bi } from '@/data/coachMessages'
+import { COACH_BREAK, COACH_MOTIVATION, COACH_REVEAL, type Bi } from '@/data/coachMessages'
 
 // module-level so the random call stays out of render (only used in an effect)
+function pickCoachReveal(): Bi {
+  return COACH_REVEAL[Math.floor(Math.random() * COACH_REVEAL.length)]
+}
 function pickCoachPool(): Bi[] {
   return Math.random() < 0.35 ? COACH_BREAK : COACH_MOTIVATION
 }
@@ -254,7 +257,11 @@ export default function AssessmentForm() {
   const [coachMsg, setCoachMsg] = useState<Bi | null>(null)
   const coachNextAt = useRef(3 + Math.floor(Math.random() * 3))
   const coachUsed = useRef<Set<string>>(new Set())
-  const dismissCoach = useCallback(() => setCoachMsg(null), [])
+  // Sarah moves around: she hops to the other bottom corner each time she has a tip, and comes to the middle
+  // of the screen on the green reveal screen with an encouraging line (revealTip).
+  const [coachSide, setCoachSide] = useState<'end' | 'start'>('end')
+  const [revealTip, setRevealTip] = useState<Bi | null>(null)
+  const dismissCoach = useCallback(() => { setCoachMsg(null); setRevealTip(null) }, [])
   useEffect(() => {
     if (phase !== 'question' || index < coachNextAt.current) return
     const pool = pickCoachPool().filter(m => !coachUsed.current.has(m.en))
@@ -262,6 +269,7 @@ export default function AssessmentForm() {
     if (!pool.length) return
     const pick = pool[Math.floor(Math.random() * pool.length)]
     coachUsed.current.add(pick.en)
+    setCoachSide(s => (s === 'end' ? 'start' : 'end'))
     setCoachMsg(pick)
   }, [index, phase])
 
@@ -461,6 +469,7 @@ export default function AssessmentForm() {
     if (shouldReveal && curFw) {
       revealedRef.current.add(curFw)
       setRevealMsg(buildReveal(answersRef.current, curFw, locale))
+      setRevealTip(pickCoachReveal())
       pendingRef.current = next
       setPhase('reveal')
     } else if (done) {
@@ -1063,7 +1072,9 @@ export default function AssessmentForm() {
       <CoachWidget
         locale={locale as 'en' | 'ar'} mode="assessment" sessionId={getTelemetrySessionId}
         questionIndex={index + 1} questionTotal={total}
-        tip={phase === 'question' ? coachMsg : null} onTipDismiss={dismissCoach}
+        place={phase === 'question' ? coachSide : 'center'}
+        tip={phase === 'question' ? coachMsg : phase === 'reveal' ? revealTip : null}
+        tipAutoHideMs={phase === 'reveal' ? 0 : 9000} onTipDismiss={dismissCoach}
       />
     </div>
   )

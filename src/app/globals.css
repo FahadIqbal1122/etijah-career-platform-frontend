@@ -833,19 +833,27 @@ html { scroll-behavior: smooth; }
 .coach-avatar { width: 88px; height: 88px; border-radius: 50%; background: var(--teal);
   border: 3px solid var(--teal); overflow: hidden; flex-shrink: 0;
   box-shadow: 0 10px 28px -10px rgba(0, 201, 167, 0.6); }
-.coach-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; display: block; }
+.coach-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; display: block; transform: scale(1.65); transform-origin: 51% 24%; }
 .coach-close { position: absolute; top: 8px; inset-inline-end: 10px; background: none; border: 0;
   color: #9ca3af; cursor: pointer; font-size: 13px; padding: 2px; }
 @media (prefers-reduced-motion: reduce) { .coach-bubble { transition: none; } }
 
 /* Coach widget: always-on avatar + tip bubble + chat panel (CoachWidget.tsx) */
 .coach-widget {
+  --coach-w: min(360px, calc(100vw - 32px));
   position: fixed; bottom: 20px; inset-inline-end: 20px; z-index: 60;
   display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
-  width: min(360px, calc(100vw - 32px)); pointer-events: none;
+  width: var(--coach-w); pointer-events: none;
   animation: coach-fly-in .6s cubic-bezier(.2, .8, .2, 1) both;
+  transition: inset-inline-end 1s cubic-bezier(.45, 0, .2, 1), bottom 1s cubic-bezier(.45, 0, .2, 1);
 }
-.coach-widget[dir="rtl"] { align-items: flex-start; }
+/* where she stands: the far side, the near side, or the middle (green reveal screen) */
+.coach-widget[data-place="start"]  { inset-inline-end: calc(100vw - var(--coach-w) - 20px); align-items: flex-start; }
+.coach-widget[data-place="center"] { inset-inline-end: calc((100vw - var(--coach-w)) / 2); bottom: 48px; align-items: center; }
+.coach-widget[data-place="center"] .coach-avatar { border-color: #fff; }
+.coach-widget[data-place="center"] .coach-speech::after { inset-inline-end: calc(50% - 8px); }
+.coach-widget[data-place="start"] .coach-speech::after { inset-inline-end: auto; inset-inline-start: 34px; }
+.coach-widget.is-open { align-items: stretch; }
 .coach-widget > * { pointer-events: auto; }
 @keyframes coach-fly-in { from { opacity: 0; transform: translateX(60px) translateY(20px) scale(.8); } to { opacity: 1; transform: none; } }
 .coach-widget[dir="rtl"] { animation-name: coach-fly-in-rtl; }
@@ -857,8 +865,7 @@ html { scroll-behavior: smooth; }
 .coach-avatar-btn.is-nudging { animation: coach-bob 2.4s ease-in-out infinite; }
 @keyframes coach-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 
-.coach-speech-tip { align-self: flex-end; max-width: 100%; transition: opacity .35s ease, transform .35s ease; }
-.coach-widget[dir="rtl"] .coach-speech-tip { align-self: flex-start; }
+.coach-speech-tip { max-width: 100%; transition: opacity .35s ease, transform .35s ease; }
 .coach-speech-tip.is-in  { opacity: 1; transform: none; }
 .coach-speech-tip.is-out { opacity: 0; transform: translateY(10px); pointer-events: none; height: 0; padding: 0; border: 0; margin: -6px 0; overflow: hidden; box-shadow: none; }
 
@@ -902,5 +909,5 @@ html { scroll-behavior: smooth; }
   .coach-panel { max-height: 62vh; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .coach-widget, .coach-avatar-btn.is-nudging { animation: none; }
+  .coach-widget, .coach-avatar-btn.is-nudging { animation: none; transition: none; }
 }
