@@ -943,7 +943,7 @@ export default function AssessmentForm() {
             <h1 className="reveal-head">{revealMsg.head}</h1>
             <p className="reveal-body">{revealMsg.body}</p>
           </div>
-          <button className="cta" onClick={continueFromReveal}>
+          <button className="cta" data-track="assessment_continue" onClick={continueFromReveal}>
             <span>{chrome.revealCta}</span>
             <span className="cta-arrow">{arrow}</span>
           </button>
@@ -959,7 +959,7 @@ export default function AssessmentForm() {
             <p className="reveal-body">{chrome.finishBody}</p>
             {error && <p style={{ color: '#e11d48', fontSize: 14, marginTop: 12 }}>{error}</p>}
           </div>
-          <button className="cta" onClick={handleSubmit} disabled={submitting}>
+          <button className="cta" data-track="assessment_submit" onClick={handleSubmit} disabled={submitting}>
             {submitting && <span className="cta-spinner" aria-hidden="true" />}
             <span>{submitting ? tForm('submitting') : chrome.finishCta}</span>
             {!submitting && <span className="cta-arrow">{arrow}</span>}
@@ -974,7 +974,7 @@ export default function AssessmentForm() {
             <h3 className="text-lg font-extrabold text-charcoal">{chrome.welcomeTitle}</h3>
             <p className="text-sm text-charcoal/60">{chrome.welcomeBody}</p>
             <div className="flex flex-col gap-3 pt-2">
-              <button className="cta" style={{ width: '100%' }} onClick={() => router.push(`/results/${existingResultId}`)}>
+              <button className="cta" data-track="assessment_view_previous_result" style={{ width: '100%' }} onClick={() => router.push(`/results/${existingResultId}`)}>
                 {chrome.viewPrevious}
               </button>
               <button
@@ -998,7 +998,7 @@ export default function AssessmentForm() {
             <h3 className="text-lg font-extrabold text-charcoal">This email already has an account</h3>
             <p className="text-sm text-charcoal/60">Log in to view your previous results.</p>
             <div className="flex flex-col gap-3 pt-2">
-              <button className="cta" style={{ width: '100%' }} onClick={() => router.push('/login')}>
+              <button className="cta" data-track="assessment_login" style={{ width: '100%' }} onClick={() => router.push('/login')}>
                 Log in
               </button>
               <button

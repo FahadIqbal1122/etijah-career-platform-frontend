@@ -172,7 +172,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             >
               {locale === 'en' ? 'العربية' : 'English'}
             </button>
-            <Link href="/assessment" className="cta cta-teal" style={{ padding: '9px 16px', fontSize: 14, borderRadius: 999 }}>
+            <Link href="/assessment" data-track="landing_header_start" className="cta cta-teal" style={{ padding: '9px 16px', fontSize: 14, borderRadius: 999 }}>
               {c.nav.cta}
             </Link>
           </div>
@@ -193,7 +193,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               <span className="text-teal">✦</span>{c.hero.trust}
             </h2>
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link href="/assessment" className="cta">
+              <Link href="/assessment" data-track="landing_hero_start" className="cta">
                 <span>{c.hero.cta}</span>
                 <span className="cta-arrow">{arrow}</span>
               </Link>
@@ -298,7 +298,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           })}
         </div>
         <Reveal className="mt-9 flex justify-center">
-          <Link href="/assessment" className="cta cta-outline">{c.how.cta}</Link>
+          <Link href="/assessment" data-track="landing_how_start" className="cta cta-outline">{c.how.cta}</Link>
         </Reveal>
       </Section>
 
@@ -432,7 +432,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
                 </li>
               ))}
             </ul>
-            <Link href="/assessment" className="cta cta-outline mt-7 w-full">{c.pricing.free.cta}</Link>
+            <Link href="/assessment" data-track="landing_pricing_free" className="cta cta-outline mt-7 w-full">{c.pricing.free.cta}</Link>
           </Reveal>
           <Reveal className="pcard-paid rounded-[26px] p-7 relative" style={{ transitionDelay: '90ms' }}>
             <span className="pcard-badge absolute -top-3.5 start-1/2 -translate-x-1/2 rtl:translate-x-1/2">{c.pricing.paid.badge}</span>
@@ -459,6 +459,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               ))}
             </ul>
             <button
+              data-track="landing_pricing_pathfinder"
               onClick={() => handlePlanCta(c.pricing.paid.code)}
               disabled={checkingOut === c.pricing.paid.code}
               className="cta mt-7 w-full !bg-white !text-primary !shadow-[0_16px_40px_-14px_rgba(0,0,0,0.4)]"
@@ -484,6 +485,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               ))}
             </ul>
             <button
+              data-track="landing_pricing_launchpad"
               onClick={() => handlePlanCta(c.pricing.subscription.code)}
               disabled={checkingOut === c.pricing.subscription.code}
               className="cta cta-outline mt-7 w-full"
@@ -506,7 +508,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             <p className="eyebrow mb-3">{c.institutions.label}</p>
             <h2 className="section-h max-w-2xl mx-auto">{c.institutions.headline}</h2>
             <p className="mt-4 text-charcoal/70 leading-relaxed max-w-2xl mx-auto">{c.institutions.body}</p>
-            <button onClick={() => setShowPartnerModal(true)} className="cta cta-outline mt-7 inline-flex">{c.institutions.cta}</button>
+            <button data-track="landing_institutions_partner" onClick={() => setShowPartnerModal(true)} className="cta cta-outline mt-7 inline-flex">{c.institutions.cta}</button>
           </Reveal>
         </div>
       </section>
@@ -533,7 +535,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           <Reveal><h2 className="text-3xl sm:text-4xl font-extrabold leading-tight">{c.finalCta.headline}</h2></Reveal>
           <Reveal><p className="mt-4 text-white/85 text-lg max-w-[30ch] mx-auto">{c.finalCta.sub}</p></Reveal>
           <Reveal className="mt-8 flex justify-center">
-            <Link href="/assessment" className="cta cta-onteal">
+            <Link href="/assessment" data-track="landing_bottom_start" className="cta cta-onteal">
               <span>{c.finalCta.cta}</span>
               <span className="cta-arrow">{arrow}</span>
             </Link>

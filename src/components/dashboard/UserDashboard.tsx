@@ -485,11 +485,12 @@ export default function UserDashboard() {
                   <Link href={`/results/${latest.id}`} className="cta" style={{ padding: '11px 18px', fontSize: 14, borderRadius: 12 }}>
                     <span>{t.viewReport}</span><span className="cta-arrow">{dir === 'rtl' ? '←' : '→'}</span>
                   </Link>
-                  <button onClick={() => downloadReport(latest.id)} disabled={downloadingReport}
+                  <button data-track="dashboard_download_report" onClick={() => downloadReport(latest.id)} disabled={downloadingReport}
                     className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--line-strong)] text-charcoal/70 text-sm font-medium hover:bg-lightblue transition-colors disabled:opacity-50">
                     <Icon name="report" size={16} />{downloadingReport ? t.downloading : t.download}
                   </button>
                   <button
+                    data-track="dashboard_download_report_alt_lang"
                     onClick={() => downloadReport(latest.id, latest.locale === 'ar' ? 'en' : 'ar')}
                     disabled={downloadingReport}
                     className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--line-strong)] text-charcoal/70 text-sm font-medium hover:bg-lightblue transition-colors disabled:opacity-50"
@@ -668,19 +669,19 @@ export default function UserDashboard() {
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {plan?.tier === 'free' && !assessmentsLoading && !assessments.length && (
-                    <Link href="/assessment"
+                    <Link href="/assessment" data-track="dashboard_take_assessment"
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary text-primary text-sm font-medium">
                       Take the assessment to unlock your full report
                     </Link>
                   )}
                   {plan?.tier === 'free' && assessments.length > 0 && (
-                    <button onClick={() => handleBuyPlan('pathfinder')} disabled={buying}
+                    <button data-track="dashboard_unlock_pathfinder" onClick={() => handleBuyPlan('pathfinder')} disabled={buying}
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary text-primary text-sm font-medium disabled:opacity-50">
                       {buying ? '…' : `Unlock Full Report — ${formatPrice('pathfinder', displayCurrency, 'en')}`}
                     </button>
                   )}
                   {plan?.tier !== 'launchpad' && assessments.length > 0 && (
-                    <button onClick={() => handleBuyPlan('launchpad_monthly')} disabled={buying}
+                    <button data-track="dashboard_unlock_launchpad" onClick={() => handleBuyPlan('launchpad_monthly')} disabled={buying}
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-50">
                       {buying ? '…' : `Get Launchpad (adds a 1:1 coaching session) — ${formatPrice('launchpad', displayCurrency, 'en')}`}
                     </button>

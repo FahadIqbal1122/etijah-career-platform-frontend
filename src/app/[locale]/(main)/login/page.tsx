@@ -110,6 +110,7 @@ function LoginForm() {
           {error && <p className="text-rose-500 text-sm">{error}</p>}
           <button
             type="submit"
+            data-track="login_submit"
             disabled={loading}
             className="cta w-full"
             style={{ width: '100%', padding: '12px', fontSize: 14, borderRadius: 12 }}
