@@ -136,6 +136,9 @@ export default function CoachWidget({
     }
     const ro = new ResizeObserver(measure)
     ro.observe(target); ro.observe(document.body)
+    // Her spot can move without resizing (a longer fun fact below it re-centres the column), so watch the
+    // spot's neighbours too.
+    target.parentElement?.childNodes.forEach(n => { if (n instanceof HTMLElement && n !== target) ro.observe(n) })
     window.addEventListener('resize', measure)
     window.addEventListener('scroll', measure, true)
     return () => { ro.disconnect(); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true) }
