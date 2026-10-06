@@ -841,20 +841,20 @@ export default function ResultsPage() {
   )
 
   // One profile line: name, percentage, bar. Every type looks the same; only the order shows which is highest.
-  // Paid plans: the written explanation of each result sits under its own bar (the backend sends none for free)
+  // Paid plans: a short takeaway under each bar and a one-line summary on each card. The backend builds these (and the
+  // PDF uses the same ones), already matched to the right item and shortened; free plans receive nothing.
   const pd: any = tier !== 'free' ? profileDetails : null
-  const riasecNarr: Record<string, string> = {}
-  ;(summary?.riasec?.top_types || []).slice(0, 3).forEach((rt: string, i: number) => {
-    const txt = pd?.[['riasec_primary_narrative', 'riasec_secondary_narrative', 'riasec_tertiary_narrative'][i]]
-    if (txt) riasecNarr[rt] = txt
-  })
-  const detailText = (text?: string, tip?: string) => text ? (
-    <div className="mt-2">
-      <p className="rp-sub text-charcoal/85 leading-relaxed">{text}</p>
-      {tip && <p className="rp-sub mt-1.5"><span className="font-bold text-charcoal">{t('profileDetails.tip')}:</span> {tip}</p>}
+  const detailText = (text?: string, tip?: string) => text || tip ? (
+    <div className="mt-2 space-y-1.5">
+      {text && <p className="rp-sub text-charcoal/80 leading-snug ps-3 border-s-2 border-teal/70">{text}</p>}
+      {tip && <p className="text-xs leading-snug rounded-lg bg-teal/10 text-[#0a705a] px-2.5 py-1.5"><span className="font-bold">{t('profileDetails.tip')}:</span> {tip}</p>}
     </div>
   ) : null
-  const introText = (text?: string) => text ? <p className="rp-sub text-charcoal/85 leading-relaxed mb-4">{text}</p> : null
+  const introText = (text?: string) => text ? (
+    <div className="mb-4 rounded-xl bg-primary/5 border border-primary/15 px-3.5 py-2.5">
+      <p className="rp-sub text-charcoal/90 leading-snug"><span className="font-bold text-primary me-1.5">{t('profileDetails.inShort')}</span>{text}</p>
+    </div>
+  ) : null
   // const scoreRow = (label: string, pct: number) => (  // previous: bar only
   const scoreRow = (label: string, pct: number, detail?: string, tip?: string) => (
     <div key={label}>
@@ -2069,13 +2069,13 @@ export default function ResultsPage() {
               subtitle={t('careerTypes.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.07A2.25 2.25 0 0118 20.47H6a2.25 2.25 0 01-2.25-2.25v-4.07M15.75 9.75V6a3.75 3.75 0 00-7.5 0v3.75M3.75 9.75h16.5" /></svg>}
             />
-            {introText(pd?.riasec_overview)}
+            {introText(pd?.overview?.riasec)}
             {/* All six types, same look, highest first, each with its percentage (no single "main" type) */}
             <div className="space-y-2.5">
               {['realistic', 'investigative', 'artistic', 'social', 'enterprising', 'conventional']
                 .filter(rt => scoreMap[rt] !== undefined)
                 .sort((a, b) => scoreMap[b] - scoreMap[a])
-                .map(rt => scoreRow(riasecLabel(rt), scoreMap[rt], riasecNarr[rt]))}
+                .map(rt => scoreRow(riasecLabel(rt), scoreMap[rt], pd?.riasec?.[rt]))}
               {Object.keys(scoreMap).length === 0 && (
                 <div className="flex gap-2 flex-wrap">
                   {summary.riasec.top_types.map((rt: string) => <span key={rt} className="chip">{riasecLabel(rt)}</span>)}
@@ -2091,10 +2091,10 @@ export default function ResultsPage() {
               subtitle={t('coreValues.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>}
             />
-            {introText(pd?.values_overview)}
+            {introText(pd?.overview?.values)}
             <div className="space-y-2.5">
-              {summary.values.top_values.map((v: string, vi: number) => scoreMap[v] !== undefined
-                ? scoreRow(valueLabel(v), scoreMap[v], pd?.values_narratives?.[`value_${vi + 1}`])
+              {summary.values.top_values.map((v: string) => scoreMap[v] !== undefined
+                ? scoreRow(valueLabel(v), scoreMap[v], pd?.values?.[v])
                 : <span key={v} className="chip">{valueLabel(v)}</span>)}
             </div>
           </div>
@@ -2106,10 +2106,10 @@ export default function ResultsPage() {
               subtitle={t('topStrengths.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>}
             />
-            {introText(pd?.strengths_overview)}
+            {introText(pd?.overview?.strengths)}
             <div className="space-y-2.5">
-              {summary.strengths.top_strengths.map((st: string, si: number) => scoreMap[st] !== undefined
-                ? scoreRow(strengthLabel(st), scoreMap[st], pd?.strengths_narratives?.[`strength_${si + 1}`]?.narrative, pd?.strengths_narratives?.[`strength_${si + 1}`]?.development_tip)
+              {summary.strengths.top_strengths.map((st: string) => scoreMap[st] !== undefined
+                ? scoreRow(strengthLabel(st), scoreMap[st], pd?.strengths?.[st]?.note, pd?.strengths?.[st]?.tip)
                 : <span key={st} className="chip">{strengthLabel(st)}</span>)}
             </div>
           </div>
@@ -2121,7 +2121,7 @@ export default function ResultsPage() {
               subtitle={t('personality.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>}
             />
-            {introText(pd?.big_five_overview)}
+            {introText(pd?.overview?.big_five)}
             <div className="space-y-2.5">
               {Object.entries(summary.big_five).map(([trait, level]: any) => (
                 <div key={trait}>
@@ -2132,7 +2132,7 @@ export default function ResultsPage() {
                   <div className="w-full bg-lightblue rounded-full h-1.5">
                     <div className="bg-primary h-1.5 rounded-full transition-all duration-700" style={{ width: levelToWidth[level] ?? '50%' }} />
                   </div>
-                  {detailText(pd?.big_five_narratives?.[trait])}
+                  {detailText(pd?.big_five?.[trait])}
                 </div>
               ))}
             </div>
@@ -2169,8 +2169,10 @@ export default function ResultsPage() {
                 </div>
               ))}
             </div>
-            {(pd?.resilience_narrative || pd?.work_style_narrative) && (
-              <p className="rp-sub text-charcoal/85 leading-relaxed mt-4">{[pd.resilience_narrative, pd.work_style_narrative].filter(Boolean).join(' ')}</p>
+            {pd?.overview?.work_style && (
+              <div className="mt-4 rounded-xl bg-primary/5 border border-primary/15 px-3.5 py-2.5">
+                <p className="rp-sub text-charcoal/90 leading-snug">{pd.overview.work_style}</p>
+              </div>
             )}
           </div>
         )}

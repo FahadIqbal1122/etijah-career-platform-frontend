@@ -686,7 +686,8 @@
     "profileDetails": {
       "title": "More about your profile",
       "subtitle": "What each result means for you",
-      "tip": "To develop it"
+      "tip": "To develop it",
+      "inShort": "In short"
     },
     "careerTypes": {
       "title": "Your interests",
