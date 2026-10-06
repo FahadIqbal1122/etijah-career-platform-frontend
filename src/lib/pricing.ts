@@ -3,7 +3,7 @@
 // when prices change. SAR is the base price (PLAN_CATALOG).
 
 export type Currency = 'SAR' | 'BHD' | 'QAR' | 'KWD' | 'OMR' | 'AED' | 'USD'
-export type PriceKey = 'pathfinder' | 'pathfinder_standard' | 'launchpad'
+export type PriceKey = 'pathfinder' | 'pathfinder_standard' | 'launchpad' | 'launchpad_standard'
 
 export const CURRENCY_COOKIE = 'etj_cur'
 
@@ -16,7 +16,10 @@ export const COUNTRY_CURRENCY: Record<string, Currency> = {
 export const PRICES: Record<PriceKey, Record<Currency, number>> = {
   pathfinder:          { SAR: 59,  BHD: 6,  QAR: 58,  KWD: 5,   OMR: 6,  AED: 58,  USD: 16 },
   pathfinder_standard: { SAR: 99,  BHD: 10, QAR: 96,  KWD: 8,   OMR: 10, AED: 97,  USD: 26 },
-  launchpad:           { SAR: 440, BHD: 44, QAR: 428, KWD: 36,  OMR: 45, AED: 431, USD: 117 },
+  // launchpad:           { SAR: 440, BHD: 44, QAR: 428, KWD: 36,  OMR: 45, AED: 431, USD: 117 },
+  // Launchpad launch offer: 330 SAR (standard 440 SAR, kept as launchpad_standard for the crossed-out price)
+  launchpad:           { SAR: 330, BHD: 33, QAR: 321, KWD: 27,  OMR: 34, AED: 323, USD: 88 },
+  launchpad_standard:  { SAR: 440, BHD: 44, QAR: 428, KWD: 36,  OMR: 45, AED: 431, USD: 117 },
 }
 
 const AR_NAMES: Record<Currency, string> = {

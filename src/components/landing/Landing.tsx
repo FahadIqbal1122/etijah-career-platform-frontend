@@ -523,10 +523,19 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           {/* Launchpad (enabled 4 Oct 2026): Pathfinder plus a 1:1 coaching session */}
           <Reveal className="card p-7 relative" style={{ transitionDelay: '180ms' }}>
             <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.subscription.label}</p>
-            <div className="mt-3 flex items-baseline gap-2 flex-wrap">
+            {/* <div className="mt-3 flex items-baseline gap-2 flex-wrap">
               <span className="text-3xl font-extrabold text-charcoal">{formatPrice('launchpad', currency, locale)}</span>
               <span className="text-xs text-charcoal/45">{c.pricing.subscription.priceSub}</span>
+            </div> */}
+            {/* offer price: crossed-out standard price + launch price */}
+            <div className="mt-3 flex items-center gap-3 flex-wrap">
+              <span className="text-xl font-semibold text-charcoal/45 line-through decoration-2 decoration-charcoal/50">{formatPrice('launchpad_standard', currency, locale)}</span>
+              <span className="text-4xl font-extrabold text-charcoal leading-none">{formatPrice('launchpad', currency, locale)}</span>
             </div>
+            <span className="mt-3 inline-block rounded-full bg-teal/10 border border-teal/40 px-3 py-1 text-xs font-bold text-teal">
+              {locale === 'ar' ? 'سعر الإطلاق' : 'Launch price'}
+            </span>
+            <p className="mt-3 text-xs text-charcoal/45">{c.pricing.subscription.priceSub}</p>
             <p className="mt-3 text-sm text-charcoal/65 leading-relaxed">{c.pricing.subscription.for}</p>
             <div className="h-px bg-[var(--line)] my-6" />
             <ul className="space-y-3.5 flex-1">
