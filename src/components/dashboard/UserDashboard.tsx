@@ -139,7 +139,8 @@ const B = {
     unlockFull: 'Unlock Full Report', downloadLocked: 'Download PDF (Pathfinder)', getLaunchpad: 'Get Launchpad (adds a 1:1 coaching session)',
     coachHead: 'Your 1:1 coaching session', coachPick: 'Pick a time that suits you. We have also been notified of your purchase.',
     coachBook: 'Book your session', coachHelp: 'Need help? Contact us:',
-    coachContact: 'To book your session, contact us and we will find a time that suits you. We have also been notified of your purchase.',
+    // coachContact: 'To book your session, contact us and we will find a time that suits you. We have also been notified of your purchase.',
+    coachContact: 'To book your session, message us on WhatsApp or email and we will find a time that suits you. We have also been notified of your purchase.',
     history: 'Payment history', typeWord: 'type',
     agreeHead: 'Before you pay', agreeText: 'I have read and agree to the', agreeTerms: 'Terms and Conditions', agreeAnd: 'and the', agreePrivacy: 'Privacy Policy', agreeContinue: 'Continue to payment', agreeCancel: 'Cancel',
   },
@@ -150,7 +151,8 @@ const B = {
     unlockFull: 'افتح التقرير الكامل', downloadLocked: 'تحميل PDF (مرشد المسار)', getLaunchpad: 'احصل على منصة الانطلاق (تضيف جلسة تدريب فردية)',
     coachHead: 'جلستك التدريبية الفردية', coachPick: 'اختر الوقت الذي يناسبك. وقد وصلنا إشعار بعملية الشراء.',
     coachBook: 'احجز جلستك', coachHelp: 'تحتاج مساعدة؟ تواصل معنا:',
-    coachContact: 'لحجز جلستك، تواصل معنا وسنحدد وقتاً يناسبك. وقد وصلنا إشعار بعملية الشراء.',
+    // coachContact: 'لحجز جلستك، تواصل معنا وسنحدد وقتاً يناسبك. وقد وصلنا إشعار بعملية الشراء.',
+    coachContact: 'لحجز جلستك، راسلنا عبر واتساب أو البريد الإلكتروني وسنحدد وقتاً يناسبك. وقد وصلنا إشعار بعملية الشراء.',
     history: 'سجل المدفوعات', typeWord: '',
     agreeHead: 'قبل الدفع', agreeText: 'لقد قرأت وأوافق على', agreeTerms: 'الشروط والأحكام', agreeAnd: 'و', agreePrivacy: 'سياسة الخصوصية', agreeContinue: 'المتابعة إلى الدفع', agreeCancel: 'إلغاء',
   },
@@ -749,7 +751,8 @@ export default function UserDashboard() {
                   <p className="text-xs text-charcoal/55 mt-1">{b.coachContact}</p>
                 )}
                 <div className="flex flex-wrap gap-3 mt-3">
-                  <a href="tel:+966550770711" dir="ltr" className="chip">+966 55 077 0711</a>
+                  {/* <a href="tel:+966550770711" dir="ltr" className="chip">+966 55 077 0711</a> */}
+                  <a href="https://wa.me/966550770711" target="_blank" rel="noopener noreferrer" dir="ltr" className="chip">WhatsApp +966 55 077 0711</a>
                   <a href={`mailto:${CONTACT_EMAIL}`} dir="ltr" className="chip">{CONTACT_EMAIL}</a>
                 </div>
               </div>
