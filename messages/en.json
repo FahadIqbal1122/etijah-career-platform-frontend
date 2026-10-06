@@ -1033,6 +1033,21 @@
       "sampleTitle": "See what a complete report looks like",
       "sampleBody": "Open a sample report to see every section before you decide.",
       "sampleCta": "View a sample report"
+    },
+    "featuredCourse": {
+      "title": "Start here: learn the basics of AI",
+      "subtitle": "A free beginner course, recommended to everyone.",
+      "badge": "Free",
+      "name": "Introduction to Generative AI",
+      "provider": "Google Cloud · Coursera",
+      "facts": [
+        "Beginner",
+        "About 1 hour",
+        "No prior experience needed"
+      ],
+      "about": "Covers what generative AI is, how it works, the different types of AI models and real-world applications.",
+      "rating": "4.7/5 from 12,500+ reviews · 1.6 million+ learners",
+      "cta": "Start the free course"
     }
   }
 }

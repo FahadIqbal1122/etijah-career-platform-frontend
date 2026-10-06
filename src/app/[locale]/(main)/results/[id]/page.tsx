@@ -84,6 +84,61 @@ function FreeUnlockBtn({ label, track, tone = 'primary' }: { label: string; trac
   )
 }
 
+// Free beginner course recommended to everyone (all plans) in the courses section. Views and clicks are logged for the admin tab.
+const FEATURED_COURSE_KEY = 'intro-genai-google'
+const FEATURED_COURSE_URL = 'https://www.coursera.org/learn/introduction-to-generative-ai'
+function logFeaturedCourse(event_type: 'view' | 'click', responseId: string, tier: string, locale: string) {
+  try {
+    fetch('/api/featured-course-events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_type, course_key: FEATURED_COURSE_KEY, response_id: responseId, tier, locale }),
+      keepalive: true,
+    }).catch(() => {})
+  } catch {}
+}
+function FeaturedCourseCard({ t, responseId, tier, locale }: { t: any; responseId: string; tier: string; locale: string }) {
+  useEffect(() => {
+    // one view per browser tab session per report
+    try {
+      const k = `featured-course-view:${responseId}`
+      if (window.sessionStorage.getItem(k)) return
+      window.sessionStorage.setItem(k, '1')
+    } catch {}
+    logFeaturedCourse('view', responseId, tier, locale)
+  }, [responseId, tier, locale])
+  return (
+    <div className="card p-5" style={{ boxShadow: '0 0 0 1px rgba(0,201,167,.35), 0 14px 36px -18px rgba(0,201,167,.55)' }}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-extrabold text-charcoal">{t('featuredCourse.title')}</h3>
+          <p className="rp-sub mt-0.5">{t('featuredCourse.subtitle')}</p>
+        </div>
+        <span className="rp-pill rp-green shrink-0">{t('featuredCourse.badge')}</span>
+      </div>
+      <a
+        href={FEATURED_COURSE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        data-track="results_featured_course"
+        onClick={() => { logFeaturedCourse('click', responseId, tier, locale) }}
+        className="mt-4 block rounded-xl border border-[var(--line)] bg-white p-4 hover:border-primary transition-colors group"
+      >
+        <p className="rp-h text-charcoal group-hover:text-primary">{t('featuredCourse.name')}</p>
+        <p className="rp-sub">{t('featuredCourse.provider')}</p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {(t.raw('featuredCourse.facts') as string[]).map(f => <span key={f} className="rp-pill rp-blue">{f}</span>)}
+        </div>
+        <p className="rp-sub mt-2">{t('featuredCourse.about')}</p>
+        <p className="rp-sub mt-1 text-charcoal/70">{t('featuredCourse.rating')}</p>
+        <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-teal px-5 py-2.5 text-sm font-bold text-[#05221c]" style={{ boxShadow: '0 10px 26px -10px rgba(0,201,167,.7)' }}>
+          {t('featuredCourse.cta')} <span aria-hidden="true">↗</span>
+        </span>
+      </a>
+    </div>
+  )
+}
+
 function PillIcon({ name, size }: { name: keyof typeof PILL_ICONS; size?: number }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden="true" width={size} height={size}>
@@ -1747,6 +1802,7 @@ export default function ResultsPage() {
       </>),
     courses: (<>
         {/* Course Recommendations */}
+        <FeaturedCourseCard t={t} responseId={id} tier={tier} locale={locale} />
         {coursesMerged ? null : courses.length > 0 ? (
           <div className="card p-5">
             <SectionHead
@@ -1787,7 +1843,7 @@ export default function ResultsPage() {
               ))}
             </div>
           </div>
-        ) : tier === 'free' && !loggedIn ? (
+        ) : false /* free: the locked courses card is now one line of the combined unlock card */ && tier === 'free' && !loggedIn ? (
           <BlurGate
             title={t('courses.signupTitle')}
             body={t('courses.signupBody')}
@@ -1801,7 +1857,7 @@ export default function ResultsPage() {
               <CoursesPlaceholder />
             </div>
           </BlurGate>
-        ) : tier === 'free' ? (
+        ) : false && tier === 'free' ? (
           <LockedSection
             tag={t('courses.lockedTag')}
             title={t('courses.lockedTitle')}
@@ -2182,7 +2238,8 @@ export default function ResultsPage() {
   // const MERGED_SECTIONS = ['ai']
   const MERGED_SECTIONS = ['ai', 'companies', 'unlock']
   // Free plan: the locked Plan / Jobs / Courses / Certifications sections collapse into one 'unlock' card, placed where the first of them was.
-  const FREE_FOLDED = ['plan', 'jobs', 'certs', 'courses']
+  // const FREE_FOLDED = ['plan', 'jobs', 'certs', 'courses']
+  const FREE_FOLDED = ['plan', 'jobs', 'certs'] // 'courses' stays: it always shows the free featured course
   const baseKeys = [...baseOrder, ...knownKeys.filter(k => !baseOrder.includes(k))].filter(k => !MERGED_SECTIONS.includes(k))
   const orderedKeys = tier !== 'free' ? baseKeys : (() => {
     const first = baseKeys.findIndex(k => FREE_FOLDED.includes(k))

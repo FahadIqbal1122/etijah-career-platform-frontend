@@ -1134,7 +1134,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('dashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -1218,6 +1218,9 @@ export default function AdminPage() {
   const [telemetryDrilldown, setTelemetryDrilldown] = useState<{ title: string; rows: { session: TelemetrySession; note: string }[] } | null>(null)
 
   const [waitlistList, setWaitlistList] = useState<WaitlistEntry[]>([])
+  const [featuredEvents, setFeaturedEvents] = useState<{ id: string; created_at: string; event_type: 'view' | 'click'; course_key: string; response_id: string | null; tier: string | null; locale: string | null }[]>([])
+  const [featuredLoading, setFeaturedLoading] = useState(false)
+  const [featuredError, setFeaturedError] = useState('')
   const [waitlistLoading, setWaitlistLoading] = useState(false)
   const [waitlistError, setWaitlistError] = useState('')
 
@@ -1466,6 +1469,20 @@ export default function AdminPage() {
       fetchBugReports() // best-effort optimistic update — resync on failure
     }
   }
+
+  const fetchFeaturedCourse = useCallback(async () => {
+    setFeaturedLoading(true)
+    setFeaturedError('')
+    try {
+      const res = await fetch('/api/admin/featured-course-events')
+      if (!res.ok) throw new Error('Failed to load featured course events')
+      setFeaturedEvents(await res.json())
+    } catch (err: any) {
+      setFeaturedError(err.message)
+    } finally {
+      setFeaturedLoading(false)
+    }
+  }, [])
 
   const fetchWaitlist = useCallback(async () => {
     setWaitlistLoading(true)
@@ -3620,6 +3637,7 @@ export default function AdminPage() {
               tabs: [
                 { key: 'coaching', label: 'Coaching Sessions', color: 'bg-rose-600', badge: coachingSessions.length > 0 ? coachingSessions.length : undefined },
                 { key: 'courses', label: 'Courses', color: 'bg-violet-600', badge: courses.length > 0 ? courses.length : undefined },
+                { key: 'featuredCourse', label: 'Featured Course', color: 'bg-teal-600', badge: featuredEvents.filter(e => e.event_type === 'click').length || undefined, onSelect: fetchFeaturedCourse },
                 { key: 'country', label: 'Country Profiles', color: 'bg-emerald-600', badge: countryProfiles.length > 0 ? countryProfiles.length : undefined },
                 { key: 'market', label: 'Market Analysis', color: 'bg-amber-600', onSelect: fetchMarketTrends },
                 { key: 'onet', label: 'O*NET Links', color: 'bg-orange-500', badge: onetLinks.length > 0 ? onetLinks.length : undefined },
@@ -4972,6 +4990,78 @@ export default function AdminPage() {
         )}
 
         {/* ── O*NET Tab ── */}
+        {activeTab === 'featuredCourse' && (() => {
+          const views = featuredEvents.filter(e => e.event_type === 'view')
+          const clicks = featuredEvents.filter(e => e.event_type === 'click')
+          const uniq = (arr: typeof featuredEvents) => new Set(arr.map(e => e.response_id).filter(Boolean)).size
+          const uniqViews = uniq(views), uniqClicks = uniq(clicks)
+          const pct = (a: number, b: number) => b > 0 ? `${((a / b) * 100).toFixed(1)}%` : '—'
+          const group = (key: 'tier' | 'locale') => {
+            const keys = Array.from(new Set(featuredEvents.map(e => e[key] || 'unknown')))
+            return keys.map(k => ({ k, v: views.filter(e => (e[key] || 'unknown') === k).length, c: clicks.filter(e => (e[key] || 'unknown') === k).length }))
+          }
+          const days: Record<string, { v: number; c: number }> = {}
+          featuredEvents.forEach(e => { const d = e.created_at.slice(0, 10); days[d] = days[d] || { v: 0, c: 0 }; days[d][e.event_type === 'click' ? 'c' : 'v']++ })
+          const dayRows = Object.entries(days).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 30)
+          const Stat = ({ label, value, sub }: { label: string; value: string | number; sub?: string }) => (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{label}</p>
+              <p className="text-2xl font-extrabold text-slate-800 mt-1">{value}</p>
+              {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+            </div>
+          )
+          const GroupTable = ({ title, rows }: { title: string; rows: { k: string; v: number; c: number }[] }) => (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+              <p className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide border-b border-slate-100 bg-slate-50">{title}</p>
+              <table className="w-full text-sm"><tbody>
+                {rows.length === 0 && <tr><td className="px-4 py-3 text-slate-400">No data yet</td></tr>}
+                {rows.map(r => (
+                  <tr key={r.k} className="border-b border-slate-50"><td className="px-4 py-2 capitalize">{r.k}</td><td className="px-4 py-2 text-right text-slate-500">{r.v} views</td><td className="px-4 py-2 text-right font-semibold">{r.c} clicks</td><td className="px-4 py-2 text-right text-slate-400">{pct(r.c, r.v)}</td></tr>
+                ))}
+              </tbody></table>
+            </div>
+          )
+          return (
+            <>
+              <p className="text-sm text-slate-500 mb-4">Introduction to Generative AI (Google Cloud on Coursera), shown to everyone in the Courses section of the results page. A view is counted once per report per browser session.</p>
+              {featuredLoading && <div className="flex justify-center py-10"><div className="w-7 h-7 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" /></div>}
+              {featuredError && <p className="text-red-500 text-sm text-center py-8">{featuredError}</p>}
+              {!featuredLoading && !featuredError && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <Stat label="Views" value={views.length} sub={`${uniqViews} unique reports`} />
+                    <Stat label="Clicks" value={clicks.length} sub={`${uniqClicks} unique reports`} />
+                    <Stat label="Click rate" value={pct(clicks.length, views.length)} sub="clicks / views" />
+                    <Stat label="Unique click rate" value={pct(uniqClicks, uniqViews)} sub="reports that clicked / reports that saw it" />
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <GroupTable title="By plan" rows={group('tier')} />
+                    <GroupTable title="By language" rows={group('locale')} />
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <p className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide border-b border-slate-100 bg-slate-50">Last 30 days</p>
+                    <table className="w-full text-sm"><tbody>
+                      {dayRows.length === 0 && <tr><td className="px-4 py-3 text-slate-400">No data yet</td></tr>}
+                      {dayRows.map(([d, r]) => (
+                        <tr key={d} className="border-b border-slate-50"><td className="px-4 py-2">{d}</td><td className="px-4 py-2 text-right text-slate-500">{r.v} views</td><td className="px-4 py-2 text-right font-semibold">{r.c} clicks</td><td className="px-4 py-2 text-right text-slate-400">{pct(r.c, r.v)}</td></tr>
+                      ))}
+                    </tbody></table>
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <p className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide border-b border-slate-100 bg-slate-50">Latest clicks</p>
+                    <table className="w-full text-sm"><tbody>
+                      {clicks.length === 0 && <tr><td className="px-4 py-3 text-slate-400">No clicks yet</td></tr>}
+                      {clicks.slice(0, 25).map(e => (
+                        <tr key={e.id} className="border-b border-slate-50"><td className="px-4 py-2">{new Date(e.created_at).toLocaleString()}</td><td className="px-4 py-2 capitalize">{e.tier || 'unknown'}</td><td className="px-4 py-2 uppercase">{e.locale || '—'}</td><td className="px-4 py-2 text-slate-400 truncate max-w-[160px]">{e.response_id || '—'}</td></tr>
+                      ))}
+                    </tbody></table>
+                  </div>
+                </div>
+              )}
+            </>
+          )
+        })()}
+
         {activeTab === 'onet' && (
           <>
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
