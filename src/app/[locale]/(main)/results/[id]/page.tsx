@@ -5,7 +5,8 @@ import { useParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { apiGet, apiAuthGet, apiAuthPost, apiAuthDelete, apiAuthGetBlob } from '@/lib/api'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
-import { Link } from '@/i18n/navigation'
+import { Link, useRouter, usePathname } from '@/i18n/navigation'
+import { setLocaleLock } from '@/lib/localeLock'
 import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 import Constellation from '@/components/brand/Constellation'
@@ -234,6 +235,9 @@ export default function ResultsPage() {
   const [downloadingReport, setDownloadingReport] = useState(false)
   const [downloadError, setDownloadError] = useState('')
   const [reportLocale, setReportLocale] = useState<'en' | 'ar'>('en')
+  const [reportLocaleKnown, setReportLocaleKnown] = useState(false)
+  const localeRouter = useRouter()
+  const localePathname = usePathname()
   const [retryKey, setRetryKey] = useState(0)
   // (state for the per-career plan buttons; hooks must stay above the early returns below)
   const [planBuilding, setPlanBuilding] = useState<string | null>(null)
@@ -263,7 +267,7 @@ export default function ResultsPage() {
           setIsStillEnrolled(!!data.is_still_enrolled)
           if (typeof data.route === 'string') setRoute(data.route)
           if (Array.isArray(data.section_order)) setSectionOrder(data.section_order)
-          if (data.locale === 'ar' || data.locale === 'en') setReportLocale(data.locale)
+          if (data.locale === 'ar' || data.locale === 'en') { setReportLocale(data.locale); setReportLocaleKnown(true) }
           setBetaMode(!!data.beta_mode)
           // Server-truth check, not just each child's localStorage flag — covers a
           // cleared/private-mode browser where the client-side "done" marker from a
@@ -612,6 +616,16 @@ export default function ResultsPage() {
       setReassessing(false)
     }
   }
+
+  // Assessment taken in Arabic: one language only. Pin the page to Arabic (hide the header
+  // language switch, and move anyone who opened the English URL over to Arabic).
+  const arabicOnly = reportLocaleKnown && reportLocale === 'ar'
+  useEffect(() => {
+    if (!arabicOnly) return
+    setLocaleLock('ar')
+    if (locale !== 'ar') localeRouter.replace(localePathname, { locale: 'ar' })
+    return () => setLocaleLock(null)
+  }, [arabicOnly, locale, localeRouter, localePathname])
 
   async function downloadReport(reportLang?: 'en' | 'ar') {
     setDownloadingReport(true)
@@ -1856,7 +1870,7 @@ export default function ResultsPage() {
                 </svg>
                 {downloadingReport ? t('hero.downloading') : t('hero.downloadPdf')}
               </button>
-              <button
+              {!arabicOnly && <button
                 onClick={() => downloadReport(reportLocale === 'ar' ? 'en' : 'ar')}
                 disabled={downloadingReport}
                 className="inline-flex items-center gap-2 bg-white/10 border border-white/25 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-white/20 transition-colors disabled:opacity-50"
@@ -1867,7 +1881,7 @@ export default function ResultsPage() {
                 {downloadingReport
                   ? t('hero.downloading')
                   : reportLocale === 'ar' ? t('hero.downloadEnglish') : t('hero.downloadArabic')}
-              </button>
+              </button>}
             </div>
             {downloadError && <p className="text-rose-200 text-xs">{downloadError}</p>}
           </div>
