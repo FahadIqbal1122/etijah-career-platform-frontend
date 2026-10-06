@@ -1834,7 +1834,9 @@ export default function ResultsPage() {
   const knownKeys = Object.keys(sectionBlocks)
   const baseOrder = (sectionOrder && sectionOrder.length ? sectionOrder : DEFAULT_ORDER).filter(k => knownKeys.includes(k))
   // 'ai' is merged into the careers section (a collapsible panel on each career); the PDF still has its own AI page.
-  const MERGED_SECTIONS = ['ai']
+  // 'companies' (Companies to Target) is no longer offered, so it is never shown, even as a locked card.
+  // const MERGED_SECTIONS = ['ai']
+  const MERGED_SECTIONS = ['ai', 'companies']
   const orderedKeys = [...baseOrder, ...knownKeys.filter(k => !baseOrder.includes(k))].filter(k => !MERGED_SECTIONS.includes(k))
 
   return (
