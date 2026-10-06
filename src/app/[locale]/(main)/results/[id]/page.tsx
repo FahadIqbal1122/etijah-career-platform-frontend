@@ -1043,10 +1043,13 @@ export default function ResultsPage() {
               subtitle={t('suggestedCareers.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.07A2.25 2.25 0 0118 20.47H6a2.25 2.25 0 01-2.25-2.25v-4.07M15.75 9.75V6a3.75 3.75 0 00-7.5 0v3.75M3.75 9.75h16.5" /></svg>}
             />
-            {/* Free plan: quick list of the careers up front (details follow below), plus a card for the ones locked behind Pathfinder. */}
-            {tier === 'free' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-                {jobs.slice(0, 3).map((job: any) => (
+            {/* Quick list of the top three careers up front (details follow below): why each was suggested and its AI risk.
+                Free plan also gets a card for the ones locked behind Pathfinder. */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+              {jobs.slice(0, 3).map((job: any) => {
+                const qAi: any = aiImpact?.careers?.find((c: any) => normTitle(c.title) === normTitle(job.title))
+                const qRisk: string | undefined = qAi?.ai_risk_level
+                return (
                   <div key={job.title} className="rounded-2xl border border-[var(--line)] bg-lightblue/40 px-4 py-3.5">
                     <div className="flex items-start justify-between gap-3">
                       <p className="rp-h capitalize text-charcoal">{job.title}</p>
@@ -1054,9 +1057,27 @@ export default function ResultsPage() {
                         <span className="rp-pill rp-blue shrink-0">{job.match_score}% {t('suggestedCareers.matchLabel')}</span>
                       )}
                     </div>
+                    {((job.direction_tag && ['builds_on_background', 'new_direction'].includes(job.direction_tag)) || (qRisk && ['low', 'medium', 'high'].includes(qRisk))) && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {job.direction_tag && ['builds_on_background', 'new_direction'].includes(job.direction_tag) && (
+                          <span className={`rp-pill ${job.direction_tag === 'new_direction' ? 'rp-purple' : 'rp-blue'}`}>
+                            <PillIcon name={job.direction_tag === 'new_direction' ? 'sparkles' : 'layers'} />
+                            {t(`suggestedCareers.directionTag.${job.direction_tag}`)}
+                          </span>
+                        )}
+                        {qRisk && ['low', 'medium', 'high'].includes(qRisk) && (
+                          <span className={`rp-pill ${qRisk === 'low' ? 'rp-green' : qRisk === 'medium' ? 'rp-amber' : 'rp-rose'}`}>
+                            <PillIcon name="shield" />
+                            {t('aiImpact.riskLabel')}: {levelLabel(qRisk)}
+                          </span>
+                        )}
+                      </div>
+                    )}
                     {job.fit_summary && <p className="rp-sub mt-1.5 line-clamp-2">{job.fit_summary}</p>}
                   </div>
-                ))}
+                )
+              })}
+              {tier === 'free' && (
                 <div className="rounded-2xl border border-dashed border-primary/50 bg-white px-4 py-3.5 flex flex-col justify-between gap-2">
                   <div>
                     <p className="rp-h text-charcoal">{t('suggestedCareers.moreLockedTitle')}</p>
@@ -1064,8 +1085,8 @@ export default function ResultsPage() {
                   </div>
                   <Link href="/#pricing" data-track="results_careers_upgrade" className="text-sm font-semibold text-primary hover:underline">{t('suggestedCareers.moreLockedCta')} →</Link>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
             {aiImpact?.overall_summary && (
               <div className="rp-note rp-blue mb-5">
                 <span className="rp-note-label">{t('aiImpact.overallLabel')}</span>
