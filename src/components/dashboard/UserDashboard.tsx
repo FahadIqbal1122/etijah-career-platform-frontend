@@ -136,7 +136,7 @@ const B = {
     plan: { launchpad: 'Launchpad', pathfinder: 'Pathfinder' },
     launchpadLine: 'Full report + a 1:1 coaching session', lifetimeLine: 'Unlocked for life',
     takeAssessment: 'Take the assessment to unlock your full report',
-    unlockFull: 'Unlock Full Report', getLaunchpad: 'Get Launchpad (adds a 1:1 coaching session)',
+    unlockFull: 'Unlock Full Report', downloadLocked: 'Download PDF (Pathfinder)', getLaunchpad: 'Get Launchpad (adds a 1:1 coaching session)',
     coachHead: 'Your 1:1 coaching session', coachPick: 'Pick a time that suits you. We have also been notified of your purchase.',
     coachBook: 'Book your session', coachHelp: 'Need help? Contact us:',
     coachContact: 'To book your session, contact us and we will find a time that suits you. We have also been notified of your purchase.',
@@ -147,7 +147,7 @@ const B = {
     plan: { launchpad: 'منصة الانطلاق', pathfinder: 'مرشد المسار' },
     launchpadLine: 'التقرير الكامل + جلسة تدريب فردية', lifetimeLine: 'مفتوح مدى الحياة',
     takeAssessment: 'أجرِ التقييم لفتح تقريرك الكامل',
-    unlockFull: 'افتح التقرير الكامل', getLaunchpad: 'احصل على منصة الانطلاق (تضيف جلسة تدريب فردية)',
+    unlockFull: 'افتح التقرير الكامل', downloadLocked: 'تحميل PDF (مرشد المسار)', getLaunchpad: 'احصل على منصة الانطلاق (تضيف جلسة تدريب فردية)',
     coachHead: 'جلستك التدريبية الفردية', coachPick: 'اختر الوقت الذي يناسبك. وقد وصلنا إشعار بعملية الشراء.',
     coachBook: 'احجز جلستك', coachHelp: 'تحتاج مساعدة؟ تواصل معنا:',
     coachContact: 'لحجز جلستك، تواصل معنا وسنحدد وقتاً يناسبك. وقد وصلنا إشعار بعملية الشراء.',
@@ -522,6 +522,7 @@ export default function UserDashboard() {
                   <Link href={`/results/${latest.id}`} className="cta" style={{ padding: '11px 18px', fontSize: 14, borderRadius: 12 }}>
                     <span>{t.viewReport}</span><span className="cta-arrow">{dir === 'rtl' ? '←' : '→'}</span>
                   </Link>
+                  {planLoading ? null : plan && plan.tier !== 'free' ? (<>
                   <button data-track="dashboard_download_report" onClick={() => downloadReport(latest.id)} disabled={downloadingReport}
                     className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--line-strong)] text-charcoal/70 text-sm font-medium hover:bg-lightblue transition-colors disabled:opacity-50">
                     <Icon name="report" size={16} />{downloadingReport ? t.downloading : t.download}
@@ -535,6 +536,12 @@ export default function UserDashboard() {
                     <Icon name="report" size={16} />
                     {downloadingReport ? t.downloading : t.downloadAr}
                   </button>}
+                  </>) : (
+                    <button data-track="dashboard_download_locked" onClick={() => handleBuyPlan('pathfinder')} disabled={buying}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--line-strong)] text-charcoal/70 text-sm font-medium hover:bg-lightblue transition-colors disabled:opacity-50">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>{b.downloadLocked}
+                    </button>
+                  )}
                 </div>
                 {downloadError && <p className="text-rose-500 text-xs mt-2">{downloadError}</p>}
               </>

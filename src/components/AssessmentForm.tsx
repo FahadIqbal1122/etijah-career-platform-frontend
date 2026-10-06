@@ -268,9 +268,8 @@ export default function AssessmentForm() {
   const [coachTipGame, setCoachTipGame] = useState(false)
   // Desktop spots she can stand on (elements she glides to): under the text, in the sky above the stars, beside the text.
   const [coachSlot, setCoachSlot] = useState<HTMLElement | null>(null)
-  const [coachStarsSlot, setCoachStarsSlot] = useState<HTMLElement | null>(null)
-  const [coachTextSlot, setCoachTextSlot] = useState<HTMLElement | null>(null)
-  const dismissCoach = useCallback(() => { setCoachMsg(null); setRevealTip(null) }, [])
+  const [coachQuestionSlot, setCoachQuestionSlot] = useState<HTMLElement | null>(null)
+  const dismissCoach = useCallback(() => { setCoachMsg(null); setRevealTip(null); setCoachSpot(0) }, [])
   useEffect(() => {
     if (phase !== 'question' || index < coachNextAt.current) return
     const { pool: basePool, isBreak } = pickCoachPool()
@@ -280,7 +279,7 @@ export default function AssessmentForm() {
     const pick = pool[Math.floor(Math.random() * pool.length)]
     coachUsed.current.add(pick.en)
     setCoachSide(s => (s === 'end' ? 'start' : 'end'))
-    setCoachSpot(n => n + 1)
+    setCoachSpot(1)   // she steps over to the question while she comments on it
     setCoachTipGame(isBreak)   // break tips also offer the riddle / games
     setCoachMsg(pick)
   }, [index, phase])
@@ -735,7 +734,6 @@ export default function AssessmentForm() {
       <div className="assess-main">
         <aside className="assess-aside">
           <div className="cst-wrap">
-            <div className="coach-spot coach-spot-stars" ref={setCoachStarsSlot} />
             <Constellation litCount={litCount} theme={phase === 'reveal' ? 'teal' : 'dark'} rippleKey={rippleKey} accent="#00C9A7" />
             {phase === 'question' && (
               <div className="cst-progress-text">
@@ -743,20 +741,21 @@ export default function AssessmentForm() {
               </div>
             )}
           </div>
+          {/* Sarah's home on desktop: between the stars and the writing */}
+          <div className="coach-slot" ref={setCoachSlot} />
           {/* desktop-only progress context beneath the constellation */}
           <div className="assess-aside-context">
-            <div className="coach-spot coach-spot-text" ref={setCoachTextSlot} />
             {phase === 'question' ? (
               <BreakPanel locale={locale as 'en' | 'ar'} eyebrow={chrome.asideEyebrow} progressMsg={progressMsg} questionIndex={index} hideTrigger />
             ) : (
               <div className="assess-aside-eyebrow">{chrome.asideEyebrow}</div>
             )}
           </div>
-          <div className="coach-slot" ref={setCoachSlot} />
         </aside>
 
         {/* ── question ──────────────────────────────────────────────────── */}
         <div className="assess-content">
+          <div className="coach-spot coach-spot-question" ref={setCoachQuestionSlot} />
           {phase === 'question' && q && (
             <div className="assess-stage">
               <div
@@ -1096,7 +1095,7 @@ export default function AssessmentForm() {
           }
         }}
         place={phase === 'question' ? coachSide : 'center'}
-        spots={phase === 'question' ? { wide: [coachSlot, coachStarsSlot, coachTextSlot], narrow: [] } : undefined}
+        spots={phase === 'question' ? { wide: [coachSlot, coachQuestionSlot], narrow: [] } : undefined}
         spotIndex={coachSpot}
         games tipOffersGame={phase === 'question' && coachTipGame}
         tip={phase === 'question' ? coachMsg : phase === 'reveal' ? revealTip : null}

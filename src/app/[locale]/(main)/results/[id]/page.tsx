@@ -371,6 +371,16 @@ export default function ResultsPage() {
     return () => clearTimeout(id)
   }, [summary])
 
+  // Assessment taken in Arabic: one language only. Pin the page to Arabic (hide the header
+  // language switch, and move anyone who opened the English URL over to Arabic).
+  const arabicOnly = reportLocaleKnown && reportLocale === 'ar'
+  useEffect(() => {
+    if (!arabicOnly) return
+    setLocaleLock('ar')
+    if (locale !== 'ar') localeRouter.replace(localePathname, { locale: 'ar' })
+    return () => setLocaleLock(null)
+  }, [arabicOnly, locale, localeRouter, localePathname])
+
   if (error) {
     // A report that belongs to an account can only be opened by that account (or an admin): with no session the
     // server answers "Sign in to view this response". Say that plainly and offer the sign-in, instead of a bare error.
@@ -616,16 +626,6 @@ export default function ResultsPage() {
       setReassessing(false)
     }
   }
-
-  // Assessment taken in Arabic: one language only. Pin the page to Arabic (hide the header
-  // language switch, and move anyone who opened the English URL over to Arabic).
-  const arabicOnly = reportLocaleKnown && reportLocale === 'ar'
-  useEffect(() => {
-    if (!arabicOnly) return
-    setLocaleLock('ar')
-    if (locale !== 'ar') localeRouter.replace(localePathname, { locale: 'ar' })
-    return () => setLocaleLock(null)
-  }, [arabicOnly, locale, localeRouter, localePathname])
 
   async function downloadReport(reportLang?: 'en' | 'ar') {
     setDownloadingReport(true)
@@ -1860,6 +1860,15 @@ export default function ResultsPage() {
           </div>
           <div className="flex flex-col items-center gap-2 mt-6">
             <div className="flex flex-wrap items-center justify-center gap-2">
+              {tier === 'free' ? (
+                <Link
+                  href="/#pricing"
+                  className="inline-flex items-center gap-2 bg-white/10 border border-white/25 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-white/20 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+                  {t('hero.downloadLocked')}
+                </Link>
+              ) : (<>
               <button
                 onClick={() => downloadReport()}
                 disabled={downloadingReport}
@@ -1882,6 +1891,7 @@ export default function ResultsPage() {
                   ? t('hero.downloading')
                   : reportLocale === 'ar' ? t('hero.downloadEnglish') : t('hero.downloadArabic')}
               </button>}
+              </>)}
             </div>
             {downloadError && <p className="text-rose-200 text-xs">{downloadError}</p>}
           </div>

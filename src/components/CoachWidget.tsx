@@ -116,6 +116,8 @@ export default function CoachWidget({
   // Where the target element is on screen (she is centred on it and glides there). Measured in observer/event
   // callbacks, which also fire once on observe.
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+  // The slow pop-in only plays the first time she arrives on a spot.
+  const [arrived, setArrived] = useState(false)
   useEffect(() => {
     if (!target) return
     const measure = () => {
@@ -228,7 +230,8 @@ export default function CoachWidget({
   }
 
   const widget = (
-    <div className={`coach-widget ${open ? 'is-open' : ''} ${panelBelow ? 'panel-below' : ''} ${tipBelow ? 'tip-below' : ''}`} data-place={effPlace} style={targetStyle} dir={isAr ? 'rtl' : 'ltr'}>
+    <div className={`coach-widget ${open ? 'is-open' : ''} ${panelBelow ? 'panel-below' : ''} ${tipBelow ? 'tip-below' : ''} ${arrived ? 'has-arrived' : ''}`} data-place={effPlace}
+      onAnimationEnd={e => { if (e.target === e.currentTarget && effPlace === 'target') setArrived(true) }} style={targetStyle} dir={isAr ? 'rtl' : 'ltr'}>
       {open && (
         <div className="coach-panel" role="dialog" aria-label="Sarah">
           {!required && (

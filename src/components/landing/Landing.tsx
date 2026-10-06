@@ -195,6 +195,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               {c.hero.headline[0]}<br />
               <Highlight text={c.hero.headline[1]} hl={c.hero.hl} />
             </h1>
+            {/* previous layout (CTA below the trust line):
             <p className="mt-6 text-lg text-charcoal/70 leading-relaxed max-w-xl">{c.hero.sub}</p>
             <h2 className="mt-4 text-sm font-normal text-charcoal/55 flex items-center gap-2">
               <span className="text-teal">✦</span>{c.hero.trust}
@@ -204,12 +205,28 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
                 <span>{c.hero.cta}</span>
                 <span className="cta-arrow">{arrow}</span>
               </Link>
-              {/* <a href="#report" className="text-sm font-semibold text-charcoal hover:text-teal">{c.hero.secondary}</a> */}
+              {/* <a href="#report" className="text-sm font-semibold text-charcoal hover:text-teal">{c.hero.secondary}</a> * /}
               <a href="#report" className="cta cta-outline cta-sm">{c.hero.secondary}</a>
-              {/* <a href="#pricing" data-track="landing_hero_view_packages" className="text-sm font-semibold text-charcoal hover:text-teal">{c.hero.viewPackages}</a> */}
+              {/* <a href="#pricing" data-track="landing_hero_view_packages" className="text-sm font-semibold text-charcoal hover:text-teal">{c.hero.viewPackages}</a> * /}
               <a href="#pricing" data-track="landing_hero_view_packages" className="cta cta-outline cta-sm">{c.hero.viewPackages}</a>
             </div>
             <p className="mt-3 text-sm text-charcoal/65">{c.hero.microcopy}</p>
+            */}
+            <div className="mt-6">
+              <Link href="/assessment" data-track="landing_hero_start" className="cta">
+                <span>{c.hero.cta}</span>
+                <span className="cta-arrow">{arrow}</span>
+              </Link>
+              <p className="mt-3 text-sm text-charcoal/65">{c.hero.microcopy}</p>
+            </div>
+            <p className="mt-6 text-lg text-charcoal/70 leading-relaxed max-w-xl">{c.hero.sub}</p>
+            <h2 className="mt-4 text-sm font-normal text-charcoal/55 flex items-center gap-2">
+              <span className="text-teal">✦</span>{c.hero.trust}
+            </h2>
+            <div className="mt-6 flex flex-wrap items-center gap-4">
+              <a href="#report" className="cta cta-outline cta-sm">{c.hero.secondary}</a>
+              <a href="#pricing" data-track="landing_hero_view_packages" className="cta cta-teal cta-sm">{c.hero.viewPackages}</a>
+            </div>
           </Reveal>
 
           {/* live "discovering you" preview card */}

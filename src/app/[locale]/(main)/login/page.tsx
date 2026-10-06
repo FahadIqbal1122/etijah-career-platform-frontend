@@ -107,6 +107,9 @@ function LoginForm() {
               </button>
             </div>
           </div>
+          <div className="text-end -mt-2">
+            <a href={`/${locale}/forgot-password`} data-track="login_forgot_password" className="text-xs text-primary font-medium hover:underline">Forgot password?</a>
+          </div>
           {error && <p className="text-rose-500 text-sm">{error}</p>}
           <button
             type="submit"

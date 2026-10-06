@@ -662,7 +662,8 @@
       "downloadPdf": "Download PDF Report",
       "downloading": "Downloading…",
       "downloadEnglish": "Download English PDF",
-      "downloadArabic": "Download Arabic PDF"
+      "downloadArabic": "Download Arabic PDF",
+      "downloadLocked": "Download PDF (Pathfinder)"
     },
     "signup": {
       "title": "Save your results & track job applications",

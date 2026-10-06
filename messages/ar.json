@@ -662,7 +662,8 @@
       "downloadPdf": "تحميل التقرير PDF",
       "downloading": "جاري التحميل…",
       "downloadEnglish": "تحميل النسخة الإنجليزية",
-      "downloadArabic": "تحميل النسخة العربية"
+      "downloadArabic": "تحميل النسخة العربية",
+      "downloadLocked": "تحميل PDF (مرشد المسار)"
     },
     "signup": {
       "title": "احفظ نتائجك وتابع طلبات التوظيف",
