@@ -381,15 +381,15 @@
       "options": {
         "A": "Roll up my sleeves and try to fix or build it myself.",
         "B": "Research what is causing it and understand the root problem."
-    }
-  },
-  "QFC_SE": {
+      }
+    },
+    "QFC_SE": {
       "text": "You are leading a team toward a tight deadline. Which feels more like you?",
       "options": {
         "A": "I focus on keeping the team motivated, supported, and working well together.",
         "B": "I focus on the goal — driving performance, making decisions, and winning."
-    }
-  },
+      }
+    },
     "Q13": {
       "text": "I regularly seek out new ideas, experiences, or perspectives — even when they challenge what I already believe."
     },
@@ -683,11 +683,27 @@
       "topValue": "Top Value",
       "topStrength": "Top Strength"
     },
-    "profileDetails": {"title": "More about your profile", "subtitle": "What each result means for you", "tip": "To develop it"},
-    "careerTypes": { "title": "Your interests", "subtitle": "The kinds of work you enjoy most (your RIASEC profile)" },
-    "coreValues": { "title": "What matters to you", "subtitle": "What you want from work and life" },
-    "topStrengths": { "title": "What you are good at", "subtitle": "Your natural strengths" },
-    "personality": { "title": "How you think and act", "subtitle": "Your personality, using the Big Five traits" },
+    "profileDetails": {
+      "title": "More about your profile",
+      "subtitle": "What each result means for you",
+      "tip": "To develop it"
+    },
+    "careerTypes": {
+      "title": "Your interests",
+      "subtitle": "The kinds of work you enjoy most (your RIASEC profile)"
+    },
+    "coreValues": {
+      "title": "What matters to you",
+      "subtitle": "What you want from work and life"
+    },
+    "topStrengths": {
+      "title": "What you are good at",
+      "subtitle": "Your natural strengths"
+    },
+    "personality": {
+      "title": "How you think and act",
+      "subtitle": "Your personality, using the Big Five traits"
+    },
     "workStyle": {
       "title": "How you like to work",
       "subtitle": "Your pace, setting and how you handle pressure",
@@ -711,10 +727,20 @@
       "bouncesBack": "Bounces back"
     },
     "suggestedCareers": {
-      "title": "Careers that fit you", "subtitle": "We compared your personality, values and strengths with each career. The percentage shows how close the fit is. Each card also shows how AI may change that career.", "matchLabel": "match",
-      "moreLockedTitle": "Unlock 5 more careers", "moreLockedBody": "Upgrade to Pathfinder to see the other 5 careers that fit you, each with the full detail.", "moreLockedCta": "Upgrade to Pathfinder",
-      "fitTag": { "strong_fit": "Strong fit", "worth_exploring": "Worth exploring" },
-      "directionTag": { "builds_on_background": "Builds on your background", "new_direction": "New direction" },
+      "title": "Careers that fit you",
+      "subtitle": "We compared your personality, values and strengths with each career. The percentage shows how close the fit is. Each card also shows how AI may change that career.",
+      "matchLabel": "match",
+      "moreLockedTitle": "Unlock 5 more careers",
+      "moreLockedBody": "Upgrade to Pathfinder to see the other 5 careers that fit you, each with the full detail.",
+      "moreLockedCta": "Upgrade to Pathfinder",
+      "fitTag": {
+        "strong_fit": "Strong fit",
+        "worth_exploring": "Worth exploring"
+      },
+      "directionTag": {
+        "builds_on_background": "Builds on your background",
+        "new_direction": "New direction"
+      },
       "nextSteps": "Your next steps for this career",
       "planBuild": "Build my full plan for this career",
       "planBuilding": "Building your plan… this can take up to a minute",
@@ -727,7 +753,17 @@
       "gapPaths": "What it takes to get there",
       "nextAction": "What you can do now",
       "aiRiskLink": "See how AI affects this career below",
-      "feedback": {"button": "Not for me", "why": "Why?", "uninterested": "Not interested", "unqualified": "Not qualified", "unfamiliar": "Not familiar with it", "impractical": "Not practical", "marked": "Marked: {reason}", "undo": "Undo", "cancel": "Cancel"}
+      "feedback": {
+        "button": "Not for me",
+        "why": "Why?",
+        "uninterested": "Not interested",
+        "unqualified": "Not qualified",
+        "unfamiliar": "Not familiar with it",
+        "impractical": "Not practical",
+        "marked": "Marked: {reason}",
+        "undo": "Undo",
+        "cancel": "Cancel"
+      }
     },
     "direction": {
       "title": "Choose your direction",
@@ -797,7 +833,12 @@
       "noExperience": "no experience",
       "expMonths": "{n} months' experience",
       "expYears": "{n, plural, one {# year's} other {#+ years'}} experience",
-      "education": { "high_school": "High school", "associates": "Diploma", "bachelors": "Bachelor's degree", "postgraduate": "Postgraduate degree" },
+      "education": {
+        "high_school": "High school",
+        "associates": "Diploma",
+        "bachelors": "Bachelor's degree",
+        "postgraduate": "Postgraduate degree"
+      },
       "title": "Proposed Jobs",
       "subtitle": "Current openings matched to your careers",
       "for": "for",
@@ -876,7 +917,24 @@
       "placeholderTitle": "Career match",
       "placeholderRisk": "LOW RISK",
       "placeholderOutlook": "1–3 year outlook for this role",
-      "placeholderSkill": "Skill"
+      "placeholderSkill": "Skill",
+      "free_previewNote": "This is a preview of your AI impact assessment. Get the full report to see the complete list of changing tasks, valuable human skills and personalised career recommendations.",
+      "free_moreTasksTitle": "{n} more changing tasks",
+      "free_moreTasksTitleGeneric": "More changing tasks",
+      "free_moreTasksBody": "See the complete list of tasks that may be affected by AI, and how the nature of this work is evolving.",
+      "free_moreSkillsTitle": "{n} more valuable skills",
+      "free_moreSkillsTitleGeneric": "More valuable skills",
+      "free_moreSkillsBody": "Discover the skills that will remain important as AI adoption increases, and how to strengthen them.",
+      "free_roadmapTitle": "Your personalised career roadmap is in the full report",
+      "free_roadmapLead": "Get tailored insights based on your profile, including:",
+      "free_roadmapItems": [
+        "Skills you should develop next",
+        "Roles that may be affected most by AI",
+        "Career opportunities to target",
+        "Learning recommendations",
+        "Your 1–3 year career outlook"
+      ],
+      "free_unlockBtn": "Unlock my full career analysis"
     },
     "courses": {
       "title": "Recommended Courses",
@@ -911,7 +969,11 @@
       "placeholderSector": "Sector"
     },
     "share": "Share your results",
-    "levels": { "high": "High", "medium": "Medium", "low": "Low" },
+    "levels": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
     "riasecTypes": {
       "realistic": "Realistic",
       "investigative": "Investigative",
@@ -945,6 +1007,32 @@
       "extraversion": "Extraversion",
       "agreeableness": "Agreeableness",
       "stability": "Stability"
+    },
+    "freeUnlock": {
+      "title": "What else is in your full report",
+      "subtitle": "Everything below is included with Pathfinder.",
+      "items": [
+        [
+          "AI-impact deep dive",
+          "All your top matches, a 1–3 year outlook for your market and the human skills that gain value."
+        ],
+        [
+          "Your plan",
+          "Your first step this week, days 2–7, a 90-day roadmap, and the skills and practice exercise to build for it."
+        ],
+        [
+          "Courses and certifications",
+          "Picks matched to your strengths and target careers."
+        ],
+        [
+          "Live job listings",
+          "Current openings matched to your top careers."
+        ]
+      ],
+      "cta": "Unlock my full report",
+      "sampleTitle": "See what a complete report looks like",
+      "sampleBody": "Open a sample report to see every section before you decide.",
+      "sampleCta": "View a sample report"
     }
   }
 }

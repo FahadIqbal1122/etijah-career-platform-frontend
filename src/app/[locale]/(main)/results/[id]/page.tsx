@@ -53,6 +53,37 @@ function BlurBlock({ children, className = '' }: { children: React.ReactNode; cl
   return <div aria-hidden="true" className={`select-none pointer-events-none ${className}`} style={{ filter: 'blur(5px)' }}>{children}</div>
 }
 
+// Free-plan locked rows (AI-impact panel + roadmap card): brand-coloured, glowing, one clear unlock button.
+function FreeCheckRow({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-2.5 rounded-xl bg-white border border-[var(--line)] px-3.5 py-3">
+      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal text-white">
+        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3.2} strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+      </span>
+      <span className="rp-body text-charcoal">{children}</span>
+    </div>
+  )
+}
+function FreeLockIcon({ tone }: { tone: 'primary' | 'teal' }) {
+  return (
+    <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${tone === 'teal' ? 'bg-teal/15 text-teal' : 'bg-primary/10 text-primary'}`}>
+      <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+    </span>
+  )
+}
+function FreeUnlockBtn({ label, track, tone = 'primary' }: { label: string; track: string; tone?: 'primary' | 'teal' }) {
+  return (
+    <Link
+      href="/#pricing"
+      data-track={track}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-bold text-white whitespace-nowrap ${tone === 'teal' ? 'bg-teal text-[#05221c]!' : 'bg-primary'}`}
+      style={{ boxShadow: tone === 'teal' ? '0 10px 26px -10px rgba(0,201,167,.7)' : '0 10px 26px -10px rgba(7,112,186,.7)' }}
+    >
+      {label} <span aria-hidden="true" className="rtl:rotate-180">›</span>
+    </Link>
+  )
+}
+
 function PillIcon({ name, size }: { name: keyof typeof PILL_ICONS; size?: number }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden="true" width={size} height={size}>
@@ -755,7 +786,22 @@ export default function ResultsPage() {
   )
 
   // One profile line: name, percentage, bar. Every type looks the same; only the order shows which is highest.
-  const scoreRow = (label: string, pct: number) => (
+  // Paid plans: the written explanation of each result sits under its own bar (the backend sends none for free)
+  const pd: any = tier !== 'free' ? profileDetails : null
+  const riasecNarr: Record<string, string> = {}
+  ;(summary?.riasec?.top_types || []).slice(0, 3).forEach((rt: string, i: number) => {
+    const txt = pd?.[['riasec_primary_narrative', 'riasec_secondary_narrative', 'riasec_tertiary_narrative'][i]]
+    if (txt) riasecNarr[rt] = txt
+  })
+  const detailText = (text?: string, tip?: string) => text ? (
+    <div className="mt-2">
+      <p className="rp-sub text-charcoal/85 leading-relaxed">{text}</p>
+      {tip && <p className="rp-sub mt-1.5"><span className="font-bold text-charcoal">{t('profileDetails.tip')}:</span> {tip}</p>}
+    </div>
+  ) : null
+  const introText = (text?: string) => text ? <p className="rp-sub text-charcoal/85 leading-relaxed mb-4">{text}</p> : null
+  // const scoreRow = (label: string, pct: number) => (  // previous: bar only
+  const scoreRow = (label: string, pct: number, detail?: string, tip?: string) => (
     <div key={label}>
       <div className="flex justify-between items-center mb-1">
         <span className="rp-sub font-medium">{label}</span>
@@ -764,6 +810,7 @@ export default function ResultsPage() {
       <div className="w-full bg-lightblue rounded-full h-1.5">
         <div className="bg-primary h-1.5 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
       </div>
+      {detailText(detail, tip)}
     </div>
   )
 
@@ -1082,13 +1129,30 @@ export default function ResultsPage() {
                   </div>
                 )
               })}
-              {tier === 'free' && (
-                <div className="rounded-2xl border border-dashed border-primary/50 bg-white px-4 py-3.5 flex flex-col justify-between gap-2">
+                {/* <div className="rounded-2xl border border-dashed border-primary/50 bg-white px-4 py-3.5 flex flex-col justify-between gap-2">
                   <div>
                     <p className="rp-h text-charcoal">{t('suggestedCareers.moreLockedTitle')}</p>
                     <p className="rp-sub mt-1.5">{t('suggestedCareers.moreLockedBody')}</p>
                   </div>
                   <Link href="/#pricing" data-track="results_careers_upgrade" className="text-sm font-semibold text-primary hover:underline">{t('suggestedCareers.moreLockedCta')} →</Link>
+                </div> */}
+              {tier === 'free' && (
+                <div
+                  className="rounded-2xl px-5 py-4 flex flex-col justify-between gap-3 text-white relative overflow-hidden"
+                  style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-deep) 100%)', boxShadow: '0 0 0 1px rgba(0,201,167,.55), 0 14px 40px -10px rgba(0,201,167,.55), 0 0 36px -4px rgba(7,112,186,.55)' }}
+                >
+                  <div>
+                    <p className="text-lg font-extrabold">{t('suggestedCareers.moreLockedTitle')}</p>
+                    <p className="text-sm text-white/85 mt-1.5 leading-relaxed">{t('suggestedCareers.moreLockedBody')}</p>
+                  </div>
+                  <Link
+                    href="/#pricing"
+                    data-track="results_careers_upgrade"
+                    className="inline-flex items-center justify-center gap-2 self-start rounded-full bg-teal px-6 py-3 text-base font-extrabold text-[#05221c] whitespace-nowrap"
+                    style={{ boxShadow: '0 10px 28px -8px rgba(0,201,167,.8)' }}
+                  >
+                    {t('suggestedCareers.moreLockedCta')} <span aria-hidden="true" className="rtl:rotate-180">→</span>
+                  </Link>
                 </div>
               )}
             </div>
@@ -1223,19 +1287,45 @@ export default function ResultsPage() {
                         </button>
                         {aiIsOpen && (
                           <div className="px-3.5 pb-3.5 space-y-3">
-                            {aiCareer.at_risk_tasks?.length > 0 && (
+                            {tier === 'free' && (
+                              <div className="rounded-2xl border border-primary/20 bg-lightblue px-4 py-3">
+                                <p className="rp-sub text-charcoal/85">{t('aiImpact.free_previewNote')}</p>
+                              </div>
+                            )}
+                            {tier === 'free' && aiCareer.at_risk_tasks?.length > 0 && (
+                              <div className="rounded-2xl border border-primary/20 bg-lightblue/70 p-4 space-y-3">
+                                <p className="rp-label !text-primary-deep">{t('aiImpact.atRiskLabel')}</p>
+                                <FreeCheckRow>{aiCareer.at_risk_tasks[0]}</FreeCheckRow>
+                                {(aiCareer.at_risk_tasks_total ?? 2) > 1 && (
+                                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/80 border border-primary/20 p-4">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                      <FreeLockIcon tone="primary" />
+                                      <div className="min-w-0">
+                                        <p className="rp-h text-charcoal">{aiCareer.at_risk_tasks_total ? t('aiImpact.free_moreTasksTitle', { n: aiCareer.at_risk_tasks_total - 1 }) : t('aiImpact.free_moreTasksTitleGeneric')}</p>
+                                        <p className="rp-sub mt-0.5">{t('aiImpact.free_moreTasksBody')}</p>
+                                      </div>
+                                    </div>
+                                    <FreeUnlockBtn label={t('aiImpact.free_unlockBtn')} track="results_ai_tasks_unlock" />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {tier !== 'free' && aiCareer.at_risk_tasks?.length > 0 && (
                               <div className="rp-note rp-rose">
                                 <span className="rp-note-label">{t('aiImpact.atRiskLabel')}</span>
                                 <ul className="rp-sub rp-note-text list-disc ps-5 space-y-0.5">
                                   {/* {aiCareer.at_risk_tasks.map((x: string) => <li key={x}>{x}</li>)} */}
-                                  {(tier === 'free' ? aiCareer.at_risk_tasks.slice(0, 1) : aiCareer.at_risk_tasks).map((x: string) => <li key={x}>{x}</li>)}
+                                  {/* {(tier === 'free' ? aiCareer.at_risk_tasks.slice(0, 1) : aiCareer.at_risk_tasks).map((x: string) => <li key={x}>{x}</li>)} */}
+                                  {aiCareer.at_risk_tasks.map((x: string) => <li key={x}>{x}</li>)}
                                 </ul>
+                                {/* free: now rendered by the branded block above (blur placeholder removed)
                                 {tier === 'free' && (
                                   <>
                                     <BlurBlock className="mt-0.5"><ul className="rp-sub rp-note-text list-disc ps-5 space-y-0.5">{BLUR_FILLER.map(x => <li key={x}>{x}</li>)}</ul></BlurBlock>
                                     <Link href="/#pricing" data-track="results_ai_tasks_unlock" className="inline-block mt-2 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-white">{t('aiImpact.unlockCta')}</Link>
                                   </>
                                 )}
+                                */}
                               </div>
                             )}
                             {aiCareer.global_evidence && (
@@ -1244,17 +1334,38 @@ export default function ResultsPage() {
                             {aiCareer.gcc_outlook && (
                               <p className="rp-sub"><span className="font-bold text-charcoal">{t('aiImpact.localOutlookLabel')}:</span> {aiCareer.gcc_outlook}</p>
                             )}
-                            {aiCareer.protected_skills?.length > 0 && (
+                            {tier === 'free' && aiCareer.protected_skills?.length > 0 && (
+                              <div className="rounded-2xl border border-teal/30 bg-teal/10 p-4 space-y-3">
+                                <p className="rp-label !text-[#0a705a]">{t('aiImpact.protectedSkillsLabel')}</p>
+                                <FreeCheckRow>{aiCareer.protected_skills[0]}</FreeCheckRow>
+                                {(aiCareer.protected_skills_total ?? 2) > 1 && (
+                                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/80 border border-teal/30 p-4">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                      <FreeLockIcon tone="teal" />
+                                      <div className="min-w-0">
+                                        <p className="rp-h text-charcoal">{aiCareer.protected_skills_total ? t('aiImpact.free_moreSkillsTitle', { n: aiCareer.protected_skills_total - 1 }) : t('aiImpact.free_moreSkillsTitleGeneric')}</p>
+                                        <p className="rp-sub mt-0.5">{t('aiImpact.free_moreSkillsBody')}</p>
+                                      </div>
+                                    </div>
+                                    <FreeUnlockBtn label={t('aiImpact.free_unlockBtn')} track="results_ai_skills_unlock" tone="teal" />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {tier !== 'free' && aiCareer.protected_skills?.length > 0 && (
                               <div>
                                 <p className="rp-label mb-1.5">{t('aiImpact.protectedSkillsLabel')}</p>
                                 <div className="flex flex-wrap gap-1.5">
                                   {/* {aiCareer.protected_skills.map((sk: string) => <span key={sk} className="rp-pill rp-green rp-wrap">{sk}</span>)} */}
-                                  {(tier === 'free' ? aiCareer.protected_skills.slice(0, 1) : aiCareer.protected_skills).map((sk: string) => <span key={sk} className="rp-pill rp-green rp-wrap">{sk}</span>)}
-                                  {tier === 'free' && BLUR_FILLER.map(x => <BlurBlock key={x}><span className="rp-pill rp-green rp-wrap">{x}</span></BlurBlock>)}
+                                  {/* {(tier === 'free' ? aiCareer.protected_skills.slice(0, 1) : aiCareer.protected_skills).map((sk: string) => <span key={sk} className="rp-pill rp-green rp-wrap">{sk}</span>)} */}
+                                  {aiCareer.protected_skills.map((sk: string) => <span key={sk} className="rp-pill rp-green rp-wrap">{sk}</span>)}
+                                  {/* {tier === 'free' && BLUR_FILLER.map(x => <BlurBlock key={x}><span className="rp-pill rp-green rp-wrap">{x}</span></BlurBlock>)} */}
                                 </div>
+                                {/* free: handled by the branded block above
                                 {tier === 'free' && (
                                   <Link href="/#pricing" data-track="results_ai_skills_unlock" className="inline-block mt-2 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-white">{t('aiImpact.unlockCta')}</Link>
                                 )}
+                                */}
                               </div>
                             )}
                             {aiCareer.upskilling?.length > 0 && (
@@ -1267,14 +1378,39 @@ export default function ResultsPage() {
                                 </ul>
                               </div>
                             )}
-                            {aiCareer.what_this_means_for_you && (
+                            {tier === 'free' && aiCareer.what_this_means_for_you && (
+                              <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4 space-y-3">
+                                <p className="rp-label !text-primary-deep">{t('aiImpact.whatThisMeansLabel')}</p>
+                                <p className="rp-body text-charcoal">{aiCareer.what_this_means_for_you}</p>
+                                <div className="rounded-xl bg-white border border-primary/20 p-4" style={{ boxShadow: '0 12px 32px -18px rgba(7,112,186,.5)' }}>
+                                  <div className="flex flex-wrap gap-x-6 gap-y-3">
+                                    <div className="flex items-start gap-3 min-w-[220px] flex-1">
+                                      <FreeLockIcon tone="primary" />
+                                      <div>
+                                        <p className="rp-h text-charcoal">{t('aiImpact.free_roadmapTitle')}</p>
+                                        <p className="rp-sub mt-1">{t('aiImpact.free_roadmapLead')}</p>
+                                      </div>
+                                    </div>
+                                    <ul className="space-y-1.5 min-w-[220px] flex-1">
+                                      {(t.raw('aiImpact.free_roadmapItems') as string[]).map(x => (
+                                        <li key={x} className="rp-sub flex gap-2 text-charcoal/85"><span className="text-teal font-black">✓</span>{x}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                  <div className="mt-4"><FreeUnlockBtn label={t('aiImpact.free_unlockBtn')} track="results_ai_meaning_unlock" /></div>
+                                </div>
+                              </div>
+                            )}
+                            {tier !== 'free' && aiCareer.what_this_means_for_you && (
                               <div className="rp-note rp-blue">
                                 <span className="rp-note-label">{t('aiImpact.whatThisMeansLabel')}</span>
                                 {/* <p className="rp-body rp-note-text">{aiCareer.what_this_means_for_you}</p> */}
                                 <p className="rp-body rp-note-text">{aiCareer.what_this_means_for_you}</p>
+                                {/* free: handled by the branded block above
                                 {tier === 'free' && (
                                   <BlurBlock><p className="rp-body rp-note-text">{BLUR_FILLER.join('. ')}. {BLUR_FILLER[0]}, so it helps to keep building the skills that matter most.</p></BlurBlock>
                                 )}
+                                */}
                               </div>
                             )}
                           </div>
@@ -1344,6 +1480,7 @@ export default function ResultsPage() {
         )}
 
         {/* AI impact deep dive for free users (was under the separate AI section) */}
+        {/* free: the AI deep-dive lock is now one line in the combined "what else is in your full report" card
         {aiImpact && tier === 'free' && (
           !loggedIn ? (
             <BlurGate
@@ -1364,6 +1501,7 @@ export default function ResultsPage() {
             />
           )
         )}
+        */}
 
       </>),
     majors: (<>
@@ -1823,6 +1961,47 @@ export default function ResultsPage() {
         ) : null}
 
       </>),
+    // Free plan only: one card replaces the separate locked Plan / Jobs / Courses / Certifications cards.
+    unlock: (<>
+        <div
+          className="card p-6"
+          style={{ boxShadow: '0 0 0 1px rgba(7,112,186,.25), 0 18px 44px -18px rgba(7,112,186,.55), 0 0 32px -6px rgba(0,201,167,.35)' }}
+        >
+          <div className="flex items-center gap-3 mb-1">
+            <FreeLockIcon tone="primary" />
+            <div>
+              <h3 className="text-lg font-extrabold text-charcoal">{t('freeUnlock.title')}</h3>
+              <p className="rp-sub">{t('freeUnlock.subtitle')}</p>
+            </div>
+          </div>
+          <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(t.raw('freeUnlock.items') as string[][]).map(([h, b]) => (
+              <li key={h} className="flex items-start gap-2.5 rounded-xl border border-[var(--line)] bg-lightblue/50 p-3.5">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal/20 text-teal text-[11px] font-black">✓</span>
+                <span><span className="block rp-h text-charcoal">{h}</span><span className="block rp-sub mt-0.5">{b}</span></span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <FreeUnlockBtn label={t('freeUnlock.cta')} track="results_unlock_all" />
+          </div>
+          <div className="mt-5 border-t border-[var(--line)] pt-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="rp-h text-charcoal">{t('freeUnlock.sampleTitle')}</p>
+              <p className="rp-sub mt-0.5">{t('freeUnlock.sampleBody')}</p>
+            </div>
+            <a
+              href={`/demo-report-${locale === 'ar' ? 'ar' : 'en'}.pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-track="results_sample_report"
+              className="inline-flex items-center gap-2 rounded-full border-2 border-primary px-5 py-2.5 text-sm font-bold text-primary hover:bg-primary/5 whitespace-nowrap"
+            >
+              {t('freeUnlock.sampleCta')} <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+        </div>
+      </>),
     profile: (<>
         {/* Career Types + Values + Strengths + Personality */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1834,12 +2013,13 @@ export default function ResultsPage() {
               subtitle={t('careerTypes.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.07A2.25 2.25 0 0118 20.47H6a2.25 2.25 0 01-2.25-2.25v-4.07M15.75 9.75V6a3.75 3.75 0 00-7.5 0v3.75M3.75 9.75h16.5" /></svg>}
             />
+            {introText(pd?.riasec_overview)}
             {/* All six types, same look, highest first, each with its percentage (no single "main" type) */}
             <div className="space-y-2.5">
               {['realistic', 'investigative', 'artistic', 'social', 'enterprising', 'conventional']
                 .filter(rt => scoreMap[rt] !== undefined)
                 .sort((a, b) => scoreMap[b] - scoreMap[a])
-                .map(rt => scoreRow(riasecLabel(rt), scoreMap[rt]))}
+                .map(rt => scoreRow(riasecLabel(rt), scoreMap[rt], riasecNarr[rt]))}
               {Object.keys(scoreMap).length === 0 && (
                 <div className="flex gap-2 flex-wrap">
                   {summary.riasec.top_types.map((rt: string) => <span key={rt} className="chip">{riasecLabel(rt)}</span>)}
@@ -1855,9 +2035,10 @@ export default function ResultsPage() {
               subtitle={t('coreValues.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>}
             />
+            {introText(pd?.values_overview)}
             <div className="space-y-2.5">
-              {summary.values.top_values.map((v: string) => scoreMap[v] !== undefined
-                ? scoreRow(valueLabel(v), scoreMap[v])
+              {summary.values.top_values.map((v: string, vi: number) => scoreMap[v] !== undefined
+                ? scoreRow(valueLabel(v), scoreMap[v], pd?.values_narratives?.[`value_${vi + 1}`])
                 : <span key={v} className="chip">{valueLabel(v)}</span>)}
             </div>
           </div>
@@ -1869,9 +2050,10 @@ export default function ResultsPage() {
               subtitle={t('topStrengths.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>}
             />
+            {introText(pd?.strengths_overview)}
             <div className="space-y-2.5">
-              {summary.strengths.top_strengths.map((st: string) => scoreMap[st] !== undefined
-                ? scoreRow(strengthLabel(st), scoreMap[st])
+              {summary.strengths.top_strengths.map((st: string, si: number) => scoreMap[st] !== undefined
+                ? scoreRow(strengthLabel(st), scoreMap[st], pd?.strengths_narratives?.[`strength_${si + 1}`]?.narrative, pd?.strengths_narratives?.[`strength_${si + 1}`]?.development_tip)
                 : <span key={st} className="chip">{strengthLabel(st)}</span>)}
             </div>
           </div>
@@ -1883,6 +2065,7 @@ export default function ResultsPage() {
               subtitle={t('personality.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>}
             />
+            {introText(pd?.big_five_overview)}
             <div className="space-y-2.5">
               {Object.entries(summary.big_five).map(([trait, level]: any) => (
                 <div key={trait}>
@@ -1893,6 +2076,7 @@ export default function ResultsPage() {
                   <div className="w-full bg-lightblue rounded-full h-1.5">
                     <div className="bg-primary h-1.5 rounded-full transition-all duration-700" style={{ width: levelToWidth[level] ?? '50%' }} />
                   </div>
+                  {detailText(pd?.big_five_narratives?.[trait])}
                 </div>
               ))}
             </div>
@@ -1929,10 +2113,14 @@ export default function ResultsPage() {
                 </div>
               ))}
             </div>
+            {(pd?.resilience_narrative || pd?.work_style_narrative) && (
+              <p className="rp-sub text-charcoal/85 leading-relaxed mt-4">{[pd.resilience_narrative, pd.work_style_narrative].filter(Boolean).join(' ')}</p>
+            )}
           </div>
         )}
 
         {/* Paid plans: the written explanation behind each profile card */}
+        {/* previous: a separate text-only card; the explanations now sit inside each card above
         {tier !== 'free' && profileDetails && (
           <div className="card p-5" data-coach="profile-details">
             <SectionHead
@@ -1982,6 +2170,7 @@ export default function ResultsPage() {
             })()}
           </div>
         )}
+        */}
 
       </>),
   }
@@ -1991,8 +2180,16 @@ export default function ResultsPage() {
   // 'ai' is merged into the careers section (a collapsible panel on each career); the PDF still has its own AI page.
   // 'companies' (Companies to Target) is no longer offered, so it is never shown, even as a locked card.
   // const MERGED_SECTIONS = ['ai']
-  const MERGED_SECTIONS = ['ai', 'companies']
-  const orderedKeys = [...baseOrder, ...knownKeys.filter(k => !baseOrder.includes(k))].filter(k => !MERGED_SECTIONS.includes(k))
+  const MERGED_SECTIONS = ['ai', 'companies', 'unlock']
+  // Free plan: the locked Plan / Jobs / Courses / Certifications sections collapse into one 'unlock' card, placed where the first of them was.
+  const FREE_FOLDED = ['plan', 'jobs', 'certs', 'courses']
+  const baseKeys = [...baseOrder, ...knownKeys.filter(k => !baseOrder.includes(k))].filter(k => !MERGED_SECTIONS.includes(k))
+  const orderedKeys = tier !== 'free' ? baseKeys : (() => {
+    const first = baseKeys.findIndex(k => FREE_FOLDED.includes(k))
+    const rest = baseKeys.filter(k => !FREE_FOLDED.includes(k))
+    const at = first === -1 ? Math.min(rest.length, 2) : baseKeys.slice(0, first).filter(k => !FREE_FOLDED.includes(k)).length
+    return [...rest.slice(0, at), 'unlock', ...rest.slice(at)]
+  })()
 
   return (
     <div className="min-h-screen brand-surface page-fade-in">
@@ -2094,6 +2291,7 @@ export default function ResultsPage() {
             : k === 'certs' ? t('certifications.title')
             : k === 'courses' ? t('courses.title')
             : k === 'companies' ? t('companies.title')
+            : k === 'unlock' ? t('freeUnlock.title')
             : ''
           return (
             <div key={k} className="report-section space-y-4" data-coach={k === 'profile' ? undefined : k}>
