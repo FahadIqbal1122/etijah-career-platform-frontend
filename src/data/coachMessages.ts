@@ -45,3 +45,15 @@ export function resultsAdvice(p: {
   }
   return out
 }
+
+// Landing page: quick questions shown as chips in Sarah's panel, and the one-time nudge in her bubble.
+export const LANDING_SUGGESTIONS: Bi[] = [
+  { en: 'How long does it take?', ar: 'كم يستغرق التقييم؟' },
+  { en: 'What do I get for free?', ar: 'ماذا أحصل عليه مجاناً؟' },
+  { en: 'What do the plans cost?', ar: 'كم تكلفة الباقات؟' },
+  { en: 'Is my data private?', ar: 'هل بياناتي خاصة؟' },
+]
+export const LANDING_NUDGE: Bi = {
+  en: 'Questions about how it works or pricing? Ask me.',
+  ar: 'عندك سؤال عن طريقة العمل أو الأسعار؟ اسألني.',
+}

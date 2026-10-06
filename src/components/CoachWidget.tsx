@@ -33,9 +33,9 @@ export type Spot = HTMLElement | 'start' | 'end' | null
 
 interface Props {
   locale: 'en' | 'ar'
-  mode: 'assessment' | 'results'
+  mode: 'assessment' | 'results' | 'landing'
   responseId?: string                    // results mode
-  sessionId?: () => string               // assessment mode: stable per-browser id (rate limiting only)
+  sessionId?: () => string               // assessment / landing mode: stable per-browser id (rate limiting only)
   questionIndex?: number                 // assessment mode, 1-based
   questionTotal?: number
   // assessment mode: the question currently on screen, so she can explain it (called when a message is sent)
@@ -47,6 +47,8 @@ interface Props {
   spotIndex?: number
   // Offer the riddle / mini-games (they play inside her panel). tipOffersGame adds the button to the current tip.
   games?: boolean
+  // Quick questions shown as chips until the visitor sends their first message (landing page).
+  suggestions?: Bi[]
   tipOffersGame?: boolean
   tip?: Bi | null
   onTipDismiss?: () => void
@@ -63,6 +65,10 @@ const T = {
     en: 'Hi, I’m Sarah, your coach. Ask me anything about your results and what they mean.',
     ar: 'مرحباً، أنا سارة، مدرّبتك. اسألني عن نتائجك وماذا تعني.',
   },
+  greetLanding: {
+    en: 'Hi, I’m Sarah. Ask me anything about Etijahi: how the assessment works, what each plan includes, pricing, or how to get in touch.',
+    ar: 'مرحباً، أنا سارة. اسألني عن اتجاهي: كيف يعمل التقييم، وماذا تتضمن كل باقة، والأسعار، وطرق التواصل.',
+  },
   placeholder: { en: 'Type your question…', ar: 'اكتب سؤالك…' },
   send: { en: 'Send', ar: 'إرسال' },
   close: { en: 'Close', ar: 'إغلاق' },
@@ -77,7 +83,7 @@ const T = {
 
 export default function CoachWidget({
   locale, mode, responseId, sessionId, questionIndex, questionTotal, getQuestion,
-  place = 'end', spots, spotIndex = 0, games = false, tipOffersGame = false,
+  place = 'end', spots, spotIndex = 0, games = false, suggestions, tipOffersGame = false,
   tip = null, onTipDismiss, tipAutoHideMs = 9000, feedback,
 }: Props) {
   const isAr = locale === 'ar'
@@ -179,7 +185,7 @@ export default function CoachWidget({
   const panelBelow = effPlace === 'target' && !!pos && pos.y - 56 < 440
   const tipBelow = effPlace === 'target' && !!pos && pos.y - 56 < 130
 
-  const greeting = mode === 'results' ? tr(T.greetResults) : tr(T.greetAssessment)
+  const greeting = mode === 'results' ? tr(T.greetResults) : mode === 'landing' ? tr(T.greetLanding) : tr(T.greetAssessment)
   const nudge = feedbackActive && !open ? feedback?.nudge : undefined
   const bubbleText = !open ? (nudge ? tr(nudge) : tip ? tr(tip) : null) : null
   const bubbleVisible = !!bubbleText
@@ -199,8 +205,8 @@ export default function CoachWidget({
     if (tip) onTipDismiss?.()
   }
 
-  async function send() {
-    const text = input.trim()
+  async function send(preset?: string) {
+    const text = (preset ?? input).trim()
     if (!text || sending || rested) return
     const history = msgs.slice(-6)
     const qc = mode === 'assessment' ? getQuestion?.() ?? null : null
@@ -211,7 +217,7 @@ export default function CoachWidget({
       const res = await apiAuthPost<{ reply: string | null; limited: boolean }>('/coach/chat', {
         mode, message: text, history, locale,
         response_id: mode === 'results' ? responseId : undefined,
-        session_id: mode === 'assessment' ? sessionId?.() : undefined,
+        session_id: mode !== 'results' ? sessionId?.() : undefined,
         question_index: questionIndex, question_total: questionTotal,
         question_text: qc?.text || undefined, question_type: qc?.type, question_options: qc?.options,
       })
@@ -267,6 +273,13 @@ export default function CoachWidget({
                 ))}
                 {sending && <div className="coach-msg coach-msg-coach coach-typing">{tr(T.thinking)}</div>}
               </div>
+              {suggestions && !msgs.length && (
+                <div className="coach-chips">
+                  {suggestions.map(sg => (
+                    <button key={sg.en} type="button" disabled={sending} onClick={() => void send(tr(sg))}>{tr(sg)}</button>
+                  ))}
+                </div>
+              )}
               {games && (
                 <div className="coach-chips">
                   <button type="button" onClick={startGame}>{breakCopy.trigger[locale]}</button>

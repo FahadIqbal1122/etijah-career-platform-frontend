@@ -88,8 +88,10 @@ export const stage2ProgressCarry: Bi = {
 }
 
 export const stage2CoCreator: Bi = {
-  en: 'You’re one of our first 50 testers. The questions you flag as "off" get rewritten before launch.',
-  ar: 'أنت من أوائل ٥٠ مشاركًا معنا. الأسئلة التي تشير إلى أنها «غير دقيقة» ستُعاد صياغتها قبل الإطلاق.',
+  // en: 'You’re one of our first 50 testers. The questions you flag as "off" get rewritten before launch.',
+  // ar: 'أنت من أوائل ٥٠ مشاركًا معنا. الأسئلة التي تشير إلى أنها «غير دقيقة» ستُعاد صياغتها قبل الإطلاق.',
+  en: 'Your answers help us make Etijahi better. Any question you flag as "off" gets reviewed by our team.',
+  ar: 'إجاباتك تساعدنا على تطوير اتجاهي. أي سؤال تشير إلى أنه «غير دقيق» سيراجعه فريقنا.',
 }
 
 export function personalHook(typeLabel: string, locale: Locale): string {

@@ -276,7 +276,8 @@ export default function ResultsPage() {
           // show again on any later revisit, so its status is always worth knowing.
           // Only worth asking at all for beta submissions — skip the round trip
           // entirely for every other (permanent) results-page view.
-          if (data.beta_mode) {
+          // if (data.beta_mode) {  // feedback stays active after launch, so always check
+          {
             apiAuthGet<{ stage1_completed: boolean; result_stage_completed: boolean }>(`/beta-feedback/${id}/status`)
               .then(statusData => {
                 if (justCompleted && statusData.stage1_completed) setStage1Done(true)

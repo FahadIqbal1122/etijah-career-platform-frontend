@@ -15,6 +15,9 @@ import { startCheckout, apiAuthGet, apiAuthPost, type PlanCode } from '@/lib/api
 import PartnerModal from '@/components/shared/PartnerModal'
 import { LANDING_VARIANTS, type VariantSlug } from '@/data/landingVariants'
 import { setLandingVariant } from '@/lib/analytics'
+import CoachWidget from '@/components/CoachWidget'
+import { LANDING_SUGGESTIONS, LANDING_NUDGE, type Bi } from '@/data/coachMessages'
+import { getTelemetrySessionId } from '@/lib/telemetry'
 import { formatPrice, readCurrencyCookie, type Currency } from '@/lib/pricing'
 
 // Render a headline, tealing the `hl` phrase inside it. Uses indexOf so text
@@ -114,6 +117,15 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
   // Unknown -> SAR (the billing currency).
   const [currency, setCurrency] = useState<Currency>('SAR')
   useEffect(() => { setCurrency(readCurrencyCookie() ?? 'SAR') }, [])
+  // The launch price in the visitor's currency, filled into copy that says {price}.
+  const launchPrice = formatPrice('pathfinder', currency, locale)
+  const fillPrice = (x: string) => x.replace(/\{price\}/g, launchPrice)
+  // Sarah says one thing after a few seconds, then stays quiet until she is tapped.
+  const [coachTip, setCoachTip] = useState<Bi | null>(null)
+  useEffect(() => {
+    const id = window.setTimeout(() => setCoachTip(LANDING_NUDGE), 9000)
+    return () => window.clearTimeout(id)
+  }, [])
 
   async function handlePlanCta(planCode: PlanCode) {
     // Re-check the session fresh at click time rather than trusting `loggedIn`
@@ -151,7 +163,8 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
   return (
     <div className="brand-surface text-charcoal" dir={dir}>
 
-      {/* ── BETA ANNOUNCEMENT BAR ───────────────────────────────────── */}
+      {/* beta announcement bar removed for launch
+      { /* ── BETA ANNOUNCEMENT BAR ───────────────────────────────────── * /}
       <div className="sticky top-0 z-40 bg-charcoal text-white overflow-hidden">
         <div className="beta-marquee-track py-2 text-xs font-semibold tracking-wide">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -160,8 +173,10 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
         </div>
       </div>
 
+      */}
+
       {/* ── NAV ──────────────────────────────────────────────────────── */}
-      <nav className="sticky top-8 z-30 bg-white border-b border-[var(--line)]">
+      <nav className="sticky top-0 z-30 bg-white border-b border-[var(--line)]">
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between gap-4">
           <Wordmark size={30} />
           <div className="hidden md:flex items-center gap-7 text-sm font-medium text-charcoal/70">
@@ -210,14 +225,14 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               {/* <a href="#pricing" data-track="landing_hero_view_packages" className="text-sm font-semibold text-charcoal hover:text-teal">{c.hero.viewPackages}</a> * /}
               <a href="#pricing" data-track="landing_hero_view_packages" className="cta cta-outline cta-sm">{c.hero.viewPackages}</a>
             </div>
-            <p className="mt-3 text-sm text-charcoal/65">{c.hero.microcopy}</p>
+            <p className="mt-3 text-sm text-charcoal/65">{fillPrice(c.hero.microcopy)}</p>
             */}
             <div className="mt-6">
               <Link href="/assessment" data-track="landing_hero_start" className="cta">
                 <span>{c.hero.cta}</span>
                 <span className="cta-arrow">{arrow}</span>
               </Link>
-              <p className="mt-3 text-sm text-charcoal/65">{c.hero.microcopy}</p>
+              <p className="mt-3 text-sm text-charcoal/65">{fillPrice(c.hero.microcopy)}</p>
             </div>
             <p className="mt-6 text-lg text-charcoal/70 leading-relaxed max-w-xl">{c.hero.sub}</p>
             <h2 className="mt-4 text-sm font-normal text-charcoal/55 flex items-center gap-2">
@@ -480,7 +495,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               <span className="text-4xl font-extrabold text-white leading-none">{formatPrice('pathfinder', currency, locale)}</span>
             </div>
             <span className="mt-3 inline-block rounded-full bg-white/15 border border-white/40 px-3 py-1 text-xs font-bold text-white">
-              {locale === 'ar' ? 'عرض تعريفي لفترة محدودة' : 'Limited-time introductory offer'}
+              {locale === 'ar' ? 'سعر الإطلاق' : 'Launch price'}
             </span>
             <p className="mt-3 text-lg font-bold text-white">{c.pricing.paid.priceNote}</p>
             <p className="mt-3 text-sm text-white/80 leading-relaxed">{c.pricing.paid.for}</p>
@@ -499,8 +514,9 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               disabled={checkingOut === c.pricing.paid.code}
               className="cta mt-7 w-full !bg-white !text-primary !shadow-[0_16px_40px_-14px_rgba(0,0,0,0.4)]"
             >
-              {checkingOut === c.pricing.paid.code ? '…' : c.pricing.paid.cta}
+              {checkingOut === c.pricing.paid.code ? '…' : `${c.pricing.paid.cta} — ${launchPrice}`}
             </button>
+            <p className="mt-4 text-xs text-white/75 leading-relaxed text-center">{c.pricing.paid.note}</p>
           </Reveal>
           {/* Launchpad (enabled 4 Oct 2026): Pathfinder plus a 1:1 coaching session */}
           <Reveal className="card p-7 relative" style={{ transitionDelay: '180ms' }}>
@@ -554,7 +570,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
       <Section eyebrow={locale === 'ar' ? 'الأسئلة الشائعة' : 'FAQ'} center>
         <Reveal><h2 className="section-h"><Highlight text={c.faq.headline} hl={c.faq.hl} /></h2></Reveal>
         <Reveal className="mt-8 max-w-3xl mx-auto border-t border-[var(--line)]">
-          <FaqList items={c.faq.items} />
+          <FaqList items={c.faq.items.map((it: { q: string; a: string }) => ({ ...it, q: fillPrice(it.q), a: fillPrice(it.a) }))} />
         </Reveal>
       </Section>
 
@@ -568,7 +584,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
         <div className="relative z-10 max-w-2xl mx-auto px-5">
           <Reveal className="flex justify-center mb-6"><Logomark size={48} tone="dark" glow /></Reveal>
           <Reveal><h2 className="text-3xl sm:text-4xl font-extrabold leading-tight">{c.finalCta.headline}</h2></Reveal>
-          <Reveal><p className="mt-4 text-white/85 text-lg max-w-[30ch] mx-auto">{c.finalCta.sub}</p></Reveal>
+          <Reveal><p className="mt-4 text-white/85 text-lg max-w-[30ch] mx-auto">{fillPrice(c.finalCta.sub)}</p></Reveal>
           <Reveal className="mt-8 flex justify-center">
             <Link href="/assessment" data-track="landing_bottom_start" className="cta cta-onteal">
               <span>{c.finalCta.cta}</span>
@@ -611,6 +627,10 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           <div className="max-w-6xl mx-auto px-5 py-4 text-xs text-white/45">{c.footer.copyright}</div>
         </div>
       </footer>
+      <CoachWidget
+        locale={locale as 'en' | 'ar'} mode="landing" sessionId={getTelemetrySessionId}
+        suggestions={LANDING_SUGGESTIONS} tip={coachTip} onTipDismiss={() => setCoachTip(null)} tipAutoHideMs={10000}
+      />
     </div>
   )
 }
