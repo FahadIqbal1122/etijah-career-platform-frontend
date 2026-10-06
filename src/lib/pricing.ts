@@ -1,5 +1,6 @@
-// Display-only local pricing. Checkout is always charged in SAR (PLAN_CATALOG in the backend's main.py);
-// these are rounded equivalents shown to visitors by country. Update the tables when SAR prices change.
+// Local pricing by visitor country, shown only while the admin Currency switch is on (otherwise SAR only, see
+// useDisplayCurrency). The backend charges from its own LOCAL_PRICES table in main.py, so update both together
+// when prices change. SAR is the base price (PLAN_CATALOG).
 
 export type Currency = 'SAR' | 'BHD' | 'QAR' | 'KWD' | 'OMR' | 'AED' | 'USD'
 export type PriceKey = 'pathfinder' | 'pathfinder_standard' | 'launchpad'

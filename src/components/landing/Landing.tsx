@@ -18,7 +18,8 @@ import { setLandingVariant } from '@/lib/analytics'
 import CoachWidget from '@/components/CoachWidget'
 import { LANDING_SUGGESTIONS, LANDING_NUDGE, type Bi } from '@/data/coachMessages'
 import { getTelemetrySessionId } from '@/lib/telemetry'
-import { formatPrice, readCurrencyCookie, type Currency } from '@/lib/pricing'
+import { formatPrice } from '@/lib/pricing'
+import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
 
 // Render a headline, tealing the `hl` phrase inside it. Uses indexOf so text
 // after a repeated phrase is never dropped.
@@ -115,8 +116,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
   const [showPartnerModal, setShowPartnerModal] = useState(false)
   // Display currency comes from the proxy's geo cookie; read after mount to avoid a hydration mismatch.
   // Unknown -> SAR (the billing currency).
-  const [currency, setCurrency] = useState<Currency>('SAR')
-  useEffect(() => { setCurrency(readCurrencyCookie() ?? 'SAR') }, [])
+  const currency = useDisplayCurrency()
   // The launch price in the visitor's currency, filled into copy that says {price}.
   const launchPrice = formatPrice('pathfinder', currency, locale)
   const fillPrice = (x: string) => x.replace(/\{price\}/g, launchPrice)

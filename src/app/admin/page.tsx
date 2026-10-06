@@ -1134,7 +1134,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'waitlist' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('dashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -1283,6 +1283,10 @@ export default function AdminPage() {
   const [testModeError, setTestModeError] = useState('')
 
   const [homepageMode, setHomepageMode] = useState<'landing' | 'waitlist'>('landing')
+  const [multiCurrency, setMultiCurrency] = useState(false)
+  const [multiCurrencyLoading, setMultiCurrencyLoading] = useState(false)
+  const [multiCurrencySaving, setMultiCurrencySaving] = useState(false)
+  const [multiCurrencyError, setMultiCurrencyError] = useState('')
   const [betaClosed, setBetaClosed] = useState(false)
   const [betaPreviewSecret, setBetaPreviewSecret] = useState('')
   const [betaBusy, setBetaBusy] = useState(false)
@@ -1638,6 +1642,38 @@ export default function AdminPage() {
       setHomepageModeError(err.message)
     } finally {
       setHomepageModeSaving(false)
+    }
+  }
+
+  const fetchMultiCurrency = useCallback(async () => {
+    setMultiCurrencyLoading(true)
+    setMultiCurrencyError('')
+    try {
+      const res = await fetch('/api/admin/multi-currency')
+      if (!res.ok) throw new Error('Failed to load currency setting')
+      setMultiCurrency((await res.json()).enabled === true)
+    } catch (err: any) {
+      setMultiCurrencyError(err.message)
+    } finally {
+      setMultiCurrencyLoading(false)
+    }
+  }, [])
+
+  async function toggleMultiCurrency(enabled: boolean) {
+    setMultiCurrencySaving(true)
+    setMultiCurrencyError('')
+    try {
+      const res = await fetch('/api/admin/multi-currency', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      })
+      if (!res.ok) throw new Error('Failed to save currency setting')
+      setMultiCurrency((await res.json()).enabled === true)
+    } catch (err: any) {
+      setMultiCurrencyError(err.message)
+    } finally {
+      setMultiCurrencySaving(false)
     }
   }
 
@@ -3603,6 +3639,7 @@ export default function AdminPage() {
               tabs: [
                 { key: 'testmode', label: 'Test Mode', color: 'bg-cyan-600', badge: testModeEnabled ? 'ON' : undefined, onSelect: fetchTestMode },
                 { key: 'homepage', label: 'Homepage', color: 'bg-fuchsia-600', badge: homepageMode, onSelect: fetchHomepageMode },
+                { key: 'currency', label: 'Currency', color: 'bg-emerald-600', badge: multiCurrency ? 'ON' : undefined, onSelect: fetchMultiCurrency },
                 { key: 'betaclosed', label: 'Beta Access', color: 'bg-red-600', badge: betaClosed ? 'CLOSED' : undefined, onSelect: fetchBetaClosed },
                 { key: 'templates', label: 'Email Templates', color: 'bg-pink-600' },
                 { key: 'emailScheduler', label: 'Email Scheduler', color: 'bg-rose-600' },
@@ -5826,6 +5863,46 @@ export default function AdminPage() {
               </button>
             </div>
             {homepageModeError && <p className="text-xs text-red-500 mt-3">{homepageModeError}</p>}
+          </div>
+        </div>
+      )}
+
+      {/* ── Currency Tab ── */}
+      {activeTab === 'currency' && (
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <h2 className="text-xl font-bold text-slate-800 mb-1">Currency</h2>
+          <p className="text-sm text-slate-400 mb-6">
+            Off: every price on the site is shown and charged in SAR only. On: visitors see their local currency
+            (SAR, BHD, QAR, KWD, OMR, AED, or USD for everyone else) and are charged in that currency. The amounts
+            come from a fixed table on the server. Requires multi-currency to be enabled on the Tap account, and the
+            country detection (Cloudflare) to be in place, otherwise everyone still sees SAR.
+          </p>
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <p className="font-semibold text-slate-800">
+              Multi-currency is <span className={multiCurrency ? 'text-emerald-600' : 'text-slate-500'}>{multiCurrency ? 'ON' : 'OFF'}</span>
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">Affects the landing page, the dashboard and checkout for every visitor within seconds.</p>
+            <div className="flex gap-2 mt-4">
+              <button
+                disabled={multiCurrencyLoading || multiCurrencySaving}
+                onClick={() => toggleMultiCurrency(false)}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+                  !multiCurrency ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                SAR only (off)
+              </button>
+              <button
+                disabled={multiCurrencyLoading || multiCurrencySaving}
+                onClick={() => toggleMultiCurrency(true)}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+                  multiCurrency ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                All currencies (on)
+              </button>
+            </div>
+            {multiCurrencyError && <p className="text-xs text-red-500 mt-3">{multiCurrencyError}</p>}
           </div>
         </div>
       )}

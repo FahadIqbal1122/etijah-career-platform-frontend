@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { readCurrencyCookie } from './pricing'
 
 export const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://backend-career-compass.etijahcoaching.com').replace(/\/$/, '')
 
@@ -132,6 +133,8 @@ export async function startCheckout(planCode: PlanCode): Promise<{ checkout_url:
         fbc: readCookie('_fbc'),
         // so the shop sends the buyer back to the page in the language they were using
         locale: typeof window !== 'undefined' && /^\/ar(\/|$)/.test(window.location.pathname) ? 'ar' : 'en',
+        // the currency the buyer was shown; the backend only uses it while the admin multi-currency switch is on
+        currency: readCurrencyCookie() ?? 'SAR',
     })
 }
 
