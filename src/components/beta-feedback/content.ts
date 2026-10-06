@@ -24,7 +24,9 @@ export const FACE_EMOJIS = ['😖', '😐', '🙂', '😀', '🤩']
 //                "yes, if cheaper" option was dropped
 export const STAGE1_FORM_VERSION = 'v1'
 export const RESULT_STAGE_FORM_VERSION = 'v1'
-export const STAGE2_FORM_VERSION = 'v3'
+// export const STAGE2_FORM_VERSION = 'v3'
+//           v4 = 2026-10-06, shown price changed 149 -> 59 SAR (Pathfinder launch price)
+export const STAGE2_FORM_VERSION = 'v4'
 
 // ---------------------------------------------------------------------------
 // Stage 1 — pre-result pulse (loading screen, 3 taps, never blocks)
@@ -182,7 +184,8 @@ export const resultStageNoteLabel: Bi = {
 // Placeholder — final price / Founding Members offer is TBD per the
 // beta-strategy doc §7 (Dina decides by 16 Oct after Beta 2's 99 vs 149 SAR
 // test). Update this one constant once a price is set.
-export const STAGE2_REPORT_PRICE_SAR = 149
+// export const STAGE2_REPORT_PRICE_SAR = 149
+export const STAGE2_REPORT_PRICE_SAR = 59
 
 const REPORT_SECTION_OPTIONS: Option[] = [
   { value: 'personality', label: { en: 'Personality profile', ar: 'ملف الشخصية' } },

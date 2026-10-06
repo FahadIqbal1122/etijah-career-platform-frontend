@@ -950,6 +950,11 @@ html { scroll-behavior: smooth; }
   animation: coach-pop-in .9s cubic-bezier(.2, 1.15, .3, 1) 1.6s both;   /* arrives a moment after the assessment starts */
   transition: left 1s cubic-bezier(.45, 0, .2, 1), top 1s cubic-bezier(.45, 0, .2, 1), opacity .3s ease;
 }
+/* draggable: she follows the pointer without the glide */
+.coach-widget.is-draggable .coach-avatar-btn { touch-action: none; cursor: grab; }
+.coach-widget.is-dragging { transition: none !important; }
+.coach-widget.is-dragging .coach-avatar-btn { cursor: grabbing; transform: scale(1.08); }
+.coach-widget.is-dragging .coach-speech { display: none; }
 /* after the first arrival she just fades in (e.g. when coming back from the green screen) */
 .coach-widget[data-place="target"].has-arrived { animation: coach-fade-in .4s ease both; }
 @media (prefers-reduced-motion: reduce) { .coach-widget[data-place="target"], .coach-widget[data-place="target"].has-arrived { animation: none; transition: none; } }

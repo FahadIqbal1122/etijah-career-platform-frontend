@@ -6,12 +6,12 @@
 // and moves on early if the reader scrolls her section out of view.
 // useCoachHidden remembers (in this browser) that someone pressed her cross, on every page that uses her.
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type { Bi } from '@/data/coachMessages'
 
 const HIDE_KEY = 'sarahHidden'
 const HIDE_EVENT = 'sarah-hidden-change'
-export function useCoachHidden(): [boolean, () => void] {
+export function useCoachHidden(): [boolean, () => void, () => void] {
   const hidden = useSyncExternalStore(
     cb => { window.addEventListener(HIDE_EVENT, cb); return () => window.removeEventListener(HIDE_EVENT, cb) },
     () => { try { return window.localStorage.getItem(HIDE_KEY) === '1' } catch { return false } },
@@ -21,7 +21,36 @@ export function useCoachHidden(): [boolean, () => void] {
     try { window.localStorage.setItem(HIDE_KEY, '1') } catch {}
     window.dispatchEvent(new Event(HIDE_EVENT))
   }, [])
-  return [hidden, hide]
+  // bringing her back also forgets where she was docked, so she starts roaming again
+  const show = useCallback(() => {
+    try { window.localStorage.removeItem(HIDE_KEY); window.localStorage.removeItem('sarahDock') } catch {}
+    window.dispatchEvent(new Event(HIDE_EVENT)); window.dispatchEvent(new Event('sarah-dock-change'))
+  }, [])
+  return [hidden, hide, show]
+}
+
+// useCoachDock remembers where someone dragged her: a side of the screen and a height. While she is docked she
+// stops roaming and stays put.
+export type CoachDock = { side: 'l' | 'r'; y: number }
+const DOCK_KEY = 'sarahDock'
+const DOCK_EVENT = 'sarah-dock-change'
+export function useCoachDock(): [CoachDock | null, (d: CoachDock) => void] {
+  const raw = useSyncExternalStore(
+    cb => { window.addEventListener(DOCK_EVENT, cb); return () => window.removeEventListener(DOCK_EVENT, cb) },
+    () => { try { return window.localStorage.getItem(DOCK_KEY) } catch { return null } },
+    () => null,
+  )
+  const dock = useMemo<CoachDock | null>(() => {
+    try {
+      const d = raw ? JSON.parse(raw) : null
+      return d && (d.side === 'l' || d.side === 'r') && typeof d.y === 'number' ? d : null
+    } catch { return null }
+  }, [raw])
+  const setDock = useCallback((d: CoachDock) => {
+    try { window.localStorage.setItem(DOCK_KEY, JSON.stringify(d)) } catch {}
+    window.dispatchEvent(new Event(DOCK_EVENT))
+  }, [])
+  return [dock, setDock]
 }
 
 // module-level so the default is the same array on every render (it is an effect dependency)

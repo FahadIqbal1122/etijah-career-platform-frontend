@@ -17,7 +17,8 @@ import { LANDING_VARIANTS, type VariantSlug } from '@/data/landingVariants'
 import { setLandingVariant } from '@/lib/analytics'
 import CoachWidget from '@/components/CoachWidget'
 import { LANDING_SUGGESTIONS, LANDING_ROAM, PLAN_CHOICES } from '@/data/coachMessages'
-import { useCoachRoam, useCoachHidden } from '@/components/useCoachRoam'
+import CoachSummon from '@/components/CoachSummon'
+import { useCoachRoam, useCoachHidden, useCoachDock } from '@/components/useCoachRoam'
 import { getTelemetrySessionId } from '@/lib/telemetry'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
@@ -126,8 +127,9 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
   const fillPrice = (x: string) => x.replace(/\{price\}/g, launchPrice)
   // Sarah moves down the page, a short line per section (random order and wording); at the plans she offers to
   // help choose one. The cross sends her away for good (remembered in this browser).
-  const [coachHidden, hideCoach] = useCoachHidden()
-  const roam = useCoachRoam({ pool: LANDING_ROAM, enabled: !coachHidden, paused: false, firstDelay: 6000, gap: LANDING_GAP })
+  const [coachHidden, hideCoach, showCoach] = useCoachHidden()
+  const [coachDock, setCoachDock] = useCoachDock()
+  const roam = useCoachRoam({ pool: LANDING_ROAM, enabled: !coachHidden && !coachDock, paused: false, firstDelay: 6000, gap: LANDING_GAP })
 
   async function handlePlanCta(planCode: PlanCode) {
     // Re-check the session fresh at click time rather than trusting `loggedIn`
@@ -635,13 +637,13 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           </div>
         </div>
         <div className="border-t border-white/10">
-          <div className="max-w-6xl mx-auto px-5 py-4 text-xs text-white/45">{c.footer.copyright}</div>
+          <div className="max-w-6xl mx-auto px-5 py-4 text-xs text-white/45 flex items-center justify-between gap-4"><span>{c.footer.copyright}</span>{coachHidden && <CoachSummon locale={locale as 'en' | 'ar'} onShow={showCoach} />}</div>
         </div>
       </footer>
-      {!coachHidden && roam.target && (
+      {!coachHidden && (roam.target || coachDock) && (
         <CoachWidget
           locale={locale as 'en' | 'ar'} mode="landing" sessionId={getTelemetrySessionId}
-          spots={{ wide: [roam.target], narrow: [roam.target] }} onHide={hideCoach}
+          spots={roam.target ? { wide: [roam.target], narrow: [roam.target] } : undefined} onHide={hideCoach} dock={coachDock} onDock={setCoachDock}
           suggestions={LANDING_SUGGESTIONS} tip={roam.tip} onTipDismiss={roam.dismiss}
           tipChoices={roam.key === 'pricing' ? PLAN_CHOICES : undefined}
           tipAutoHideMs={roam.key === 'pricing' ? 20000 : 10000}

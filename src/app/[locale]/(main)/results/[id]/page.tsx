@@ -17,7 +17,8 @@ import BreakPanel from '@/components/BreakPanel'
 // import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
 import CoachWidget from '@/components/CoachWidget'
 import { roamPool } from '@/data/coachMessages'
-import { useCoachRoam, useCoachHidden } from '@/components/useCoachRoam'
+import CoachSummon from '@/components/CoachSummon'
+import { useCoachRoam, useCoachHidden, useCoachDock } from '@/components/useCoachRoam'
 import BetaFeedbackResultStage from '@/components/beta-feedback/BetaFeedbackResultStage'
 
 const levelToWidth: Record<string, string> = {
@@ -408,8 +409,9 @@ export default function ResultsPage() {
   }, [summary, jobs, courses, companies, locale])
   const roamLines = useMemo(() => (roamCtx ? roamPool(roamCtx) : null), [roamCtx])
   const feedbackPending = COACH_FEEDBACK && !resultStageDone && !resultMarker && !resultFeedbackDone
-  const [coachHidden, hideCoach] = useCoachHidden()
-  const roam = useCoachRoam({ pool: roamLines, enabled: !!summary && !coachHidden, paused: feedbackPending && resultFeedbackReached })
+  const [coachHidden, hideCoach, showCoach] = useCoachHidden()
+  const [coachDock, setCoachDock] = useCoachDock()
+  const roam = useCoachRoam({ pool: roamLines, enabled: !!summary && !coachHidden && !coachDock, paused: feedbackPending && resultFeedbackReached })
 
   // Assessment taken in Arabic: one language only. Pin the page to Arabic (hide the header
   // language switch, and move anyone who opened the English URL over to Arabic).
@@ -2021,6 +2023,7 @@ export default function ResultsPage() {
 
         {/* Every section can be folded away; all start open. A section with nothing to show hides its bar too. */}
         <div className="flex justify-end gap-3 text-xs text-charcoal/70">
+          {coachHidden && <CoachSummon locale={locale as 'en' | 'ar'} onShow={showCoach} />}
           <button type="button" className="underline" onClick={() => setCollapsedSections({})}>{t('sections.expandAll')}</button>
           <button type="button" className="underline" onClick={() => setCollapsedSections(Object.fromEntries(orderedKeys.map(k => [k, true])))}>{t('sections.collapseAll')}</button>
         </div>
@@ -2092,10 +2095,10 @@ export default function ResultsPage() {
       {/* Not rendered until she has a first section to arrive at; at the end of the report she goes to the feedback question. */}
       {(() => {
         const at = feedbackPending && resultFeedbackReached && feedbackEl ? feedbackEl : roam.target
-        return at && !coachHidden && (
+        return (at || (coachDock && summary)) && !coachHidden && (
           <CoachWidget
-            locale={locale as 'en' | 'ar'} mode="results" responseId={id} onHide={hideCoach}
-            spots={{ wide: [at], narrow: [at] }}
+            locale={locale as 'en' | 'ar'} mode="results" responseId={id} onHide={hideCoach} dock={coachDock} onDock={setCoachDock}
+            spots={at ? { wide: [at], narrow: [at] } : undefined}
             tip={roam.tip} onTipDismiss={roam.dismiss} tipAutoHideMs={9000}
             feedback={feedbackPending ? {
               kind: 'result', responseId: id, autoOpen: resultFeedbackReached,

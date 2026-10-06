@@ -54,6 +54,8 @@ interface Props {
   tipChoices?: { label: Bi; ask: Bi }[]
   // Shows a small cross on her; pressing it sends her away (the page remembers that).
   onHide?: () => void
+  dock?: { side: 'l' | 'r'; y: number } | null   // where she was dragged to (she stays there)
+  onDock?: (d: { side: 'l' | 'r'; y: number }) => void   // given = she can be dragged
   tip?: Bi | null
   onTipDismiss?: () => void
   tipAutoHideMs?: number
@@ -88,7 +90,7 @@ const T = {
 
 export default function CoachWidget({
   locale, mode, responseId, sessionId, questionIndex, questionTotal, getQuestion,
-  place = 'end', spots, spotIndex = 0, games = false, suggestions, tipOffersGame = false, tipChoices, onHide,
+  place = 'end', spots, spotIndex = 0, games = false, suggestions, tipOffersGame = false, tipChoices, onHide, dock, onDock,
   tip = null, onTipDismiss, tipAutoHideMs = 9000, feedback,
 }: Props) {
   const isAr = locale === 'ar'
@@ -118,15 +120,42 @@ export default function CoachWidget({
     () => window.matchMedia('(min-width: 900px)').matches,
     () => false,
   )
+  // Dragging: she follows the pointer, and on release snaps to the nearest side of the screen.
+  const [drag, setDrag] = useState<{ x: number; y: number } | null>(null)
+  const dragRef = useRef<{ sx: number; sy: number; moved: boolean } | null>(null)
+  const justDragged = useRef(false)
+  const clampY = (y: number) => Math.min(Math.max(y, 118), window.innerHeight - 60)
+  function onPointerDown(e: React.PointerEvent) {
+    if (!onDock || e.button > 0) return
+    dragRef.current = { sx: e.clientX, sy: e.clientY, moved: false }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    const d = dragRef.current
+    if (!d) return
+    if (!d.moved && Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 7) return
+    d.moved = true
+    setDrag({ x: Math.min(Math.max(e.clientX, 34), window.innerWidth - 34), y: clampY(e.clientY) })
+  }
+  function onPointerUp(e: React.PointerEvent) {
+    const d = dragRef.current
+    dragRef.current = null
+    if (!d?.moved) return
+    justDragged.current = true
+    setTimeout(() => { justDragged.current = false }, 0)
+    onDock?.({ side: e.clientX < window.innerWidth / 2 ? 'l' : 'r', y: clampY(e.clientY) })
+    setDrag(null)
+  }
+
   // A spot whose element is not displayed (hidden by CSS on this screen size) is skipped.
   const list = spots ? (wide ? spots.wide : spots.narrow).filter((x): x is NonNullable<Spot> => !!x && (typeof x !== 'object' || x.offsetParent !== null)) : []
   const spot = list.length ? list[spotIndex % list.length] : null
   const target = spot && typeof spot === 'object' ? spot : null
-  const effPlace: 'end' | 'start' | 'center' | 'target' = spot === 'start' || spot === 'end' ? spot : target ? 'target' : place
+  const effPlace: 'end' | 'start' | 'center' | 'target' = dock || drag ? 'target' : spot === 'start' || spot === 'end' ? spot : target ? 'target' : place
 
   // Where the target element is on screen (she is centred on it and glides there). Measured in observer/event
   // callbacks, which also fire once on observe.
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+  const [measured, setPos] = useState<{ x: number; y: number } | null>(null)
   // The slow pop-in only plays the first time she arrives on a spot.
   const [arrived, setArrived] = useState(false)
   useEffect(() => {
@@ -160,6 +189,8 @@ export default function CoachWidget({
     window.addEventListener('scroll', measure, true)
     return () => { ro.disconnect(); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true) }
   }, [target])
+
+  const pos = drag ?? (dock && inBrowser ? { x: dock.side === 'l' ? 44 : window.innerWidth - 44, y: clampY(dock.y) } : measured)
 
   // Derived-state updates during render (keeps these out of effects).
   if (feedback?.autoOpen && !autoOpened) { setAutoOpened(true); setOpen(true) }
@@ -262,7 +293,7 @@ export default function CoachWidget({
   }
 
   const widget = (
-    <div className={`coach-widget ${open ? 'is-open' : ''} ${panelBelow ? 'panel-below' : ''} ${tipBelow ? 'tip-below' : ''} ${arrived ? 'has-arrived' : ''} ${target?.hasAttribute('data-coach') ? 'is-pinned' : ''}`} data-place={effPlace}
+    <div className={`coach-widget ${open ? 'is-open' : ''} ${panelBelow ? 'panel-below' : ''} ${tipBelow ? 'tip-below' : ''} ${arrived ? 'has-arrived' : ''} ${dock || drag || target?.hasAttribute('data-coach') ? 'is-pinned' : ''} ${drag ? 'is-dragging' : ''} ${onDock ? 'is-draggable' : ''}`} data-place={effPlace}
       onAnimationEnd={e => { if (e.target === e.currentTarget && effPlace === 'target') setArrived(true) }} style={targetStyle} dir={isAr ? 'rtl' : 'ltr'}>
       {open && (
         <div className="coach-panel" role="dialog" aria-label="Sarah">
@@ -347,7 +378,8 @@ export default function CoachWidget({
       )}
       <button
         type="button" className={`coach-avatar coach-avatar-btn ${bubbleVisible ? 'is-nudging' : ''}`}
-        onClick={toggleOpen}
+        onClick={() => { if (!justDragged.current) toggleOpen() }}
+        onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
         aria-label={tr(T.open)} aria-expanded={open}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
