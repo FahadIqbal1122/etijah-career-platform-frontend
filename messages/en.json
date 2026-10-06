@@ -683,6 +683,7 @@
       "topValue": "Top Value",
       "topStrength": "Top Strength"
     },
+    "profileDetails": {"title": "More about your profile", "subtitle": "What each result means for you", "tip": "To develop it"},
     "careerTypes": { "title": "Your interests", "subtitle": "The kinds of work you enjoy most (your RIASEC profile)" },
     "coreValues": { "title": "What matters to you", "subtitle": "What you want from work and life" },
     "topStrengths": { "title": "What you are good at", "subtitle": "Your natural strengths" },

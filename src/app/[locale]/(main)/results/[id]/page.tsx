@@ -201,6 +201,8 @@ export default function ResultsPage() {
   const [error, setError] = useState('')
   const [jobs, setJobs] = useState<any[]>([])
   const [actionPlan, setActionPlan] = useState<any>(null)
+  // Written explanations of the profile cards (paid plans only; the backend sends nothing for free)
+  const [profileDetails, setProfileDetails] = useState<any>(null)
   // The direction the user chose to build their plan around (paid): { label, source, plan, locales } | null
   const [direction, setDirection] = useState<any>(null)
   const [dirPicking, setDirPicking] = useState(false)
@@ -314,6 +316,7 @@ export default function ResultsPage() {
         .then(data => {
           setJobs(data.career_recommendations || [])
           setActionPlan(data.action_plan || null)
+          setProfileDetails(data.profile_details || null)
           setCareerDirection(data.career_direction || null)
         })
         .catch(() => {})
@@ -1926,6 +1929,57 @@ export default function ResultsPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Paid plans: the written explanation behind each profile card */}
+        {tier !== 'free' && profileDetails && (
+          <div className="card p-5" data-coach="profile-details">
+            <SectionHead
+              title={t('profileDetails.title')}
+              subtitle={t('profileDetails.subtitle')}
+              icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>}
+            />
+            {(() => {
+              const pd = profileDetails
+              const group = (title: string, intro: any, items: { label: string; text?: string; tip?: string }[]) => {
+                const rows = items.filter(x => x.text)
+                if (!intro && rows.length === 0) return null
+                return (
+                  <div className="mt-5 first:mt-0">
+                    <p className="rp-label mb-2">{title}</p>
+                    {intro && <p className="rp-body text-charcoal/90 mb-3">{intro}</p>}
+                    <div className="space-y-3">
+                      {rows.map(x => (
+                        <div key={x.label} className="rounded-xl border border-[var(--line)] bg-lightblue/40 px-4 py-3">
+                          <p className="rp-h text-charcoal capitalize">{x.label}</p>
+                          <p className="rp-body text-charcoal/90 mt-1.5">{x.text}</p>
+                          {x.tip && <p className="rp-sub mt-2"><span className="font-bold text-charcoal">{t('profileDetails.tip')}:</span> {x.tip}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              }
+              const riasecKeys = ['riasec_primary_narrative', 'riasec_secondary_narrative', 'riasec_tertiary_narrative']
+              const bf = pd.big_five_narratives || {}
+              const vn = pd.values_narratives || {}
+              const sn = pd.strengths_narratives || {}
+              return (
+                <>
+                  {group(t('careerTypes.title'), pd.riasec_overview, (summary.riasec?.top_types || []).slice(0, 3).map((rt: string, i: number) => ({ label: riasecLabel(rt), text: pd[riasecKeys[i]] })))}
+                  {group(t('personality.title'), pd.big_five_overview, Object.keys(summary.big_five || {}).map(k => ({ label: traitLabel(k), text: bf[k] })))}
+                  {group(t('coreValues.title'), pd.values_overview, (summary.values?.top_values || []).slice(0, 3).map((v: string, i: number) => ({ label: valueLabel(v), text: vn[`value_${i + 1}`] })))}
+                  {group(t('topStrengths.title'), pd.strengths_overview, (summary.strengths?.top_strengths || []).slice(0, 3).map((st: string, i: number) => ({ label: strengthLabel(st), text: sn[`strength_${i + 1}`]?.narrative, tip: sn[`strength_${i + 1}`]?.development_tip })))}
+                  {(pd.resilience_narrative || pd.work_style_narrative) && (
+                    <div className="mt-5">
+                      <p className="rp-label mb-2">{t('workStyle.title')}</p>
+                      <p className="rp-body text-charcoal/90">{[pd.resilience_narrative, pd.work_style_narrative].filter(Boolean).join(' ')}</p>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </div>
         )}
 

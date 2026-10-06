@@ -683,6 +683,7 @@
       "topValue": "أهم قيمة",
       "topStrength": "أبرز نقطة قوة"
     },
+    "profileDetails": {"title": "المزيد عن ملفك الشخصي", "subtitle": "ماذا تعني كل نتيجة لك", "tip": "لتطويرها"},
     "careerTypes": { "title": "اهتماماتك", "subtitle": "أنواع العمل التي تستمتع بها أكثر (ملف RIASEC)" },
     "coreValues": { "title": "ما يهمك", "subtitle": "ما تريده من العمل والحياة" },
     "topStrengths": { "title": "ما تجيده", "subtitle": "نقاط قوتك الطبيعية" },
