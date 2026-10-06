@@ -50,6 +50,10 @@ interface Props {
   // Quick questions shown as chips until the visitor sends their first message (landing page).
   suggestions?: Bi[]
   tipOffersGame?: boolean
+  // Buttons under her tip: each opens the chat and sends `ask` (the landing page's plan chooser).
+  tipChoices?: { label: Bi; ask: Bi }[]
+  // Shows a small cross on her; pressing it sends her away (the page remembers that).
+  onHide?: () => void
   tip?: Bi | null
   onTipDismiss?: () => void
   tipAutoHideMs?: number
@@ -72,6 +76,7 @@ const T = {
   placeholder: { en: 'Type your question…', ar: 'اكتب سؤالك…' },
   send: { en: 'Send', ar: 'إرسال' },
   close: { en: 'Close', ar: 'إغلاق' },
+  hide: { en: 'Hide Sarah', ar: 'إخفاء سارة' },
   open: { en: 'Chat with Sarah', ar: 'تحدث مع سارة' },
   thinking: { en: '…', ar: '…' },
   error: { en: 'I couldn’t answer that just now. Please try again in a moment.', ar: 'لم أستطع الإجابة الآن. حاول مرة أخرى بعد قليل.' },
@@ -83,7 +88,7 @@ const T = {
 
 export default function CoachWidget({
   locale, mode, responseId, sessionId, questionIndex, questionTotal, getQuestion,
-  place = 'end', spots, spotIndex = 0, games = false, suggestions, tipOffersGame = false,
+  place = 'end', spots, spotIndex = 0, games = false, suggestions, tipOffersGame = false, tipChoices, onHide,
   tip = null, onTipDismiss, tipAutoHideMs = 9000, feedback,
 }: Props) {
   const isAr = locale === 'ar'
@@ -128,6 +133,18 @@ export default function CoachWidget({
     if (!target) return
     const measure = () => {
       const r = target.getBoundingClientRect()
+      if (target.hasAttribute('data-coach')) {
+        // A report section: she hangs on its end-side top corner (outside the card when the page has room, inside
+        // on narrow screens) and stays in view, riding down the section's edge as the reader scrolls.
+        const rtl = getComputedStyle(target).direction === 'rtl'
+        const room = rtl ? r.left : window.innerWidth - r.right
+        const off = room >= 70 && r.width > 600 ? 40 : -34
+        setPos({
+          x: rtl ? r.left - off : r.right + off,
+          y: Math.min(Math.max(r.top + 38, 118), Math.max(r.bottom - 44, 118), window.innerHeight - 60),
+        })
+        return
+      }
       // keep her clear of the top bar (logo, report a bug, language) and the screen edges
       setPos({
         x: Math.min(Math.max(r.left + r.width / 2, 70), window.innerWidth - 70),
@@ -208,6 +225,12 @@ export default function CoachWidget({
     if (tip) onTipDismiss?.()
   }
 
+  function askAndOpen(ask: string) {
+    setOpen(true)
+    onTipDismiss?.()
+    void send(ask)
+  }
+
   async function send(preset?: string) {
     const text = (preset ?? input).trim()
     if (!text || sending || rested) return
@@ -239,7 +262,7 @@ export default function CoachWidget({
   }
 
   const widget = (
-    <div className={`coach-widget ${open ? 'is-open' : ''} ${panelBelow ? 'panel-below' : ''} ${tipBelow ? 'tip-below' : ''} ${arrived ? 'has-arrived' : ''}`} data-place={effPlace}
+    <div className={`coach-widget ${open ? 'is-open' : ''} ${panelBelow ? 'panel-below' : ''} ${tipBelow ? 'tip-below' : ''} ${arrived ? 'has-arrived' : ''} ${target?.hasAttribute('data-coach') ? 'is-pinned' : ''}`} data-place={effPlace}
       onAnimationEnd={e => { if (e.target === e.currentTarget && effPlace === 'target') setArrived(true) }} style={targetStyle} dir={isAr ? 'rtl' : 'ltr'}>
       {open && (
         <div className="coach-panel" role="dialog" aria-label="Sarah">
@@ -306,12 +329,22 @@ export default function CoachWidget({
             <button className="coach-close" onClick={onTipDismiss} aria-label={tr(T.close)}>✕</button>
           )}
           <p>{bubbleShown}</p>
+          {tipChoices && tip && !nudge && (
+            <div className="coach-tip-choices">
+              {tipChoices.map(c => (
+                <button key={c.label.en} type="button" className="coach-tip-action" onClick={() => askAndOpen(tr(c.ask))}>{tr(c.label)}</button>
+              ))}
+            </div>
+          )}
           {games && tipOffersGame && tip && !nudge && (
             <button type="button" className="coach-tip-action" onClick={startGame}>{breakCopy.trigger[locale]}</button>
           )}
         </div>
       )}
 
+      {onHide && !open && !required && (
+        <button type="button" className="coach-hide" onClick={onHide} aria-label={tr(T.hide)} title={tr(T.hide)}>✕</button>
+      )}
       <button
         type="button" className={`coach-avatar coach-avatar-btn ${bubbleVisible ? 'is-nudging' : ''}`}
         onClick={toggleOpen}

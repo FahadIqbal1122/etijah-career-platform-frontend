@@ -711,6 +711,7 @@
     },
     "suggestedCareers": {
       "title": "Careers that fit you", "subtitle": "We compared your personality, values and strengths with each career. The percentage shows how close the fit is. Each card also shows how AI may change that career.", "matchLabel": "match",
+      "moreLockedTitle": "Unlock 5 more careers", "moreLockedBody": "Upgrade to Pathfinder to see the other 5 careers that fit you, each with the full detail.", "moreLockedCta": "Upgrade to Pathfinder",
       "fitTag": { "strong_fit": "Strong fit", "worth_exploring": "Worth exploring" },
       "directionTag": { "builds_on_background": "Builds on your background", "new_direction": "New direction" },
       "nextSteps": "Your next steps for this career",
@@ -848,6 +849,7 @@
       "subtitleBalanced": "Next steps that keep your options open"
     },
     "aiImpact": {
+      "unlockCta": "Unlock the full list",
       "title": "How AI may change your careers",
       "subtitle": "Which tasks may change, which human skills stay valuable, and how to prepare",
       "rowTitle": "How AI may change this career",

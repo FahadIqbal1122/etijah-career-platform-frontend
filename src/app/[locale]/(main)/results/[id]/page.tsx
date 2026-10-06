@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { apiGet, apiAuthGet, apiAuthPost, apiAuthDelete, apiAuthGetBlob } from '@/lib/api'
@@ -16,7 +16,8 @@ import BetaFeedbackStage1 from '@/components/beta-feedback/BetaFeedbackStage1'
 import BreakPanel from '@/components/BreakPanel'
 // import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
 import CoachWidget from '@/components/CoachWidget'
-import { resultsAdvice, type Bi } from '@/data/coachMessages'
+import { roamPool } from '@/data/coachMessages'
+import { useCoachRoam, useCoachHidden } from '@/components/useCoachRoam'
 import BetaFeedbackResultStage from '@/components/beta-feedback/BetaFeedbackResultStage'
 
 const levelToWidth: Record<string, string> = {
@@ -40,6 +41,17 @@ const PILL_ICONS = {
   shield: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z',
   flag: 'M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5',
 } as const
+// Free plan: the AI-impact panels show only the first point for real; the rest is a blurred placeholder
+// (generic filler, not the real text — the backend also only sends the first point to free viewers).
+const BLUR_FILLER = [
+  'Reviewing and organising routine information for the wider team',
+  'Preparing standard documents and summaries for regular updates',
+  'Comparing options and presenting the findings to colleagues',
+]
+function BlurBlock({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <div aria-hidden="true" className={`select-none pointer-events-none ${className}`} style={{ filter: 'blur(5px)' }}>{children}</div>
+}
+
 function PillIcon({ name, size }: { name: keyof typeof PILL_ICONS; size?: number }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden="true" width={size} height={size}>
@@ -143,9 +155,10 @@ export default function ResultsPage() {
   const [scoreMap, setScoreMap] = useState<Record<string, number>>({})
   const [recentCompletions, setRecentCompletions] = useState<number | null>(null)
   // One-way coach bubble: one tip built from the user's own results, shown once per visit
-  const [coachMsg, setCoachMsg] = useState<Bi | null>(null)
-  const coachShown = useRef(false)
-  const dismissCoach = useCallback(() => setCoachMsg(null), [])
+  // (replaced by useCoachRoam below: she moves between report sections and comments on each)
+  // const [coachMsg, setCoachMsg] = useState<Bi | null>(null)
+  // const coachShown = useRef(false)
+  // const dismissCoach = useCallback(() => setCoachMsg(null), [])
   const [tier, setTier] = useState<'free' | 'pathfinder' | 'launchpad'>('launchpad')
   const [betaMode, setBetaMode] = useState(false)
   const [stage1Done, setStage1Done] = useState(false)
@@ -160,7 +173,9 @@ export default function ResultsPage() {
   const [resultFeedbackDone, setResultFeedbackDone] = useState(false)
   // The coach drifts over to the feedback question once the reader reaches the end of the report.
   const [resultFeedbackReached, setResultFeedbackReached] = useState(false)
+  const [feedbackEl, setFeedbackEl] = useState<HTMLElement | null>(null)
   const feedbackAnchorRef = useCallback((el: HTMLDivElement | null) => {
+    setFeedbackEl(el)
     if (!el || typeof IntersectionObserver === 'undefined') return
     const io = new IntersectionObserver(entries => {
       if (entries.some(e => e.isIntersecting)) { setResultFeedbackReached(true); io.disconnect() }
@@ -357,20 +372,44 @@ export default function ResultsPage() {
     return () => clearTimeout(timer)
   }, [dirPending, dirTick, id, locale])
 
-  useEffect(() => {
-    if (!summary || coachShown.current) return
-    const type = summary.riasec?.top_types?.[0]
-    const strength = summary.strengths?.top_strengths?.[0]
-    if (!type || !strength) return
-    coachShown.current = true
-    const tips = resultsAdvice({
-      topType: riasecLabel(type),
-      topStrength: strengthLabel(strength),
-      resilience: summary.resilience?.workplace_resilience,
-    })
-    const id = setTimeout(() => setCoachMsg(tips[Math.floor(Math.random() * tips.length)]), 2500)
-    return () => clearTimeout(id)
-  }, [summary])
+  // useEffect(() => {
+  //   if (!summary || coachShown.current) return
+  //   const type = summary.riasec?.top_types?.[0]
+  //   const strength = summary.strengths?.top_strengths?.[0]
+  //   if (!type || !strength) return
+  //   coachShown.current = true
+  //   const tips = resultsAdvice({
+  //     topType: riasecLabel(type),
+  //     topStrength: strengthLabel(strength),
+  //     resilience: summary.resilience?.workplace_resilience,
+  //   })
+  //   const id = setTimeout(() => setCoachMsg(tips[Math.floor(Math.random() * tips.length)]), 2500)
+  //   return () => clearTimeout(id)
+  // }, [summary])
+
+  // Sarah wanders between the report sections and comments on each (random order, timing and wording).
+  const roamCtx = useMemo(() => {
+    if (!summary) return null
+    const types: string[] = summary.riasec?.top_types ?? []
+    return {
+      topType: types[0] ? riasecLabel(types[0]) : undefined,
+      secondType: types[1] ? riasecLabel(types[1]) : undefined,
+      topValue: summary.values?.top_values?.[0] ? valueLabel(summary.values.top_values[0]) : undefined,
+      topStrength: summary.strengths?.top_strengths?.[0] ? strengthLabel(summary.strengths.top_strengths[0]) : undefined,
+      topCareer: jobs[0]?.title as string | undefined,
+      topCareerMatch: typeof jobs[0]?.match_score === 'number' ? (jobs[0].match_score as number) : undefined,
+      careerCount: jobs.length || undefined,
+      courseCount: courses.length || undefined,
+      companyCount: companies.length || undefined,
+      resilience: summary.resilience?.workplace_resilience as number | undefined,
+    }
+    // the label helpers are re-created every render; the locale is what changes their output
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [summary, jobs, courses, companies, locale])
+  const roamLines = useMemo(() => (roamCtx ? roamPool(roamCtx) : null), [roamCtx])
+  const feedbackPending = COACH_FEEDBACK && !resultStageDone && !resultMarker && !resultFeedbackDone
+  const [coachHidden, hideCoach] = useCoachHidden()
+  const roam = useCoachRoam({ pool: roamLines, enabled: !!summary && !coachHidden, paused: feedbackPending && resultFeedbackReached })
 
   // Assessment taken in Arabic: one language only. Pin the page to Arabic (hide the header
   // language switch, and move anyone who opened the English URL over to Arabic).
@@ -1004,6 +1043,29 @@ export default function ResultsPage() {
               subtitle={t('suggestedCareers.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.07A2.25 2.25 0 0118 20.47H6a2.25 2.25 0 01-2.25-2.25v-4.07M15.75 9.75V6a3.75 3.75 0 00-7.5 0v3.75M3.75 9.75h16.5" /></svg>}
             />
+            {/* Free plan: quick list of the careers up front (details follow below), plus a card for the ones locked behind Pathfinder. */}
+            {tier === 'free' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                {jobs.slice(0, 3).map((job: any) => (
+                  <div key={job.title} className="rounded-2xl border border-[var(--line)] bg-lightblue/40 px-4 py-3.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="rp-h capitalize text-charcoal">{job.title}</p>
+                      {typeof job.match_score === 'number' && (
+                        <span className="rp-pill rp-blue shrink-0">{job.match_score}% {t('suggestedCareers.matchLabel')}</span>
+                      )}
+                    </div>
+                    {job.fit_summary && <p className="rp-sub mt-1.5 line-clamp-2">{job.fit_summary}</p>}
+                  </div>
+                ))}
+                <div className="rounded-2xl border border-dashed border-primary/50 bg-white px-4 py-3.5 flex flex-col justify-between gap-2">
+                  <div>
+                    <p className="rp-h text-charcoal">{t('suggestedCareers.moreLockedTitle')}</p>
+                    <p className="rp-sub mt-1.5">{t('suggestedCareers.moreLockedBody')}</p>
+                  </div>
+                  <Link href="/#pricing" data-track="results_careers_upgrade" className="text-sm font-semibold text-primary hover:underline">{t('suggestedCareers.moreLockedCta')} →</Link>
+                </div>
+              </div>
+            )}
             {aiImpact?.overall_summary && (
               <div className="rp-note rp-blue mb-5">
                 <span className="rp-note-label">{t('aiImpact.overallLabel')}</span>
@@ -1139,8 +1201,15 @@ export default function ResultsPage() {
                               <div className="rp-note rp-rose">
                                 <span className="rp-note-label">{t('aiImpact.atRiskLabel')}</span>
                                 <ul className="rp-sub rp-note-text list-disc ps-5 space-y-0.5">
-                                  {aiCareer.at_risk_tasks.map((x: string) => <li key={x}>{x}</li>)}
+                                  {/* {aiCareer.at_risk_tasks.map((x: string) => <li key={x}>{x}</li>)} */}
+                                  {(tier === 'free' ? aiCareer.at_risk_tasks.slice(0, 1) : aiCareer.at_risk_tasks).map((x: string) => <li key={x}>{x}</li>)}
                                 </ul>
+                                {tier === 'free' && (
+                                  <>
+                                    <BlurBlock className="mt-0.5"><ul className="rp-sub rp-note-text list-disc ps-5 space-y-0.5">{BLUR_FILLER.map(x => <li key={x}>{x}</li>)}</ul></BlurBlock>
+                                    <Link href="/#pricing" data-track="results_ai_tasks_unlock" className="inline-block mt-2 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-white">{t('aiImpact.unlockCta')}</Link>
+                                  </>
+                                )}
                               </div>
                             )}
                             {aiCareer.global_evidence && (
@@ -1153,8 +1222,13 @@ export default function ResultsPage() {
                               <div>
                                 <p className="rp-label mb-1.5">{t('aiImpact.protectedSkillsLabel')}</p>
                                 <div className="flex flex-wrap gap-1.5">
-                                  {aiCareer.protected_skills.map((sk: string) => <span key={sk} className="rp-pill rp-green rp-wrap">{sk}</span>)}
+                                  {/* {aiCareer.protected_skills.map((sk: string) => <span key={sk} className="rp-pill rp-green rp-wrap">{sk}</span>)} */}
+                                  {(tier === 'free' ? aiCareer.protected_skills.slice(0, 1) : aiCareer.protected_skills).map((sk: string) => <span key={sk} className="rp-pill rp-green rp-wrap">{sk}</span>)}
+                                  {tier === 'free' && BLUR_FILLER.map(x => <BlurBlock key={x}><span className="rp-pill rp-green rp-wrap">{x}</span></BlurBlock>)}
                                 </div>
+                                {tier === 'free' && (
+                                  <Link href="/#pricing" data-track="results_ai_skills_unlock" className="inline-block mt-2 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-white">{t('aiImpact.unlockCta')}</Link>
+                                )}
                               </div>
                             )}
                             {aiCareer.upskilling?.length > 0 && (
@@ -1170,7 +1244,11 @@ export default function ResultsPage() {
                             {aiCareer.what_this_means_for_you && (
                               <div className="rp-note rp-blue">
                                 <span className="rp-note-label">{t('aiImpact.whatThisMeansLabel')}</span>
+                                {/* <p className="rp-body rp-note-text">{aiCareer.what_this_means_for_you}</p> */}
                                 <p className="rp-body rp-note-text">{aiCareer.what_this_means_for_you}</p>
+                                {tier === 'free' && (
+                                  <BlurBlock><p className="rp-body rp-note-text">{BLUR_FILLER.join('. ')}. {BLUR_FILLER[0]}, so it helps to keep building the skills that matter most.</p></BlurBlock>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1724,7 +1802,7 @@ export default function ResultsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
           {/* Career Types */}
-          <div className="card p-5">
+          <div className="card p-5" data-coach="types">
             <SectionHead
               title={t('careerTypes.title')}
               subtitle={t('careerTypes.subtitle')}
@@ -1745,7 +1823,7 @@ export default function ResultsPage() {
           </div>
 
           {/* Core Values */}
-          <div className="card p-5">
+          <div className="card p-5" data-coach="values">
             <SectionHead
               title={t('coreValues.title')}
               subtitle={t('coreValues.subtitle')}
@@ -1759,7 +1837,7 @@ export default function ResultsPage() {
           </div>
 
           {/* Top Strengths */}
-          <div className="card p-5">
+          <div className="card p-5" data-coach="strengths">
             <SectionHead
               title={t('topStrengths.title')}
               subtitle={t('topStrengths.subtitle')}
@@ -1773,7 +1851,7 @@ export default function ResultsPage() {
           </div>
 
           {/* Personality */}
-          <div className="card p-5">
+          <div className="card p-5" data-coach="personality">
             <SectionHead
               title={t('personality.title')}
               subtitle={t('personality.subtitle')}
@@ -1797,7 +1875,7 @@ export default function ResultsPage() {
 
         {/* Work Style & Resilience */}
         {summary.work_style && (
-          <div className="card p-5">
+          <div className="card p-5" data-coach="workstyle">
             <SectionHead
               title={t('workStyle.title')}
               subtitle={t('workStyle.subtitle')}
@@ -1940,7 +2018,7 @@ export default function ResultsPage() {
             : k === 'companies' ? t('companies.title')
             : ''
           return (
-            <div key={k} className="report-section space-y-4">
+            <div key={k} className="report-section space-y-4" data-coach={k === 'profile' ? undefined : k}>
               <button
                 type="button"
                 aria-expanded={!closed}
@@ -1990,15 +2068,22 @@ export default function ResultsPage() {
 
       </div>
       {/* <CoachBubble locale={locale as 'en' | 'ar'} message={coachMsg} onDismiss={dismissCoach} autoHideMs={14000} /> */}
-      <CoachWidget
-        locale={locale as 'en' | 'ar'} mode="results" responseId={id}
-        tip={coachMsg} onTipDismiss={dismissCoach} tipAutoHideMs={14000}
-        feedback={COACH_FEEDBACK && !resultStageDone && !resultMarker && !resultFeedbackDone ? {
-          kind: 'result', responseId: id, autoOpen: resultFeedbackReached,
-          nudge: resultFeedbackReached ? COACH_NUDGE_RESULT : undefined,
-          onDone: () => setResultFeedbackDone(true),
-        } : undefined}
-      />
+      {/* Not rendered until she has a first section to arrive at; at the end of the report she goes to the feedback question. */}
+      {(() => {
+        const at = feedbackPending && resultFeedbackReached && feedbackEl ? feedbackEl : roam.target
+        return at && !coachHidden && (
+          <CoachWidget
+            locale={locale as 'en' | 'ar'} mode="results" responseId={id} onHide={hideCoach}
+            spots={{ wide: [at], narrow: [at] }}
+            tip={roam.tip} onTipDismiss={roam.dismiss} tipAutoHideMs={9000}
+            feedback={feedbackPending ? {
+              kind: 'result', responseId: id, autoOpen: resultFeedbackReached,
+              nudge: resultFeedbackReached ? COACH_NUDGE_RESULT : undefined,
+              onDone: () => setResultFeedbackDone(true),
+            } : undefined}
+          />
+        )
+      })()}
     </div>
   )
 }

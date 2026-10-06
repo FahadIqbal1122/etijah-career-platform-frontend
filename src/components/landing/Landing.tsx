@@ -16,7 +16,8 @@ import PartnerModal from '@/components/shared/PartnerModal'
 import { LANDING_VARIANTS, type VariantSlug } from '@/data/landingVariants'
 import { setLandingVariant } from '@/lib/analytics'
 import CoachWidget from '@/components/CoachWidget'
-import { LANDING_SUGGESTIONS, LANDING_NUDGE, type Bi } from '@/data/coachMessages'
+import { LANDING_SUGGESTIONS, LANDING_ROAM, PLAN_CHOICES } from '@/data/coachMessages'
+import { useCoachRoam, useCoachHidden } from '@/components/useCoachRoam'
 import { getTelemetrySessionId } from '@/lib/telemetry'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
@@ -101,6 +102,9 @@ const Chevron = () => (
   </svg>
 )
 
+// a slower pace than the results page: this is a first impression, not a tour
+const LANDING_GAP: [number, number] = [20000, 32000]
+
 export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
   const locale = useLocale()
   const dir = locale === 'ar' ? 'rtl' : 'ltr'
@@ -120,12 +124,10 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
   // The launch price in the visitor's currency, filled into copy that says {price}.
   const launchPrice = formatPrice('pathfinder', currency, locale)
   const fillPrice = (x: string) => x.replace(/\{price\}/g, launchPrice)
-  // Sarah says one thing after a few seconds, then stays quiet until she is tapped.
-  const [coachTip, setCoachTip] = useState<Bi | null>(null)
-  useEffect(() => {
-    const id = window.setTimeout(() => setCoachTip(LANDING_NUDGE), 9000)
-    return () => window.clearTimeout(id)
-  }, [])
+  // Sarah moves down the page, a short line per section (random order and wording); at the plans she offers to
+  // help choose one. The cross sends her away for good (remembered in this browser).
+  const [coachHidden, hideCoach] = useCoachHidden()
+  const roam = useCoachRoam({ pool: LANDING_ROAM, enabled: !coachHidden, paused: false, firstDelay: 6000, gap: LANDING_GAP })
 
   async function handlePlanCta(planCode: PlanCode) {
     // Re-check the session fresh at click time rather than trusting `loggedIn`
@@ -202,7 +204,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
       </nav>
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden">
+      <header className="relative overflow-hidden" data-coach="hero">
         <div className="max-w-6xl mx-auto px-5 pt-16 pb-14 grid lg:grid-cols-2 gap-12 items-center">
           <Reveal>
             <p className="eyebrow landing-eyebrow mb-4">{c.hero.eyebrow}</p>
@@ -627,10 +629,15 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           <div className="max-w-6xl mx-auto px-5 py-4 text-xs text-white/45">{c.footer.copyright}</div>
         </div>
       </footer>
-      <CoachWidget
-        locale={locale as 'en' | 'ar'} mode="landing" sessionId={getTelemetrySessionId}
-        suggestions={LANDING_SUGGESTIONS} tip={coachTip} onTipDismiss={() => setCoachTip(null)} tipAutoHideMs={10000}
-      />
+      {!coachHidden && roam.target && (
+        <CoachWidget
+          locale={locale as 'en' | 'ar'} mode="landing" sessionId={getTelemetrySessionId}
+          spots={{ wide: [roam.target], narrow: [roam.target] }} onHide={hideCoach}
+          suggestions={LANDING_SUGGESTIONS} tip={roam.tip} onTipDismiss={roam.dismiss}
+          tipChoices={roam.key === 'pricing' ? PLAN_CHOICES : undefined}
+          tipAutoHideMs={roam.key === 'pricing' ? 20000 : 10000}
+        />
+      )}
     </div>
   )
 }
@@ -649,7 +656,7 @@ function Section({
   children: ReactNode
 }) {
   return (
-    <section id={id} className={`scroll-mt-20 ${tint ? 'bg-white' : ''}`}>
+    <section id={id} data-coach={id} className={`scroll-mt-20 ${tint ? 'bg-white' : ''}`}>
       <div className="max-w-6xl mx-auto px-5 py-16 sm:py-20">
         <div className={center ? 'text-center' : ''}>
           <p className="eyebrow landing-eyebrow mb-3">{eyebrow}</p>

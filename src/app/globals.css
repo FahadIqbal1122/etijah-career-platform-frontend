@@ -959,6 +959,9 @@ html { scroll-behavior: smooth; }
   to   { opacity: 1; transform: translate(-50%, -50%); }
 }
 @keyframes coach-fade-in { from { opacity: 0; } to { opacity: 1; } }
+/* Pinned to a report section: a smaller Sarah, so she can hang on a card's corner without covering the text */
+.coach-widget.is-pinned[data-place="target"] { width: 68px; height: 68px; }
+.coach-widget.is-pinned .coach-avatar { width: 68px; height: 68px; }
 .coach-widget[data-place="target"] .coach-speech-tip {
   position: absolute; bottom: calc(100% + 12px); left: 50%; width: max-content; max-width: 280px;
   transform: translateX(calc(-50% + var(--shift-tip, 0px)));
@@ -972,6 +975,14 @@ html { scroll-behavior: smooth; }
 }
 .coach-widget[data-place="target"].panel-below .coach-panel { bottom: auto; top: calc(100% + 12px); }
 
+.coach-tip-choices { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.coach-tip-choices .coach-tip-action { margin-top: 0; }
+/* the small cross that sends her away; sits on the avatar's top corner */
+.coach-hide { position: absolute; top: -6px; inset-inline-end: -6px; z-index: 2; width: 22px; height: 22px; padding: 0;
+  display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer;
+  background: #fff; color: #64748b; border: 1px solid var(--line); font-size: 11px; line-height: 1;
+  box-shadow: 0 2px 8px rgba(7, 112, 186, .2); }
+.coach-hide:hover { color: #0f172a; border-color: #94a3b8; }
 .coach-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 8px; }
 .coach-chips button, .coach-tip-action {
   appearance: none; border: 1px solid rgba(0, 201, 167, .5); background: rgba(0, 201, 167, .1); color: #05766a;
