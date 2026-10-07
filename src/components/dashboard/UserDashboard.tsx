@@ -17,6 +17,7 @@ import { trackOnce } from '@/lib/analytics'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
 import Logomark from '@/components/brand/Logomark'
+import CoachingBooker from '@/components/dashboard/CoachingBooker'
 import { LockedSection } from '@/components/shared/LockedSection'
 
 type Application = {
@@ -738,18 +739,9 @@ export default function UserDashboard() {
             {plan?.tier === 'launchpad' && (
               <div className="mt-4 pt-4 border-t border-[var(--line)]">
                 <p className="text-sm font-bold text-charcoal">{b.coachHead}</p>
-                {plan.booking_url ? (
-                  <>
-                    <p className="text-xs text-charcoal/55 mt-1">{b.coachPick}</p>
-                    <a href={plan.booking_url} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 mt-3 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium">
-                      {b.coachBook}
-                    </a>
-                    <p className="text-xs text-charcoal/45 mt-3">{b.coachHelp}</p>
-                  </>
-                ) : (
-                  <p className="text-xs text-charcoal/55 mt-1">{b.coachContact}</p>
-                )}
+                <p className="text-xs text-charcoal/55 mt-1">{b.coachPick}</p>
+                <CoachingBooker lang={lang} />
+                <p className="text-xs text-charcoal/45 mt-3">{b.coachHelp}</p>
                 <div className="flex flex-wrap gap-3 mt-3">
                   {/* <a href="tel:+966550770711" dir="ltr" className="chip">+966 55 077 0711</a> */}
                   <a href="https://wa.me/966550770711" target="_blank" rel="noopener noreferrer" dir="ltr" className="chip">WhatsApp +966 55 077 0711</a>
