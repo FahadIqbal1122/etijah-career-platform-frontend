@@ -538,6 +538,12 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               {locale === 'ar' ? 'سعر الإطلاق' : 'Launch price'}
             </span>
             <p className="mt-3 text-xs text-charcoal/45">{c.pricing.subscription.priceSub}</p>
+            {/* package price vs adding coaching later to Pathfinder */}
+            <p className="mt-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs leading-relaxed text-charcoal/75">
+              {locale === 'ar'
+                ? `سعر الإطلاق هو سعر الباقة عند شراء التقرير والتدريب معاً. إذا اشتريت مرشد المسار أولاً ثم أضفت منصة الانطلاق لاحقاً، يكون السعر ${formatPrice('launchpad_upgrade', currency, locale)}.`
+                : `The launch price is the package price, for buying the report and coaching together. If you buy Pathfinder first and add Launchpad later, it costs ${formatPrice('launchpad_upgrade', currency, locale)}.`}
+            </p>
             <p className="mt-3 text-sm text-charcoal/65 leading-relaxed">{c.pricing.subscription.for}</p>
             <div className="h-px bg-[var(--line)] my-6" />
             <ul className="space-y-3.5 flex-1">

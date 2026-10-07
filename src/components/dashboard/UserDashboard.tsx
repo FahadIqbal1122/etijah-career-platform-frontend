@@ -730,7 +730,7 @@ export default function UserDashboard() {
                   {plan?.tier !== 'launchpad' && assessments.length > 0 && (
                     <button data-track="dashboard_unlock_launchpad" onClick={() => handleBuyPlan('launchpad_monthly')} disabled={buying}
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-50">
-                      {buying ? '…' : `${b.getLaunchpad} — ${formatPrice('launchpad', displayCurrency, lang)}`}
+                      {buying ? '…' : `${b.getLaunchpad} — ${formatPrice(plan?.tier === 'pathfinder' ? 'launchpad_upgrade' : 'launchpad', displayCurrency, lang)}`}
                     </button>
                   )}
                 </div>
