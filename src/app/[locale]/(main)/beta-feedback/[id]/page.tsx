@@ -20,7 +20,7 @@ export default function BetaFeedbackPage() {
 
   useEffect(() => {
     apiGet<any>(`/beta-feedback/${id}/riasec-summary`)
-      .then(data => setTopType(data.top_type || null))
+      .then(data => setTopType(data.top_type || ''))   // '' = loaded but no type, so the page does not spin forever
       .catch(err => setError(err.message || 'Could not load this response.'))
     // Decides which follow-up the reader gets: free (7 + 2) or paid (12), plus the conditional questions.
     apiGet<any>(`/beta-feedback/${id}/context`)
@@ -40,7 +40,7 @@ export default function BetaFeedbackPage() {
     )
   }
 
-  if (!topType || !context) {
+  if (topType === null || !context) {
     return (
       <div className="min-h-screen brand-hero flex items-center justify-center px-6">
         <Logomark size={44} tone="dark" glow />
@@ -54,7 +54,7 @@ export default function BetaFeedbackPage() {
         responseId={id}
         locale={locale}
         context={context}
-        personalityTypeLabel={riasecLabel(topType)}
+        personalityTypeLabel={topType ? riasecLabel(topType) : ''}
       />
     </div>
   )

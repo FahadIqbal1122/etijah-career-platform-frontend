@@ -170,6 +170,7 @@ export function TextField({ label, value, onChange }: {
       <textarea
         className="w-full text-sm text-slate-800 bg-white border border-slate-200 rounded-lg py-2.5 px-3.5 focus:outline-none focus:ring-2 focus:border-accent focus:ring-teal/15 transition-colors resize-y min-h-[70px] leading-relaxed"
         value={value}
+        maxLength={2000}
         onChange={e => onChange(e.target.value)}
       />
     </div>

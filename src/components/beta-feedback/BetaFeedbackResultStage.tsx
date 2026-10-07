@@ -104,6 +104,7 @@ export default function BetaFeedbackResultStage({ responseId, locale, initiallyD
         <textarea
           value={note}
           onChange={e => setNote(e.target.value)}
+          maxLength={2000}
           onBlur={saveNote}
           rows={2}
           className="w-full text-sm text-slate-800 bg-white border border-slate-200 rounded-lg py-2.5 px-3.5 focus:outline-none focus:ring-2 focus:border-accent focus:ring-teal/15 transition-colors resize-none leading-relaxed"

@@ -114,7 +114,7 @@ export default function BetaFeedbackStage2({ responseId, locale, context, person
     <div className="card p-6 mt-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       <div className="mb-6 text-center">
         <p className="text-sm font-semibold text-charcoal mb-1.5">{followUpHook(context.planTier)[locale]}</p>
-        <p className="text-xs text-charcoal/50 mt-2">{personalHook(personalityTypeLabel, locale)}</p>
+        {personalityTypeLabel && <p className="text-xs text-charcoal/50 mt-2">{personalHook(personalityTypeLabel, locale)}</p>}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
