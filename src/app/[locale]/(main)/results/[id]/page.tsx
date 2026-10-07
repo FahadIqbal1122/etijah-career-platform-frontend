@@ -4,7 +4,7 @@ import ReadMore from '@/components/ReadMore'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
-import { apiGet, apiAuthGet, apiAuthPost, apiAuthDelete, apiAuthGetBlob } from '@/lib/api'
+import { apiAuthGet, apiAuthPost, apiAuthDelete, apiAuthGetBlob } from '@/lib/api'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { Link, useRouter, usePathname } from '@/i18n/navigation'
 import { setLocaleLock } from '@/lib/localeLock'
@@ -393,19 +393,40 @@ export default function ResultsPage() {
           // Only worth asking at all for beta submissions — skip the round trip
           // entirely for every other (permanent) results-page view.
           // if (data.beta_mode) {  // feedback stays active after launch, so always check
-          {
-            apiAuthGet<{ stage1_completed: boolean; result_stage_completed: boolean }>(`/beta-feedback/${id}/status`)
-              .then(statusData => {
-                if (justCompleted && statusData.stage1_completed) setStage1Done(true)
-                if (statusData.result_stage_completed) setResultStageDone(true)
-              })
+          // (the feedback status, the "not for me" list and the recent-completions count used to be three more
+          // requests; /results now carries them)
+          const fbStatus = data.feedback_status
+          if (justCompleted && fbStatus?.stage1_completed) setStage1Done(true)
+          if (fbStatus?.result_stage_completed) setResultStageDone(true)
+          setRecFeedback(Object.fromEntries((data.recommendation_feedback || []).map((r: any) => [r.career_title, r.reason])))
+          if (typeof data.recent_completions === 'number') setRecentCompletions(data.recent_completions)
+          // Only the sections this person's report actually has are fetched: the others answer with an empty
+          // result anyway (majors for students, certifications for students/graduates, career path for working
+          // people, listings except when choosing studies) but still cost a login check and database reads.
+          const shown: string[] = Array.isArray(data.section_order) ? data.section_order : []
+          if (shown.includes('jobs')) {
+            apiAuthGet<any>(`/assessment/${id}/job-listings`)
+              .then(d => setJobListings(d.jobs || []))
+              .catch(() => {})
+              .finally(() => setJobsLoading(false))
+          } else setJobsLoading(false)
+          if (shown.includes('majors')) {
+            apiAuthGet<any>(`/assessment/${id}/student-track?locale=${locale}`)
+              .then(d => { if (d && (d.locked || d.majors_guidance || d.exposure_ideas?.length)) setStudentTrack(d) })
+              .catch(() => {})
+          }
+          if (shown.includes('certs')) {
+            apiAuthGet<any>(`/assessment/${id}/certifications?locale=${locale}`)
+              .then(d => { if (d?.certifications?.length) setCertifications(d) })
+              .catch(() => {})
+          }
+          if (shown.includes('path')) {
+            apiAuthGet<any>(`/assessment/${id}/career-path?locale=${locale}`)
+              .then(d => { if (d && d.narrative) setCareerPath(d) })
               .catch(() => {})
           }
         })
         .catch(err => setError(err.message || t('error.loadFailed')))
-      apiAuthGet<any>(`/assessment/${id}/recommendation-feedback`)
-        .then(data => setRecFeedback(Object.fromEntries((data?.items || []).map((r: any) => [r.career_title, r.reason]))))
-        .catch(() => {})
       apiAuthGet<any>(`/assessment/${id}/direction?locale=${locale}`)
         .then(applyDirection)
         .catch(() => {})
@@ -423,19 +444,6 @@ export default function ResultsPage() {
         .then(data => setAiImpact(data))
         .catch(() => {})
         .finally(() => setAiLoading(false))
-      apiAuthGet<any>(`/assessment/${id}/job-listings`)
-        .then(data => setJobListings(data.jobs || []))
-        .catch(() => {})
-        .finally(() => setJobsLoading(false))
-      apiAuthGet<any>(`/assessment/${id}/student-track?locale=${locale}`)
-        .then(data => { if (data && (data.locked || data.majors_guidance || data.exposure_ideas?.length)) setStudentTrack(data) })
-        .catch(() => {})
-      apiAuthGet<any>(`/assessment/${id}/certifications?locale=${locale}`)
-        .then(data => { if (data?.certifications?.length) setCertifications(data) })
-        .catch(() => {})
-      apiAuthGet<any>(`/assessment/${id}/career-path?locale=${locale}`)
-        .then(data => { if (data && data.narrative) setCareerPath(data) })
-        .catch(() => {})
       // Companies to Target was removed from the report (1 Oct 2026); not fetched any more.
       // apiAuthGet<any[]>(`/assessment/${id}/companies`)
       //   .then(data => { setCompanies(data || []); setCompaniesError(false) })
@@ -454,11 +462,7 @@ export default function ResultsPage() {
     setRetryKey(k => k + 1)
   }
 
-  useEffect(() => {
-    apiGet<{ count: number }>('/stats/recent-completions')
-      .then(data => setRecentCompletions(data.count))
-      .catch(() => {})
-  }, [])
+  // (the recent-completions count now arrives with /results, see the load effect above)
 
 
   // (hooks stay above the early returns below: a changing hook count crashes the page)

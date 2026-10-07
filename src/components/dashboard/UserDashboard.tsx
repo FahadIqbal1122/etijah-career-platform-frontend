@@ -281,10 +281,11 @@ export default function UserDashboard() {
 
   useEffect(() => {
     if (!user) return
-    apiAuthGet<Application[]>('/applications').then(setApplications).catch(() => {}).finally(() => setApplicationsLoading(false))
+    // The saved-jobs tracker and Job Matches sit inside the section that SHOW_JOB_MATCHES switches off, so their data is not fetched while it is off.
+    if (SHOW_JOB_MATCHES) apiAuthGet<Application[]>('/applications').then(setApplications).catch(() => {}).finally(() => setApplicationsLoading(false))
     apiAuthGet<Plan>('/billing/plan').then(setPlan).catch(() => {}).finally(() => setPlanLoading(false))
     apiAuthGet<Transaction[]>('/billing/transaction').then(setTransactions).catch(() => {})
-    apiAuthGet<JobMatch[]>('/jobs/my-matches').then(setJobMatches).catch(() => {}).finally(() => setJobMatchesLoading(false))
+    if (SHOW_JOB_MATCHES) apiAuthGet<JobMatch[]>('/jobs/my-matches').then(setJobMatches).catch(() => {}).finally(() => setJobMatchesLoading(false))
     // Link any prior anonymous assessment (matched by email) to this account
     // before checking what assessments the user has. login/page.tsx already
     // does this before navigating here, but that only covers the plain-login
@@ -409,10 +410,11 @@ export default function UserDashboard() {
   // After a purchase the full report is built in the background (see the payment webhook). While that runs, and for an hour
   // after paying, show a short notice with the state: building, then ready.
   const [fullReport, setFullReport] = useState<'idle' | 'building' | 'ready'>('idle')
+  // A boolean, not the transactions array: the post-payment order poll replaces that array every 3 s, which would restart this effect (and its 10 s timer) each time.
+  const recentlyPaid = transactions.some(txn => PAID_STATUSES.includes(txn.status.toLowerCase()) && Date.now() - new Date(txn.created_at).getTime() < 60 * 60 * 1000)
   useEffect(() => {
     const target = assessments[0]
     if (!target || !plan || plan.tier === 'free') return
-    const recentlyPaid = transactions.some(txn => PAID_STATUSES.includes(txn.status.toLowerCase()) && Date.now() - new Date(txn.created_at).getTime() < 60 * 60 * 1000)
     if (!recentlyPaid) return
     let stopped = false
     let tries = 0
@@ -429,7 +431,7 @@ export default function UserDashboard() {
       if ((await check()) || tries >= 90) window.clearInterval(id)
     }, 10000)
     return () => { stopped = true; window.clearInterval(id) }
-  }, [assessments, plan, transactions])
+  }, [assessments, plan, recentlyPaid])
 
   function go(id: string) {
     setActive(id)

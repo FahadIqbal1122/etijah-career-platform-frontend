@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
+  // The public key is enough to check a token. The service-role key is deliberately not used here, so it does not
+  // need to exist in this container (a compromise of the frontend must not expose the whole database).
+  process.env.NEXT_PUBLIC_SUPABASE_KEY!
 )
 
 const COOKIE = 'admin_session'
