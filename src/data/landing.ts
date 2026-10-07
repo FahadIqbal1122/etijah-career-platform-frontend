@@ -177,7 +177,7 @@ export const L = {
         label: 'Pathfinder',
         price: '59 SAR',
         priceSub: 'Introductory price · then 99 SAR',
-        priceNote: 'One-time payment',
+        priceNote: 'One-time payment · tax included',
         for: 'Understand your career options and choose your next step.',
         // bullets (previous): Everything in Explorer; full AI-impact deep dive; 1–3 year outlook; courses and certifications; live job listings
         bullets: [
@@ -190,7 +190,7 @@ export const L = {
           'Live job and internship listings matched to your profile',
         ],
         cta: 'Get my full report',
-        note: 'One-time payment. No subscription or automatic renewal. Available in Arabic and English. Coaching is not included in this package.',
+        note: 'One-time payment, tax included. No subscription or automatic renewal. Available in Arabic and English. Coaching is not included in this package.',
       },
       subscription: {
         code: 'launchpad_monthly',
@@ -198,7 +198,7 @@ export const L = {
         label: 'Launchpad',
         // price: '440 SAR',
         price: '330 SAR',
-        priceSub: 'One-time payment',
+        priceSub: 'One-time payment · tax included',
         // priceAlt: 'or 799 SAR/year — save 33%',
         priceAlt: '',
         // Launchpad is now Pathfinder plus a 1:1 coaching session (4 Oct 2026). Previous copy kept below; see Documents/Removed_Features_4Oct2026.md.
@@ -441,7 +441,7 @@ export const L = {
         label: 'مرشد المسار',
         price: '٥٩ ريال',
         priceSub: 'سعر تعريفي · ثم ٩٩ ريالاً',
-        priceNote: 'دفعة واحدة',
+        priceNote: 'دفعة واحدة · شامل الضريبة',
         for: 'افهم خياراتك المهنية، وحدّد خطوتك القادمة.',
         // bullets (previous): كل ما في «مستكشف»؛ التحليل الكامل لتأثير الذكاء الاصطناعي؛ توقعات ١–٣ سنوات؛ دورات وشهادات؛ وظائف حالية
         bullets: [
@@ -454,7 +454,7 @@ export const L = {
           'وظائف وفرص تدريب حالية تتوافق مع ملفك',
         ],
         cta: 'احصل على تقريري الكامل',
-        note: 'دفعة واحدة. دون اشتراك أو تجديد تلقائي. متاح بالعربية والإنجليزية. لا تشمل هذه الباقة جلسة كوتشينج.',
+        note: 'دفعة واحدة شاملة الضريبة. دون اشتراك أو تجديد تلقائي. متاح بالعربية والإنجليزية. لا تشمل هذه الباقة جلسة كوتشينج.',
       },
       subscription: {
         code: 'launchpad_monthly',
@@ -462,7 +462,7 @@ export const L = {
         label: 'منصة الانطلاق',
         // price: '٤٤٠ ريال',
         price: '٣٣٠ ريال',
-        priceSub: 'دفعة واحدة',
+        priceSub: 'دفعة واحدة · شامل الضريبة',
         // priceAlt: 'أو ٧٩٩ ريالاً سنوياً — وفّر ٣٣٪',
         priceAlt: '',
         // Launchpad is now Pathfinder plus a 1:1 coaching session (4 Oct 2026). Previous Arabic copy:
