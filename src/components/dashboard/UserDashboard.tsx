@@ -144,7 +144,7 @@ const B = {
     // coachContact: 'To book your session, contact us and we will find a time that suits you. We have also been notified of your purchase.',
     coachContact: 'To book your session, message us on WhatsApp or email and we will find a time that suits you. We have also been notified of your purchase.',
     history: 'Payment history', typeWord: 'type',
-    agreeHead: 'Before you pay', agreeText: 'I have read and agree to the', agreeTerms: 'Terms and Conditions', agreeAnd: 'and the', agreePrivacy: 'Privacy Policy', agreeContinue: 'Continue to payment', agreeCancel: 'Cancel',
+    agreeHead: 'Before you pay', agreeTax: 'The price you see includes tax.', agreeText: 'I have read and agree to the', agreeTerms: 'Terms and Conditions', agreeAnd: 'and the', agreePrivacy: 'Privacy Policy', agreeContinue: 'Continue to payment', agreeCancel: 'Cancel',
   },
   ar: {
     plan: { launchpad: 'منصة الانطلاق', pathfinder: 'مرشد المسار' },
@@ -156,7 +156,7 @@ const B = {
     // coachContact: 'لحجز جلستك، تواصل معنا وسنحدد وقتاً يناسبك. وقد وصلنا إشعار بعملية الشراء.',
     coachContact: 'لحجز جلستك، راسلنا عبر واتساب أو البريد الإلكتروني وسنحدد وقتاً يناسبك. وقد وصلنا إشعار بعملية الشراء.',
     history: 'سجل المدفوعات', typeWord: '',
-    agreeHead: 'قبل الدفع', agreeText: 'لقد قرأت وأوافق على', agreeTerms: 'الشروط والأحكام', agreeAnd: 'و', agreePrivacy: 'سياسة الخصوصية', agreeContinue: 'المتابعة إلى الدفع', agreeCancel: 'إلغاء',
+    agreeHead: 'قبل الدفع', agreeTax: 'السعر المعروض شامل الضريبة.', agreeText: 'لقد قرأت وأوافق على', agreeTerms: 'الشروط والأحكام', agreeAnd: 'و', agreePrivacy: 'سياسة الخصوصية', agreeContinue: 'المتابعة إلى الدفع', agreeCancel: 'إلغاء',
   },
 } as const
 const RIASEC_AR: Record<string, string> = { realistic: 'الباني', investigative: 'المحلل', artistic: 'المبدع', social: 'المُعين', enterprising: 'القائد', conventional: 'المنظّم' }
@@ -823,6 +823,7 @@ export default function UserDashboard() {
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4" role="dialog" aria-modal="true">
           <div className="card p-6 max-w-md w-full" dir={dir}>
             <h3 className="font-bold text-charcoal text-lg">{b.agreeHead}</h3>
+            <p className="mt-1 text-sm text-charcoal/60">{b.agreeTax}</p>
             <label className="flex items-start gap-3 mt-4 cursor-pointer">
               <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} className="mt-1 w-4 h-4 shrink-0" />
               <span className="text-sm text-charcoal/80 leading-relaxed">
