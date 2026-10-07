@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { apiAuthPost } from '@/lib/api'
-import { STAGE1_FORM_VERSION, stage1Intro, stage1Thanks, stage1IntentLabel, stage1IntentOptions, stage1Questions, type Locale } from './content'
+import { FACE_EMOJIS, STAGE1_FORM_VERSION, stage1Intro, stage1Thanks, stage1Questions, type Locale } from './content'
 
-type Answers = Partial<Record<'s1_clarity' | 's1_feeling' | 's1_understood', number>> & { s1_intent?: string }
-const TOTAL_STAGE1_QUESTIONS = stage1Questions.length + 1
+type Answers = Record<string, number | string>
+const TOTAL_STAGE1_QUESTIONS = stage1Questions.length
 
 function stage1DoneKey(responseId: string) {
   return `betaStage1Done:${responseId}`
@@ -27,7 +27,7 @@ export default function BetaFeedbackStage1({ responseId, locale, onAnswered, onC
     if (done) onComplete?.()
   }, [done])
 
-  function answer(key: keyof Answers, value: number | string) {
+  function answer(key: string, value: number | string) {
     const next = { ...answers, [key]: value }
     setAnswers(next)
     onAnswered?.(Object.keys(next).length)
@@ -62,46 +62,46 @@ export default function BetaFeedbackStage1({ responseId, locale, onAnswered, onC
         {stage1Questions.map(q => (
           <div key={q.key}>
             <p className="text-white/70 text-xs mb-2">{q.label[locale]}</p>
-            <div className="flex gap-1.5 justify-between">
-              {['😖', '😐', '🙂', '😀', '🤩'].map((emoji, i) => {
-                const n = i + 1
-                const active = answers[q.key] === n
-                return (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => answer(q.key, n)}
-                    className={`flex-1 h-10 rounded-lg text-lg border transition-colors ${
-                      active ? 'bg-white/25 border-white/50' : 'bg-white/5 border-white/15 hover:border-white/40'
-                    }`}
-                  >
-                    {emoji}
-                  </button>
-                )
-              })}
-            </div>
+            {q.type === 'faces' ? (
+              <div className="flex gap-1.5 justify-between">
+                {FACE_EMOJIS.map((emoji, i) => {
+                  const n = i + 1
+                  const active = answers[q.key] === n
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => answer(q.key, n)}
+                      className={`flex-1 h-10 rounded-lg text-lg border transition-colors ${
+                        active ? 'bg-white/25 border-white/50' : 'bg-white/5 border-white/15 hover:border-white/40'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {(q.options || []).map(opt => {
+                  const active = answers[q.key] === opt.value
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => answer(q.key, opt.value)}
+                      className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${
+                        active ? 'bg-white/25 border-white/50 text-white' : 'bg-white/5 border-white/15 text-white/70 hover:border-white/40'
+                      }`}
+                    >
+                      {opt.label[locale]}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
         ))}
-        <div>
-          <p className="text-white/70 text-xs mb-2">{stage1IntentLabel[locale]}</p>
-          <div className="flex flex-wrap gap-1.5">
-            {stage1IntentOptions.map(opt => {
-              const active = answers.s1_intent === opt.value
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => answer('s1_intent', opt.value)}
-                  className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${
-                    active ? 'bg-white/25 border-white/50 text-white' : 'bg-white/5 border-white/15 text-white/70 hover:border-white/40'
-                  }`}
-                >
-                  {opt.label[locale]}
-                </button>
-              )
-            })}
-          </div>
-        </div>
       </div>
     </div>
   )

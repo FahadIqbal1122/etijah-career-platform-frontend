@@ -9,21 +9,18 @@ import { useRef, useState } from 'react'
 import { apiAuthPost } from '@/lib/api'
 import {
   FACE_EMOJIS, STAGE1_FORM_VERSION, RESULT_STAGE_FORM_VERSION,
-  stage1Intro, stage1Thanks, stage1Questions, stage1IntentLabel, stage1IntentOptions,
+  stage1Intro, stage1Thanks, stage1Questions,
   resultStageIntro, resultStageQuestions, resultStageNoteLabel,
   type Bi, type Locale, type Option,
 } from './beta-feedback/content'
 
 export type FeedbackKind = 'stage1' | 'result'
 
-interface Step { key: string; label: Bi; type: 'faces' | 'options' | 'note'; options?: Option[] }
+interface Step { key: string; label: Bi; type: 'faces' | 'options' | 'note'; options?: Option[]; low?: Bi; high?: Bi }
 
-const STAGE1_STEPS: Step[] = [
-  ...stage1Questions.map(q => ({ key: q.key, label: q.label, type: 'faces' as const })),
-  { key: 's1_intent', label: stage1IntentLabel, type: 'options', options: stage1IntentOptions },
-]
+const STAGE1_STEPS: Step[] = stage1Questions
 const RESULT_STEPS: Step[] = [
-  ...resultStageQuestions.map(q => ({ key: q.key, label: q.label, type: 'options' as const, options: q.options })),
+  ...resultStageQuestions,
   { key: 'other_text', label: resultStageNoteLabel, type: 'note' },
 ]
 
@@ -107,6 +104,9 @@ export default function CoachFeedback({ kind, responseId, locale, onDone }: {
             <button key={i} type="button" onClick={() => answer(i + 1)} aria-label={`${i + 1}/5`}>{emoji}</button>
           ))}
         </div>
+      )}
+      {step.type === 'faces' && step.low && step.high && (
+        <div className="coach-fb-ends"><span>1 — {step.low[locale]}</span><span>5 — {step.high[locale]}</span></div>
       )}
 
       {step.type === 'options' && (

@@ -3,17 +3,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import { apiAuthGet, apiAuthPost } from '@/lib/api'
 import {
-  STAGE2_FORM_VERSION, personalHook, stage2CoCreator, stage2Hook, stage2ProgressCarry, stage2Reward, stage2Sections,
-  type Locale,
+  STAGE2_FORM_VERSION, followUpHook, followUpSections, personalHook, stage2CoCreator, stage2Reward,
+  type FollowUpContext, type Locale,
 } from './content'
 import { FaceScale, MultiPillSelect, PillSelect, Scale6, TextField } from './shared'
 
 type Answers = Record<string, any>
 
-export default function BetaFeedbackStage2({ responseId, locale, stage1AnsweredCount, personalityTypeLabel }: {
+// The follow-up form (launch doc stage 3): the free version for free users, the paid version for
+// paid users. `context` comes from GET /beta-feedback/{id}/context.
+export default function BetaFeedbackStage2({ responseId, locale, context, personalityTypeLabel }: {
   responseId: string
   locale: Locale
-  stage1AnsweredCount: number
+  context: FollowUpContext
   personalityTypeLabel: string
 }) {
   const [answers, setAnswers] = useState<Answers>({})
@@ -32,8 +34,8 @@ export default function BetaFeedbackStage2({ responseId, locale, stage1AnsweredC
   }, [responseId])
 
   const visibleSections = useMemo(
-    () => stage2Sections.map(s => ({ ...s, fields: s.fields.filter(f => !f.showIf || f.showIf(answers)) })),
-    [answers]
+    () => followUpSections(context.planTier).map(s => ({ ...s, fields: s.fields.filter(f => !f.showIf || f.showIf(answers, context)) })),
+    [answers, context]
   )
 
   function set(key: string, value: any) {
@@ -71,8 +73,16 @@ export default function BetaFeedbackStage2({ responseId, locale, stage1AnsweredC
       // partial submission (see the GET prefill above), and this submission
       // is always answering the *current* form, so the current constant must
       // win regardless of what's in the prefill.
+      // Only answers to questions still on screen are sent, so a stale answer from a question that
+      // was hidden again (e.g. the "Other" text after switching option) is not saved.
+      const shown: Answers = {}
+      for (const section of visibleSections) {
+        for (const field of section.fields) {
+          if (answers[field.key] !== undefined && answers[field.key] !== '') shown[field.key] = answers[field.key]
+        }
+      }
       await apiAuthPost('/beta-feedback/stage2', {
-        response_id: responseId, locale, device, language_used: locale, ...answers, stage2_form_version: STAGE2_FORM_VERSION,
+        response_id: responseId, locale, device, language_used: locale, ...shown, stage2_form_version: STAGE2_FORM_VERSION,
       })
       setSubmitted(true)
     } catch {
@@ -103,14 +113,7 @@ export default function BetaFeedbackStage2({ responseId, locale, stage1AnsweredC
   return (
     <div className="card p-6 mt-4" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       <div className="mb-6 text-center">
-        <p className="text-sm font-semibold text-charcoal mb-1.5">{stage2Hook[locale]}</p>
-        {stage1AnsweredCount > 0 && (
-          <p className="text-xs text-teal font-medium">
-            {locale === 'ar'
-              ? `سجّلنا ${stage1AnsweredCount === 1 ? 'إجابة سريعة' : `${stage1AnsweredCount} إجابات سريعة`} منك بالفعل — بقي نموذج قصير واحد فقط.`
-              : stage2ProgressCarry.en}
-          </p>
-        )}
+        <p className="text-sm font-semibold text-charcoal mb-1.5">{followUpHook(context.planTier)[locale]}</p>
         <p className="text-xs text-charcoal/50 mt-2">{personalHook(personalityTypeLabel, locale)}</p>
       </div>
 
@@ -128,6 +131,7 @@ export default function BetaFeedbackStage2({ responseId, locale, stage1AnsweredC
                   return (
                     <FaceScale
                       key={field.key} label={field.label[locale]} note={note} required={field.required} locale={locale}
+                      low={field.low?.[locale]} high={field.high?.[locale]}
                       value={value} onChange={v => set(field.key, v)}
                     />
                   )

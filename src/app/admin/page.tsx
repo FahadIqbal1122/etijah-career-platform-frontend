@@ -1032,6 +1032,15 @@ type BetaFeedbackEntry = {
   surprised_text: string | null
   not_me_text: string | null
   other_text: string | null
+  // Launch form (7 Oct 2026); beta rows have form_version 'beta' and null for the rest.
+  plan_tier: 'free' | 'paid' | null
+  form_version: string | null
+  s1_confidence: number | null
+  s1_length: string | null
+  first_step: string[] | null
+  purchase_blocker: string | null
+  missing_text: string | null
+  opened_ai_impact: boolean | null
   created_at: string
   assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null; nationality: string | null; age: number | null; age_bracket: string | null; experience_level: string | null; current_stage: string | null; cohort_override: CohortKey | null } | null
 }
@@ -3048,6 +3057,40 @@ export default function AdminPage() {
               </div>
             </div>
           )}
+
+          {/* Launch form (v4_launch): the answers the cards above do not cover. Empty rows are hidden. */}
+          {(() => {
+            const five = (v: number | null) => (v ? `${v} / 5` : null)  // launch faces are 1-5, unlike the beta 1-6 ratings
+            const launchRows = [
+              ['Plan when answered', bf.plan_tier],
+              ['Form version', bf.form_version],
+              ['Confidence before results', five(bf.s1_confidence)],
+              ['Assessment length', bf.s1_length ? formatUnderscored(bf.s1_length) : null],
+              ['Opened AI Impact preview', bf.opened_ai_impact ? 'yes' : null],
+              ['AI Impact changed thinking', bf.ai_impact_changed_thinking],
+              ['First step', bf.first_step?.length ? bf.first_step.map(v => formatUnderscored(v)).join(', ') : null],
+              ['Arabic felt natural', bf.arabic_natural],
+              ['Main purchase blocker', bf.purchase_blocker ? (PAY_BLOCKER_LABEL[bf.purchase_blocker] || formatUnderscored(bf.purchase_blocker)) : null],
+              ['Worth what they paid', five(bf.overall_value)],
+              ['Jobs relevance', five(bf.jobs_relevant)],
+              ['Courses usefulness', five(bf.courses_useful)],
+              ['Will follow 90-day plan', bf.plan_would_follow],
+              ['Missing', bf.missing_text],
+            ].filter(([, v]) => v && v !== '—')
+            return launchRows.length > 0 && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Launch Form Answers</h3>
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  {launchRows.map(([label, value]) => (
+                    <div key={label as string}>
+                      <dt className="text-slate-400">{label}</dt>
+                      <dd className="text-slate-800 font-medium capitalize">{(value as string).replace(/_/g, ' ')}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            )
+          })()}
 
           {/* Legacy Beta 1 fields — removed from the live form, shown only for old rows that still carry them. */}
           {bf.most_valuable_parts && bf.most_valuable_parts.length > 0 && (

@@ -224,8 +224,8 @@ function AiImpactDeepDivePlaceholder() {
 // (BetaFeedbackStage1 on the loading screen, BetaFeedbackResultStage at the end of the report).
 const COACH_FEEDBACK = true
 
-const COACH_NUDGE_STAGE1 = { en: 'Two quick taps and I’ll show your report', ar: 'نقرتان سريعتان وسأعرض لك تقريرك' }
-const COACH_NUDGE_RESULT = { en: 'One quick question before you go?', ar: 'سؤال سريع قبل أن تغادر؟' }
+const COACH_NUDGE_STAGE1 = { en: 'Four quick taps and I’ll show your report', ar: 'أربع نقرات سريعة وسأعرض لك تقريرك' }
+const COACH_NUDGE_RESULT = { en: 'Four quick questions about your results?', ar: 'أربعة أسئلة سريعة عن نتائجك؟' }
 
 export default function ResultsPage() {
   const params = useParams()
@@ -310,6 +310,14 @@ export default function ResultsPage() {
   const [feedbackOpen, setFeedbackOpen] = useState<string | null>(null)
   // Which careers have their AI-impact panel open. Unset = the top match is open, the rest collapsed.
   const [aiOpen, setAiOpen] = useState<Record<string, boolean>>({})
+  // Tells the server a free reader expanded an AI Impact row (once per visit), which is what makes the
+  // free follow-up form ask Q11 ("did the AI Impact preview change how you see your path?").
+  const aiOpenedSent = useRef(false)
+  const noteAiImpactOpened = () => {
+    if (aiOpenedSent.current || tier !== 'free') return
+    aiOpenedSent.current = true
+    apiAuthPost(`/beta-feedback/${id}/ai-impact-opened`, {}).catch(() => {})
+  }
   const [dirError, setDirError] = useState('')
   const [jobsSuggestionsLoading, setJobsSuggestionsLoading] = useState(true)
   const [aiImpact, setAiImpact] = useState<any>(null)
@@ -1330,7 +1338,7 @@ export default function ResultsPage() {
                         <button
                           type="button"
                           aria-expanded={aiIsOpen}
-                          onClick={() => setAiOpen(prev => ({ ...prev, [job.title]: !aiIsOpen }))}
+                          onClick={() => { if (!aiIsOpen) noteAiImpactOpened(); setAiOpen(prev => ({ ...prev, [job.title]: !aiIsOpen })) }}
                           className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 text-start"
                         >
                           <span className="flex items-center gap-2 rp-body font-bold"><PillIcon name="shield" size={16} />{t('aiImpact.rowTitle')}</span>

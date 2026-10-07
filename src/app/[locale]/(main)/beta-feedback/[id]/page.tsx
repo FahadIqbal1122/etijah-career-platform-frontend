@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { apiGet } from '@/lib/api'
 import Logomark from '@/components/brand/Logomark'
 import BetaFeedbackStage2 from '@/components/beta-feedback/BetaFeedbackStage2'
+import type { FollowUpContext } from '@/components/beta-feedback/content'
 
 export default function BetaFeedbackPage() {
   const { id } = useParams<{ id: string }>()
@@ -14,11 +15,20 @@ export default function BetaFeedbackPage() {
   const riasecLabel = (type: string) => t.has(`riasecTypes.${type}`) ? t(`riasecTypes.${type}` as any) : type
 
   const [topType, setTopType] = useState<string | null>(null)
+  const [context, setContext] = useState<FollowUpContext | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
     apiGet<any>(`/beta-feedback/${id}/riasec-summary`)
       .then(data => setTopType(data.top_type || null))
+      .catch(err => setError(err.message || 'Could not load this response.'))
+    // Decides which follow-up the reader gets: free (7 + 2) or paid (12), plus the conditional questions.
+    apiGet<any>(`/beta-feedback/${id}/context`)
+      .then(data => setContext({
+        planTier: data.plan_tier === 'paid' ? 'paid' : 'free',
+        reportLocale: data.report_locale === 'ar' ? 'ar' : 'en',
+        openedAiImpact: !!data.opened_ai_impact,
+      }))
       .catch(err => setError(err.message || 'Could not load this response.'))
   }, [id])
 
@@ -30,7 +40,7 @@ export default function BetaFeedbackPage() {
     )
   }
 
-  if (!topType) {
+  if (!topType || !context) {
     return (
       <div className="min-h-screen brand-hero flex items-center justify-center px-6">
         <Logomark size={44} tone="dark" glow />
@@ -43,7 +53,7 @@ export default function BetaFeedbackPage() {
       <BetaFeedbackStage2
         responseId={id}
         locale={locale}
-        stage1AnsweredCount={0}
+        context={context}
         personalityTypeLabel={riasecLabel(topType)}
       />
     </div>

@@ -5,7 +5,7 @@ import { apiAuthPost } from '@/lib/api'
 import { RESULT_STAGE_FORM_VERSION, resultStageIntro, resultStageNoteLabel, resultStageQuestions, type Locale } from './content'
 import { PillSelect } from './shared'
 
-type Answers = Partial<Record<'result_accuracy' | 'would_recommend' | 'would_pay', string>>
+type Answers = Record<string, string>
 
 function resultStageDoneKey(responseId: string) {
   return `betaResultStageDone:${responseId}`
@@ -44,7 +44,7 @@ export default function BetaFeedbackResultStage({ responseId, locale, initiallyD
     return window.localStorage.getItem(resultStageDoneKey(responseId)) === '1'
   })
 
-  function answer(key: keyof Answers, value: string) {
+  function answer(key: string, value: string) {
     const next = { ...answers, [key]: value }
     setAnswers(next)
     const save = apiAuthPost('/beta-feedback/result-stage', { response_id: responseId, locale, result_stage_form_version: RESULT_STAGE_FORM_VERSION, ...next })
@@ -89,7 +89,7 @@ export default function BetaFeedbackResultStage({ responseId, locale, initiallyD
             <PillSelect
               key={q.key}
               label={q.label[locale]}
-              options={q.options}
+              options={q.options || []}
               value={answers[q.key]}
               onChange={v => answer(q.key, v)}
               locale={locale}

@@ -2,10 +2,12 @@
 
 import { FACE_EMOJIS, type Locale, type Option } from './content'
 
-export function FaceScale({ label, note, required, value, onChange, locale }: {
+export function FaceScale({ label, note, required, value, onChange, locale, low, high }: {
   label: string
   note?: string
   required?: boolean
+  low?: string   // wording for the 1 and 5 ends
+  high?: string
   value: number | undefined
   onChange: (v: number) => void
   locale: Locale
@@ -35,6 +37,12 @@ export function FaceScale({ label, note, required, value, onChange, locale }: {
           )
         })}
       </div>
+      {(low || high) && (
+        <div className="flex justify-between mt-1.5" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+          <span className="text-[11px] text-slate-400">1 — {low}</span>
+          <span className="text-[11px] text-slate-400">5 — {high}</span>
+        </div>
+      )}
     </div>
   )
 }
