@@ -1008,3 +1008,19 @@ html { scroll-behavior: smooth; }
 .coach-game .ttt-cell, .coach-game .rps-choice, .coach-game .mm-card { background: #eef4fa; border-color: #d5e3ee; color: #1f2937; }
 .coach-game .ttt-cell:not(:disabled):hover, .coach-game .rps-choice:hover { background: #dfeaf5; }
 .coach-game .mm-card.flipped, .coach-game .mm-card.matched { background: #cdebe5; }
+
+/* "Bring Sarah back" tab: halfway down the end-side edge, mostly tucked away, slides out on hover/focus. */
+.coach-summon {
+  position: fixed; top: 46%; inset-inline-end: 0; z-index: 60;
+  display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px;
+  background: #fff; color: var(--charcoal, #2b2b2b); font-size: 13px; font-weight: 600; cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, .12); border-inline-end: 0; border-radius: 999px 0 0 999px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .16);
+  transform: translateX(calc(100% - 46px));
+  transition: transform .25s ease;
+}
+.coach-summon[dir="rtl"] { border-radius: 0 999px 999px 0; transform: translateX(calc(-100% + 46px)); padding: 6px 8px 6px 12px; }
+.coach-summon img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex: none; }
+.coach-summon:hover, .coach-summon:focus-visible { transform: translateX(0); }
+@media (hover: none) { .coach-summon, .coach-summon[dir="rtl"] { transform: translateX(0) } .coach-summon span { display: none } .coach-summon { padding: 6px } }
+@media (prefers-reduced-motion: reduce) { .coach-summon { transition: none } }

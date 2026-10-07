@@ -637,9 +637,10 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           </div>
         </div>
         <div className="border-t border-white/10">
-          <div className="max-w-6xl mx-auto px-5 py-4 text-xs text-white/45 flex items-center justify-between gap-4"><span>{c.footer.copyright}</span>{coachHidden && <CoachSummon locale={locale as 'en' | 'ar'} onShow={showCoach} />}</div>
+          <div className="max-w-6xl mx-auto px-5 py-4 text-xs text-white/45">{c.footer.copyright}</div>
         </div>
       </footer>
+      {coachHidden && <CoachSummon locale={locale as 'en' | 'ar'} onShow={showCoach} />}
       {!coachHidden && (roam.target || coachDock) && (
         <CoachWidget
           locale={locale as 'en' | 'ar'} mode="landing" sessionId={getTelemetrySessionId}

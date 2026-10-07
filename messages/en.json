@@ -687,7 +687,9 @@
       "title": "More about your profile",
       "subtitle": "What each result means for you",
       "tip": "To develop it",
-      "inShort": "In short"
+      "inShort": "In short",
+      "readMore": "Read more",
+      "readLess": "Show less"
     },
     "careerTypes": {
       "title": "Your interests",
