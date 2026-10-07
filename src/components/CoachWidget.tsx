@@ -379,11 +379,11 @@ export default function CoachWidget({
       <button
         type="button" className={`coach-avatar coach-avatar-btn ${bubbleVisible ? 'is-nudging' : ''}`}
         onClick={() => { if (!justDragged.current) toggleOpen() }}
-        onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
+        onDragStart={e => e.preventDefault()} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
         aria-label={tr(T.open)} aria-expanded={open}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/coach-avatar.jpg" alt="" width={112} height={112} />
+        <img src="/coach-avatar.jpg" alt="" width={112} height={112} draggable={false} />
       </button>
     </div>
   )

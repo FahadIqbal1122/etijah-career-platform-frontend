@@ -952,7 +952,8 @@ html { scroll-behavior: smooth; }
   transition: left 1s cubic-bezier(.45, 0, .2, 1), top 1s cubic-bezier(.45, 0, .2, 1), opacity .3s ease;
 }
 /* draggable: she follows the pointer without the glide */
-.coach-widget.is-draggable .coach-avatar-btn { touch-action: none; cursor: grab; }
+.coach-widget.is-draggable .coach-avatar-btn { touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.coach-avatar-btn img, .coach-summon img { -webkit-user-drag: none; user-select: none; pointer-events: none; }
 .coach-widget.is-dragging { transition: none !important; }
 .coach-widget.is-dragging .coach-avatar-btn { cursor: grabbing; transform: scale(1.08); }
 .coach-widget.is-dragging .coach-speech { display: none; }
@@ -992,7 +993,7 @@ html { scroll-behavior: smooth; }
 .coach-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 8px; }
 .coach-chips button, .coach-tip-action {
   appearance: none; border: 1px solid rgba(0, 201, 167, .5); background: rgba(0, 201, 167, .1); color: #05766a;
-  border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer;
+  border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: grab;
 }
 .coach-tip-action { margin-top: 8px; }
 .coach-chips button:hover, .coach-tip-action:hover { background: rgba(0, 201, 167, .2); }
@@ -1012,9 +1013,9 @@ html { scroll-behavior: smooth; }
 
 /* "Bring Sarah back" tab: halfway down the end-side edge, mostly tucked away, slides out on hover/focus. */
 .coach-summon {
-  position: fixed; top: 46%; inset-inline-end: 0; z-index: 60;
+  position: fixed; top: 46%; touch-action: none; user-select: none; -webkit-user-select: none; inset-inline-end: 0; z-index: 60;
   display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px;
-  background: #fff; color: var(--charcoal, #2b2b2b); font-size: 13px; font-weight: 600; cursor: pointer;
+  background: #fff; color: var(--charcoal, #2b2b2b); font-size: 13px; font-weight: 600; cursor: grab;
   border: 1px solid rgba(0, 0, 0, .12); border-inline-end: 0; border-radius: 999px 0 0 999px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, .16);
   transform: translateX(calc(100% - 46px));
