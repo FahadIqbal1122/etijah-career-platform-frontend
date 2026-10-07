@@ -19,6 +19,7 @@ import BreakPanel from '@/components/BreakPanel'
 import CoachWidget from '@/components/CoachWidget'
 import { roamPool } from '@/data/coachMessages'
 import CoachSummon from '@/components/CoachSummon'
+import { useUpgradeHref } from '@/components/useUpgradeHref'
 import { useCoachRoam, useCoachHidden, useCoachDock } from '@/components/useCoachRoam'
 import BetaFeedbackResultStage from '@/components/beta-feedback/BetaFeedbackResultStage'
 
@@ -73,9 +74,10 @@ function FreeLockIcon({ tone }: { tone: 'primary' | 'teal' }) {
   )
 }
 function FreeUnlockBtn({ label, track, tone = 'primary' }: { label: string; track: string; tone?: 'primary' | 'teal' }) {
+  const upgradeHref = useUpgradeHref()
   return (
     <Link
-      href="/#pricing"
+      href={upgradeHref}
       data-track={track}
       className={`inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-bold text-white whitespace-nowrap ${tone === 'teal' ? 'bg-teal text-[#05221c]!' : 'bg-primary'}`}
       style={{ boxShadow: tone === 'teal' ? '0 10px 26px -10px rgba(0,201,167,.7)' : '0 10px 26px -10px rgba(7,112,186,.7)' }}
@@ -343,6 +345,7 @@ export default function ResultsPage() {
   const [saveError, setSaveError] = useState('')
   const [email, setEmail] = useState('')
   const [loggedIn, setLoggedIn] = useState(false)
+  const upgradeHref = useUpgradeHref()   // anonymous readers sign up (and save this report) before the plans
   const [reassessing, setReassessing] = useState(false)
   const [reassessError, setReassessError] = useState('')
   const [downloadingReport, setDownloadingReport] = useState(false)
@@ -921,7 +924,7 @@ export default function ResultsPage() {
             title={t('direction.lockedTitle')}
             body={t('direction.lockedBody')}
             ctaLabel={t('direction.lockedCta')}
-            ctaHref="/#pricing"
+            ctaHref={upgradeHref}
           />
         )}
         {/* The results-page direction picker (suggested matches + typed field) is switched off; the same choice is now
@@ -982,7 +985,7 @@ export default function ResultsPage() {
               title={t('firstStep.lockedTitle')}
               body={t('firstStep.lockedBody')}
               ctaLabel={t('firstStep.lockedCta')}
-              ctaHref="/#pricing"
+              ctaHref={upgradeHref}
             />
           </div>
         )}
@@ -1066,7 +1069,7 @@ export default function ResultsPage() {
                   title={t('firstStep.lockedTitle')}
                   body={t('firstStep.lockedBody')}
                   ctaLabel={t('firstStep.lockedCta')}
-                  ctaHref="/#pricing"
+                  ctaHref={upgradeHref}
                 />
               </div>
             )}
@@ -1198,7 +1201,7 @@ export default function ResultsPage() {
                     <p className="rp-h text-charcoal">{t('suggestedCareers.moreLockedTitle')}</p>
                     <p className="rp-sub mt-1.5">{t('suggestedCareers.moreLockedBody')}</p>
                   </div>
-                  <Link href="/#pricing" data-track="results_careers_upgrade" className="text-sm font-semibold text-primary hover:underline">{t('suggestedCareers.moreLockedCta')} →</Link>
+                  <Link href={upgradeHref} data-track="results_careers_upgrade" className="text-sm font-semibold text-primary hover:underline">{t('suggestedCareers.moreLockedCta')} →</Link>
                 </div> */}
               {tier === 'free' && (
                 <div
@@ -1210,7 +1213,7 @@ export default function ResultsPage() {
                     <p className="text-sm text-white/85 mt-1.5 leading-relaxed">{t('suggestedCareers.moreLockedBody')}</p>
                   </div>
                   <Link
-                    href="/#pricing"
+                    href={upgradeHref}
                     data-track="results_careers_upgrade"
                     className="inline-flex items-center justify-center gap-2 self-start rounded-full bg-teal px-6 py-3 text-base font-extrabold text-[#05221c] whitespace-nowrap"
                     style={{ boxShadow: '0 10px 28px -8px rgba(0,201,167,.8)' }}
@@ -1386,7 +1389,7 @@ export default function ResultsPage() {
                                 {tier === 'free' && (
                                   <>
                                     <BlurBlock className="mt-0.5"><ul className="rp-sub rp-note-text list-disc ps-5 space-y-0.5">{BLUR_FILLER.map(x => <li key={x}>{x}</li>)}</ul></BlurBlock>
-                                    <Link href="/#pricing" data-track="results_ai_tasks_unlock" className="inline-block mt-2 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-white">{t('aiImpact.unlockCta')}</Link>
+                                    <Link href={upgradeHref} data-track="results_ai_tasks_unlock" className="inline-block mt-2 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-white">{t('aiImpact.unlockCta')}</Link>
                                   </>
                                 )}
                                 */}
@@ -1427,7 +1430,7 @@ export default function ResultsPage() {
                                 </div>
                                 {/* free: handled by the branded block above
                                 {tier === 'free' && (
-                                  <Link href="/#pricing" data-track="results_ai_skills_unlock" className="inline-block mt-2 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-white">{t('aiImpact.unlockCta')}</Link>
+                                  <Link href={upgradeHref} data-track="results_ai_skills_unlock" className="inline-block mt-2 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-white">{t('aiImpact.unlockCta')}</Link>
                                 )}
                                 */}
                               </div>
@@ -1561,7 +1564,7 @@ export default function ResultsPage() {
               title={t('aiImpact.lockedTitle')}
               body={t('aiImpact.lockedBody')}
               ctaLabel={t('aiImpact.lockedCta')}
-              ctaHref="/#pricing"
+              ctaHref={upgradeHref}
             />
           )
         )}
@@ -1754,7 +1757,7 @@ export default function ResultsPage() {
               title={t(listingsAsInternships ? 'internships.lockedTitle' : 'liveJobs.lockedTitle')}
               body={t(listingsAsInternships ? 'internships.lockedBody' : 'liveJobs.lockedBody')}
               ctaLabel={t('liveJobs.lockedCta')}
-              ctaHref="/#pricing"
+              ctaHref={upgradeHref}
             />
           )}
           </>
@@ -1769,7 +1772,7 @@ export default function ResultsPage() {
             title={t('certifications.lockedTitle')}
             body={t('certifications.lockedBody')}
             ctaLabel={t('certifications.lockedCta')}
-            ctaHref="/#pricing"
+            ctaHref={upgradeHref}
           />
         )}
 
@@ -1872,7 +1875,7 @@ export default function ResultsPage() {
             title={t('courses.lockedTitle')}
             body={t('courses.lockedBody')}
             ctaLabel={t('courses.lockedCta')}
-            ctaHref="/#pricing"
+            ctaHref={upgradeHref}
           />
         ) : coursesError ? (
           <div className="card p-5 text-center">
@@ -1929,7 +1932,7 @@ export default function ResultsPage() {
             title={t('companies.lockedTitle')}
             body={t('companies.lockedBody')}
             ctaLabel={t('companies.lockedCta')}
-            ctaHref="/#pricing"
+            ctaHref={upgradeHref}
           />
         ) : companiesError ? (
           <div className="card p-5 text-center">
@@ -2019,7 +2022,7 @@ export default function ResultsPage() {
               title={t('aiImpact.lockedTitle')}
               body={t('aiImpact.lockedBody')}
               ctaLabel={t('aiImpact.lockedCta')}
-              ctaHref="/#pricing"
+              ctaHref={upgradeHref}
             />
           ) : null}
           </>
@@ -2285,7 +2288,7 @@ export default function ResultsPage() {
             <div className="flex flex-wrap items-center justify-center gap-2">
               {tier === 'free' ? (
                 <Link
-                  href="/#pricing"
+                  href={upgradeHref}
                   className="inline-flex items-center gap-2 bg-white/10 border border-white/25 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-white/20 transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>

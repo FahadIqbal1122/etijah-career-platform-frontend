@@ -657,7 +657,7 @@ export default function AssessmentForm() {
     setSubmitting(true)
     setError('')
     try {
-      const result = await apiAuthPost<{ response_id: string }>('/assessment/submit', {
+      const result = await apiAuthPost<{ response_id: string; claim_token?: string }>('/assessment/submit', {
         full_name: answers['QD1'],
         email: answers['QD2'],
         phone: answers['QD3'],
@@ -681,6 +681,8 @@ export default function AssessmentForm() {
         locale,
         telemetry_session_id: getTelemetrySessionId(),
       })
+      // Proof that this browser took the assessment: lets the report be saved to the account created later.
+      try { if (result.claim_token) window.localStorage.setItem(`claim:${result.response_id}`, result.claim_token) } catch {}
       track('assessment_complete', { lang: locale })
       clearDraft()
       // this attempt is done — flush what's queued so it isn't lost, then

@@ -48,11 +48,18 @@ function LoginForm() {
     // doesn't race it and show "no report yet" for a user whose prior
     // anonymous assessment hasn't been linked to their account yet.
     await apiAuthPost('/assessment/link-by-email', {}).catch(() => {})
+    // Came from a results page: save that exact report to this account (the token proves this browser took it).
+    const claimId = searchParams.get('claim')
+    if (claimId) {
+      let token = ''
+      try { token = window.localStorage.getItem(`claim:${claimId}`) || '' } catch {}
+      if (token) await apiAuthPost(`/assessment/${encodeURIComponent(claimId)}/claim`, { token }).catch(() => {})
+    }
     const next = searchParams.get('next')
     // Only follow `next` if it's a same-app relative path — a leading "//" (or "/\") is
     // protocol-relative and would silently redirect off-site after a real login.
     const safeNext = next && /^\/(?!\/|\\)/.test(next) ? next : null
-    router.push(safeNext ? `/${locale}${safeNext}` : `/${locale}/dashboard`)
+    router.push(safeNext ? `/${locale}${safeNext}` : claimId ? `/${locale}/#pricing` : `/${locale}/dashboard`)
   }
 
   return (
@@ -123,7 +130,7 @@ function LoginForm() {
           </button>
           <p className="text-center text-sm text-charcoal/40">
             No account?{' '}
-            <a href={`/${locale}/signup`} className="text-primary font-medium hover:underline">Sign up</a>
+            <a href={`/${locale}/signup${searchParams.get('claim') ? `?claim=${encodeURIComponent(searchParams.get('claim')!)}` : ''}`} className="text-primary font-medium hover:underline">Sign up</a>
           </p>
         </form>
       </div>

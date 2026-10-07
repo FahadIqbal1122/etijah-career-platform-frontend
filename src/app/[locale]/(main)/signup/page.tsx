@@ -9,6 +9,10 @@ import Logomark from '@/components/brand/Logomark'
 const field =
   'w-full border border-[var(--line-strong)] rounded-xl px-3.5 py-2.5 text-sm bg-lightblue text-charcoal placeholder-charcoal/40 focus:outline-none focus:border-accent focus:ring-2 focus:ring-teal/20 transition-colors'
 
+function readClaimToken(id: string) {
+  try { return window.localStorage.getItem(`claim:${id}`) || '' } catch { return '' }
+}
+
 export default function SignupPage() {
   const searchParams = useSearchParams()
   const locale = useLocale()
@@ -19,6 +23,9 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
+  // Coming from a results page: save that report to the new account (the claim travels in the account's metadata, so it
+  // works even when the confirmation email is opened in another browser).
+  const claimId = searchParams.get('claim')
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
@@ -30,7 +37,7 @@ export default function SignupPage() {
       // Hardcoded rather than window.location.origin — a stale bookmark/link to a
       // decommissioned domain (e.g. the old careercompass.etijahcoaching.com) would
       // otherwise bake that dead domain into the verification email itself.
-      options: { data: { full_name: fullName }, emailRedirectTo: `https://myetijahi.com/${locale}/dashboard?verified=1` },
+      options: { data: { full_name: fullName, ...(claimId ? { claim: { response_id: claimId, token: readClaimToken(claimId) } } : {}) }, emailRedirectTo: `https://myetijahi.com/${locale}/dashboard?verified=1` },
     })
     if (error) {
       setError(error.message)
@@ -71,6 +78,13 @@ export default function SignupPage() {
             <p className="text-xs text-charcoal/40 mt-1">Etijahi · إتجاهي</p>
           </div>
         </div>
+        {claimId && (
+          <p className="mb-5 rounded-xl bg-primary/5 border border-primary/15 px-3.5 py-3 text-sm text-charcoal/80 leading-relaxed">
+            {locale === 'ar'
+              ? 'أنشئ حساباً مجانياً لنحفظ تقريرك وتقدّمك، ثم اختر خطتك.'
+              : 'Create a free account so your report and progress are saved, then choose your plan.'}
+          </p>
+        )}
         <form onSubmit={handleSignup} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-charcoal/70 mb-1">Full name</label>
@@ -125,7 +139,7 @@ export default function SignupPage() {
           </button>
           <p className="text-center text-sm text-charcoal/40">
             Already have an account?{' '}
-            <a href={`/${locale}/login`} className="text-primary font-medium hover:underline">Sign in</a>
+            <a href={`/${locale}/login${claimId ? `?claim=${encodeURIComponent(claimId)}` : ''}`} className="text-primary font-medium hover:underline">Sign in</a>
           </p>
         </form>
       </div>
