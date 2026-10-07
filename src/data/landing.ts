@@ -27,7 +27,7 @@ export const L = {
       trust: '15 years of coaching, now in your hands. · Etijahi — by Etijah Coaching & Consulting',
       cta: 'Find My Direction',
       microcopy: 'Free assessment and initial results. Full report available at the {price} launch price. No card needed to start.',
-      secondary: 'See a sample report ↓',
+      secondary: 'See a sample report ↗',
       viewPackages: 'View packages',
       preview: {
         eyebrow: 'Discovering you',
@@ -300,7 +300,7 @@ export const L = {
       trust: '١٥ عاماً من الخبرة، بين يديك. · اتجاهي — من اتجاه للإرشاد والاستشارات',
       cta: 'اكتشف اتجاهي',
       microcopy: 'التقييم والنتائج الأولية مجاناً. التقرير الكامل بسعر الإطلاق {price}. لا تحتاج إلى بطاقة دفع للبدء.',
-      secondary: 'اطّلع على نموذج التقرير ↓',
+      secondary: 'اطّلع على نموذج التقرير ↗',
       viewPackages: 'عرض الباقات',
       preview: {
         eyebrow: 'نكتشفك',

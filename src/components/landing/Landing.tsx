@@ -243,7 +243,9 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               <span className="text-teal">✦</span>{c.hero.trust}
             </h2>
             <div className="mt-6 flex flex-wrap items-center gap-4">
-              <a href="#report" className="cta cta-outline cta-sm">{c.hero.secondary}</a>
+              {/* opens the real sample report (a PDF, in the page language) in a new tab; it used to only scroll down the page */}
+              <a href={locale === 'ar' ? '/demo-report-ar.pdf' : '/demo-report-en.pdf'} target="_blank" rel="noopener noreferrer"
+                data-track="landing_hero_sample_report" className="cta cta-outline cta-sm">{c.hero.secondary}</a>
               <a href="#pricing" data-track="landing_hero_view_packages" className="cta cta-teal cta-sm">{c.hero.viewPackages}</a>
             </div>
           </Reveal>
