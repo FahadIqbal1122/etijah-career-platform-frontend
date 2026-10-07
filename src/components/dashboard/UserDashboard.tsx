@@ -204,7 +204,8 @@ function PreviewTag({ label }: { label: string }) {
 function NavList({ variant, active, lang, onNav }: { variant: 'side' | 'tab'; active: string; lang: 'en' | 'ar'; onNav: (id: string) => void }) {
   return (
     <>
-      {NAV.map(item => {
+      {/* the menu follows the same switches as the sections, so it never links to a section that is switched off */}
+      {NAV.filter(item => (item.id !== 'jobs' || SHOW_JOB_MATCHES) && (item.id !== 'notifications' || SHOW_NOTIFICATIONS)).map(item => {
         const on = active === item.id
         if (variant === 'tab') {
           return (
@@ -734,6 +735,19 @@ export default function UserDashboard() {
                     </button>
                   )}
                 </div>
+              </div>
+            )}
+            {!planLoading && plan?.tier !== 'launchpad' && assessments.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <p className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs leading-relaxed text-charcoal/75">
+                  {lang === 'ar'
+                    ? `منصة الانطلاق بسعر ${formatPrice('launchpad', displayCurrency, lang)} عند شراء التقرير والتدريب معاً. إذا اشتريت مرشد المسار أولاً ثم أضفت جلسة التدريب لاحقاً، يصبح سعر التدريب ${formatPrice('launchpad_upgrade', displayCurrency, lang)}. الأسعار شاملة الضريبة.`
+                    : `Launchpad is ${formatPrice('launchpad', displayCurrency, lang)} when you buy the full report and coaching together. If you buy Pathfinder first and add coaching later, the coaching upgrade costs ${formatPrice('launchpad_upgrade', displayCurrency, lang)}. Prices include tax.`}
+                </p>
+                <a href={`/${lang}/#pricing`} target="_blank" rel="noopener noreferrer" data-track="dashboard_see_plans"
+                  className="inline-block text-sm font-semibold text-primary hover:underline">
+                  {lang === 'ar' ? 'عرض كل المزايا والأسعار ←' : 'See all features and prices →'}
+                </a>
               </div>
             )}
             {plan?.tier === 'launchpad' && (

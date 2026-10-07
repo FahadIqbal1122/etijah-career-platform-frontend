@@ -14,7 +14,9 @@ export const COUNTRY_CURRENCY: Record<string, Currency> = {
 
 // Rounded from the pegged rates (1 USD = 3.75 SAR, 0.376 BHD, 3.64 QAR, 0.307 KWD, 0.385 OMR, 3.6725 AED).
 export const PRICES: Record<PriceKey, Record<Currency, number>> = {
-  pathfinder:          { SAR: 59,  BHD: 6,  QAR: 58,  KWD: 5,   OMR: 6,  AED: 58,  USD: 16 },
+  // pathfinder:          { SAR: 59,  BHD: 6,  QAR: 58,  KWD: 5,   OMR: 6,  AED: 58,  USD: 16 },
+  // BHD 5.9 (was 6) so the Bahrain price matches the converted 59 SAR (5.93) and reads as a clean figure
+  pathfinder:          { SAR: 59,  BHD: 5.9,  QAR: 58,  KWD: 5,   OMR: 6,  AED: 58,  USD: 16 },
   pathfinder_standard: { SAR: 99,  BHD: 10, QAR: 96,  KWD: 8,   OMR: 10, AED: 97,  USD: 26 },
   // launchpad:           { SAR: 440, BHD: 44, QAR: 428, KWD: 36,  OMR: 45, AED: 431, USD: 117 },
   // Launchpad launch offer: 330 SAR (standard 440 SAR, kept as launchpad_standard for the crossed-out price)
