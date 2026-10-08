@@ -181,8 +181,8 @@ function cohortLabel(row: { created_at: string; cohort_override?: CohortKey | nu
 // 'all' matches everything (including pre-beta rows); a cohort filter only
 // matches rows that are actually part of the beta in the first place —
 // a pre-beta submission has no cohort at all, so it's excluded either way.
-function matchesCohortFilter(row: { created_at: string; cohort_override?: CohortKey | null }, filter: 'all' | CohortKey): boolean {
-  if (filter === 'all') return true
+function matchesCohortFilter(row: { created_at: string; cohort_override?: CohortKey | null }, filter: SubmissionFilter): boolean {
+  if (filter === 'all' || filter === 'free' || filter === 'paid') return true // free/paid are matched by email in the live view
   if (!isBetaSubmission(row)) return false
   return cohortKey(row) === filter
 }
@@ -194,11 +194,14 @@ function isBetaFeedbackEntry(bf: { form_version: string | null; created_at: stri
   return new Date(bf.created_at) < BETA_COHORT_END
 }
 
-function CohortFilterPills({ value, onChange }: { value: 'all' | CohortKey; onChange: (v: 'all' | CohortKey) => void }) {
-  const labels = { all: 'All cohorts', beta: 'Beta', beta_v2: 'Beta v2', beta_v3: 'Beta v3' } as const
+type SubmissionFilter = 'all' | CohortKey | 'free' | 'paid'
+
+function CohortFilterPills({ value, onChange, live }: { value: SubmissionFilter; onChange: (v: SubmissionFilter) => void; live?: boolean }) {
+  const labels = { all: live ? 'All' : 'All cohorts', beta: 'Beta', beta_v2: 'Beta v2', beta_v3: 'Beta v3', free: 'Free report', paid: 'Paid report' } as const
+  const keys = live ? (['all', 'free', 'paid'] as const) : (['all', 'beta', 'beta_v2', 'beta_v3'] as const)
   return (
     <div className="flex gap-2">
-      {(['all', 'beta', 'beta_v2', 'beta_v3'] as const).map(key => (
+      {keys.map(key => (
         <button
           key={key}
           type="button"
@@ -1244,7 +1247,7 @@ export default function AdminPage() {
   // Testing dashboard — lets staff isolate "beta v2" (the round of fixes/
   // features shipped 2026-09-08 onward) from the original "beta" cohort,
   // instead of eyeballing the per-row cohort badge across every list.
-  const [cohortFilter, setCohortFilter] = useState<'all' | CohortKey>('all')
+  const [cohortFilter, setCohortFilter] = useState<SubmissionFilter>('all')
   // Submissions tab: filter by how far (if at all) each respondent got into
   // the beta feedback flow, joined in via betaFeedbackByResponseId below.
   const [submissionFeedbackFilter, setSubmissionFeedbackFilter] = useState<SubmissionFeedbackFilter>('all')
@@ -3545,6 +3548,14 @@ export default function AdminPage() {
   const hiddenTestSalesCount = salesList.length - realSales.length
   const livePaidSales = realSales.filter(isPaidSale)
   const liveCoachingSales = livePaidSales.filter(t => t.coaching_included)
+  // Explorer = completed live assessments whose email has no paid order (they only got the free report).
+  const livePaidEmails = new Set(livePaidSales.map(t => (t.email || '').trim().toLowerCase()).filter(Boolean))
+  const matchesPlan = (email: string | null | undefined) => {
+    if (!isLiveView || (cohortFilter !== 'free' && cohortFilter !== 'paid')) return true
+    const isPaid = livePaidEmails.has((email || '').trim().toLowerCase())
+    return cohortFilter === 'paid' ? isPaid : !isPaid
+  }
+  const liveExplorerCount = liveSubmissions.filter(sub => sub.completed && !livePaidEmails.has((sub.email || '').trim().toLowerCase())).length
   const liveRevenueByCurrency = new Map<string, number>()
   for (const t of livePaidSales) liveRevenueByCurrency.set(t.currency, (liveRevenueByCurrency.get(t.currency) || 0) + Number(t.amount || 0))
   const liveRevenueLabel = liveRevenueByCurrency.size === 0 ? '0' : Array.from(liveRevenueByCurrency.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ')
@@ -3571,6 +3582,7 @@ export default function AdminPage() {
   function renderSubmissionsTable(fullList: Submission[], emptyMessage: string, exportFilename: string) {
     const list = fullList
       .filter(sub => matchesCohortFilter(sub, cohortFilter))
+      .filter(sub => matchesPlan(sub.email))
       .filter(sub => matchesFeedbackFilter(betaFeedbackByResponseId.get(sub.id), submissionFeedbackFilter))
     const exportSubmissions = () => {
       const rows: (string | number | null)[][] = [
@@ -3602,7 +3614,7 @@ export default function AdminPage() {
           <p className="text-sm text-slate-400">{list.length} submission{list.length !== 1 ? 's' : ''}</p>
           <div className="flex flex-wrap items-center gap-2">
             <DownloadCSVButton onClick={exportSubmissions} />
-            <CohortFilterPills value={cohortFilter} onChange={setCohortFilter} />
+            <CohortFilterPills value={cohortFilter} onChange={setCohortFilter} live={isLiveView} />
             <FeedbackFilterPills value={submissionFeedbackFilter} onChange={setSubmissionFeedbackFilter} />
           </div>
         </div>
@@ -4005,15 +4017,16 @@ export default function AdminPage() {
             {activeTab === 'liveDashboard' && (
               <div className="mb-6">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">At a glance · since {LIVE_START.toLocaleDateString()}</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <BetaStatTile label="Sales" value={String(livePaidSales.length)} sublabel="Paid orders" onClick={() => setActiveTab('liveSales')} />
-                  <BetaStatTile label="Revenue" value={liveRevenueLabel} sublabel="Paid orders only" onClick={() => setActiveTab('liveSales')} />
-                  <BetaStatTile label="Coaching sold" value={String(liveCoachingSales.length)} sublabel="Launchpad, 1:1 session included" onClick={() => setActiveTab('liveCoaching')} />
-                  <BetaStatTile label="Pathfinder" value={String(livePaidSales.length - liveCoachingSales.length)} sublabel="Pathfinder-only orders" onClick={() => setActiveTab('liveSales')} />
-                  <BetaStatTile label="Submissions" value={String(liveSubmissions.length)} sublabel={`${liveSubmissions.filter(sub => sub.completed).length} completed`} onClick={() => setActiveTab('liveSubmissions')} />
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <BetaStatTile label="Sales" value={String(livePaidSales.length)} sublabel="Transactions (paid orders)" onClick={() => setActiveTab('liveSales')} />
+                  <BetaStatTile label="Revenue" value={liveRevenueLabel} sublabel="From paid orders" onClick={() => setActiveTab('liveSales')} />
+                  <BetaStatTile label="Explorer" value={String(liveExplorerCount)} sublabel="Free report (completed, no purchase)" onClick={() => setActiveTab('liveSubmissions')} />
+                  <BetaStatTile label="Pathfinder" value={String(livePaidSales.length - liveCoachingSales.length)} sublabel="Paid report" onClick={() => setActiveTab('liveSales')} />
+                  <BetaStatTile label="Launchpad" value={String(liveCoachingSales.length)} sublabel="Report + 1:1 coaching" onClick={() => setActiveTab('liveCoaching')} />
+                  <BetaStatTile label="Total submissions" value={String(liveSubmissions.length)} sublabel={`${liveSubmissions.filter(sub => sub.completed).length} completed`} onClick={() => setActiveTab('liveSubmissions')} />
                   <BetaStatTile label="Career recs" value={String(liveCareerRecsGenerated.length)} sublabel="Generated" onClick={() => setActiveTab('liveCareerRecs')} />
                   <BetaStatTile label="Feedback" value={String(liveFeedbackList.length)} sublabel={`F1 ${liveFeedbackList.filter(bf => bf.stage1_completed_at).length} · F2 ${liveFeedbackList.filter(bf => bf.result_stage_completed_at).length} · F3 ${liveFeedbackList.filter(bf => bf.stage2_completed_at).length}`} onClick={() => setActiveTab('liveFeedback')} />
-                  <BetaStatTile label="Conversion" value={liveSubmissions.length > 0 ? `${Math.round((livePaidSales.length / liveSubmissions.length) * 100)}%` : '—'} sublabel="Paid orders / submissions" />
+                  <BetaStatTile label="Conversion" value={liveSubmissions.length > 0 ? `${Math.round((livePaidSales.length / liveSubmissions.length) * 100)}%` : '—'} sublabel="Paid orders ÷ total submissions" />
                 </div>
               </div>
             )}
@@ -4054,8 +4067,8 @@ export default function AdminPage() {
               // Cohort-scoped views of the raw lists — every count/chart/export
               // below is derived from these, so the whole dashboard (including
               // the "Who's testing" charts further down) respects cohortFilter.
-              const scopedFeedback = scopeFeedbackList.filter(bf => matchesCohortFilter({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }, cohortFilter))
-              const scopedSubmissions = scopeSubmissions.filter(s => matchesCohortFilter(s, cohortFilter))
+              const scopedFeedback = scopeFeedbackList.filter(bf => matchesCohortFilter({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }, cohortFilter) && matchesPlan(bf.assessment_responses?.email))
+              const scopedSubmissions = scopeSubmissions.filter(s => matchesCohortFilter(s, cohortFilter) && matchesPlan(s.email))
               const stage2Responses = scopedFeedback.filter(bf => bf.stage2_completed_at)
               const stage2Total = stage2Responses.length
               const resultStageResponses = scopedFeedback.filter(bf => bf.result_stage_completed_at)
@@ -4236,7 +4249,7 @@ export default function AdminPage() {
                 <>
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                     <p className="text-sm font-semibold text-slate-700">Feedback funnel</p>
-                    <CohortFilterPills value={cohortFilter} onChange={setCohortFilter} />
+                    <CohortFilterPills value={cohortFilter} onChange={setCohortFilter} live={isLiveView} />
                   </div>
                   {totalSubmissions > 0 && (
                     <div className="mb-6">
@@ -4767,7 +4780,7 @@ export default function AdminPage() {
               const statusOptions = distinctValues(scopeFeedbackList.map(bf => bf.assessment_responses?.current_stage))
               const ageOptions = distinctValues(scopeFeedbackList.map(bf => bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age)))
               const visibleBetaFeedback = scopeFeedbackList
-                .filter(bf => matchesCohortFilter({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }, cohortFilter))
+                .filter(bf => matchesCohortFilter({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }, cohortFilter) && matchesPlan(bf.assessment_responses?.email))
                 .filter(bf => betaFeedbackStageFilter === 'all' || betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
                 .filter(bf => betaFeedbackStatusFilter === 'all' || bf.assessment_responses?.current_stage === betaFeedbackStatusFilter)
                 .filter(bf => betaFeedbackAgeFilter === 'all' || (bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age)) === betaFeedbackAgeFilter)
@@ -4837,7 +4850,7 @@ export default function AdminPage() {
                       <p className="text-sm text-slate-400">{visibleBetaFeedback.length} response{visibleBetaFeedback.length !== 1 ? 's' : ''}</p>
                       <div className="flex flex-wrap items-center gap-2">
                         <DownloadCSVButton onClick={exportBetaFeedback} />
-                        <CohortFilterPills value={cohortFilter} onChange={setCohortFilter} />
+                        <CohortFilterPills value={cohortFilter} onChange={setCohortFilter} live={isLiveView} />
                         {(['all', 'started', 'stage1', 'result', 'stage2'] as const).map(key => (
                           <button
                             key={key}
