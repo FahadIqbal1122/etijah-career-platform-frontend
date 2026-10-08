@@ -1176,7 +1176,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('liveDashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -3520,7 +3520,10 @@ export default function AdminPage() {
   const betaBugReports = bugReports.filter(b => new Date(b.created_at) < BETA_COHORT_END)
   const isLive = (iso: string) => new Date(iso) >= LIVE_START
   const liveSubmissions = submissions.filter(s => isLive(s.created_at))
-  const liveFeedbackList = betaFeedbackList.filter(bf => isLive(bf.created_at))
+  // Feedback belongs to Live when its *submission* is Live, so a response can never show up here without its
+  // submission (the feedback row's own date can differ, e.g. someone answering today for an earlier assessment).
+  const liveSubmissionIds = new Set(liveSubmissions.map(s => s.id))
+  const liveFeedbackList = betaFeedbackList.filter(bf => liveSubmissionIds.has(bf.response_id))
   const liveCareerRecsGenerated = allCareerRecs.filter(r => isLive(r.created_at) && r.career_recommendations?.length > 0)
   const scopeSubmissions = isLiveView ? liveSubmissions : betaSubmissions
   const scopeCareerRecsGenerated = isLiveView ? liveCareerRecsGenerated : betaCareerRecsGenerated
@@ -3737,12 +3740,13 @@ export default function AdminPage() {
             color: string
             tabs: { key: typeof activeTab; label: string; color: string; badge?: string | number; onSelect?: () => void }[]
           }[] = [
+            // Old single-tab Dashboard (waitlist stats + public share link) replaced by the Live dashboard below.
+            // {
+            //   key: 'dashboard', label: 'Dashboard', color: 'bg-sky-600',
+            //   tabs: [{ key: 'dashboard', label: 'Dashboard', color: 'bg-sky-600' }],
+            // },
             {
-              key: 'dashboard', label: 'Dashboard', color: 'bg-sky-600',
-              tabs: [{ key: 'dashboard', label: 'Dashboard', color: 'bg-sky-600' }],
-            },
-            {
-              key: 'live', label: 'Live', color: 'bg-sky-700',
+              key: 'dashboard', label: 'Dashboard', color: 'bg-sky-700',
               tabs: [
                 { key: 'liveDashboard', label: 'Dashboard', color: 'bg-sky-700' },
                 { key: 'liveSubmissions', label: 'Submissions', color: 'bg-sky-600', badge: liveSubmissions.length > 0 ? liveSubmissions.length : undefined },
