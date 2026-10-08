@@ -143,6 +143,8 @@ const BETA_COHORT_START = new Date('2026-09-06')
 // Anything created from here on belongs only to the main ("Live") dashboard; the
 // Beta Testing tabs are frozen to [BETA_COHORT_START, BETA_COHORT_END).
 const BETA_COHORT_END = new Date('2026-10-07T00:00:00Z')
+// First day with real payments; anything earlier in Sales was testing.
+const SALES_REAL_FROM = new Date('2026-10-08T00:00:00Z')
 function isBetaSubmission(sub: Pick<Submission, 'created_at'>) {
   const t = new Date(sub.created_at)
   return t >= BETA_COHORT_START && t < BETA_COHORT_END
@@ -220,9 +222,9 @@ function betaFeedbackLatestAt(bf: Pick<BetaFeedbackEntry, 'created_at' | 'stage1
 }
 const BETA_FEEDBACK_STAGE_LABELS: Record<BetaFeedbackStage, string> = {
   started: 'Started',
-  stage1: 'Pre-Result Stage',
-  result: 'Result Stage',
-  stage2: 'Post-Result Stage',
+  stage1: 'F1 Pre-Result Short',
+  result: 'F2 Result Page Short',
+  stage2: 'F3 Email Feedback',
 }
 
 // Submissions-table feedback filter: presence/absence, or how far into the
@@ -238,7 +240,7 @@ function matchesFeedbackFilter(bf: BetaFeedbackEntry | undefined, filter: Submis
 
 function FeedbackFilterPills({ value, onChange }: { value: SubmissionFeedbackFilter; onChange: (v: SubmissionFeedbackFilter) => void }) {
   const labels: Record<SubmissionFeedbackFilter, string> = {
-    all: 'All feedback', none: 'No feedback', started: 'Started', stage1: 'Pre-Result', result: 'Result', stage2: 'Post-Result',
+    all: 'All feedback', none: 'No feedback', started: 'Started', stage1: 'F1 Pre-Result Short', result: 'F2 Result Page Short', stage2: 'F3 Email Feedback',
   }
   return (
     <div className="flex gap-2">
@@ -2989,9 +2991,9 @@ export default function AdminPage() {
                 ['Experience', bf.assessment_responses?.experience_level ? (EXPERIENCE_LEVEL_LABEL[bf.assessment_responses.experience_level] || bf.assessment_responses.experience_level) : null],
                 ['Locale', bf.locale || bf.assessment_responses?.locale],
                 ['Device', bf.device],
-                ['Pre-Result Stage completed', bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : null],
-                ['Result Stage completed', bf.result_stage_completed_at ? new Date(bf.result_stage_completed_at).toLocaleString() : null],
-                ['Post-Result Stage completed', bf.stage2_completed_at ? new Date(bf.stage2_completed_at).toLocaleString() : null],
+                ['F1 Pre-Result Short completed', bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : null],
+                ['F2 Result Page Short completed', bf.result_stage_completed_at ? new Date(bf.result_stage_completed_at).toLocaleString() : null],
+                ['F3 Email Feedback completed', bf.stage2_completed_at ? new Date(bf.stage2_completed_at).toLocaleString() : null],
               ].map(([label, value]) => (
                 <div key={label}>
                   <dt className="text-slate-400">{label}</dt>
@@ -3002,7 +3004,7 @@ export default function AdminPage() {
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Pre-Result Stage · Quick Pulse</h3>
+            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">F1 Pre-Result Short</h3>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
               {[
                 ['Clarity', ratingLabel(bf.s1_clarity)],
@@ -3019,7 +3021,7 @@ export default function AdminPage() {
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Result Stage</h3>
+            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">F2 Result Page Short</h3>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
               {[
                 ['Result accuracy', bf.result_accuracy],
@@ -3524,8 +3526,10 @@ export default function AdminPage() {
 
   const openBugCount = betaBugReports.filter(b => b.status === 'open').length
   const isPaidSale = (t: SaleEntry) => !!t.paid_at || ['paid', 'captured', 'succeeded', 'success', 'completed'].includes((t.status || '').toLowerCase())
-  // Payment test charges (PATHFINDER_TEST_AMOUNT = 0.1 BHD, 5 Oct 2026 tests) are hidden from Sales.
-  const isTestSale = (t: SaleEntry) => t.currency === 'BHD' && Number(t.amount) <= 0.1
+  // Every payment before 8 Oct 2026 was a test, and so are PATHFINDER_TEST_AMOUNT charges (0.1 BHD) at any time:
+  // both are hidden from Sales.
+  const isTestSale = (t: SaleEntry) =>
+    new Date(t.paid_at || t.created_at) < SALES_REAL_FROM || (t.currency === 'BHD' && Number(t.amount) <= 0.1)
   const realSales = salesList.filter(t => !isTestSale(t))
   const hiddenTestSalesCount = salesList.length - realSales.length
   const livePaidSales = realSales.filter(isPaidSale)
@@ -3744,17 +3748,18 @@ export default function AdminPage() {
                 // { key: 'liveBugs', label: 'Bugs', color: 'bg-red-600', badge: liveOpenBugCount > 0 ? liveOpenBugCount : undefined },
               ],
             },
-            {
-              key: 'beta', label: 'Beta Testing', color: 'bg-fuchsia-700',
-              tabs: [
-                { key: 'betaDashboard', label: 'Dashboard', color: 'bg-fuchsia-700' },
-                { key: 'betaSubmissions', label: 'Submissions', color: 'bg-fuchsia-600', badge: betaSubmissions.length > 0 ? betaSubmissions.length : undefined },
-                { key: 'betaCareerRecs', label: 'Career Recs', color: 'bg-teal-600', badge: betaCareerRecsGenerated.length > 0 ? betaCareerRecsGenerated.length : undefined },
-                { key: 'betaFeedback', label: 'Feedback', color: 'bg-fuchsia-500', badge: betaFeedbackFrozen.length > 0 ? betaFeedbackFrozen.length : undefined },
-                { key: 'betaBehavior', label: 'Behavior', color: 'bg-purple-600', badge: betaTelemetrySummary.sessionCount > 0 ? betaTelemetrySummary.sessionCount : undefined },
-                { key: 'betaBugs', label: 'Bugs', color: 'bg-red-600', badge: openBugCount > 0 ? openBugCount : undefined },
-              ],
-            },
+            // Beta Testing group hidden from the admin (beta is over; see the Live group).
+            // {
+            //   key: 'beta', label: 'Beta Testing', color: 'bg-fuchsia-700',
+            //   tabs: [
+            //     { key: 'betaDashboard', label: 'Dashboard', color: 'bg-fuchsia-700' },
+            //     { key: 'betaSubmissions', label: 'Submissions', color: 'bg-fuchsia-600', badge: betaSubmissions.length > 0 ? betaSubmissions.length : undefined },
+            //     { key: 'betaCareerRecs', label: 'Career Recs', color: 'bg-teal-600', badge: betaCareerRecsGenerated.length > 0 ? betaCareerRecsGenerated.length : undefined },
+            //     { key: 'betaFeedback', label: 'Feedback', color: 'bg-fuchsia-500', badge: betaFeedbackFrozen.length > 0 ? betaFeedbackFrozen.length : undefined },
+            //     { key: 'betaBehavior', label: 'Behavior', color: 'bg-purple-600', badge: betaTelemetrySummary.sessionCount > 0 ? betaTelemetrySummary.sessionCount : undefined },
+            //     { key: 'betaBugs', label: 'Bugs', color: 'bg-red-600', badge: openBugCount > 0 ? openBugCount : undefined },
+            //   ],
+            // },
             {
               key: 'content', label: 'Content & AI Data', color: 'bg-violet-600',
               tabs: [
@@ -4041,7 +4046,7 @@ export default function AdminPage() {
               // duplicated here (rather than shared) because this runs outside
               // that block's own IIFE — keeps the export in sync with whichever
               // demographics filter is currently selected on screen.
-              const demoFilterLabel = { all: 'All submissions', stage1: 'Pre-Result Stage', result: 'Result Stage', stage2: 'Post-Result Stage' } as const
+              const demoFilterLabel = { all: 'All submissions', stage1: 'F1 Pre-Result Short', result: 'F2 Result Page Short', stage2: 'F3 Email Feedback' } as const
               type DemoRow = { age_bracket: string | null; experience_level: string | null; current_stage: string | null; country: string | null; nationality: string | null }
               const demoRows: DemoRow[] =
                 betaDemographicsFilter === 'all'
@@ -4076,9 +4081,9 @@ export default function AdminPage() {
                   ['Feedback funnel', ''],
                   ['Metric', 'Count'],
                   ['Total submissions (everyone who took the beta assessment)', totalSubmissions],
-                  ['Pre-Result Stage — quick pulse (answered at least 1 of 3 taps)', betaTotal],
-                  ['Result Stage (rated accuracy/recommend/pay on results page)', resultStageTotal],
-                  ['Post-Result Stage — full survey (completed detailed post-report survey)', stage2Total],
+                  ['F1 Pre-Result Short (answered at least 1 of 3 taps)', betaTotal],
+                  ['F2 Result Page Short (rated accuracy/recommend/pay on results page)', resultStageTotal],
+                  ['F3 Email Feedback (completed the detailed post-report survey)', stage2Total],
                   [],
                   [`Demographics — ${demoFilterLabel[betaDemographicsFilter]} (${demoRows.length})`],
                   ...breakdownRows(AGE_BRACKET_ORDER, AGE_BRACKET_LABEL, countBy(demoRows, r => r.age_bracket), demoRows.length, 'Age group'),
@@ -4091,7 +4096,7 @@ export default function AdminPage() {
                   [],
                   ...breakdownRows(NATIONALITY_ORDER, NATIONALITY_LABEL, countBy(demoRows, r => r.nationality), demoRows.length, 'Nationality'),
                   [],
-                  ['Report feedback (accuracy from Result Stage, recommend/pay from all who answered)'],
+                  ['Report feedback (accuracy from F2 Result Page Short, recommend/pay from all who answered)'],
                   ['Overall accuracy — "spot on"', pct(countBy(resultStageResponses, bf => bf.result_accuracy).spot_on || 0, resultStageTotal), `${resultStageTotal} respondents`],
                   ['Would recommend — "yes"', pct(countBy(recommendResponses, bf => bf.would_recommend).yes || 0, recommendTotal), `${recommendTotal} respondents`],
                   ['Would pay — "definitely" or "maybe"', pct((countBy(payResponses, bf => bf.would_pay).definitely || 0) + (countBy(payResponses, bf => bf.would_pay).maybe || 0), payTotal), `${payTotal} respondents`],
@@ -4110,7 +4115,7 @@ export default function AdminPage() {
                   for (const bf of stage2Responses) for (const v of (bf.pay_blockers || [])) payBlockerCounts[v] = (payBlockerCounts[v] || 0) + 1
                   rows.push(
                     [],
-                    [`Post-Result Stage — full survey analytics (${stage2Total} respondents)`],
+                    [`F3 Email Feedback analytics (${stage2Total} respondents)`],
                     ['Hit an issue', pct(countBy(stage2Responses, bf => bf.had_issues).yes || 0, stage2Total)],
                     [],
                     ...breakdownRows(SENTIMENT_ORDER.would_pay_at_price, SENTIMENT_LABEL, countBy(stage2Responses, bf => bf.would_pay_at_price), stage2Total, 'Would pay, at the shown price?'),
@@ -4186,17 +4191,17 @@ export default function AdminPage() {
                           sublabel="everyone who took the beta assessment"
                         />
                         <BetaStatTile
-                          label="Pre-Result Stage — quick pulse"
+                          label="F1 Pre-Result Short"
                           value={String(betaTotal)}
                           sublabel="answered at least one of the 3 quick taps on the loading screen"
                         />
                         <BetaStatTile
-                          label="Result Stage"
+                          label="F2 Result Page Short"
                           value={String(resultStageTotal)}
                           sublabel="rated accuracy/recommend/pay on the results page"
                         />
                         <BetaStatTile
-                          label="Post-Result Stage — full survey"
+                          label="F3 Email Feedback"
                           value={String(stage2Total)}
                           sublabel="completed the detailed post-report survey"
                         />
@@ -4224,7 +4229,7 @@ export default function AdminPage() {
                           }))
                     const demoTotal = demoRows.length
                     const filterCount = { all: totalSubmissions, stage1: betaTotal, result: resultStageTotal, stage2: stage2Total }
-                    const filterLabel = { all: 'All submissions', stage1: 'Pre-Result Stage', result: 'Result Stage', stage2: 'Post-Result Stage' }
+                    const filterLabel = { all: 'All submissions', stage1: 'F1 Pre-Result Short', result: 'F2 Result Page Short', stage2: 'F3 Email Feedback' }
                     return (
                       <div className="mb-6">
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
@@ -4296,7 +4301,7 @@ export default function AdminPage() {
                     {betaTotal === 0 ? (
                       <p className="text-sm text-slate-400 text-center py-6">No feedback yet</p>
                     ) : betaDemographicsFilter === 'all' ? (
-                      <p className="text-slate-400 text-xs text-center py-6">Select Pre-Result, Result, or Post-Result above to see that stage's feedback charts.</p>
+                      <p className="text-slate-400 text-xs text-center py-6">Select F1 Pre-Result Short, F2 Result Page Short, or F3 Email Feedback above to see that form's feedback charts.</p>
                     ) : betaDemographicsFilter === 'stage1' ? (
                       <>
                         <p className="text-xs text-slate-400 mb-3">{stage1Total} respondent{stage1Total !== 1 ? 's' : ''} · quick pulse while the report loads</p>
@@ -4712,13 +4717,13 @@ export default function AdminPage() {
                 const rows: (string | number | null)[][] = [
                   [
                     'Name', 'Email', 'Country', 'Nationality', 'Age', 'Experience', 'Current stage', 'Cohort', 'Feedback stage', 'Locale',
-                    'S1: clarity (1-5)', 'S1: feeling (1-5)', 'S1: understood (1-5)', 'S1: wants from results', 'Pre-Result Stage completed at',
-                    'Accuracy (result_accuracy)', 'Would recommend', 'Would pay (Result Stage)', 'Result Stage completed at',
+                    'S1: clarity (1-5)', 'S1: feeling (1-5)', 'S1: understood (1-5)', 'S1: wants from results', 'F1 Pre-Result Short completed at',
+                    'Accuracy (result_accuracy)', 'Would recommend', 'Would pay (F2 Result Page Short)', 'F2 Result Page Short completed at',
                     'Language used', 'Device', 'Understood after (1-5)', 'Felt like coach', 'Careers seriously considered',
                     'Understood why suggested', 'Most useful part', 'Least useful part', 'First action (text)',
                     'Would pay at price', 'Pay blockers', 'Pay blocker — other (text)', 'Top pay blocker',
                     'Worth paying for', 'Wants coach session', 'Had issues', 'Issue detail',
-                    'Post-Result Stage completed at', 'Submitted at',
+                    'F3 Email Feedback completed at', 'Submitted at',
                     // Legacy Beta 1 columns, removed from the live form — kept so a CSV
                     // export spanning both cohorts doesn't silently drop old answers.
                     'Personality accuracy (legacy)', 'Values accuracy (legacy)', 'Strengths accuracy (legacy)',
