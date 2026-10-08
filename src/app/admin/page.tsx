@@ -139,8 +139,13 @@ function DimensionBarChart({ title, subtitle, scores, labels, barColor, badgeCla
 // went out onward (previously this badge was labeled "v2" and anchored to an
 // unrelated redesign date).
 const BETA_COHORT_START = new Date('2026-09-06')
+// The beta ended when the launch went live (7 Oct 2026, launch feedback form).
+// Anything created from here on belongs only to the main ("Live") dashboard; the
+// Beta Testing tabs are frozen to [BETA_COHORT_START, BETA_COHORT_END).
+const BETA_COHORT_END = new Date('2026-10-07T00:00:00Z')
 function isBetaSubmission(sub: Pick<Submission, 'created_at'>) {
-  return new Date(sub.created_at) >= BETA_COHORT_START
+  const t = new Date(sub.created_at)
+  return t >= BETA_COHORT_START && t < BETA_COHORT_END
 }
 
 // Cohorts, oldest first. Each starts at its date and runs until the next one.
@@ -174,6 +179,13 @@ function matchesCohortFilter(row: { created_at: string; cohort_override?: Cohort
   if (filter === 'all') return true
   if (!isBetaSubmission(row)) return false
   return cohortKey(row) === filter
+}
+
+// Survey rows from the beta window: the beta form stamps form_version 'beta'
+// (see beta_feedback_launch_v4.sql); rows with no version fall back to the date.
+function isBetaFeedbackEntry(bf: { form_version: string | null; created_at: string }): boolean {
+  if (bf.form_version) return bf.form_version === 'beta'
+  return new Date(bf.created_at) < BETA_COHORT_END
 }
 
 function CohortFilterPills({ value, onChange }: { value: 'all' | CohortKey; onChange: (v: 'all' | CohortKey) => void }) {
@@ -641,7 +653,8 @@ function formatSeconds(ms: number): string {
 // the beta window is exactly the kind of thing worth seeing, not just
 // completions.
 function isBetaSession(s: Pick<TelemetrySession, 'started_at'>) {
-  return new Date(s.started_at) >= BETA_COHORT_START
+  const t = new Date(s.started_at)
+  return t >= BETA_COHORT_START && t < BETA_COHORT_END
 }
 
 function summarizeTelemetry(events: TelemetryEvent[]) {
@@ -1143,7 +1156,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('dashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -1166,7 +1179,7 @@ export default function AdminPage() {
   // "Not for me" feedback on recommended careers, summarised across all submissions (Career Recs tab).
   const [recFeedbackSummary, setRecFeedbackSummary] = useState<any>(null)
   useEffect(() => {
-    if (activeTab !== 'betaCareerRecs') return
+    if (activeTab !== 'betaCareerRecs' && activeTab !== 'liveCareerRecs') return
     fetch('/api/admin/recommendation-feedback')
       .then(r => r.json()).then(d => setRecFeedbackSummary(d && typeof d.total === 'number' ? d : { total: 0 })).catch(() => setRecFeedbackSummary({ total: 0 }))
   }, [activeTab])
@@ -3462,8 +3475,22 @@ export default function AdminPage() {
   const feedbackSubmittedIds = new Set(betaFeedbackList.map(bf => bf.response_id))
   const betaFeedbackByResponseId = new Map(betaFeedbackList.map(bf => [bf.response_id, bf]))
 
-  const openBugCount = bugReports.filter(b => b.status === 'open').length
-  const visibleBugReports = bugReports
+  // Beta Testing tabs are frozen to the beta window; the Live tabs (main
+  // dashboard) show everything, beta-era rows included.
+  const isLiveView = activeTab.startsWith('live')
+  const betaFeedbackFrozen = betaFeedbackList.filter(isBetaFeedbackEntry)
+  const betaBugReports = bugReports.filter(b => new Date(b.created_at) < BETA_COHORT_END)
+  const liveCareerRecsGenerated = allCareerRecs.filter(r => r.career_recommendations?.length > 0)
+  const scopeSubmissions = isLiveView ? submissions : betaSubmissions
+  const scopeCareerRecsGenerated = isLiveView ? liveCareerRecsGenerated : betaCareerRecsGenerated
+  const scopeFeedbackList = isLiveView ? betaFeedbackList : betaFeedbackFrozen
+  const scopeBugReports = isLiveView ? bugReports : betaBugReports
+  const liveTelemetrySummary = telemetrySummary
+  const scopeTelemetrySummary = isLiveView ? liveTelemetrySummary : betaTelemetrySummary
+
+  const openBugCount = betaBugReports.filter(b => b.status === 'open').length
+  const liveOpenBugCount = bugReports.filter(b => b.status === 'open').length
+  const visibleBugReports = scopeBugReports
     .filter(b => bugSourceFilter === 'all' || b.source === bugSourceFilter)
     .filter(b => bugStatusFilter === 'all' || b.status === bugStatusFilter)
   function exportBugReports() {
@@ -3477,7 +3504,7 @@ export default function AdminPage() {
         b.response_id || '', new Date(b.created_at).toLocaleString(),
       ]),
     ]
-    downloadCSV(`beta_bug_reports_${new Date().toISOString().slice(0, 10)}.csv`, rows)
+    downloadCSV(`${isLiveView ? 'live' : 'beta'}_bug_reports_${new Date().toISOString().slice(0, 10)}.csv`, rows)
   }
 
   // Shared by the general Submissions tab and the Beta Testing > Submissions
@@ -3655,7 +3682,7 @@ export default function AdminPage() {
         </div>
         {(() => {
           const TAB_GROUPS: {
-            key: 'dashboard' | 'beta' | 'content' | 'lists' | 'settings'
+            key: 'dashboard' | 'live' | 'beta' | 'content' | 'lists' | 'settings'
             label: string
             color: string
             tabs: { key: typeof activeTab; label: string; color: string; badge?: string | number; onSelect?: () => void }[]
@@ -3665,12 +3692,23 @@ export default function AdminPage() {
               tabs: [{ key: 'dashboard', label: 'Dashboard', color: 'bg-sky-600' }],
             },
             {
+              key: 'live', label: 'Live', color: 'bg-sky-700',
+              tabs: [
+                { key: 'liveDashboard', label: 'Dashboard', color: 'bg-sky-700' },
+                { key: 'liveSubmissions', label: 'Submissions', color: 'bg-sky-600', badge: submissions.length > 0 ? submissions.length : undefined },
+                { key: 'liveCareerRecs', label: 'Career Recs', color: 'bg-teal-600', badge: liveCareerRecsGenerated.length > 0 ? liveCareerRecsGenerated.length : undefined },
+                { key: 'liveFeedback', label: 'Feedback', color: 'bg-sky-500', badge: betaFeedbackList.length > 0 ? betaFeedbackList.length : undefined },
+                { key: 'liveBehavior', label: 'Behavior', color: 'bg-purple-600', badge: telemetrySummary.sessionCount > 0 ? telemetrySummary.sessionCount : undefined },
+                { key: 'liveBugs', label: 'Bugs', color: 'bg-red-600', badge: liveOpenBugCount > 0 ? liveOpenBugCount : undefined },
+              ],
+            },
+            {
               key: 'beta', label: 'Beta Testing', color: 'bg-fuchsia-700',
               tabs: [
                 { key: 'betaDashboard', label: 'Dashboard', color: 'bg-fuchsia-700' },
                 { key: 'betaSubmissions', label: 'Submissions', color: 'bg-fuchsia-600', badge: betaSubmissions.length > 0 ? betaSubmissions.length : undefined },
                 { key: 'betaCareerRecs', label: 'Career Recs', color: 'bg-teal-600', badge: betaCareerRecsGenerated.length > 0 ? betaCareerRecsGenerated.length : undefined },
-                { key: 'betaFeedback', label: 'Feedback', color: 'bg-fuchsia-500', badge: betaFeedbackList.length > 0 ? betaFeedbackList.length : undefined },
+                { key: 'betaFeedback', label: 'Feedback', color: 'bg-fuchsia-500', badge: betaFeedbackFrozen.length > 0 ? betaFeedbackFrozen.length : undefined },
                 { key: 'betaBehavior', label: 'Behavior', color: 'bg-purple-600', badge: betaTelemetrySummary.sessionCount > 0 ? betaTelemetrySummary.sessionCount : undefined },
                 { key: 'betaBugs', label: 'Bugs', color: 'bg-red-600', badge: openBugCount > 0 ? openBugCount : undefined },
               ],
@@ -3898,7 +3936,7 @@ export default function AdminPage() {
         )}
 
         {/* ── Beta Testing Tab ── */}
-        {activeTab === 'betaDashboard' && (
+        {(activeTab === 'betaDashboard' || activeTab === 'liveDashboard') && (
           <>
             {betaFeedbackLoading && (
               <div className="flex justify-center py-16">
@@ -3910,8 +3948,8 @@ export default function AdminPage() {
               // Cohort-scoped views of the raw lists — every count/chart/export
               // below is derived from these, so the whole dashboard (including
               // the "Who's testing" charts further down) respects cohortFilter.
-              const scopedFeedback = betaFeedbackList.filter(bf => matchesCohortFilter({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }, cohortFilter))
-              const scopedSubmissions = betaSubmissions.filter(s => matchesCohortFilter(s, cohortFilter))
+              const scopedFeedback = scopeFeedbackList.filter(bf => matchesCohortFilter({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }, cohortFilter))
+              const scopedSubmissions = scopeSubmissions.filter(s => matchesCohortFilter(s, cohortFilter))
               const stage2Responses = scopedFeedback.filter(bf => bf.stage2_completed_at)
               const stage2Total = stage2Responses.length
               const resultStageResponses = scopedFeedback.filter(bf => bf.result_stage_completed_at)
@@ -3991,7 +4029,7 @@ export default function AdminPage() {
                 }
 
                 const rows: (string | number | null)[][] = [
-                  ['Etijahi Beta Testing — Report', new Date().toLocaleString()],
+                  [isLiveView ? 'Etijahi Live Dashboard — Report' : 'Etijahi Beta Testing — Report', new Date().toLocaleString()],
                   [],
                   ['Feedback funnel', ''],
                   ['Metric', 'Count'],
@@ -4085,7 +4123,7 @@ export default function AdminPage() {
                   }
                 }
 
-                downloadCSV(`beta_dashboard_report_${new Date().toISOString().slice(0, 10)}.csv`, rows)
+                downloadCSV(`${isLiveView ? 'live' : 'beta'}_dashboard_report_${new Date().toISOString().slice(0, 10)}.csv`, rows)
               }
 
               return (
@@ -4397,7 +4435,7 @@ export default function AdminPage() {
           </>
         )}
 
-        {activeTab === 'betaSubmissions' && (
+        {(activeTab === 'betaSubmissions' || activeTab === 'liveSubmissions') && (
           <>
             {loading && (
               <div className="flex justify-center py-16">
@@ -4405,11 +4443,11 @@ export default function AdminPage() {
               </div>
             )}
             {fetchError && <p className="text-red-500 text-sm text-center py-8">{fetchError}</p>}
-            {!loading && !fetchError && renderSubmissionsTable(betaSubmissions, 'No beta submissions yet', `beta_submissions_${new Date().toISOString().slice(0, 10)}.csv`)}
+            {!loading && !fetchError && renderSubmissionsTable(scopeSubmissions, isLiveView ? 'No submissions yet' : 'No beta submissions yet', `${isLiveView ? 'live' : 'beta'}_submissions_${new Date().toISOString().slice(0, 10)}.csv`)}
           </>
         )}
 
-        {activeTab === 'betaCareerRecs' && (
+        {(activeTab === 'betaCareerRecs' || activeTab === 'liveCareerRecs') && (
           <div className="max-w-3xl mx-auto px-4 py-8 space-y-4">
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
               <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Why users rejected careers</h3>
@@ -4487,7 +4525,7 @@ export default function AdminPage() {
               {(() => {
                 const exportCareerCatalog = () => {
                   const recommendedTo = new Map<string, { full_name: string | null; email: string | null }[]>()
-                  for (const sub of betaCareerRecsGenerated) {
+                  for (const sub of scopeCareerRecsGenerated) {
                     for (const rec of sub.career_recommendations || []) {
                       const key = (rec.title || '').trim().toLowerCase()
                       if (!key) continue
@@ -4504,7 +4542,7 @@ export default function AdminPage() {
                         .map(r => r.full_name || r.email || 'Unnamed').join('; '),
                     ]),
                   ]
-                  downloadCSV(`beta_career_catalog_${new Date().toISOString().slice(0, 10)}.csv`, rows)
+                  downloadCSV(`${isLiveView ? 'live' : 'beta'}_career_catalog_${new Date().toISOString().slice(0, 10)}.csv`, rows)
                 }
                 return (
                   <div className="flex justify-end mb-3">
@@ -4518,7 +4556,7 @@ export default function AdminPage() {
                 // verbatim (see careers_prompt in report_generator.py), so a title match
                 // reliably identifies which catalog row was shown.
                 const recommendedTo = new Map<string, { full_name: string | null; email: string | null }[]>()
-                for (const sub of betaCareerRecsGenerated) {
+                for (const sub of scopeCareerRecsGenerated) {
                   for (const rec of sub.career_recommendations || []) {
                     const key = (rec.title || '').trim().toLowerCase()
                     if (!key) continue
@@ -4611,7 +4649,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {activeTab === 'betaFeedback' && (
+        {(activeTab === 'betaFeedback' || activeTab === 'liveFeedback') && (
           <>
             {betaFeedbackLoading && (
               <div className="flex justify-center py-16">
@@ -4620,9 +4658,9 @@ export default function AdminPage() {
             )}
             {betaFeedbackError && <p className="text-red-500 text-sm text-center py-8">{betaFeedbackError}</p>}
             {!betaFeedbackLoading && !betaFeedbackError && (() => {
-              const statusOptions = distinctValues(betaFeedbackList.map(bf => bf.assessment_responses?.current_stage))
-              const ageOptions = distinctValues(betaFeedbackList.map(bf => bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age)))
-              const visibleBetaFeedback = betaFeedbackList
+              const statusOptions = distinctValues(scopeFeedbackList.map(bf => bf.assessment_responses?.current_stage))
+              const ageOptions = distinctValues(scopeFeedbackList.map(bf => bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age)))
+              const visibleBetaFeedback = scopeFeedbackList
                 .filter(bf => matchesCohortFilter({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }, cohortFilter))
                 .filter(bf => betaFeedbackStageFilter === 'all' || betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
                 .filter(bf => betaFeedbackStatusFilter === 'all' || bf.assessment_responses?.current_stage === betaFeedbackStatusFilter)
@@ -4685,7 +4723,7 @@ export default function AdminPage() {
                     bf.surprised_text || '', bf.not_me_text || '', bf.other_text || '',
                   ]),
                 ]
-                downloadCSV(`beta_feedback_${new Date().toISOString().slice(0, 10)}.csv`, rows)
+                downloadCSV(`${isLiveView ? 'live' : 'beta'}_feedback_${new Date().toISOString().slice(0, 10)}.csv`, rows)
               }
               return (
               <>
@@ -4799,7 +4837,7 @@ export default function AdminPage() {
           </>
         )}
 
-        {activeTab === 'betaBehavior' && (
+        {(activeTab === 'betaBehavior' || activeTab === 'liveBehavior') && (
           <>
             {telemetryLoading && (
               <div className="flex justify-center py-16">
@@ -4809,7 +4847,7 @@ export default function AdminPage() {
             {telemetryError && <p className="text-red-500 text-sm text-center py-8">{telemetryError}</p>}
             {!telemetryLoading && !telemetryError && (
               <TelemetryBehaviorView
-                summary={betaTelemetrySummary}
+                summary={scopeTelemetrySummary}
                 drilldown={telemetryDrilldown}
                 onDrilldown={setTelemetryDrilldown}
                 onCloseDrilldown={() => setTelemetryDrilldown(null)}
@@ -4818,7 +4856,7 @@ export default function AdminPage() {
           </>
         )}
 
-        {activeTab === 'betaBugs' && (
+        {(activeTab === 'betaBugs' || activeTab === 'liveBugs') && (
           <>
             {bugReportsLoading && (
               <div className="flex justify-center py-16">
