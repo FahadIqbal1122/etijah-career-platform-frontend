@@ -145,7 +145,7 @@ const BETA_COHORT_START = new Date('2026-09-06')
 const BETA_COHORT_END = new Date('2026-10-07T00:00:00Z')
 // The Live dashboard starts here (8 Oct 2026): everything earlier was beta or testing, so Live shows only
 // submissions, feedback, behavior and payments from this moment on.
-const LIVE_START = new Date('2026-10-08T00:00:00Z')
+const LIVE_START = new Date('2026-10-07T21:00:00Z') // 8 Oct 2026 00:00 Gulf time (UTC+3)
 const SALES_REAL_FROM = LIVE_START
 function isBetaSubmission(sub: Pick<Submission, 'created_at'>) {
   const t = new Date(sub.created_at)
