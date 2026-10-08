@@ -1176,7 +1176,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('liveDashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'liveCoaching' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('liveDashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -3542,6 +3542,10 @@ export default function AdminPage() {
   const realSales = salesList.filter(t => !isTestSale(t))
   const hiddenTestSalesCount = salesList.length - realSales.length
   const livePaidSales = realSales.filter(isPaidSale)
+  const liveCoachingSales = livePaidSales.filter(t => t.coaching_included)
+  const liveRevenueByCurrency = new Map<string, number>()
+  for (const t of livePaidSales) liveRevenueByCurrency.set(t.currency, (liveRevenueByCurrency.get(t.currency) || 0) + Number(t.amount || 0))
+  const liveRevenueLabel = liveRevenueByCurrency.size === 0 ? '0' : Array.from(liveRevenueByCurrency.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ')
   const liveOpenBugCount = bugReports.filter(b => b.status === 'open').length
   const visibleBugReports = scopeBugReports
     .filter(b => bugSourceFilter === 'all' || b.source === bugSourceFilter)
@@ -3753,7 +3757,8 @@ export default function AdminPage() {
                 { key: 'liveCareerRecs', label: 'Career Recs', color: 'bg-teal-600', badge: liveCareerRecsGenerated.length > 0 ? liveCareerRecsGenerated.length : undefined },
                 { key: 'liveFeedback', label: 'Feedback', color: 'bg-sky-500', badge: liveFeedbackList.length > 0 ? liveFeedbackList.length : undefined },
                 { key: 'liveBehavior', label: 'Behavior', color: 'bg-purple-600', badge: liveTelemetrySummary.sessionCount > 0 ? liveTelemetrySummary.sessionCount : undefined },
-                { key: 'liveSales', label: 'Sales & Coaching', color: 'bg-emerald-600', badge: livePaidSales.length > 0 ? livePaidSales.length : undefined },
+                { key: 'liveSales', label: 'Sales', color: 'bg-emerald-600', badge: livePaidSales.length > 0 ? livePaidSales.length : undefined },
+                { key: 'liveCoaching', label: 'Coaching', color: 'bg-rose-600', badge: liveCoachingSales.length > 0 ? liveCoachingSales.length : undefined },
                 // Bugs removed from the Live dashboard (still in Beta Testing)
                 // { key: 'liveBugs', label: 'Bugs', color: 'bg-red-600', badge: liveOpenBugCount > 0 ? liveOpenBugCount : undefined },
               ],
@@ -3995,6 +4000,21 @@ export default function AdminPage() {
         {/* ── Beta Testing Tab ── */}
         {(activeTab === 'betaDashboard' || activeTab === 'liveDashboard') && (
           <>
+            {activeTab === 'liveDashboard' && (
+              <div className="mb-6">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">At a glance · since {LIVE_START.toLocaleDateString()}</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <BetaStatTile label="Sales" value={String(livePaidSales.length)} sublabel="Paid orders" onClick={() => setActiveTab('liveSales')} />
+                  <BetaStatTile label="Revenue" value={liveRevenueLabel} sublabel="Paid orders only" onClick={() => setActiveTab('liveSales')} />
+                  <BetaStatTile label="Coaching sold" value={String(liveCoachingSales.length)} sublabel="Launchpad, 1:1 session included" onClick={() => setActiveTab('liveCoaching')} />
+                  <BetaStatTile label="Pathfinder" value={String(livePaidSales.length - liveCoachingSales.length)} sublabel="Pathfinder-only orders" onClick={() => setActiveTab('liveSales')} />
+                  <BetaStatTile label="Submissions" value={String(liveSubmissions.length)} sublabel={`${liveSubmissions.filter(sub => sub.completed).length} completed`} onClick={() => setActiveTab('liveSubmissions')} />
+                  <BetaStatTile label="Career recs" value={String(liveCareerRecsGenerated.length)} sublabel="Generated" onClick={() => setActiveTab('liveCareerRecs')} />
+                  <BetaStatTile label="Feedback" value={String(liveFeedbackList.length)} sublabel={`F1 ${liveFeedbackList.filter(bf => bf.stage1_completed_at).length} · F2 ${liveFeedbackList.filter(bf => bf.result_stage_completed_at).length} · F3 ${liveFeedbackList.filter(bf => bf.stage2_completed_at).length}`} onClick={() => setActiveTab('liveFeedback')} />
+                  <BetaStatTile label="Conversion" value={liveSubmissions.length > 0 ? `${Math.round((livePaidSales.length / liveSubmissions.length) * 100)}%` : '—'} sublabel="Paid orders / submissions" />
+                </div>
+              </div>
+            )}
             {activeTab === 'liveDashboard' && shareToken && (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 mb-6 flex items-center gap-3">
                 <p className="text-xs text-slate-500 flex-1">
@@ -4965,10 +4985,9 @@ export default function AdminPage() {
                       value={revenueByCurrency.size === 0 ? '0' : Array.from(revenueByCurrency.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ')}
                       sublabel="Paid orders only"
                     />
-                    <BetaStatTile label="Coaching sessions sold" value={String(coachingOwed.length)} sublabel="Launchpad orders (1:1 session included)" />
+                    <BetaStatTile label="Coaching sold" value={String(coachingOwed.length)} sublabel="Launchpad orders" onClick={() => setActiveTab('liveCoaching')} />
                     <BetaStatTile label="Pathfinder only" value={String(livePaidSales.length - coachingOwed.length)} />
                   </div>
-                  <p className="text-xs text-slate-400 mb-3">Bookings themselves (who picked which slot) live in the Etijah academy; this list shows who bought a coaching session.</p>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm text-slate-400">{realSales.length} order{realSales.length !== 1 ? 's' : ''}{hiddenTestSalesCount > 0 && ` · ${hiddenTestSalesCount} test payment${hiddenTestSalesCount !== 1 ? 's' : ''} hidden`}</p>
                     <DownloadCSVButton onClick={exportSales} />
@@ -5002,6 +5021,66 @@ export default function AdminPage() {
                         {realSales.length === 0 && (
                           <tr>
                             <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No orders yet</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </>
+          )
+        })()}
+
+        {activeTab === 'liveCoaching' && (() => {
+          const exportCoaching = () => downloadCSV(`coaching_${new Date().toISOString().slice(0, 10)}.csv`, [
+            ['Purchased', 'Name', 'Email', 'Country', 'Plan', 'Amount', 'Currency', 'Order ref'],
+            ...liveCoachingSales.map(t => [t.paid_at || t.created_at, t.full_name, t.email, t.country, t.plan_code, t.amount, t.currency, t.order_ref]),
+          ])
+          return (
+            <>
+              {salesLoading && (
+                <div className="flex justify-center py-16">
+                  <div className="w-7 h-7 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+              {salesError && <p className="text-red-500 text-sm text-center py-8">{salesError}</p>}
+              {!salesLoading && !salesError && (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                    <BetaStatTile label="Coaching sold" value={String(liveCoachingSales.length)} sublabel="Launchpad orders (1:1 session included)" />
+                    <BetaStatTile label="Coaching revenue" value={(() => { const m = new Map<string, number>(); for (const t of liveCoachingSales) m.set(t.currency, (m.get(t.currency) || 0) + Number(t.amount || 0)); return m.size === 0 ? '0' : Array.from(m.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ') })()} />
+                  </div>
+                  <p className="text-xs text-slate-400 mb-3">Who bought a 1:1 coaching session. Slot bookings and completed sessions live in the Etijah academy and are not shown here yet.</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm text-slate-400">{liveCoachingSales.length} coaching purchase{liveCoachingSales.length !== 1 ? 's' : ''}</p>
+                    <DownloadCSVButton onClick={exportCoaching} />
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
+                    <table className="w-full text-sm min-w-[700px]">
+                      <thead>
+                        <tr className="border-b border-slate-100 bg-slate-50">
+                          {['Purchased', 'Buyer', 'Country', 'Plan', 'Amount'].map(h => (
+                            <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {liveCoachingSales.map((t, i) => (
+                          <tr key={t.order_ref} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                            <td className="px-4 py-3 text-slate-400 text-xs">{new Date(t.paid_at || t.created_at).toLocaleDateString()}</td>
+                            <td className="px-4 py-3">
+                              <p className="font-medium text-slate-800">{t.full_name || '—'}</p>
+                              <p className="text-xs text-slate-400">{t.email || '—'}</p>
+                            </td>
+                            <td className="px-4 py-3 text-slate-500">{t.country || '—'}</td>
+                            <td className="px-4 py-3 text-slate-500">{formatUnderscored(t.plan_code)}</td>
+                            <td className="px-4 py-3 text-slate-700 font-semibold tabular-nums">{Number(t.amount).toLocaleString(undefined, { maximumFractionDigits: 2 })} {t.currency}</td>
+                          </tr>
+                        ))}
+                        {liveCoachingSales.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="px-4 py-12 text-center text-slate-400">No coaching purchases yet</td>
                           </tr>
                         )}
                       </tbody>
