@@ -3524,7 +3524,11 @@ export default function AdminPage() {
 
   const openBugCount = betaBugReports.filter(b => b.status === 'open').length
   const isPaidSale = (t: SaleEntry) => !!t.paid_at || ['paid', 'captured', 'succeeded', 'success', 'completed'].includes((t.status || '').toLowerCase())
-  const livePaidSales = salesList.filter(isPaidSale)
+  // Payment test charges (PATHFINDER_TEST_AMOUNT = 0.1 BHD, 5 Oct 2026 tests) are hidden from Sales.
+  const isTestSale = (t: SaleEntry) => t.currency === 'BHD' && Number(t.amount) <= 0.1
+  const realSales = salesList.filter(t => !isTestSale(t))
+  const hiddenTestSalesCount = salesList.length - realSales.length
+  const livePaidSales = realSales.filter(isPaidSale)
   const liveOpenBugCount = bugReports.filter(b => b.status === 'open').length
   const visibleBugReports = scopeBugReports
     .filter(b => bugSourceFilter === 'all' || b.source === bugSourceFilter)
@@ -4900,7 +4904,7 @@ export default function AdminPage() {
           const coachingOwed = livePaidSales.filter(t => t.coaching_included)
           const exportSales = () => downloadCSV(`sales_${new Date().toISOString().slice(0, 10)}.csv`, [
             ['Date', 'Name', 'Email', 'Country', 'Plan', 'Amount', 'Currency', 'Status', 'Paid at', 'Coaching session included', 'Order ref'],
-            ...salesList.map(t => [t.created_at, t.full_name, t.email, t.country, t.plan_code, t.amount, t.currency, t.status, t.paid_at, t.coaching_included ? 'Yes' : 'No', t.order_ref]),
+            ...realSales.map(t => [t.created_at, t.full_name, t.email, t.country, t.plan_code, t.amount, t.currency, t.status, t.paid_at, t.coaching_included ? 'Yes' : 'No', t.order_ref]),
           ])
           return (
             <>
@@ -4913,7 +4917,7 @@ export default function AdminPage() {
               {!salesLoading && !salesError && (
                 <>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                    <BetaStatTile label="Paid orders" value={String(livePaidSales.length)} sublabel={`${salesList.length} total incl. unpaid`} />
+                    <BetaStatTile label="Paid orders" value={String(livePaidSales.length)} sublabel={`${realSales.length} total incl. unpaid`} />
                     <BetaStatTile
                       label="Revenue"
                       value={revenueByCurrency.size === 0 ? '0' : Array.from(revenueByCurrency.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ')}
@@ -4924,7 +4928,7 @@ export default function AdminPage() {
                   </div>
                   <p className="text-xs text-slate-400 mb-3">Bookings themselves (who picked which slot) live in the Etijah academy; this list shows who bought a coaching session.</p>
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm text-slate-400">{salesList.length} order{salesList.length !== 1 ? 's' : ''}</p>
+                    <p className="text-sm text-slate-400">{realSales.length} order{realSales.length !== 1 ? 's' : ''}{hiddenTestSalesCount > 0 && ` · ${hiddenTestSalesCount} test payment${hiddenTestSalesCount !== 1 ? 's' : ''} hidden`}</p>
                     <DownloadCSVButton onClick={exportSales} />
                   </div>
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
@@ -4937,7 +4941,7 @@ export default function AdminPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {salesList.map((t, i) => (
+                        {realSales.map((t, i) => (
                           <tr key={t.order_ref} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
                             <td className="px-4 py-3 text-slate-400 text-xs">{new Date(t.paid_at || t.created_at).toLocaleDateString()}</td>
                             <td className="px-4 py-3">
@@ -4953,7 +4957,7 @@ export default function AdminPage() {
                             <td className="px-4 py-3 text-slate-500">{t.coaching_included ? '1:1 session' : '—'}</td>
                           </tr>
                         ))}
-                        {salesList.length === 0 && (
+                        {realSales.length === 0 && (
                           <tr>
                             <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No orders yet</td>
                           </tr>
