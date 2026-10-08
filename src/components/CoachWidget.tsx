@@ -54,7 +54,7 @@ interface Props {
   tipChoices?: { label: Bi; ask: Bi }[]
   // Shows a small cross on her; pressing it sends her away (the page remembers that).
   onHide?: () => void
-  dock?: { side: 'l' | 'r'; y: number } | null   // where she was dragged to (she stays there)
+  dock?: { side: 'l' | 'r'; y: number; peek?: boolean } | null   // where she was dragged to (she stays there)
   onDock?: (d: { side: 'l' | 'r'; y: number }) => void   // given = she can be dragged
   tip?: Bi | null
   onTipDismiss?: () => void
@@ -121,9 +121,10 @@ export default function CoachWidget({
     () => false,
   )
   // Phones: no spots, and the bottom corners are where the Next button is. During the assessment questions she
-  // stands halfway down the side instead (same idea as desktop). The green reveal screen keeps her centred.
+  // peeks in from the side edge, halfway down, so the question stays clear; she slides fully into view when she
+  // has a tip or the chat is open. The green reveal screen keeps her centred.
   const dock = dockProp ?? (mode === 'assessment' && !wide && place !== 'center' && inBrowser
-    ? { side: (isAr ? 'l' : 'r') as 'l' | 'r', y: window.innerHeight / 2 }
+    ? { side: (isAr ? 'l' : 'r') as 'l' | 'r', y: window.innerHeight / 2, peek: true }
     : null)
   // Dragging: she follows the pointer, and on release snaps to the nearest side of the screen.
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null)
@@ -195,7 +196,8 @@ export default function CoachWidget({
     return () => { ro.disconnect(); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true) }
   }, [target])
 
-  const pos = drag ?? (dock && inBrowser ? { x: dock.side === 'l' ? 44 : window.innerWidth - 44, y: clampY(dock.y) } : measured)
+  const edge = dock?.peek && !open && !tip ? 6 : 44   // distance of her centre from the screen edge (6 = half hidden)
+  const pos = drag ?? (dock && inBrowser ? { x: dock.side === 'l' ? edge : window.innerWidth - edge, y: clampY(dock.y) } : measured)
 
   // Derived-state updates during render (keeps these out of effects).
   if (feedback?.autoOpen && !autoOpened) { setAutoOpened(true); setOpen(true) }
@@ -298,7 +300,7 @@ export default function CoachWidget({
   }
 
   const widget = (
-    <div className={`coach-widget ${open ? 'is-open' : ''} ${panelBelow ? 'panel-below' : ''} ${tipBelow ? 'tip-below' : ''} ${arrived ? 'has-arrived' : ''} ${dock || drag || target?.hasAttribute('data-coach') ? 'is-pinned' : ''} ${drag ? 'is-dragging' : ''} ${onDock ? 'is-draggable' : ''}`} data-place={effPlace}
+    <div className={`coach-widget ${open ? 'is-open' : ''} ${panelBelow ? 'panel-below' : ''} ${tipBelow ? 'tip-below' : ''} ${arrived ? 'has-arrived' : ''} ${dock || drag || target?.hasAttribute('data-coach') ? 'is-pinned' : ''} ${drag ? 'is-dragging' : ''} ${onDock ? 'is-draggable' : ''} ${mode === 'assessment' && wide && !dock ? 'is-big' : ''}`} data-place={effPlace}
       onAnimationEnd={e => { if (e.target === e.currentTarget && effPlace === 'target') setArrived(true) }} style={targetStyle} dir={isAr ? 'rtl' : 'ltr'}>
       {open && (
         <div className="coach-panel" role="dialog" aria-label="Sarah">

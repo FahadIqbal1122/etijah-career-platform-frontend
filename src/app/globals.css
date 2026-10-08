@@ -982,6 +982,10 @@ html { scroll-behavior: smooth; }
 }
 .coach-widget[data-place="target"].panel-below .coach-panel { bottom: auto; top: calc(100% + 12px); }
 
+/* Desktop assessment: a little bigger than her default size */
+.coach-widget.is-big[data-place="target"] { width: 144px; height: 144px; }
+.coach-widget.is-big .coach-avatar { width: 144px; height: 144px; }
+
 .coach-tip-choices { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .coach-tip-choices .coach-tip-action { margin-top: 0; }
 /* the small cross that sends her away; sits on the avatar's top corner */
