@@ -90,7 +90,7 @@ const T = {
 
 export default function CoachWidget({
   locale, mode, responseId, sessionId, questionIndex, questionTotal, getQuestion,
-  place = 'end', spots, spotIndex = 0, games = false, suggestions, tipOffersGame = false, tipChoices, onHide, dock, onDock,
+  place = 'end', spots, spotIndex = 0, games = false, suggestions, tipOffersGame = false, tipChoices, onHide, dock: dockProp, onDock,
   tip = null, onTipDismiss, tipAutoHideMs = 9000, feedback,
 }: Props) {
   const isAr = locale === 'ar'
@@ -120,6 +120,11 @@ export default function CoachWidget({
     () => window.matchMedia('(min-width: 900px)').matches,
     () => false,
   )
+  // Phones: no spots, and the bottom corners are where the Next button is. During the assessment questions she
+  // stands halfway down the side instead (same idea as desktop). The green reveal screen keeps her centred.
+  const dock = dockProp ?? (mode === 'assessment' && !wide && place !== 'center' && inBrowser
+    ? { side: (isAr ? 'l' : 'r') as 'l' | 'r', y: window.innerHeight / 2 }
+    : null)
   // Dragging: she follows the pointer, and on release snaps to the nearest side of the screen.
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null)
   const dragRef = useRef<{ sx: number; sy: number; moved: boolean } | null>(null)
