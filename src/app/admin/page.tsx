@@ -1058,6 +1058,22 @@ type BetaFeedbackEntry = {
   assessment_responses: { full_name: string | null; email: string | null; locale: string | null; country: string | null; nationality: string | null; age: number | null; age_bracket: string | null; experience_level: string | null; current_stage: string | null; cohort_override: CohortKey | null } | null
 }
 
+type SaleEntry = {
+  id?: string
+  user_id: string | null
+  order_ref: string
+  plan_code: string
+  amount: number
+  currency: string
+  status: string
+  paid_at: string | null
+  created_at: string
+  full_name: string | null
+  email: string | null
+  country: string | null
+  coaching_included: boolean
+}
+
 type BugReport = {
   id: string
   source: 'user' | 'system'
@@ -1156,7 +1172,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('dashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -1231,6 +1247,9 @@ export default function AdminPage() {
   const [telemetryLoading, setTelemetryLoading] = useState(false)
   const [telemetryError, setTelemetryError] = useState('')
 
+  const [salesList, setSalesList] = useState<SaleEntry[]>([])
+  const [salesLoading, setSalesLoading] = useState(false)
+  const [salesError, setSalesError] = useState('')
   const [bugReports, setBugReports] = useState<BugReport[]>([])
   const [bugReportsLoading, setBugReportsLoading] = useState(false)
   const [bugReportsError, setBugReportsError] = useState('')
@@ -1404,6 +1423,20 @@ export default function AdminPage() {
       setBetaFeedbackError(err.message)
     } finally {
       setBetaFeedbackLoading(false)
+    }
+  }, [])
+
+  const fetchSales = useCallback(async () => {
+    setSalesLoading(true)
+    setSalesError('')
+    try {
+      const res = await fetch('/api/admin/sales')
+      if (!res.ok) throw new Error('Failed to load sales')
+      setSalesList(await res.json())
+    } catch (err: any) {
+      setSalesError(err.message)
+    } finally {
+      setSalesLoading(false)
     }
   }, [])
 
@@ -1855,6 +1888,7 @@ export default function AdminPage() {
       fetchOnetLinks()
       fetchFeedback()
       fetchBetaFeedback()
+      fetchSales()
       fetchAllCareerRecs()
       fetchCareersCatalog()
       fetchTelemetry()
@@ -1869,7 +1903,7 @@ export default function AdminPage() {
       fetchBetaClosed()
       fetchAiProvider()
     }
-  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchBetaFeedback, fetchAllCareerRecs, fetchCareersCatalog, fetchTelemetry, fetchBugReports, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchBetaClosed, fetchAiProvider])
+  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchBetaFeedback, fetchSales, fetchAllCareerRecs, fetchCareersCatalog, fetchTelemetry, fetchBugReports, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchBetaClosed, fetchAiProvider])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -3489,6 +3523,8 @@ export default function AdminPage() {
   const scopeTelemetrySummary = isLiveView ? liveTelemetrySummary : betaTelemetrySummary
 
   const openBugCount = betaBugReports.filter(b => b.status === 'open').length
+  const isPaidSale = (t: SaleEntry) => !!t.paid_at || ['paid', 'captured', 'succeeded', 'success', 'completed'].includes((t.status || '').toLowerCase())
+  const livePaidSales = salesList.filter(isPaidSale)
   const liveOpenBugCount = bugReports.filter(b => b.status === 'open').length
   const visibleBugReports = scopeBugReports
     .filter(b => bugSourceFilter === 'all' || b.source === bugSourceFilter)
@@ -3667,7 +3703,7 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { fetchDashboardStats(); fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchBetaFeedback(); fetchAllCareerRecs(); fetchCareersCatalog(); fetchTelemetry(); fetchBugReports(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
+              onClick={() => { fetchDashboardStats(); fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchBetaFeedback(); fetchSales(); fetchAllCareerRecs(); fetchCareersCatalog(); fetchTelemetry(); fetchBugReports(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
               className="text-sm text-primary hover:underline"
             >
               Refresh
@@ -3699,7 +3735,9 @@ export default function AdminPage() {
                 { key: 'liveCareerRecs', label: 'Career Recs', color: 'bg-teal-600', badge: liveCareerRecsGenerated.length > 0 ? liveCareerRecsGenerated.length : undefined },
                 { key: 'liveFeedback', label: 'Feedback', color: 'bg-sky-500', badge: betaFeedbackList.length > 0 ? betaFeedbackList.length : undefined },
                 { key: 'liveBehavior', label: 'Behavior', color: 'bg-purple-600', badge: telemetrySummary.sessionCount > 0 ? telemetrySummary.sessionCount : undefined },
-                { key: 'liveBugs', label: 'Bugs', color: 'bg-red-600', badge: liveOpenBugCount > 0 ? liveOpenBugCount : undefined },
+                { key: 'liveSales', label: 'Sales & Coaching', color: 'bg-emerald-600', badge: livePaidSales.length > 0 ? livePaidSales.length : undefined },
+                // Bugs removed from the Live dashboard (still in Beta Testing)
+                // { key: 'liveBugs', label: 'Bugs', color: 'bg-red-600', badge: liveOpenBugCount > 0 ? liveOpenBugCount : undefined },
               ],
             },
             {
@@ -4855,6 +4893,79 @@ export default function AdminPage() {
             )}
           </>
         )}
+
+        {activeTab === 'liveSales' && (() => {
+          const revenueByCurrency = new Map<string, number>()
+          for (const t of livePaidSales) revenueByCurrency.set(t.currency, (revenueByCurrency.get(t.currency) || 0) + Number(t.amount || 0))
+          const coachingOwed = livePaidSales.filter(t => t.coaching_included)
+          const exportSales = () => downloadCSV(`sales_${new Date().toISOString().slice(0, 10)}.csv`, [
+            ['Date', 'Name', 'Email', 'Country', 'Plan', 'Amount', 'Currency', 'Status', 'Paid at', 'Coaching session included', 'Order ref'],
+            ...salesList.map(t => [t.created_at, t.full_name, t.email, t.country, t.plan_code, t.amount, t.currency, t.status, t.paid_at, t.coaching_included ? 'Yes' : 'No', t.order_ref]),
+          ])
+          return (
+            <>
+              {salesLoading && (
+                <div className="flex justify-center py-16">
+                  <div className="w-7 h-7 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+              {salesError && <p className="text-red-500 text-sm text-center py-8">{salesError}</p>}
+              {!salesLoading && !salesError && (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                    <BetaStatTile label="Paid orders" value={String(livePaidSales.length)} sublabel={`${salesList.length} total incl. unpaid`} />
+                    <BetaStatTile
+                      label="Revenue"
+                      value={revenueByCurrency.size === 0 ? '0' : Array.from(revenueByCurrency.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ')}
+                      sublabel="Paid orders only"
+                    />
+                    <BetaStatTile label="Coaching sessions sold" value={String(coachingOwed.length)} sublabel="Launchpad orders (1:1 session included)" />
+                    <BetaStatTile label="Pathfinder only" value={String(livePaidSales.length - coachingOwed.length)} />
+                  </div>
+                  <p className="text-xs text-slate-400 mb-3">Bookings themselves (who picked which slot) live in the Etijah academy; this list shows who bought a coaching session.</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm text-slate-400">{salesList.length} order{salesList.length !== 1 ? 's' : ''}</p>
+                    <DownloadCSVButton onClick={exportSales} />
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
+                    <table className="w-full text-sm min-w-[800px]">
+                      <thead>
+                        <tr className="border-b border-slate-100 bg-slate-50">
+                          {['Date', 'Buyer', 'Country', 'Plan', 'Amount', 'Status', 'Coaching'].map(h => (
+                            <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {salesList.map((t, i) => (
+                          <tr key={t.order_ref} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                            <td className="px-4 py-3 text-slate-400 text-xs">{new Date(t.paid_at || t.created_at).toLocaleDateString()}</td>
+                            <td className="px-4 py-3">
+                              <p className="font-medium text-slate-800">{t.full_name || '—'}</p>
+                              <p className="text-xs text-slate-400">{t.email || '—'}</p>
+                            </td>
+                            <td className="px-4 py-3 text-slate-500">{t.country || '—'}</td>
+                            <td className="px-4 py-3 text-slate-500">{formatUnderscored(t.plan_code)}</td>
+                            <td className="px-4 py-3 text-slate-700 font-semibold tabular-nums">{Number(t.amount).toLocaleString(undefined, { maximumFractionDigits: 2 })} {t.currency}</td>
+                            <td className="px-4 py-3">
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${isPaidSale(t) ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{t.status}</span>
+                            </td>
+                            <td className="px-4 py-3 text-slate-500">{t.coaching_included ? '1:1 session' : '—'}</td>
+                          </tr>
+                        ))}
+                        {salesList.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No orders yet</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </>
+          )
+        })()}
 
         {(activeTab === 'betaBugs' || activeTab === 'liveBugs') && (
           <>
