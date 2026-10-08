@@ -173,6 +173,8 @@ function cohortKey(row: { created_at: string; cohort_override?: CohortKey | null
 // for the rare case someone's timestamp landed on the wrong side of a cutoff)
 // always wins over the date-based default.
 function cohortLabel(row: { created_at: string; cohort_override?: CohortKey | null }): string {
+  // Launch-era rows (live dashboard) carry no beta cohort tag.
+  if (new Date(row.created_at) >= BETA_COHORT_END) return ''
   return COHORT_LABELS[cohortKey(row)]
 }
 
@@ -2561,7 +2563,7 @@ export default function AdminPage() {
                 {!adminCareerRecsLoading && adminCareerRecs.length > 0 && (
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                     <h3 className="font-semibold text-slate-700 mb-1 text-sm uppercase tracking-wide">AI Career Recommendations</h3>
-                    <p className="text-xs text-slate-400 mb-3">Exact match_score/fit_summary/growth_note/gap/next_action/fit_tag/direction_tag shown to this user — review for accuracy and appropriateness.</p>
+                    <p className="text-xs text-slate-400 mb-3 break-words">The exact recommendation text this user saw (match score, fit summary, growth note, gap, next action and tags). Review it for accuracy and appropriateness.</p>
                     <div className="space-y-3">
                       {adminCareerRecs.map((c: any, i: number) => (
                         <div key={c.title ?? i} className="border border-slate-100 rounded-xl p-4">
@@ -2988,7 +2990,7 @@ export default function AdminPage() {
                 ['Email', bf.assessment_responses?.email],
                 ['Country', bf.assessment_responses?.country],
                 ['Status', formatUnderscored(bf.assessment_responses?.current_stage)],
-                ['Cohort', cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override })],
+                ...(cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }) ? [['Cohort', cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override })]] : []),
                 ['Age', bf.assessment_responses?.age ?? (bf.assessment_responses?.age_bracket ? AGE_BRACKET_LABEL[bf.assessment_responses.age_bracket] || bf.assessment_responses.age_bracket : null)],
                 ['Experience', bf.assessment_responses?.experience_level ? (EXPERIENCE_LEVEL_LABEL[bf.assessment_responses.experience_level] || bf.assessment_responses.experience_level) : null],
                 ['Locale', bf.locale || bf.assessment_responses?.locale],
@@ -4893,7 +4895,7 @@ export default function AdminPage() {
                               <tr key={bf.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
                                 <td className="px-4 py-3 font-medium text-slate-800">
                                   <span>{bf.assessment_responses?.full_name || '—'}</span>
-                                  {cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }) !== 'beta' && (
+                                  {cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }) !== 'beta' && cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }) !== '' && (
                                     <span className="ml-2 text-xs font-semibold bg-lightblue text-primary px-1.5 py-0.5 rounded-full">{cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override })}</span>
                                   )}
                                 </td>
