@@ -3995,6 +3995,33 @@ export default function AdminPage() {
         {/* ── Beta Testing Tab ── */}
         {(activeTab === 'betaDashboard' || activeTab === 'liveDashboard') && (
           <>
+            {activeTab === 'liveDashboard' && shareToken && (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 mb-6 flex items-center gap-3">
+                <p className="text-xs text-slate-500 flex-1">
+                  Public, no-login link to the waitlist and signup stats page (not this live dashboard) — anyone with it can view it:
+                  <span className="block font-mono text-slate-700 mt-0.5 truncate">{`${typeof window !== 'undefined' ? window.location.origin : ''}/stats/${shareToken}`}</span>
+                </p>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/stats/${shareToken}`).then(() => {
+                      setShareLinkCopied(true)
+                      setTimeout(() => setShareLinkCopied(false), 2000)
+                    }).catch(() => {})
+                  }}
+                  className="text-xs font-medium bg-sky-600 text-white px-3 py-1.5 rounded-lg hover:bg-sky-700 transition-colors flex-none"
+                >
+                  {shareLinkCopied ? 'Copied' : 'Copy link'}
+                </button>
+                <button
+                  onClick={handleRegenerateShareLink}
+                  disabled={regeneratingShareLink}
+                  title="Invalidates the current link and issues a new one"
+                  className="text-xs font-medium bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors flex-none disabled:opacity-50"
+                >
+                  {regeneratingShareLink ? '…' : 'Regenerate'}
+                </button>
+              </div>
+            )}
             {betaFeedbackLoading && (
               <div className="flex justify-center py-16">
                 <div className="w-7 h-7 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
