@@ -143,8 +143,10 @@ const BETA_COHORT_START = new Date('2026-09-06')
 // Anything created from here on belongs only to the main ("Live") dashboard; the
 // Beta Testing tabs are frozen to [BETA_COHORT_START, BETA_COHORT_END).
 const BETA_COHORT_END = new Date('2026-10-07T00:00:00Z')
-// First day with real payments; anything earlier in Sales was testing.
-const SALES_REAL_FROM = new Date('2026-10-08T00:00:00Z')
+// The Live dashboard starts here (8 Oct 2026): everything earlier was beta or testing, so Live shows only
+// submissions, feedback, behavior and payments from this moment on.
+const LIVE_START = new Date('2026-10-08T00:00:00Z')
+const SALES_REAL_FROM = LIVE_START
 function isBetaSubmission(sub: Pick<Submission, 'created_at'>) {
   const t = new Date(sub.created_at)
   return t >= BETA_COHORT_START && t < BETA_COHORT_END
@@ -3516,12 +3518,16 @@ export default function AdminPage() {
   const isLiveView = activeTab.startsWith('live')
   const betaFeedbackFrozen = betaFeedbackList.filter(isBetaFeedbackEntry)
   const betaBugReports = bugReports.filter(b => new Date(b.created_at) < BETA_COHORT_END)
-  const liveCareerRecsGenerated = allCareerRecs.filter(r => r.career_recommendations?.length > 0)
-  const scopeSubmissions = isLiveView ? submissions : betaSubmissions
+  const isLive = (iso: string) => new Date(iso) >= LIVE_START
+  const liveSubmissions = submissions.filter(s => isLive(s.created_at))
+  const liveFeedbackList = betaFeedbackList.filter(bf => isLive(bf.created_at))
+  const liveCareerRecsGenerated = allCareerRecs.filter(r => isLive(r.created_at) && r.career_recommendations?.length > 0)
+  const scopeSubmissions = isLiveView ? liveSubmissions : betaSubmissions
   const scopeCareerRecsGenerated = isLiveView ? liveCareerRecsGenerated : betaCareerRecsGenerated
-  const scopeFeedbackList = isLiveView ? betaFeedbackList : betaFeedbackFrozen
+  const scopeFeedbackList = isLiveView ? liveFeedbackList : betaFeedbackFrozen
   const scopeBugReports = isLiveView ? bugReports : betaBugReports
-  const liveTelemetrySummary = telemetrySummary
+  const liveSessionIds = new Set(telemetrySessions.filter(s => isLive(s.started_at)).map(s => s.session_id))
+  const liveTelemetrySummary = summarizeTelemetry(telemetryList.filter(e => liveSessionIds.has(e.session_id)))
   const scopeTelemetrySummary = isLiveView ? liveTelemetrySummary : betaTelemetrySummary
 
   const openBugCount = betaBugReports.filter(b => b.status === 'open').length
@@ -3739,10 +3745,10 @@ export default function AdminPage() {
               key: 'live', label: 'Live', color: 'bg-sky-700',
               tabs: [
                 { key: 'liveDashboard', label: 'Dashboard', color: 'bg-sky-700' },
-                { key: 'liveSubmissions', label: 'Submissions', color: 'bg-sky-600', badge: submissions.length > 0 ? submissions.length : undefined },
+                { key: 'liveSubmissions', label: 'Submissions', color: 'bg-sky-600', badge: liveSubmissions.length > 0 ? liveSubmissions.length : undefined },
                 { key: 'liveCareerRecs', label: 'Career Recs', color: 'bg-teal-600', badge: liveCareerRecsGenerated.length > 0 ? liveCareerRecsGenerated.length : undefined },
-                { key: 'liveFeedback', label: 'Feedback', color: 'bg-sky-500', badge: betaFeedbackList.length > 0 ? betaFeedbackList.length : undefined },
-                { key: 'liveBehavior', label: 'Behavior', color: 'bg-purple-600', badge: telemetrySummary.sessionCount > 0 ? telemetrySummary.sessionCount : undefined },
+                { key: 'liveFeedback', label: 'Feedback', color: 'bg-sky-500', badge: liveFeedbackList.length > 0 ? liveFeedbackList.length : undefined },
+                { key: 'liveBehavior', label: 'Behavior', color: 'bg-purple-600', badge: liveTelemetrySummary.sessionCount > 0 ? liveTelemetrySummary.sessionCount : undefined },
                 { key: 'liveSales', label: 'Sales & Coaching', color: 'bg-emerald-600', badge: livePaidSales.length > 0 ? livePaidSales.length : undefined },
                 // Bugs removed from the Live dashboard (still in Beta Testing)
                 // { key: 'liveBugs', label: 'Bugs', color: 'bg-red-600', badge: liveOpenBugCount > 0 ? liveOpenBugCount : undefined },
