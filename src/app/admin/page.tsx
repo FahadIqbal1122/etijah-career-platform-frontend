@@ -228,7 +228,10 @@ function betaFeedbackLatestAt(bf: Pick<BetaFeedbackEntry, 'created_at' | 'stage1
   return bf.stage2_completed_at || bf.result_stage_completed_at || bf.stage1_completed_at || bf.created_at
 }
 const BETA_FEEDBACK_STAGE_LABELS: Record<BetaFeedbackStage, string> = {
-  started: 'Started',
+  // 'started' = a feedback row exists but no stage was ever submitted (e.g. only a partial save or an
+  // AI-impact-opened flag). Labelled 'Incomplete' because "Started" read like real feedback.
+  // started: 'Started',
+  started: 'Incomplete (not submitted)',
   stage1: 'F1 Pre-Result Short',
   result: 'F2 Result Page Short',
   stage2: 'F3 Email Feedback',
@@ -247,7 +250,7 @@ function matchesFeedbackFilter(bf: BetaFeedbackEntry | undefined, filter: Submis
 
 function FeedbackFilterPills({ value, onChange }: { value: SubmissionFeedbackFilter; onChange: (v: SubmissionFeedbackFilter) => void }) {
   const labels: Record<SubmissionFeedbackFilter, string> = {
-    all: 'All feedback', none: 'No feedback', started: 'Started', stage1: 'F1 Pre-Result Short', result: 'F2 Result Page Short', stage2: 'F3 Email Feedback',
+    all: 'All feedback', none: 'No feedback', started: 'Incomplete', stage1: 'F1 Pre-Result Short', result: 'F2 Result Page Short', stage2: 'F3 Email Feedback',
   }
   return (
     <div className="flex gap-2">
@@ -4782,7 +4785,9 @@ export default function AdminPage() {
               const ageOptions = distinctValues(scopeFeedbackList.map(bf => bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age)))
               const visibleBetaFeedback = scopeFeedbackList
                 .filter(bf => matchesCohortFilter({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }, cohortFilter) && matchesPlan(bf.assessment_responses?.email))
-                .filter(bf => betaFeedbackStageFilter === 'all' || betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
+                // 'All' hides incomplete rows (nothing submitted); pick the Incomplete pill to see them.
+                // .filter(bf => betaFeedbackStageFilter === 'all' || betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
+                .filter(bf => betaFeedbackStageFilter === 'all' ? betaFeedbackStageOf(bf) !== 'started' : betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
                 .filter(bf => betaFeedbackStatusFilter === 'all' || bf.assessment_responses?.current_stage === betaFeedbackStatusFilter)
                 .filter(bf => betaFeedbackAgeFilter === 'all' || (bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age)) === betaFeedbackAgeFilter)
                 .sort((a, b) => new Date(betaFeedbackLatestAt(b)).getTime() - new Date(betaFeedbackLatestAt(a)).getTime())
