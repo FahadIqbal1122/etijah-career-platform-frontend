@@ -333,9 +333,10 @@ function ageToBracket(age: number | null | undefined): string | null {
   if (age <= 40) return '33_40'
   return '41_plus'
 }
-// 'student'/'fresh_grad' are legacy values from before QO3B was reworked (10/13 Sept) —
-// still shown here so older submissions display correctly; new submissions use 'no_experience'.
-const EXPERIENCE_LEVEL_ORDER = ['student', 'fresh_grad', 'no_experience', 'internships_only', 'up_to_1yr', 'up_to_3yrs', 'up_to_5yrs', 'up_to_10yrs', '10yrs_plus']
+// 'student'/'fresh_grad' are legacy values from before QO3B was reworked (10/13 Sept). They're no longer
+// chart rows (removed from ORDER); their labels stay in EXPERIENCE_LEVEL_LABEL so older submissions still read properly.
+// const EXPERIENCE_LEVEL_ORDER = ['student', 'fresh_grad', 'no_experience', 'internships_only', 'up_to_1yr', 'up_to_3yrs', 'up_to_5yrs', 'up_to_10yrs', '10yrs_plus']
+const EXPERIENCE_LEVEL_ORDER = ['no_experience', 'internships_only', 'up_to_1yr', 'up_to_3yrs', 'up_to_5yrs', 'up_to_10yrs', '10yrs_plus']
 const EXPERIENCE_LEVEL_LABEL: Record<string, string> = {
   student: 'Still a student', fresh_grad: 'Fresh graduate', no_experience: 'No work experience yet', internships_only: 'Only internships or training placements', up_to_1yr: 'Less than 1 year',
   up_to_3yrs: '1–3 years', up_to_5yrs: '3–5 years', up_to_10yrs: '5–10 years', '10yrs_plus': '10+ years',
