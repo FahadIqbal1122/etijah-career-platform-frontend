@@ -952,6 +952,18 @@ function csvCell(value: unknown): string {
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
+type AbandonedAssessment = {
+  email: string
+  full_name: string | null
+  locale: string | null
+  source: 'draft' | 'response'
+  current_index: number | null
+  total_questions: number | null
+  progress_pct: number | null
+  last_activity_at: string | null
+  reminder_sent_at: string | null
+}
+
 function downloadCSV(filename: string, rows: (string | number | null | undefined)[][]) {
   const csv = '﻿' + rows.map(row => row.map(csvCell).join(',')).join('\r\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -1185,7 +1197,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'liveCoaching' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('liveDashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'liveCoaching' | 'abandoned' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('liveDashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -1272,6 +1284,9 @@ export default function AdminPage() {
   const [telemetryDrilldown, setTelemetryDrilldown] = useState<{ title: string; rows: { session: TelemetrySession; note: string }[] } | null>(null)
 
   const [waitlistList, setWaitlistList] = useState<WaitlistEntry[]>([])
+  const [abandonedList, setAbandonedList] = useState<AbandonedAssessment[]>([])
+  const [abandonedLoading, setAbandonedLoading] = useState(false)
+  const [abandonedError, setAbandonedError] = useState('')
   const [featuredEvents, setFeaturedEvents] = useState<{ id: string; created_at: string; event_type: 'view' | 'click'; course_key: string; response_id: string | null; tier: string | null; locale: string | null }[]>([])
   const [featuredLoading, setFeaturedLoading] = useState(false)
   const [featuredError, setFeaturedError] = useState('')
@@ -1563,6 +1578,20 @@ export default function AdminPage() {
       setWaitlistError(err.message)
     } finally {
       setWaitlistLoading(false)
+    }
+  }, [])
+
+  const fetchAbandoned = useCallback(async () => {
+    setAbandonedLoading(true)
+    setAbandonedError('')
+    try {
+      const res = await fetch('/api/admin/abandoned-assessments')
+      if (!res.ok) throw new Error('Failed to load abandoned assessments')
+      setAbandonedList(await res.json())
+    } catch (err: any) {
+      setAbandonedError(err.message)
+    } finally {
+      setAbandonedLoading(false)
     }
   }, [])
 
@@ -1907,6 +1936,7 @@ export default function AdminPage() {
       fetchTelemetry()
       fetchBugReports()
       fetchWaitlist()
+      fetchAbandoned()
       fetchCoachingSessions()
       fetchCountryProfiles()
       fetchCourses()
@@ -1916,7 +1946,7 @@ export default function AdminPage() {
       fetchBetaClosed()
       fetchAiProvider()
     }
-  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchBetaFeedback, fetchSales, fetchAllCareerRecs, fetchCareersCatalog, fetchTelemetry, fetchBugReports, fetchWaitlist, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchBetaClosed, fetchAiProvider])
+  }, [authed, fetchDashboardStats, fetchShareToken, fetchSubmissions, fetchOnetLinks, fetchFeedback, fetchBetaFeedback, fetchSales, fetchAllCareerRecs, fetchCareersCatalog, fetchTelemetry, fetchBugReports, fetchWaitlist, fetchAbandoned, fetchCoachingSessions, fetchCountryProfiles, fetchCourses, fetchMarketTrends, fetchTestMode, fetchHomepageMode, fetchBetaClosed, fetchAiProvider])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -3606,7 +3636,7 @@ export default function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => { fetchDashboardStats(); fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchBetaFeedback(); fetchSales(); fetchAllCareerRecs(); fetchCareersCatalog(); fetchTelemetry(); fetchBugReports(); fetchWaitlist(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
+              onClick={() => { fetchDashboardStats(); fetchSubmissions(); fetchOnetLinks(); fetchFeedback(); fetchBetaFeedback(); fetchSales(); fetchAllCareerRecs(); fetchCareersCatalog(); fetchTelemetry(); fetchBugReports(); fetchWaitlist(); fetchAbandoned(); fetchCoachingSessions(); fetchCountryProfiles(); fetchCourses(); fetchMarketTrends(); fetchTestMode() }}
               className="text-sm text-primary hover:underline"
             >
               Refresh
@@ -3637,6 +3667,7 @@ export default function AdminPage() {
                 { key: 'liveDashboard', label: 'Dashboard', color: 'bg-sky-700' },
                 { key: 'liveSubmissions', label: 'Submissions', color: 'bg-sky-600', badge: liveSubmissions.length > 0 ? liveSubmissions.length : undefined },
                 { key: 'liveCareerRecs', label: 'Career Recs', color: 'bg-teal-600', badge: liveCareerRecsGenerated.length > 0 ? liveCareerRecsGenerated.length : undefined },
+                { key: 'abandoned', label: 'Abandoned', color: 'bg-amber-600', badge: abandonedList.length > 0 ? abandonedList.length : undefined, onSelect: fetchAbandoned },
                 { key: 'liveFeedback', label: 'Feedback', color: 'bg-sky-500', badge: liveFeedbackList.length > 0 ? liveFeedbackList.length : undefined },
                 { key: 'liveBehavior', label: 'Behavior', color: 'bg-purple-600', badge: liveTelemetrySummary.sessionCount > 0 ? liveTelemetrySummary.sessionCount : undefined },
                 { key: 'liveSales', label: 'Sales', color: 'bg-emerald-600', badge: livePaidSales.length > 0 ? livePaidSales.length : undefined },
@@ -5186,6 +5217,78 @@ export default function AdminPage() {
                     </tbody>
                   </table>
                 </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── Abandoned assessments: gave an email, started, never completed ── */}
+        {activeTab === 'abandoned' && (
+          <>
+            {abandonedLoading && (
+              <div className="flex justify-center py-16">
+                <div className="w-7 h-7 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {abandonedError && <p className="text-red-500 text-sm text-center py-8">{abandonedError}</p>}
+            {!abandonedLoading && !abandonedError && (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <p className="text-sm text-slate-400">
+                    {abandonedList.length} {abandonedList.length === 1 ? 'person' : 'people'} started the assessment but never finished
+                    {' · '}{abandonedList.filter(a => a.reminder_sent_at).length} reminded
+                  </p>
+                  <DownloadCSVButton onClick={() => downloadCSV(`abandoned_assessments_${new Date().toISOString().slice(0, 10)}.csv`, [
+                    ['Name', 'Email', 'Locale', 'Progress %', 'Questions answered', 'Total questions', 'Last activity', 'Reminder sent', 'Source'],
+                    ...abandonedList.map(a => [
+                      a.full_name, a.email, a.locale, a.progress_pct, a.current_index, a.total_questions,
+                      a.last_activity_at ? new Date(a.last_activity_at).toLocaleString() : '',
+                      a.reminder_sent_at ? new Date(a.reminder_sent_at).toLocaleString() : '', a.source,
+                    ]),
+                  ])} />
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50">
+                        {['Name', 'Email', 'Locale', 'Progress', 'Last activity', 'Reminder'].map(h => (
+                          <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {abandonedList.map((a, i) => (
+                        <tr key={a.email} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
+                          <td className="px-4 py-3 font-medium text-slate-800">{a.full_name || '—'}</td>
+                          <td className="px-4 py-3 text-slate-500">{a.email}</td>
+                          <td className="px-4 py-3 text-slate-500 uppercase">{a.locale || '—'}</td>
+                          <td className="px-4 py-3 text-slate-500">
+                            {a.progress_pct != null ? (
+                              <div className="flex items-center gap-2 min-w-[140px]">
+                                <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                  <div className="h-full bg-amber-500" style={{ width: `${Math.min(100, a.progress_pct)}%` }} />
+                                </div>
+                                <span className="text-xs text-slate-600 tabular-nums">{a.progress_pct}%</span>
+                              </div>
+                            ) : <span className="text-xs text-slate-400">unknown</span>}
+                          </td>
+                          <td className="px-4 py-3 text-slate-400 text-xs">{a.last_activity_at ? new Date(a.last_activity_at).toLocaleString() : '—'}</td>
+                          <td className="px-4 py-3 text-xs">
+                            {a.reminder_sent_at
+                              ? <span className="font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700">Sent {new Date(a.reminder_sent_at).toLocaleDateString()}</span>
+                              : <span className="text-slate-400">Not sent</span>}
+                          </td>
+                        </tr>
+                      ))}
+                      {abandonedList.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-12 text-center text-slate-400">No abandoned assessments</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs text-slate-400 mt-3">Only people who entered an email are listed. Autosaved drafts are kept for 30 days; to send them a resume link use Settings → Email Scheduler → “Started the assessment but did not finish”.</p>
               </>
             )}
           </>
