@@ -2997,14 +2997,11 @@ export default function AdminPage() {
                 ['Email', bf.assessment_responses?.email],
                 ['Country', bf.assessment_responses?.country],
                 ['Status', formatUnderscored(bf.assessment_responses?.current_stage)],
-                ...(cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }) ? [['Cohort', cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override })]] : []),
                 ['Age', bf.assessment_responses?.age ?? (bf.assessment_responses?.age_bracket ? AGE_BRACKET_LABEL[bf.assessment_responses.age_bracket] || bf.assessment_responses.age_bracket : null)],
                 ['Experience', bf.assessment_responses?.experience_level ? (EXPERIENCE_LEVEL_LABEL[bf.assessment_responses.experience_level] || bf.assessment_responses.experience_level) : null],
+                ['Plan when answered', bf.plan_tier],
                 ['Locale', bf.locale || bf.assessment_responses?.locale],
                 ['Device', bf.device],
-                ['F1 Pre-Result Short completed', bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : null],
-                ['F2 Result Page Short completed', bf.result_stage_completed_at ? new Date(bf.result_stage_completed_at).toLocaleString() : null],
-                ['F3 Email Feedback completed', bf.stage2_completed_at ? new Date(bf.stage2_completed_at).toLocaleString() : null],
               ].map(([label, value]) => (
                 <div key={label}>
                   <dt className="text-slate-400">{label}</dt>
@@ -3014,211 +3011,78 @@ export default function AdminPage() {
             </dl>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">F1 Pre-Result Short</h3>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              {[
-                ['Clarity', ratingLabel(bf.s1_clarity)],
-                ['Feeling', ratingLabel(bf.s1_feeling)],
-                ['Understood', ratingLabel(bf.s1_understood)],
-                ['Wants from results', formatUnderscored(bf.s1_intent)],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <dt className="text-slate-400">{label}</dt>
-                  <dd className="text-slate-800 font-medium">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">F2 Result Page Short</h3>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              {[
-                ['Result accuracy', bf.result_accuracy],
-                ['Would recommend', bf.would_recommend],
-                ['Would pay', bf.would_pay],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <dt className="text-slate-400">{label}</dt>
-                  <dd className="text-slate-800 font-medium capitalize">{value?.replace(/_/g, ' ') || '—'}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Report Understanding</h3>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              {[
-                ['Understood after', bf.understood_after ? `${bf.understood_after} / 5` : '—'],
-                ['Felt like a coach?', bf.felt_like_mentor ? formatUnderscored(bf.felt_like_mentor) : '—'],
-                ['Careers seriously considered', bf.careers_seriously_considered ? (CAREERS_CONSIDERED_LABEL[bf.careers_seriously_considered] || bf.careers_seriously_considered) : '—'],
-                ['Understood why suggested', bf.career_explained ? (CAREER_EXPLAINED_LABEL[bf.career_explained] || bf.career_explained) : '—'],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <dt className="text-slate-400">{label}</dt>
-                  <dd className="text-slate-800 font-medium capitalize">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">What Stood Out</h3>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              {[
-                ['Most useful part', bf.most_useful_part ? (REPORT_SECTION_LABEL[bf.most_useful_part] || bf.most_useful_part) : '—'],
-                ['Least useful part', bf.least_useful_part ? (REPORT_SECTION_LABEL[bf.least_useful_part] || bf.least_useful_part) : '—'],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <dt className="text-slate-400">{label}</dt>
-                  <dd className="text-slate-800 font-medium">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Value &amp; Pricing</h3>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              {[
-                ['Would pay (at price)', bf.would_pay_at_price ? (WOULD_PAY_AT_PRICE_LABEL[bf.would_pay_at_price] || bf.would_pay_at_price) : '—'],
-                ['Top pay blocker', bf.pay_blocker_priority ? (PAY_BLOCKER_LABEL[bf.pay_blocker_priority] || bf.pay_blocker_priority) : '—'],
-                ['Wants coach session', bf.wants_coach_session ? (WANTS_COACH_LABEL[bf.wants_coach_session] || bf.wants_coach_session) : '—'],
-                ['Would recommend', bf.would_recommend ? formatUnderscored(bf.would_recommend) : '—'],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <dt className="text-slate-400">{label}</dt>
-                  <dd className="text-slate-800 font-medium capitalize">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          {bf.pay_blockers && bf.pay_blockers.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-              <h3 className="font-semibold text-slate-700 mb-2 text-sm uppercase tracking-wide">Pay Blockers</h3>
-              <div className="flex flex-wrap gap-2">
-                {bf.pay_blockers.map(blocker => (
-                  <span key={blocker} className="text-xs font-medium px-2 py-1 rounded-full bg-rose-50 text-rose-700">{PAY_BLOCKER_LABEL[blocker] || formatUnderscored(blocker)}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {bf.worth_paying_for && bf.worth_paying_for.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-              <h3 className="font-semibold text-slate-700 mb-2 text-sm uppercase tracking-wide">Worth Paying For</h3>
-              <div className="flex flex-wrap gap-2">
-                {bf.worth_paying_for.map(reason => (
-                  <span key={reason} className="text-xs font-medium px-2 py-1 rounded-full bg-teal-50 text-teal-700">{WORTH_PAYING_FOR_LABEL[reason] || formatUnderscored(reason)}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Launch form (v4_launch): the answers the cards above do not cover. Empty rows are hidden. */}
+          {/* The three launch-form stages only. Unanswered rows are hidden; the old beta fields are no longer shown. */}
           {(() => {
-            const five = (v: number | null) => (v ? `${v} / 5` : null)  // launch faces are 1-5, unlike the beta 1-6 ratings
-            const launchRows = [
-              ['Plan when answered', bf.plan_tier],
-              ['Form version', bf.form_version],
-              ['Confidence before results', five(bf.s1_confidence)],
-              ['Assessment length', bf.s1_length ? formatUnderscored(bf.s1_length) : null],
-              ['Opened AI Impact preview', bf.opened_ai_impact ? 'yes' : null],
-              ['AI Impact changed thinking', bf.ai_impact_changed_thinking],
-              ['First step', bf.first_step?.length ? bf.first_step.map(v => formatUnderscored(v)).join(', ') : null],
-              ['Arabic felt natural', bf.arabic_natural],
-              ['Main purchase blocker', bf.purchase_blocker ? (PAY_BLOCKER_LABEL[bf.purchase_blocker] || formatUnderscored(bf.purchase_blocker)) : null],
-              ['Worth what they paid', five(bf.overall_value)],
-              ['Jobs relevance', five(bf.jobs_relevant)],
-              ['Courses usefulness', five(bf.courses_useful)],
-              ['Will follow 90-day plan', bf.plan_would_follow],
-              ['Missing', bf.missing_text],
-            ].filter(([, v]) => v && v !== '—')
-            return launchRows.length > 0 && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Launch Form Answers</h3>
-                <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                  {launchRows.map(([label, value]) => (
-                    <div key={label as string}>
-                      <dt className="text-slate-400">{label}</dt>
-                      <dd className="text-slate-800 font-medium capitalize">{(value as string).replace(/_/g, ' ')}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            )
-          })()}
-
-          {/* Legacy Beta 1 fields — removed from the live form, shown only for old rows that still carry them. */}
-          {bf.most_valuable_parts && bf.most_valuable_parts.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-              <h3 className="font-semibold text-slate-700 mb-2 text-sm uppercase tracking-wide">Most Valuable Parts (legacy)</h3>
-              <div className="flex flex-wrap gap-2">
-                {bf.most_valuable_parts.map(part => (
-                  <span key={part} className="text-xs font-medium px-2 py-1 rounded-full bg-slate-100 text-slate-600 capitalize">{part.replace(/_/g, ' ')}</span>
-                ))}
-              </div>
-            </div>
-          )}
-          {(() => {
-            const legacyRatings = [
-              ['Personality accuracy', bf.personality_accuracy], ['Values accuracy', bf.values_accuracy],
-              ['Strengths accuracy', bf.strengths_accuracy], ['Career matches accuracy', bf.career_matches_accuracy],
-              ['Arabic natural', bf.arabic_natural], ['AI impact useful', ratingLabel(bf.ai_impact_useful)],
-              ['AI impact credible', ratingLabel(bf.ai_impact_credible)], ['Jobs relevant', ratingLabel(bf.jobs_relevant)],
-              ['Companies fit', ratingLabel(bf.companies_fit)], ['Courses useful', ratingLabel(bf.courses_useful)],
-              ['Overall value', ratingLabel(bf.overall_value)], ['Would pay (legacy)', bf.would_pay],
-              ['Would pay reason', bf.would_pay_reason],
-            ].filter(([, v]) => v)
-            return legacyRatings.length > 0 && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Legacy Beta 1 Ratings</h3>
-                <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                  {legacyRatings.map(([label, value]) => (
-                    <div key={label as string}>
-                      <dt className="text-slate-400">{label}</dt>
-                      <dd className="text-slate-800 font-medium capitalize">{(value as string)?.replace(/_/g, ' ') || value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            )
-          })()}
-
-          {(bf.had_issues || bf.issue_detail) && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-              <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Issues</h3>
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm mb-2">
-                <div>
-                  <dt className="text-slate-400">Had issues</dt>
-                  <dd className="text-slate-800 font-medium capitalize">{bf.had_issues || '—'}</dd>
+            const five = (v: number | null) => (v ? `${v} / 5` : null)
+            const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : null)
+            const stages: { title: string; doneAt: string | null; rows: [string, string | null | undefined][] }[] = [
+              {
+                title: 'F1 Pre-Result Short',
+                doneAt: bf.stage1_completed_at,
+                rows: [
+                  ['Understood what the assessment is for', five(bf.s1_understood)],
+                  ['Wants from results', bf.s1_intent ? formatUnderscored(bf.s1_intent) : null],
+                  ['Confidence before results', five(bf.s1_confidence)],
+                  ['Assessment length', bf.s1_length ? formatUnderscored(bf.s1_length) : null],
+                ],
+              },
+              {
+                title: 'F2 Result Page Short',
+                doneAt: bf.result_stage_completed_at,
+                rows: [
+                  ['Result accuracy', bf.result_accuracy ? formatUnderscored(bf.result_accuracy) : null],
+                  ['Understood why careers suggested', bf.career_explained ? (CAREER_EXPLAINED_LABEL[bf.career_explained] || bf.career_explained) : null],
+                  ['Careers seriously considered', bf.careers_seriously_considered ? (CAREERS_CONSIDERED_LABEL[bf.careers_seriously_considered] || bf.careers_seriously_considered) : null],
+                  ['Note', bf.other_text],
+                ],
+              },
+              {
+                title: 'F3 Email Feedback',
+                doneAt: bf.stage2_completed_at,
+                rows: [
+                  ['Felt like a coach?', bf.felt_like_mentor ? formatUnderscored(bf.felt_like_mentor) : null],
+                  ['Most useful part', bf.most_useful_part ? (REPORT_SECTION_LABEL[bf.most_useful_part] || bf.most_useful_part) : null],
+                  ['Opened AI Impact preview', bf.opened_ai_impact ? 'yes' : null],
+                  ['AI Impact changed thinking', bf.ai_impact_changed_thinking ? formatUnderscored(bf.ai_impact_changed_thinking) : null],
+                  ['First step', bf.first_step?.length ? bf.first_step.map(v => formatUnderscored(v)).join(', ') : null],
+                  ['Wants coach session', bf.wants_coach_session ? (WANTS_COACH_LABEL[bf.wants_coach_session] || bf.wants_coach_session) : null],
+                  ['Would recommend', bf.would_recommend ? formatUnderscored(bf.would_recommend) : null],
+                  ['Arabic felt natural', bf.arabic_natural ? formatUnderscored(bf.arabic_natural) : null],
+                  ['Main purchase blocker', bf.purchase_blocker ? (PAY_BLOCKER_LABEL[bf.purchase_blocker] || formatUnderscored(bf.purchase_blocker)) : null],
+                  ['Purchase blocker — other', bf.pay_blocker_other_text],
+                  ['Worth what they paid', five(bf.overall_value)],
+                  ['Jobs relevance', five(bf.jobs_relevant)],
+                  ['Courses usefulness', five(bf.courses_useful)],
+                  ['Will follow 90-day plan', bf.plan_would_follow ? formatUnderscored(bf.plan_would_follow) : null],
+                  ['Least useful part', bf.least_useful_part ? (REPORT_SECTION_LABEL[bf.least_useful_part] || bf.least_useful_part) : null],
+                  ['Missing', bf.missing_text],
+                ],
+              },
+            ]
+            return stages.map(st => {
+              const rows = st.rows.filter(([, v]) => v)
+              return (
+                <div key={st.title} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">{st.title}</h3>
+                    <span className="text-xs text-slate-400">{st.doneAt ? `Completed ${when(st.doneAt)}` : 'Not submitted'}</span>
+                  </div>
+                  {rows.length === 0 ? (
+                    <p className="text-sm text-slate-400">No answers yet.</p>
+                  ) : (
+                    <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                      {rows.map(([label, value]) => (
+                        <div key={label} className={String(value).length > 40 ? 'col-span-2' : ''}>
+                          <dt className="text-slate-400">{label}</dt>
+                          <dd className="text-slate-800 font-medium">{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
                 </div>
-              </dl>
-              {bf.issue_detail && <p className="text-sm text-slate-700 leading-relaxed">{bf.issue_detail}</p>}
-            </div>
-          )}
-
-          {[
-            ['First thing they will do', bf.first_action_text],
-            ['Pay blocker — other', bf.pay_blocker_other_text],
-            ['Plan they would follow (legacy)', bf.plan_would_follow],
-            ['Clear next step (legacy)', bf.clear_next_step],
-            ['AI impact changed thinking (legacy)', bf.ai_impact_changed_thinking],
-            ['Career understanding (legacy)', bf.career_understanding_text],
-            ['Wrong career suggestions (legacy)', bf.wrong_career_text],
-            ['Missing careers (legacy)', bf.missing_career_text],
-            ['Surprised by results (legacy)', bf.surprised_text],
-            ['"Not me" feedback (legacy)', bf.not_me_text],
-            ['Other comments', bf.other_text],
-          ].filter(([, value]) => value).map(([label, value]) => (
-            <div key={label as string} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-              <h3 className="font-semibold text-slate-700 mb-2 text-sm uppercase tracking-wide">{label}</h3>
-              <p className="text-sm text-slate-700 leading-relaxed">{value}</p>
-            </div>
-          ))}
+              )
+            })
+          })()}
         </div>
       </div>
     )
@@ -4029,7 +3893,7 @@ export default function AdminPage() {
                   <BetaStatTile label="Launchpad" value={String(liveCoachingSales.length)} sublabel="Report + 1:1 coaching" onClick={() => setActiveTab('liveCoaching')} />
                   <BetaStatTile label="Total submissions" value={String(liveSubmissions.length)} sublabel={`${liveSubmissions.filter(sub => sub.completed).length} completed`} onClick={() => setActiveTab('liveSubmissions')} />
                   <BetaStatTile label="Career recs" value={String(liveCareerRecsGenerated.length)} sublabel="Generated" onClick={() => setActiveTab('liveCareerRecs')} />
-                  <BetaStatTile label="Feedback" value={String(liveFeedbackList.length)} sublabel={`F1 ${liveFeedbackList.filter(bf => bf.stage1_completed_at).length} · F2 ${liveFeedbackList.filter(bf => bf.result_stage_completed_at).length} · F3 ${liveFeedbackList.filter(bf => bf.stage2_completed_at).length}`} onClick={() => setActiveTab('liveFeedback')} />
+                  <BetaStatTile label="Feedback" value={String(liveFeedbackList.length)} sublabel={`F1 ${liveFeedbackList.filter(bf => betaFeedbackStageOf(bf) === 'stage1').length} · F2 ${liveFeedbackList.filter(bf => betaFeedbackStageOf(bf) === 'result').length} · F3 ${liveFeedbackList.filter(bf => betaFeedbackStageOf(bf) === 'stage2').length} · Incomplete ${liveFeedbackList.filter(bf => betaFeedbackStageOf(bf) === 'started').length}`} onClick={() => setActiveTab('liveFeedback')} />
                   <BetaStatTile label="Conversion" value={liveSubmissions.length > 0 ? `${Math.round((livePaidSales.length / liveSubmissions.length) * 100)}%` : '—'} sublabel="Paid orders ÷ total submissions" />
                 </div>
               </div>
