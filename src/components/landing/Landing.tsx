@@ -13,6 +13,7 @@ import LandingConstellation from '@/components/brand/LandingConstellation'
 import { supabase } from '@/lib/supabase'
 import { startCheckout, apiAuthGet, apiAuthPost, type PlanCode } from '@/lib/api'
 import PartnerModal from '@/components/shared/PartnerModal'
+import EmailLink from '@/components/shared/EmailLink'
 import { LANDING_VARIANTS, type VariantSlug } from '@/data/landingVariants'
 import { setLandingVariant } from '@/lib/analytics'
 import CoachWidget from '@/components/CoachWidget'
@@ -626,7 +627,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             <div className="mt-5">
               <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.contactHead}</p>
               <a href="tel:+966550770711" dir="ltr" className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.phone}</a>
-              <a href={`mailto:${c.footer.email}`} className="block text-sm text-white/80 hover:text-white w-fit">{c.footer.email}</a>
+              <EmailLink className="block text-sm text-white/80 hover:text-white w-fit" />
             </div>
           </div>
           <FooterCol head={c.footer.colPlatform.head} links={c.footer.colPlatform.links} hrefs={['/assessment', '#how', '#report', '#pricing']} />
@@ -635,7 +636,12 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           <div>
             <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.colLegal.head}</p>
             <p className="text-sm text-white/85 font-semibold mb-2">{c.footer.copyright}</p>
-            <p className="text-xs text-white/55 leading-relaxed mb-2">{c.footer.legalLinks}</p>
+            {/* <p className="text-xs text-white/55 leading-relaxed mb-2">{c.footer.legalLinks}</p> */}
+            <div className="flex flex-wrap gap-x-3 gap-y-1 mb-2">
+              {c.footer.legal.map((l: { label: string; href: string }) => (
+                <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="text-xs text-white/55 hover:text-white/80 underline">{l.label}</a>
+              ))}
+            </div>
             <p className="text-xs text-white/55 mb-3">{c.footer.registered}</p>
             <div className="space-y-1">
               {c.footer.social.map((s: { label: string; href: string }) => (
@@ -726,7 +732,9 @@ function FooterCol({ head, links, hrefs }: { head: string; links: string[]; href
               {href
                 ? href.startsWith('/')
                   ? <Link href={href} className="hover:text-white">{l}</Link>
-                  : <a href={href} className="hover:text-white">{l}</a>
+                  : href.startsWith('mailto:')
+                    ? <EmailLink className="hover:text-white">{l}</EmailLink>
+                    : <a href={href} className="hover:text-white">{l}</a>
                 : <span className="cursor-default">{l}</span>}
             </li>
           )

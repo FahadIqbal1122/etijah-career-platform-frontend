@@ -177,7 +177,11 @@ export const W = {
       colCompany: { head: 'Company', links: ['About Etijah', 'Etijah Coaching & Consulting', 'Contact Us'] },
       colLegal: { head: 'Legal & Social' },
       copyright: '© 2026 Etijah Coaching & Consulting. All rights reserved.',
-      legalLinks: 'Terms & Conditions | Privacy Policy | Cookie Policy',
+      legalLinks: 'Terms & Conditions | Privacy Policy',
+      legal: [
+        { label: 'Terms & Conditions', href: 'https://shop.etijahcoaching.com/terms' },
+        { label: 'Privacy Policy', href: 'https://shop.etijahcoaching.com/privacy' },
+      ],
       registered: 'Registered in Bahrain',
       social: [
         { label: 'Instagram: @etijahcoaching', href: 'https://www.instagram.com/etijahcoaching/' },
@@ -361,7 +365,11 @@ export const W = {
       colCompany: { head: 'الشركة', links: ['عن اتجاه', 'اتجاه للإرشاد والاستشارات', 'تواصل معنا'] },
       colLegal: { head: 'القانوني والتواصل' },
       copyright: '© 2026 اتجاهي · جميع الحقوق محفوظة',
-      legalLinks: 'الشروط والأحكام | سياسة الخصوصية | سياسة ملفات الارتباط',
+      legalLinks: 'الشروط والأحكام | سياسة الخصوصية',
+      legal: [
+        { label: 'الشروط والأحكام', href: 'https://shop.etijahcoaching.com/terms' },
+        { label: 'سياسة الخصوصية', href: 'https://shop.etijahcoaching.com/privacy' },
+      ],
       registered: 'مسجّلة في مملكة البحرين',
       social: [
         { label: 'إنستغرام: @etijahcoaching', href: 'https://www.instagram.com/etijahcoaching/' },
