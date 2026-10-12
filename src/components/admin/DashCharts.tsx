@@ -135,7 +135,8 @@ export function TrendChart({ points, kind = 'line', color = '#2a78d6', unit = ''
   const colW = n > 0 ? iw / n : iw
   const cx = (i: number) => PL + colW * i + colW / 2
   const y = (v: number) => PT + ih - (v / max) * ih
-  const ticks = [0, max / 2, max]
+  // Whole-number gridlines only: a max of 1 would otherwise show 0, 0.5 (rounded to a second "1"), 1.
+  const ticks = [0, max / 2, max].filter(Number.isInteger)
   const labelIdx = n <= 1 ? [0] : [0, Math.floor((n - 1) / 2), n - 1]
   const px = (i: number) => (kind === 'line' ? x(i) : cx(i))
   const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ')

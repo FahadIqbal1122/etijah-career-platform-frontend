@@ -392,6 +392,13 @@ const FORM_FIELDS: Record<string, FormField> = (() => {
 const formQuestion = (key: string) => FORM_FIELDS[key]?.question || key.replace(/_/g, ' ')
 const formOrder = (key: string) => FORM_FIELDS[key]?.order || []
 const formLabels = (key: string) => FORM_FIELDS[key]?.options || {}
+// The follow-up form has a free and a paid variant that word a few questions differently (e.g. the AI Impact
+// "preview" vs "section"); this returns the wording of one variant.
+function tierQuestion(key: string, tier: 'free' | 'paid'): string {
+  for (const sec of followUpSections(tier)) for (const f of sec.fields) if (f.key === key) return f.label.en
+  return formQuestion(key)
+}
+const FREE_REPORT_SECTIONS = ['personality', 'values', 'strengths', 'careers', 'ai_impact']   // what the free follow-up offers
 // Answer text for one stored value: the form's own wording first, then the retired-beta label maps.
 function answerLabel(key: string, value: string | null | undefined): string {
   if (!value) return ''
@@ -423,11 +430,11 @@ const WANTS_COACH_LABEL: Record<string, string> = { yes_pay: "Yes, I'd pay for i
 const LANGUAGE_USED_LABEL: Record<string, string> = { en: 'English', ar: 'Arabic', both: 'Both' }
 // "current_stage" is the closest proxy we collect to employment status — it's
 // an education/career-stage question, not a strict employed/unemployed flag.
-const CURRENT_STAGE_ORDER = ['high_school', 'university', 'recent_graduate', 'working_exploring', 'career_changer', 'returning', 'between_roles']
+const CURRENT_STAGE_ORDER = ['high_school', 'university', 'recent_graduate', 'working_exploring', 'career_changer', 'returning', 'between_roles', 'other']
 const CURRENT_STAGE_LABEL: Record<string, string> = {
   high_school: 'High school', university: 'University', recent_graduate: 'Recent graduate',
   working_exploring: 'Working, exploring', career_changer: 'Career changer',
-  returning: 'Returning to work', between_roles: 'Between roles',
+  returning: 'Returning to work', between_roles: 'Between roles', other: 'Other (typed their own)',
 }
 // Order/labels match QO1/QO2 in messages/en.json exactly.
 const COUNTRY_ORDER = ['saudi_arabia', 'bahrain', 'uae', 'kuwait', 'qatar', 'oman', 'other_gcc', 'other_middle_east', 'other']
@@ -531,7 +538,8 @@ function BetaSentimentChart({ title, orderKey, counts, total, drill }: { title: 
 function BetaCategoryChart({ title, order, labels, counts, total, kind = 'bar', onSelect, drill }: { title: string; order: string[]; labels: Record<string, string>; counts: Record<string, number>; total: number; kind?: 'bar' | 'column' | 'donut'; onSelect?: (key: string) => void; drill?: FbDrill }) {
   const drillSelect = useFbDrillSelect(title, labels, drill)
   onSelect = onSelect ?? drillSelect
-  const items = order.map((key, i) => ({ key, label: labels[key] || formatUnderscored(key), value: counts[key] || 0, color: catColor(i) }))
+  const fullOrder = [...order, ...Object.keys(counts).filter(k => !order.includes(k) && counts[k] > 0)]
+  const items = fullOrder.map((key, i) => ({ key, label: labels[key] || formatUnderscored(key), value: counts[key] || 0, color: catColor(i) }))
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
       <p className="text-sm font-semibold text-slate-700 mb-4">{title}</p>
@@ -1161,6 +1169,8 @@ type DemoPerson = {
   name: string; age_bracket: string | null; experience_level: string | null; current_stage: string | null
   country: string | null; nationality: string | null
   sub: Submission | null; bf: BetaFeedbackEntry | null
+  at: string | null // when the submission / feedback / order happened
+  note?: string // written answer, shown in an extra column when any person in the popup has one
 }
 
 type BetaFeedbackEntry = {
@@ -1374,7 +1384,7 @@ export default function AdminPage() {
   // "Not for me" feedback on recommended careers, summarised across all submissions (Career Recs tab).
   const [recFeedbackSummary, setRecFeedbackSummary] = useState<any>(null)
   useEffect(() => {
-    if (activeTab !== 'betaCareerRecs' && activeTab !== 'liveCareerRecs') return
+    if (activeTab !== 'betaCareerRecs' && activeTab !== 'liveCareerRecs' && activeTab !== 'betaDashboard' && activeTab !== 'liveDashboard') return
     fetch('/api/admin/recommendation-feedback')
       .then(r => r.json()).then(d => setRecFeedbackSummary(d && typeof d.total === 'number' ? d : { total: 0 })).catch(() => setRecFeedbackSummary({ total: 0 }))
   }, [activeTab])
@@ -1405,7 +1415,7 @@ export default function AdminPage() {
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackEntry | null>(null)
 
   const [betaFeedbackList, setBetaFeedbackList] = useState<BetaFeedbackEntry[]>([])
-  const [betaDemographicsFilter, setBetaDemographicsFilter] = useState<'all' | 'stage1' | 'result' | 'stage2'>('all')
+  const [betaDemographicsFilter, setBetaDemographicsFilter] = useState<'all' | 'stage1' | 'result' | 'stage2' | 'stage2_free' | 'stage2_paid'>('all')
   const [betaFeedbackLoading, setBetaFeedbackLoading] = useState(false)
   const [betaFeedbackError, setBetaFeedbackError] = useState('')
   const [selectedBetaFeedback, setSelectedBetaFeedback] = useState<BetaFeedbackEntry | null>(null)
@@ -3716,14 +3726,14 @@ export default function AdminPage() {
   const personFromSub = (s: Submission): DemoPerson => ({
     name: s.full_name, age_bracket: s.age_bracket ?? ageToBracket(s.age), experience_level: s.experience_level,
     current_stage: s.current_stage, country: s.country, nationality: s.nationality,
-    sub: s, bf: fbByResponseAll.get(s.id) ?? null,
+    sub: s, bf: fbByResponseAll.get(s.id) ?? null, at: s.created_at,
   })
   const personFromBf = (bf: BetaFeedbackEntry): DemoPerson => {
     const a = bf.assessment_responses
     return {
       name: a?.full_name || 'Unknown', age_bracket: a?.age_bracket ?? ageToBracket(a?.age), experience_level: a?.experience_level ?? null,
       current_stage: a?.current_stage ?? null, country: a?.country ?? null, nationality: a?.nationality ?? null,
-      sub: subByIdAll.get(bf.response_id) ?? null, bf,
+      sub: subByIdAll.get(bf.response_id) ?? null, bf, at: betaFeedbackLatestAt(bf),
     }
   }
   const openFbDrill = (title: string, bfs: BetaFeedbackEntry[]) => setDemoDrilldown({ title, people: bfs.map(personFromBf) })
@@ -4523,7 +4533,9 @@ export default function AdminPage() {
                   <BetaStatTile label="Pathfinder plans sold" accent="#eb6834" value={String(dashPaidSales.length - dashCoachingSales.length)} sublabel="Paid report" onClick={() => setActiveTab('liveSales')} />
                   <BetaStatTile label="Launchpad plans sold" accent="#6250d6" value={String(dashCoachingSales.length)} sublabel="Report + 1:1 coaching" onClick={() => setActiveTab('liveCoaching')} />
                   <BetaStatTile label="Assessments submitted" accent="#2a78d6" spark={submissionsTrend.map(p => p.value)} value={String(dashSubmissions.length)} sublabel={`${dashSubmissions.filter(sub => sub.completed).length} completed`} onClick={() => setActiveTab('liveSubmissions')} />
+                  {/* Moved under "Who's testing" and now shows careers rejected ("Not for me") instead of careers recommended:
                   <BetaStatTile label="Careers recommended" accent="#e87ba4" value={String(dashCareerRecs.length)} sublabel="Users who received career matches" onClick={() => setActiveTab('liveCareerRecs')} />
+                  */}
                   <BetaStatTile label="Feedback responses" accent="#eda100" value={String(dashFeedback.length)} sublabel={`F1 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage1').length} · F2 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'result').length} · F3 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage2').length} · Incomplete ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'started').length}`} onClick={() => setActiveTab('liveFeedback')} />
                   <BetaStatTile label="Conversion rate" accent="#008300" value={dashSubmissions.length > 0 ? `${Math.round((dashPaidSales.length / dashSubmissions.length) * 100)}%` : '—'} sublabel="Paid orders ÷ assessments submitted" />
                 </div>
@@ -4550,7 +4562,7 @@ export default function AdminPage() {
                         title: `Paid orders on ${salesTrend[i].label}`,
                         people: dashPaidSales.filter(t => dayKey(t.paid_at || t.created_at) === day).map(t => {
                           const sub = subByEmail.get(emailKey(t.email))
-                          return sub ? personFromSub(sub) : { name: t.full_name || t.email || 'Unknown', age_bracket: null, experience_level: null, current_stage: null, country: t.country, nationality: null, sub: null, bf: null }
+                          return sub ? { ...personFromSub(sub), at: t.paid_at || t.created_at } : { at: t.paid_at || t.created_at, name: t.full_name || t.email || 'Unknown', age_bracket: null, experience_level: null, current_stage: null, country: t.country, nationality: null, sub: null, bf: null }
                         }),
                       })
                     }} />
@@ -4572,6 +4584,15 @@ export default function AdminPage() {
               const scopedSubmissions = scopeSubmissions.filter(s => matchesCohortFilter(s, cohortFilter) && matchesPlan(s.email) && (!isLiveView || matchesDashSubmission(s)))
               const stage2Responses = scopedFeedback.filter(bf => bf.stage2_completed_at)
               const stage2Total = stage2Responses.length
+              // F3 is two forms (free / paid). The "Who's testing" pills can pick either variant; every F3 list
+              // below follows that pick. Beta rows have no plan_tier, so they only appear under "F3 Email Feedback" (all).
+              const f3Variant: 'all' | 'free' | 'paid' = betaDemographicsFilter === 'stage2_free' ? 'free' : betaDemographicsFilter === 'stage2_paid' ? 'paid' : 'all'
+              const f3Responses = f3Variant === 'all' ? stage2Responses : stage2Responses.filter(bf => bf.plan_tier === f3Variant)
+              const f3Total = f3Responses.length
+              const f3FreeTotal = stage2Responses.filter(bf => bf.plan_tier === 'free').length
+              const f3PaidTotal = stage2Responses.filter(bf => bf.plan_tier === 'paid').length
+              const q3 = (key: string) => (f3Variant === 'all' ? formQuestion(key) : tierQuestion(key, f3Variant))
+              const sectionOrder = f3Variant === 'free' ? REPORT_SECTION_ORDER.filter(k => FREE_REPORT_SECTIONS.includes(k)) : REPORT_SECTION_ORDER
               const resultStageResponses = scopedFeedback.filter(bf => bf.result_stage_completed_at)
               const resultStageTotal = resultStageResponses.length
               const stage1Responses = scopedFeedback.filter(bf => bf.stage1_completed_at)
@@ -4588,15 +4609,15 @@ export default function AdminPage() {
               const careersConsideredAll = answered(scopedFeedback, bf => bf.careers_seriously_considered)
               const resultNotes = scopedFeedback.filter(bf => bf.other_text)
               // F3 launch questions (v4_launch follow-up form).
-              const feltMentorAnswered = answered(stage2Responses, bf => bf.felt_like_mentor)
-              const aiImpactAnswered = answered(stage2Responses, bf => bf.ai_impact_changed_thinking)
-              const firstStepAnswered = answered(stage2Responses, bf => bf.first_step)
-              const arabicNaturalAnswered = answered(stage2Responses, bf => bf.arabic_natural)
-              const purchaseBlockerAnswered = answered(stage2Responses, bf => bf.purchase_blocker)
-              const planFollowAnswered = answered(stage2Responses, bf => bf.plan_would_follow)
+              const feltMentorAnswered = answered(f3Responses, bf => bf.felt_like_mentor)
+              const aiImpactAnswered = answered(f3Responses, bf => bf.ai_impact_changed_thinking)
+              const firstStepAnswered = answered(f3Responses, bf => bf.first_step)
+              const arabicNaturalAnswered = answered(f3Responses, bf => bf.arabic_natural)
+              const purchaseBlockerAnswered = answered(f3Responses, bf => bf.purchase_blocker)
+              const planFollowAnswered = answered(f3Responses, bf => bf.plan_would_follow)
               // Paid-report ratings were 1-6 in the beta form and 1-5 at launch, so only launch rows are averaged.
-              const launchRatings = stage2Responses.filter(bf => bf.stage2_form_version === 'v4_launch')
-              const legacyStage2 = stage2Responses.filter(bf => bf.stage2_form_version !== 'v4_launch')
+              const launchRatings = f3Responses.filter(bf => bf.stage2_form_version === 'v4_launch')
+              const legacyStage2 = f3Responses.filter(bf => bf.stage2_form_version !== 'v4_launch')
 
               // Post-Result question-by-question denominators — see the `answered`
               // helper's comment above. Each tile below uses its own subset rather
@@ -4608,10 +4629,10 @@ export default function AdminPage() {
               // predate these fields and correctly show as unanswered here).
               const hadIssuesAnswered = answered(stage2Responses, bf => bf.had_issues)
               const careerExplainedAnswered = answered(stage2Responses, bf => bf.career_explained)
-              const wantsCoachAnswered = answered(stage2Responses, bf => bf.wants_coach_session)
+              const wantsCoachAnswered = answered(f3Responses, bf => bf.wants_coach_session)
               const careersConsideredAnswered = answered(stage2Responses, bf => bf.careers_seriously_considered)
-              const mostUsefulAnswered = answered(stage2Responses, bf => bf.most_useful_part)
-              const leastUsefulAnswered = answered(stage2Responses, bf => bf.least_useful_part)
+              const mostUsefulAnswered = answered(f3Responses, bf => bf.most_useful_part)
+              const leastUsefulAnswered = answered(f3Responses, bf => bf.least_useful_part)
               const worthPayingAnswered = answered(stage2Responses, bf => bf.worth_paying_for)
               const payBlockersAnswered = answered(stage2Responses, bf => bf.pay_blockers)
               // would_pay_at_price is trickier: everyone who was asked it *did*
@@ -4627,6 +4648,7 @@ export default function AdminPage() {
 
               const recommendResponses = scopedFeedback.filter(bf => bf.would_recommend)
               const recommendTotal = recommendResponses.length
+              const f3RecommendAnswered = f3Variant === 'all' ? recommendResponses : answered(f3Responses, bf => bf.would_recommend)
               const payResponses = scopedFeedback.filter(bf => bf.would_pay)
               const payTotal = payResponses.length
               const betaTotal = scopedFeedback.length
@@ -4636,14 +4658,14 @@ export default function AdminPage() {
               // duplicated here (rather than shared) because this runs outside
               // that block's own IIFE — keeps the export in sync with whichever
               // demographics filter is currently selected on screen.
-              const demoFilterLabel = { all: 'All submissions', stage1: 'F1 Pre-Result Short', result: 'F2 Result Page Short', stage2: 'F3 Email Feedback' } as const
+              const demoFilterLabel = { all: 'All submissions', stage1: 'F1 Pre-Result Short', result: 'F2 Result Page Short', stage2: 'F3 Email Feedback', stage2_free: 'F3 Email Feedback · Free form', stage2_paid: 'F3 Email Feedback · Paid form' } as const
               type DemoRow = { age_bracket: string | null; experience_level: string | null; current_stage: string | null; country: string | null; nationality: string | null }
               const demoRows: DemoRow[] =
                 betaDemographicsFilter === 'all'
                   ? scopedSubmissions.map(s => ({ age_bracket: s.age_bracket ?? ageToBracket(s.age), experience_level: s.experience_level, current_stage: s.current_stage, country: s.country, nationality: s.nationality }))
                   : (betaDemographicsFilter === 'stage1' ? stage1Responses
                     : betaDemographicsFilter === 'result' ? resultStageResponses
-                    : stage2Responses).map(bf => ({
+                    : f3Responses).map(bf => ({
                       age_bracket: bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age),
                       experience_level: bf.assessment_responses?.experience_level ?? null,
                       current_stage: bf.assessment_responses?.current_stage ?? null,
@@ -4721,7 +4743,7 @@ export default function AdminPage() {
                   for (const bf of firstStepAnswered) for (const v of (bf.first_step || [])) firstStepCounts[v] = (firstStepCounts[v] || 0) + 1
                   rows.push(
                     [],
-                    [`F3 Email Feedback — launch questions (${stage2Total} respondents)`],
+                    [`F3 Email Feedback — launch questions · ${demoFilterLabel[betaDemographicsFilter === 'stage2_free' || betaDemographicsFilter === 'stage2_paid' ? betaDemographicsFilter : 'stage2']} (${f3Total} respondents)`],
                     ...breakdownRows(formOrder('felt_like_mentor'), formLabels('felt_like_mentor'), countBy(feltMentorAnswered, bf => bf.felt_like_mentor), feltMentorAnswered.length, formQuestion('felt_like_mentor')),
                     [],
                     ...breakdownRows(SENTIMENT_ORDER.yes_somewhat_no, SENTIMENT_LABEL, countBy(aiImpactAnswered, bf => bf.ai_impact_changed_thinking), aiImpactAnswered.length, formQuestion('ai_impact_changed_thinking')),
@@ -4848,18 +4870,18 @@ export default function AdminPage() {
                         ? scopedSubmissions.map(s => ({
                             name: s.full_name, age_bracket: s.age_bracket ?? ageToBracket(s.age), experience_level: s.experience_level,
                             current_stage: s.current_stage, country: s.country, nationality: s.nationality,
-                            sub: s, bf: fbByResponse.get(s.id) ?? null,
+                            sub: s, bf: fbByResponse.get(s.id) ?? null, at: s.created_at,
                           }))
                         : (betaDemographicsFilter === 'stage1' ? stage1Responses
                           : betaDemographicsFilter === 'result' ? resultStageResponses
-                          : stage2Responses).map(bf => ({
+                          : f3Responses).map(bf => ({
                             name: bf.assessment_responses?.full_name || 'Unknown',
                             age_bracket: bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age),
                             experience_level: bf.assessment_responses?.experience_level ?? null,
                             current_stage: bf.assessment_responses?.current_stage ?? null,
                             country: bf.assessment_responses?.country ?? null,
                             nationality: bf.assessment_responses?.nationality ?? null,
-                            sub: subById.get(bf.response_id) ?? null, bf,
+                            sub: subById.get(bf.response_id) ?? null, bf, at: betaFeedbackLatestAt(bf),
                           }))
                     const openDemo = (field: 'age_bracket' | 'experience_level' | 'current_stage' | 'country' | 'nationality', labels: Record<string, string>, chartTitle: string) =>
                       (key: string) => setDemoDrilldown({
@@ -4867,16 +4889,16 @@ export default function AdminPage() {
                         people: demoRows.filter(r => r[field] === key),
                       })
                     const demoTotal = demoRows.length
-                    const filterCount = { all: totalSubmissions, stage1: stage1Total, result: resultStageTotal, stage2: stage2Total }
-                    const filterLabel = { all: 'All submissions', stage1: 'F1 Pre-Result Short', result: 'F2 Result Page Short', stage2: 'F3 Email Feedback' }
+                    const filterCount = { all: totalSubmissions, stage1: stage1Total, result: resultStageTotal, stage2: stage2Total, stage2_free: f3FreeTotal, stage2_paid: f3PaidTotal }
+                    const filterLabel = demoFilterLabel
                     return (
                       <div className="mb-6">
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                           <p className="text-sm font-semibold text-slate-700">
                             Who&apos;s testing <span className="text-slate-400 font-normal">— {filterLabel[betaDemographicsFilter]} ({demoTotal})</span>
                           </p>
-                          <div className="flex gap-2">
-                            {(['all', 'stage1', 'result', 'stage2'] as const).map(key => (
+                          <div className="flex flex-wrap gap-2">
+                            {(['all', 'stage1', 'result', 'stage2', 'stage2_free', 'stage2_paid'] as const).map(key => (
                               <button
                                 key={key}
                                 onClick={() => setBetaDemographicsFilter(key)}
@@ -4943,6 +4965,52 @@ export default function AdminPage() {
                       </div>
                     )
                   })()}
+                  {/* Careers rejected: every "Not for me" tap on a career card, with why and which careers (all submissions). */}
+                  <div className="mb-6 relative overflow-hidden bg-white rounded-2xl shadow-sm border border-slate-100 p-5 pl-6">
+                    <span className="absolute left-0 top-0 bottom-0 w-1.5" style={{ background: '#e87ba4' }} />
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">Careers rejected</p>
+                        <p className="text-3xl font-bold text-slate-800 tabular-nums leading-tight">{recFeedbackSummary ? String(recFeedbackSummary.total ?? 0) : '…'}</p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Times someone tapped &ldquo;Not for me&rdquo; on a recommended career
+                          {recFeedbackSummary?.by_career?.length ? ` · ${recFeedbackSummary.by_career.length}${recFeedbackSummary.by_career.length >= 30 ? '+' : ''} different careers` : ''}
+                        </p>
+                        {recFeedbackSummary && (recFeedbackSummary.total ?? 0) > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-3">
+                            {['uninterested', 'unqualified', 'unfamiliar', 'impractical'].map(r => (
+                              <span key={r} className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-slate-50 border border-slate-100 text-slate-600 capitalize">
+                                {r}: <b>{recFeedbackSummary.by_reason?.[r] ?? 0}</b>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {recFeedbackSummary && (recFeedbackSummary.by_career || []).length > 0 && (
+                        <div className="min-w-[220px] flex-1 max-w-md">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1.5">Most rejected</p>
+                          <ul className="space-y-1">
+                            {(recFeedbackSummary.by_career as any[]).slice(0, 5).map(c => (
+                              <li key={c.career_title} className="flex items-center justify-between gap-3 text-xs border-b border-slate-50 py-1">
+                                <span className="font-medium text-slate-700 truncate">{c.career_title}</span>
+                                <span className="shrink-0 text-slate-400 tabular-nums">{c.total}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                    {recFeedbackSummary && (recFeedbackSummary.total ?? 0) === 0 && (
+                      <p className="text-xs text-slate-400 mt-3">No career has been rejected yet.</p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab(isLiveView ? 'liveCareerRecs' : 'betaCareerRecs')}
+                      className="text-xs font-medium text-primary hover:underline mt-3"
+                    >
+                      See every career and why →
+                    </button>
+                  </div>
                   <div className="mb-6">
                     <p className="text-sm font-semibold text-slate-700 mb-3">
                       Feedback by stage <span className="text-slate-400 font-normal">— pick a stage above to see its charts</span>
@@ -4950,7 +5018,7 @@ export default function AdminPage() {
                     {betaTotal === 0 ? (
                       <p className="text-sm text-slate-400 text-center py-6">No feedback yet</p>
                     ) : betaDemographicsFilter === 'all' ? (
-                      <p className="text-slate-400 text-xs text-center py-6">Select F1 Pre-Result Short, F2 Result Page Short, or F3 Email Feedback above to see that form's feedback charts.</p>
+                      <p className="text-slate-400 text-xs text-center py-6">Select F1, F2 or F3 (all, Free form or Paid form) above to see that form's feedback charts.</p>
                     ) : betaDemographicsFilter === 'stage1' ? (
                       <>
                         <p className="text-xs text-slate-400 mb-3">{stage1Total} respondent{stage1Total !== 1 ? 's' : ''} · the four quick taps while the report loads</p>
@@ -5042,10 +5110,10 @@ export default function AdminPage() {
                       </>
                     ) : (
                       <>
-                        <p className="text-xs text-slate-400 mb-3">{stage2Total} respondent{stage2Total !== 1 ? 's' : ''} completed the follow-up survey{launchRatings.length > 0 ? ` · ${launchRatings.length} on the launch form` : ''}</p>
+                        <p className="text-xs text-slate-400 mb-3">{f3Total} respondent{f3Total !== 1 ? 's' : ''} completed the {f3Variant === 'all' ? 'follow-up survey' : `${f3Variant} follow-up form`}{f3Variant === 'all' && launchRatings.length > 0 ? ` · ${launchRatings.length} on the launch form` : ''}</p>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                           <BetaCategoryChart
-                            title={`${formQuestion('felt_like_mentor')} (${feltMentorAnswered.length} answered)`}
+                            title={`${q3('felt_like_mentor')} (${feltMentorAnswered.length} answered)`}
                             order={formOrder('felt_like_mentor')}
                             labels={formLabels('felt_like_mentor')}
                             counts={countBy(feltMentorAnswered, bf => bf.felt_like_mentor)}
@@ -5054,14 +5122,14 @@ export default function AdminPage() {
                             kind="donut"
                           />
                           <BetaSentimentChart
-                            title={`${formQuestion('would_recommend')} (${recommendTotal} answered)`}
+                            title={`${q3('would_recommend')} (${f3RecommendAnswered.length} answered)`}
                             orderKey="would_recommend"
-                            counts={countBy(recommendResponses, bf => bf.would_recommend)}
-                            drill={{ items: recommendResponses, get: bf => bf.would_recommend }}
-                            total={recommendTotal}
+                            counts={countBy(f3RecommendAnswered, bf => bf.would_recommend)}
+                            drill={{ items: f3RecommendAnswered, get: bf => bf.would_recommend }}
+                            total={f3RecommendAnswered.length}
                           />
                           <BetaSentimentChart
-                            title={`${formQuestion('wants_coach_session')} (${wantsCoachAnswered.length} answered)`}
+                            title={`${q3('wants_coach_session')} (${wantsCoachAnswered.length} answered)`}
                             orderKey="wants_coach_session"
                             counts={countBy(wantsCoachAnswered, bf => bf.wants_coach_session)}
                             drill={{ items: wantsCoachAnswered, get: bf => bf.wants_coach_session }}
@@ -5070,39 +5138,43 @@ export default function AdminPage() {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           <BetaCategoryChart
-                            title={`${formQuestion('most_useful_part')} (${mostUsefulAnswered.length} answered)`}
-                            order={REPORT_SECTION_ORDER}
+                            title={`${q3('most_useful_part')} (${mostUsefulAnswered.length} answered)`}
+                            order={sectionOrder}
                             labels={REPORT_SECTION_LABEL}
                             counts={countBy(mostUsefulAnswered, bf => bf.most_useful_part)}
                             drill={{ items: mostUsefulAnswered, get: bf => bf.most_useful_part }}
                             total={mostUsefulAnswered.length}
                           />
-                          <BetaCategoryChart
-                            title={`${formQuestion('least_useful_part')} (${leastUsefulAnswered.length} answered · paid version only)`}
-                            order={REPORT_SECTION_ORDER}
+                          {f3Variant !== 'free' && (
+<BetaCategoryChart
+                            title={`${q3('least_useful_part')} (${leastUsefulAnswered.length} answered${f3Variant === 'all' ? ' · paid version only' : ''})`}
+                            order={sectionOrder}
                             labels={REPORT_SECTION_LABEL}
                             counts={countBy(leastUsefulAnswered, bf => bf.least_useful_part)}
                             drill={{ items: leastUsefulAnswered, get: bf => bf.least_useful_part }}
                             total={leastUsefulAnswered.length}
                           />
+)}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                           <BetaSentimentChart
-                            title={`${formQuestion('ai_impact_changed_thinking')} (${aiImpactAnswered.length} answered)`}
+                            title={`${q3('ai_impact_changed_thinking')} (${aiImpactAnswered.length} answered)`}
                             orderKey="yes_somewhat_no"
                             counts={countBy(aiImpactAnswered, bf => bf.ai_impact_changed_thinking)}
                             drill={{ items: aiImpactAnswered, get: bf => bf.ai_impact_changed_thinking }}
                             total={aiImpactAnswered.length}
                           />
-                          <BetaSentimentChart
-                            title={`${formQuestion('plan_would_follow')} (${planFollowAnswered.length} answered · paid version only)`}
+                          {f3Variant !== 'free' && (
+<BetaSentimentChart
+                            title={`${q3('plan_would_follow')} (${planFollowAnswered.length} answered${f3Variant === 'all' ? ' · paid version only' : ''})`}
                             orderKey="yes_somewhat_no"
                             counts={countBy(planFollowAnswered, bf => bf.plan_would_follow)}
                             drill={{ items: planFollowAnswered, get: bf => bf.plan_would_follow }}
                             total={planFollowAnswered.length}
                           />
+)}
                           <BetaCategoryChart
-                            title={`${formQuestion('arabic_natural')} (${arabicNaturalAnswered.length} answered · Arabic reports)`}
+                            title={`${q3('arabic_natural')} (${arabicNaturalAnswered.length} answered · Arabic reports)`}
                             order={formOrder('arabic_natural')}
                             labels={formLabels('arabic_natural')}
                             counts={countBy(arabicNaturalAnswered, bf => bf.arabic_natural)}
@@ -5112,23 +5184,27 @@ export default function AdminPage() {
                           />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <BetaRankedMultiChart
-                            title={`${formQuestion('first_step')} (${firstStepAnswered.length} answered)`}
+                          {f3Variant !== 'paid' && (
+<BetaRankedMultiChart
+                            title={`${q3('first_step')} (${firstStepAnswered.length} answered)`}
                             lists={firstStepAnswered.map(bf => bf.first_step)}
                             drill={{ items: firstStepAnswered, get: bf => bf.first_step }}
                             labels={formLabels('first_step')}
                             total={firstStepAnswered.length}
                           />
-                          <BetaCategoryChart
-                            title={`${formQuestion('purchase_blocker')} (${purchaseBlockerAnswered.length} answered · free version only)`}
+)}
+                          {f3Variant !== 'paid' && (
+<BetaCategoryChart
+                            title={`${q3('purchase_blocker')} (${purchaseBlockerAnswered.length} answered${f3Variant === 'all' ? ' · free version only' : ''})`}
                             order={formOrder('purchase_blocker')}
                             labels={PAY_BLOCKER_LABEL}
                             counts={countBy(purchaseBlockerAnswered, bf => bf.purchase_blocker)}
                             drill={{ items: purchaseBlockerAnswered, get: bf => bf.purchase_blocker }}
                             total={purchaseBlockerAnswered.length}
                           />
+)}
                         </div>
-                        {launchRatings.some(bf => bf.overall_value != null || bf.jobs_relevant != null || bf.courses_useful != null) && (
+                        {f3Variant !== 'free' && launchRatings.some(bf => bf.overall_value != null || bf.jobs_relevant != null || bf.courses_useful != null) && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <BetaAverageChart
                               title="Paid report ratings (average, 1–5 · paid version only)"
@@ -5141,7 +5217,7 @@ export default function AdminPage() {
                             />
                           </div>
                         )}
-                        {legacyStage2.length > 0 && (
+                        {f3Variant === 'all' && legacyStage2.length > 0 && (
                           <>
                             <p className="text-sm font-semibold text-slate-700 mt-6 mb-1">
                               Earlier beta questions <span className="text-slate-400 font-normal">— retired at launch, {legacyStage2.length} answered them</span>
@@ -5259,13 +5335,35 @@ export default function AdminPage() {
                         </div>
                           </>
                         )}
+                        {(() => {
+                          // The one open-ended F3 question ("What was missing?") — a card, not a chart: count + click for who wrote what.
+                          const missingAnswered = stage2Responses.filter(bf => (bf.missing_text || '').trim())
+                          return (
+                            <button
+                              type="button"
+                              disabled={missingAnswered.length === 0}
+                              onClick={() => setDemoDrilldown({
+                                title: formQuestion('missing_text'),
+                                people: missingAnswered.map(bf => ({ ...personFromBf(bf), note: (bf.missing_text || '').trim() })),
+                              })}
+                              className="mt-2 w-full text-left bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:border-slate-300 hover:shadow-md transition-all disabled:cursor-default disabled:hover:border-slate-100 disabled:hover:shadow-sm"
+                            >
+                              <p className="text-sm font-semibold text-slate-700">{formQuestion('missing_text')} <span className="text-slate-400 font-normal">· open-ended</span></p>
+                              <p className="text-3xl font-bold text-slate-800 tabular-nums mt-2">
+                                {missingAnswered.length}
+                                <span className="text-sm font-normal text-slate-400"> of {stage2Total} wrote an answer</span>
+                              </p>
+                              {missingAnswered.length > 0 && <p className="text-xs font-medium text-primary mt-2">See who wrote what →</p>}
+                            </button>
+                          )
+                        })()}
                       </>
                     )}
                   </div>
                     {demoDrilldown && (
                       <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setDemoDrilldown(null)}>
                         <div className="absolute inset-0 bg-slate-900/40" />
-                        <div className="relative bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-3xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="relative bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-4xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
                           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
                             <div>
                               <h3 className="text-sm font-semibold text-slate-800">{demoDrilldown.title}</h3>
@@ -5282,6 +5380,8 @@ export default function AdminPage() {
                                   <th className="text-left px-3 py-2 font-semibold">Nationality</th>
                                   <th className="text-left px-3 py-2 font-semibold">Age group</th>
                                   <th className="text-left px-3 py-2 font-semibold">Stage</th>
+                                  <th className="text-left px-3 py-2 font-semibold">Date &amp; time</th>
+                                  {demoDrilldown.people.some(p => p.note) && <th className="text-left px-3 py-2 font-semibold">Answer</th>}
                                   <th className="px-4 py-2" />
                                 </tr>
                               </thead>
@@ -5293,6 +5393,8 @@ export default function AdminPage() {
                                     <td className="px-3 py-2.5 text-slate-600">{p.nationality ? (NATIONALITY_LABEL[p.nationality] || formatUnderscored(p.nationality)) : '—'}</td>
                                     <td className="px-3 py-2.5 text-slate-600">{p.age_bracket ? (AGE_BRACKET_LABEL[p.age_bracket] || p.age_bracket) : '—'}</td>
                                     <td className="px-3 py-2.5 text-slate-600">{p.current_stage ? (CURRENT_STAGE_LABEL[p.current_stage] || formatUnderscored(p.current_stage)) : '—'}</td>
+                                    <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap"><DateTimeCell iso={p.at} /></td>
+                                    {demoDrilldown.people.some(q => q.note) && <td className="px-3 py-2.5 text-slate-700 min-w-[16rem] whitespace-pre-wrap break-words">{p.note || '—'}</td>}
                                     <td className="px-4 py-2.5 whitespace-nowrap text-right space-x-2">
                                       <button
                                         disabled={!p.sub}
