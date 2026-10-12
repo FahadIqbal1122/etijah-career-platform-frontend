@@ -574,6 +574,17 @@ html { scroll-behavior: smooth; }
 .reveal-next { font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.7); margin-top: 18px; }
 .reveal .cta { margin-top: 28px; }
 .reveal.finish .reveal-spark { color: var(--accent); opacity: 1; }
+/* Sarah's tip sits at the bottom centre of the green screen: keep the text and button clear of it, so the
+   "Keep going" button is never covered by her bubble (taller content now carries a chapter label + next line). */
+.reveal { padding-bottom: 270px; overflow-y: auto; }
+@media (max-height: 760px) {
+  .reveal { padding-top: 70px; padding-bottom: 215px; }
+  .reveal-spark { display: none; }
+  .reveal-head { font-size: 26px; }
+  .reveal-body { font-size: 14.5px; margin-top: 10px; }
+  .reveal-next { margin-top: 12px; }
+  .reveal .cta { margin-top: 18px; }
+}
 
 /* small spinner inside the Submit button while the assessment is submitting */
 .cta-spinner {
@@ -1006,6 +1017,8 @@ html { scroll-behavior: smooth; }
 .coach-spot { position: absolute; width: 1px; height: 1px; pointer-events: none; }
 .assess-aside-context { position: relative; }
 .coach-spot-question { left: -30px; top: 150px; }                  /* beside the question, where she goes to comment on it */
+/* phones don't use spots; in right-to-left this 1px marker at left:-30px made the whole screen scroll sideways by 30px */
+@media (max-width: 899px) { .coach-spot { display: none; } }
 
 /* Target mode: fixed, centred on a spot, gliding between spots. Bubble and panel hang off her. */
 .coach-widget[data-place="target"] {

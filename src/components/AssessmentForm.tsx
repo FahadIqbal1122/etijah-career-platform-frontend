@@ -5,7 +5,7 @@
 // a rising constellation, periodic encouragement "reveal" takeovers, skip
 // logic, existing-user check, and backend submit.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter, usePathname } from '@/i18n/navigation'
 import { questions, BEHAVIORAL_SCALE, Question } from '@/data/questions'
@@ -33,6 +33,8 @@ import BugReportModal from '@/components/BugReportModal'
 import FieldOfStudyInfo from '@/components/FieldOfStudyInfo'
 import LanguageSelect from '@/components/LanguageSelect'
 import FieldOfStudySelect from '@/components/FieldOfStudySelect'
+import IconTiles from '@/components/IconTiles'
+import AgeWheel from '@/components/AgeWheel'
 import { buildReveal } from '@/data/revealScoring'
 import { CHAPTERS, CHAPTER_COUNT, chapterIndexOf } from '@/data/chapters'
 import { initTelemetry, pushTelemetry, getTelemetrySessionId, rotateTelemetrySession, flush as flushTelemetry } from '@/lib/telemetry'
@@ -166,6 +168,10 @@ const CHROME: Record<string, Record<string, string>> = {
     finishHead: 'Your map is taking shape.',
     finishBody: 'You’ve lit the path. This is the start of your Etijahi profile — the full reading is next.',
     finishCta: 'Reveal my result',
+    or: 'or',
+    ageHint: 'Scroll to your age, or tap a number',
+    ageType: 'Type it instead',
+    ageWheelBack: 'Use the wheel',
     chapterWord: 'Chapter',
     chapterOf: 'of',
     chapterDone: 'complete',
@@ -186,6 +192,10 @@ const CHROME: Record<string, Record<string, string>> = {
     finishHead: 'خريطتك تتشكّل.',
     finishBody: 'لقد أضأت الطريق. هذه بداية ملفك في إتجاهي — والقراءة الكاملة تنتظرك.',
     finishCta: 'اكشف نتيجتي',
+    or: 'أو',
+    ageHint: 'مرّر لاختيار عمرك، أو اضغط على الرقم',
+    ageType: 'اكتبه بدلاً من ذلك',
+    ageWheelBack: 'استخدم العجلة',
     chapterWord: 'الفصل',
     chapterOf: 'من',
     chapterDone: 'اكتمل',
@@ -295,6 +305,7 @@ export default function AssessmentForm() {
   const [existingResultId, setExistingResultId] = useState<string | null>(null)
   const [showClaimedModal, setShowClaimedModal] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
+  const [ageTyping, setAgeTyping] = useState(false) // age question: typed box instead of the wheel
 
   // One-way coach bubble: a random break/motivation nudge every 4–7 questions
   // (first around Q4–6), never during reveal/finish, each message at most once.
@@ -867,16 +878,19 @@ export default function AssessmentForm() {
             {q.type === 'forced_choice' && (
               <div className="choice-wrap">
                 <p className="choice-prompt">{qTextStr}</p>
-                <div className="choices">
-                  {q.options?.map(opt => (
-                    <button
-                      key={opt.value}
-                      className={`choice ${sel === opt.value ? 'sel' : ''} ${sel && sel !== opt.value ? 'dim' : ''}`}
-                      onClick={() => pick(opt.value)}
-                    >
-                      <span className="choice-tag">{opt.value}</span>
-                      <span className="choice-text">{tQ(`${mid}.options.${opt.value}`)}</span>
-                    </button>
+                {/* "this or that" cards: big centred cards, with an "or" chip between the two sides of an A/B pair */}
+                <div className={`choices cards cards-${q.options?.length ?? 0}`}>
+                  {q.options?.map((opt, k) => (
+                    <Fragment key={opt.value}>
+                      {k > 0 && (q.options?.length ?? 0) === 2 && <span className="choice-or" aria-hidden="true">{chrome.or}</span>}
+                      <button
+                        className={`choice ${sel === opt.value ? 'sel' : ''} ${sel && sel !== opt.value ? 'dim' : ''}`}
+                        onClick={() => pick(opt.value)}
+                      >
+                        <span className="choice-tag">{opt.value}</span>
+                        <span className="choice-text">{tQ(`${mid}.options.${opt.value}`)}</span>
+                      </button>
+                    </Fragment>
                   ))}
                 </div>
               </div>
@@ -929,6 +943,12 @@ export default function AssessmentForm() {
                     searchPlaceholder={tForm('searchFields')}
                     noMatch={tForm('noMatchField')}
                     extrasTitle={tForm('fieldExtrasTitle')}
+                  />
+                ) : q.id === 'QO6' ? (
+                  <IconTiles
+                    options={(q.options || []).map(opt => ({ value: opt.value, label: tQ(`${mid}.options.${opt.value}`) }))}
+                    selected={answers[q.id] || []}
+                    onToggle={v => toggleMulti(v, q.maxSelect)}
                   />
                 ) : q.id === 'QO8' ? (
                   <LanguageSelect
@@ -988,18 +1008,33 @@ export default function AssessmentForm() {
             {q.type === 'number_input' && (
               <>
                 <div className="qcard"><p className="qtext">{qTextStr}</p></div>
-                <input
-                  className="qinput"
-                  type="number"
-                  inputMode="numeric"
-                  step={1}
-                  min={10}
-                  max={100}
-                  value={answers[q.id] || ''}
-                  onChange={e => setAnswer(q.id, e.target.value)}
-                  placeholder={tForm('placeholder')}
-                  autoFocus
-                />
+                {q.id === 'QO3' && !ageTyping ? (
+                  <AgeWheel
+                    value={String(answers[q.id] ?? '')}
+                    onChange={v => setAnswer(q.id, v)}
+                    hint={chrome.ageHint}
+                    typeLabel={chrome.ageType}
+                    onType={() => setAgeTyping(true)}
+                  />
+                ) : (
+                  <>
+                    <input
+                      className="qinput"
+                      type="number"
+                      inputMode="numeric"
+                      step={1}
+                      min={10}
+                      max={100}
+                      value={answers[q.id] || ''}
+                      onChange={e => setAnswer(q.id, e.target.value)}
+                      placeholder={tForm('placeholder')}
+                      autoFocus
+                    />
+                    {q.id === 'QO3' && (
+                      <button type="button" className="age-type" onClick={() => setAgeTyping(false)}>{chrome.ageWheelBack}</button>
+                    )}
+                  </>
+                )}
               </>
             )}
 
