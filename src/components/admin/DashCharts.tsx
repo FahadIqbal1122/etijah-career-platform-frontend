@@ -22,7 +22,7 @@ export type ChartItem = { key: string; label: string; value: number; color?: str
 // ── Donut ────────────────────────────────────────────────────────────────────
 // Share-of-whole for a handful of categories. `total` is the denominator; if it
 // is larger than the sum of the slices the remainder is drawn as "Not provided".
-export function DonutChart({ items, total, centerLabel = 'responses' }: { items: ChartItem[]; total: number; centerLabel?: string }) {
+export function DonutChart({ items, total, centerLabel = 'responses', onSelect }: { items: ChartItem[]; total: number; centerLabel?: string; onSelect?: (key: string) => void }) {
   const [hover, setHover] = useState<string | null>(null)
   const sum = items.reduce((a, i) => a + i.value, 0)
   const denom = Math.max(total, sum)
@@ -53,7 +53,8 @@ export function DonutChart({ items, total, centerLabel = 'responses' }: { items:
               transform="rotate(-90 60 60)"
               onMouseEnter={() => setHover(s.key)}
               onMouseLeave={() => setHover(null)}
-              style={{ transition: 'stroke-width 120ms', cursor: 'default' }}
+              onClick={() => { if (s.key !== '__rest') onSelect?.(s.key) }}
+              style={{ transition: 'stroke-width 120ms', cursor: onSelect && s.key !== '__rest' ? 'pointer' : 'default' }}
             >
               <title>{`${s.label}: ${s.value} (${pctOf(s.value, denom)}%)`}</title>
             </circle>
@@ -74,7 +75,8 @@ export function DonutChart({ items, total, centerLabel = 'responses' }: { items:
             key={s.key}
             onMouseEnter={() => setHover(s.key)}
             onMouseLeave={() => setHover(null)}
-            className={`flex items-center gap-2 text-xs rounded-md px-1.5 py-0.5 transition-colors ${hover === s.key ? 'bg-slate-50' : ''}`}
+            onClick={() => { if (s.key !== '__rest') onSelect?.(s.key) }}
+            className={`flex items-center gap-2 text-xs rounded-md px-1.5 py-0.5 transition-colors ${onSelect && s.key !== '__rest' ? 'cursor-pointer' : ''} ${hover === s.key ? 'bg-slate-50' : ''}`}
           >
             <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: s.color || '#2a78d6' }} />
             <span className="text-slate-600 flex-1 truncate" title={s.label}>{s.label}</span>
@@ -90,7 +92,7 @@ export function DonutChart({ items, total, centerLabel = 'responses' }: { items:
 // ── Column ───────────────────────────────────────────────────────────────────
 // Ordered categories (age groups, stages). Emphasis form: the tallest column in
 // the dark step, the rest in the light step.
-export function ColumnChart({ items, total, height = 120 }: { items: ChartItem[]; total: number; height?: number }) {
+export function ColumnChart({ items, total, height = 120, onSelect }: { items: ChartItem[]; total: number; height?: number; onSelect?: (key: string) => void }) {
   const max = Math.max(1, ...items.map(i => i.value))
   const top = items.reduce((m, i) => (i.value > m.value ? i : m), items[0])
   return (
@@ -99,7 +101,7 @@ export function ColumnChart({ items, total, height = 120 }: { items: ChartItem[]
         const h = i.value > 0 ? Math.max(4, Math.round((i.value / max) * height)) : 2
         const isTop = top && i.key === top.key && i.value > 0
         return (
-          <div key={i.key} className="flex-1 min-w-0 flex flex-col items-center justify-end gap-1 group" title={`${i.label}: ${i.value} (${pctOf(i.value, total)}%)`}>
+          <div key={i.key} onClick={() => { if (i.value > 0) onSelect?.(i.key) }} className={`flex-1 min-w-0 flex flex-col items-center justify-end gap-1 group${onSelect && i.value > 0 ? ' cursor-pointer' : ''}`} title={`${i.label}: ${i.value} (${pctOf(i.value, total)}%)`}>
             <span className="text-[10px] font-semibold text-slate-700 tabular-nums leading-none">{pctOf(i.value, total)}%</span>
             <div
               className="w-full max-w-[44px] rounded-t-md transition-opacity group-hover:opacity-80"
@@ -115,11 +117,12 @@ export function ColumnChart({ items, total, height = 120 }: { items: ChartItem[]
 }
 
 // ── Time series (line or column) ─────────────────────────────────────────────
-export function TrendChart({ points, kind = 'line', color = '#2a78d6', unit = '' }: {
+export function TrendChart({ points, kind = 'line', color = '#2a78d6', unit = '', onSelect }: {
   points: { label: string; value: number }[]
   kind?: 'line' | 'column'
   color?: string
   unit?: string
+  onSelect?: (index: number) => void
 }) {
   const [hover, setHover] = useState<number | null>(null)
   const W = 600, H = 190, PL = 34, PR = 12, PT = 14, PB = 26
@@ -140,6 +143,8 @@ export function TrendChart({ points, kind = 'line', color = '#2a78d6', unit = ''
   const hp = hover != null ? points[hover] : null
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Trend chart"
+      style={{ cursor: onSelect ? 'pointer' : undefined }}
+      onClick={() => { if (onSelect && hover != null && points[hover]?.value > 0) onSelect(hover) }}
       onMouseLeave={() => setHover(null)}
       onMouseMove={e => {
         const r = e.currentTarget.getBoundingClientRect()

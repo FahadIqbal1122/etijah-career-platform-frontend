@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react'
 import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 import DashboardStatsView, { type DashboardStats } from '@/components/admin/DashboardStatsView'
@@ -9,6 +9,7 @@ import EmailTemplatesTab from '@/components/admin/EmailTemplatesTab'
 import EmailSchedulerTab from '@/components/admin/EmailSchedulerTab'
 import SmtpSettingsTab from '@/components/admin/SmtpSettingsTab'
 import { questions, BEHAVIORAL_SCALE, type Question } from '@/data/questions'
+import { stage1Questions, resultStageQuestions, resultStageNoteLabel, followUpSections } from '@/components/beta-feedback/content'
 import { buildWorkbook, saveBlob, type SheetSpec, type SummaryBlock } from '@/lib/adminExcel'
 
 const levelToWidth: Record<string, string> = {
@@ -365,8 +366,38 @@ const STAGE1_INTENT_ORDER = ['confirm_right_path', 'discover_new_options', 'choo
 const STAGE1_INTENT_LABEL: Record<string, string> = {
   confirm_right_path: "Confirm I'm on the right path", discover_new_options: 'Discover new options',
   choose_university_major: 'Choose a university major', plan_career_change: 'Plan a career change',
-  get_job_faster: 'Get a job faster', understand_ai_impact: 'Understand AI impact',
+  get_job_faster: 'Get a job faster', understand_ai_impact: 'Understand how AI affects my field',
 }
+// ─── Question wording & answer labels ───────────────────────────────────────
+// One source of truth: the forms themselves (components/beta-feedback/content.ts). The per-person detail
+// page, the dashboard charts and the CSVs all read the question text and answer labels from here, so they
+// always say what the person actually saw. (Chart-only short labels, e.g. PAY_BLOCKER_LABEL, stay below.)
+type FormField = { question: string; options: Record<string, string>; order: string[] }
+const FORM_FIELDS: Record<string, FormField> = (() => {
+  const out: Record<string, FormField> = {}
+  const add = (key: string, question: string, options?: { value: string; label: { en: string } }[]) => {
+    const f = out[key] || (out[key] = { question, options: {}, order: [] })
+    for (const o of options || []) {
+      if (!(o.value in f.options)) {
+        f.options[o.value] = o.label.en.replace(/^[\uD800-\uDBFF\uDC00-\uDFFF\s]+/, '') // drop the leading emoji on the accuracy options
+        f.order.push(o.value)
+      }
+    }
+  }
+  stage1Questions.forEach(q => add(q.key, q.label.en, q.options))
+  resultStageQuestions.forEach(q => add(q.key, q.label.en, q.options))
+  ;(['paid', 'free'] as const).forEach(t => followUpSections(t).forEach(sec => sec.fields.forEach(f => add(f.key, f.label.en, f.options))))
+  return out
+})()
+const formQuestion = (key: string) => FORM_FIELDS[key]?.question || key.replace(/_/g, ' ')
+const formOrder = (key: string) => FORM_FIELDS[key]?.order || []
+const formLabels = (key: string) => FORM_FIELDS[key]?.options || {}
+// Answer text for one stored value: the form's own wording first, then the retired-beta label maps.
+function answerLabel(key: string, value: string | null | undefined): string {
+  if (!value) return ''
+  return FORM_FIELDS[key]?.options[value] || SENTIMENT_LABEL[value] || PAY_BLOCKER_LABEL[value] || WORTH_PAYING_FOR_LABEL[value] || WOULD_PAY_AT_PRICE_LABEL[value] || formatUnderscored(value)
+}
+
 // Neutral order/labels for had_issues — deliberately not run through
 // BetaSentimentChart, whose green/red coloring assumes "yes" is the good
 // answer; here "yes" (hit an issue) is the bad one.
@@ -448,6 +479,20 @@ function answered<T>(responses: T[], field: (r: T) => unknown): T[] {
   })
 }
 
+// Feedback-chart drilldown: charts that are handed `drill` (the respondents behind the chart and how to read
+// their answer) open the people popup through this context, so call sites stay one prop each.
+type FbDrill = { items: BetaFeedbackEntry[]; get: (bf: BetaFeedbackEntry) => string | string[] | null | undefined }
+const FbDrillContext = createContext<((title: string, bfs: BetaFeedbackEntry[]) => void) | null>(null)
+const drillChartName = (title: string) => title.replace(/\s*\(.*$/, '').trim()
+function useFbDrillSelect(title: string, labels: Record<string, string>, drill?: FbDrill): ((key: string) => void) | undefined {
+  const open = useContext(FbDrillContext)
+  if (!open || !drill) return undefined
+  return (key: string) => open(
+    `${drillChartName(title)}: ${labels[key] || SENTIMENT_LABEL[key] || formatUnderscored(key)}`,
+    drill.items.filter(bf => { const v = drill.get(bf); return Array.isArray(v) ? v.includes(key) : v === key }),
+  )
+}
+
 // One labeled horizontal bar — `total` is the denominator (usually all stage2
 // respondents), so an unanswered field still reads as a share of the whole
 // rather than silently renormalizing over just the people who answered it.
@@ -466,7 +511,8 @@ function BetaBarRow({ valueKey, count, total }: { valueKey: string; count: numbe
   )
 }
 
-function BetaSentimentChart({ title, orderKey, counts, total }: { title: string; orderKey: keyof typeof SENTIMENT_ORDER; counts: Record<string, number>; total: number }) {
+function BetaSentimentChart({ title, orderKey, counts, total, drill }: { title: string; orderKey: keyof typeof SENTIMENT_ORDER; counts: Record<string, number>; total: number; drill?: FbDrill }) {
+  const onSelect = useFbDrillSelect(title, SENTIMENT_LABEL, drill)
   // Sentiment answers have a good/bad polarity, so they keep the semantic green/amber/red colors.
   const items = SENTIMENT_ORDER[orderKey].map(key => ({
     key, label: SENTIMENT_LABEL[key] || formatUnderscored(key), value: counts[key] || 0, color: SENTIMENT_COLOR[key] || '#2a78d6',
@@ -474,7 +520,7 @@ function BetaSentimentChart({ title, orderKey, counts, total }: { title: string;
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
       <p className="text-sm font-semibold text-slate-700 mb-4">{title}</p>
-      <DonutChart items={items} total={total} />
+      <DonutChart items={items} total={total} onSelect={onSelect} />
     </div>
   )
 }
@@ -482,21 +528,27 @@ function BetaSentimentChart({ title, orderKey, counts, total }: { title: string;
 // Generic categorical breakdown with an explicit display order and label map —
 // unlike BetaSentimentChart, these values (age bracket, career stage) have no
 // good/bad connotation, so every bar shares one neutral color.
-function BetaCategoryChart({ title, order, labels, counts, total, kind = 'bar' }: { title: string; order: string[]; labels: Record<string, string>; counts: Record<string, number>; total: number; kind?: 'bar' | 'column' | 'donut' }) {
+function BetaCategoryChart({ title, order, labels, counts, total, kind = 'bar', onSelect, drill }: { title: string; order: string[]; labels: Record<string, string>; counts: Record<string, number>; total: number; kind?: 'bar' | 'column' | 'donut'; onSelect?: (key: string) => void; drill?: FbDrill }) {
+  const drillSelect = useFbDrillSelect(title, labels, drill)
+  onSelect = onSelect ?? drillSelect
   const items = order.map((key, i) => ({ key, label: labels[key] || formatUnderscored(key), value: counts[key] || 0, color: catColor(i) }))
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
       <p className="text-sm font-semibold text-slate-700 mb-4">{title}</p>
       {kind === 'donut' ? (
-        <DonutChart items={items} total={total} />
+        <DonutChart items={items} total={total} onSelect={onSelect} />
       ) : kind === 'column' ? (
-        <ColumnChart items={items} total={total} />
+        <ColumnChart items={items} total={total} onSelect={onSelect} />
       ) : (
         <div className="space-y-2.5">
           {items.map(item => {
             const pct = total > 0 ? Math.round((item.value / total) * 100) : 0
             return (
-              <div key={item.key} className="flex items-center gap-3">
+              <div
+                key={item.key}
+                onClick={() => { if (item.value > 0) onSelect?.(item.key) }}
+                className={`flex items-center gap-3 ${onSelect && item.value > 0 ? 'cursor-pointer hover:bg-slate-50 rounded-md' : ''}`}
+              >
                 <span className="w-24 shrink-0 text-xs text-slate-500">{item.label}</span>
                 <div className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
                   <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
@@ -516,7 +568,8 @@ function BetaCategoryChart({ title, order, labels, counts, total, kind = 'bar' }
 // One bar per average-rating question (e.g. Stage 1's 1-5 face-scale taps) —
 // bar length is the average as a share of `max`, so several questions on the
 // same scale sit directly comparable to each other in one card.
-function BetaAverageChart({ title, rows, max }: { title: string; rows: { label: string; avg: number | null; n: number }[]; max: number }) {
+function BetaAverageChart({ title, rows, max }: { title: string; rows: { label: string; avg: number | null; n: number; people?: BetaFeedbackEntry[] }[]; max: number }) {
+  const open = useContext(FbDrillContext)
   const H = 110
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
@@ -525,7 +578,7 @@ function BetaAverageChart({ title, rows, max }: { title: string; rows: { label: 
         {rows.map((row, i) => {
           const h = row.avg != null ? Math.max(4, Math.round((row.avg / max) * H)) : 2
           return (
-            <div key={row.label} className="flex-1 flex flex-col items-center justify-end gap-1.5" title={`${row.label}: ${row.avg != null ? row.avg.toFixed(2) : '—'} / ${max} (n=${row.n})`}>
+            <div key={row.label} onClick={() => { if (open && row.people && row.people.length > 0) open(`${drillChartName(title)}: ${row.label}`, row.people) }} className={`flex-1 flex flex-col items-center justify-end gap-1.5${open && row.people && row.people.length > 0 ? ' cursor-pointer hover:opacity-80' : ''}`} title={`${row.label}: ${row.avg != null ? row.avg.toFixed(2) : '—'} / ${max} (n=${row.n})`}>
               <span className="text-lg font-bold text-slate-800 tabular-nums leading-none">{row.avg != null ? row.avg.toFixed(1) : '—'}<span className="text-[10px] font-normal text-slate-400">/{max}</span></span>
               <div className="relative w-full max-w-[56px] rounded-t-lg bg-slate-100" style={{ height: H }}>
                 <div className="absolute bottom-0 left-0 right-0 rounded-t-lg" style={{ height: h, background: catColor(i) }} />
@@ -871,7 +924,8 @@ function TelemetryBehaviorView({
 // Ranked horizontal bars for a multi-select field (respondents can pick more
 // than one, so percentages don't sum to 100 — sorted descending so the most
 // commonly picked value reads first).
-function BetaRankedMultiChart({ title, lists, labels, total }: { title: string; lists: (string[] | null)[]; labels: Record<string, string>; total: number }) {
+function BetaRankedMultiChart({ title, lists, labels, total, drill }: { title: string; lists: (string[] | null)[]; labels: Record<string, string>; total: number; drill?: FbDrill }) {
+  const onSelect = useFbDrillSelect(title, labels, drill)
   const counts: Record<string, number> = {}
   for (const list of lists) {
     for (const v of list || []) counts[v] = (counts[v] || 0) + 1
@@ -888,7 +942,7 @@ function BetaRankedMultiChart({ title, lists, labels, total }: { title: string; 
           {rows.map(([key, count]) => {
             const pct = total > 0 ? Math.round((count / total) * 100) : 0
             return (
-              <div key={key} className="flex items-center gap-3">
+              <div key={key} onClick={() => onSelect?.(key)} className={`flex items-center gap-3 ${onSelect ? 'cursor-pointer hover:bg-slate-50 rounded-md' : ''}`}>
                 <span className="w-32 shrink-0 text-xs text-slate-500 truncate">{labels[key] || formatUnderscored(key)}</span>
                 <div className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
                   <div className="h-full rounded-full bg-primary" style={{ width: `${(count / max) * 100}%` }} />
@@ -959,6 +1013,72 @@ function distinctValues(values: (string | null | undefined)[]): string[] {
 // to fetch. A UTF-8 BOM is prepended so Excel renders the Arabic text in
 // names/answers correctly instead of mangling it as Latin-1.
 // Date with the time of day underneath, for table cells ("12/10/2026" / "14:35").
+// One stage of the feedback flow on a person's detail page: header (badge, name, status, when) and one
+// row per question with the answer rendered by type (rating bar, answer chip(s), or the written note).
+type FeedbackRow = { label: string; kind: 'scale' | 'choice' | 'multi' | 'text'; value: string | number | string[] | null | undefined; max?: number; optional?: boolean }
+const feedbackRowHasAnswer = (v: FeedbackRow['value']) => (Array.isArray(v) ? v.length > 0 : v != null && v !== '')
+
+function FeedbackStageCard({ badge, title, subtitle, doneAt, rows }: { badge: string; title: string; subtitle: string; doneAt: string | null; rows: FeedbackRow[] }) {
+  const answeredCount = rows.filter(r => feedbackRowHasAnswer(r.value)).length
+  // Optional rows (retired-beta questions, the free-text note) only appear when the person answered them.
+  const shown = rows.filter(r => !r.optional || feedbackRowHasAnswer(r.value))
+  const status = doneAt
+    ? { text: 'Completed', cls: 'bg-emerald-50 text-emerald-700' }
+    : answeredCount > 0 ? { text: 'Partly answered', cls: 'bg-amber-50 text-amber-700' } : { text: 'Not submitted', cls: 'bg-slate-100 text-slate-500' }
+  const when = doneAt ? new Date(doneAt).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null
+  return (
+    <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <header className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="shrink-0 w-9 h-9 rounded-xl bg-lightblue text-primary text-xs font-bold flex items-center justify-center">{badge}</span>
+          <div className="min-w-0">
+            <h3 className="font-semibold text-slate-800 text-sm leading-tight">{title}</h3>
+            <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <span className={`inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full ${status.cls}`}>{status.text}</span>
+          {when && <p className="text-[11px] text-slate-400 mt-1 tabular-nums">{when}</p>}
+        </div>
+      </header>
+      {answeredCount === 0 ? (
+        <p className="px-6 py-6 text-sm text-slate-400">No answers yet.</p>
+      ) : (
+        <ul className="divide-y divide-slate-100">
+          {shown.map(r => {
+            const has = feedbackRowHasAnswer(r.value)
+            return (
+              <li key={r.label} className="px-6 py-3.5 sm:grid sm:grid-cols-[minmax(0,5fr)_minmax(0,4fr)] sm:gap-x-6 sm:items-center">
+                <p className="text-sm text-slate-500 leading-snug">{r.label}</p>
+                {!has ? (
+                  <p className="text-sm text-slate-300 mt-1 sm:mt-0">Not answered</p>
+                ) : r.kind === 'text' ? (
+                  <p className="sm:col-span-2 mt-2 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700 whitespace-pre-wrap">{String(r.value)}</p>
+                ) : r.kind === 'scale' ? (
+                  <div className="flex items-center gap-2.5 mt-1.5 sm:mt-0">
+                    <div className="flex gap-1">
+                      {Array.from({ length: r.max || 5 }, (_, i) => (
+                        <span key={i} className={`h-2 w-5 rounded-full ${i < Number(r.value) ? 'bg-primary' : 'bg-slate-100'}`} />
+                      ))}
+                    </div>
+                    <span className="text-sm font-semibold text-slate-800 tabular-nums">{String(r.value)}<span className="text-slate-400 font-normal"> / {r.max || 5}</span></span>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5 mt-1.5 sm:mt-0">
+                    {(Array.isArray(r.value) ? r.value : [String(r.value)]).map(v => (
+                      <span key={v} className="inline-block rounded-full bg-lightblue text-primary text-[13px] font-medium px-3 py-1 leading-snug">{v}</span>
+                    ))}
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </section>
+  )
+}
+
 function DateTimeCell({ iso }: { iso: string | null | undefined }) {
   if (!iso) return <>—</>
   const d = new Date(iso)
@@ -1036,6 +1156,13 @@ type FeedbackEntry = {
   created_at: string
 }
 
+// One person in the demographic-chart drilldown popup.
+type DemoPerson = {
+  name: string; age_bracket: string | null; experience_level: string | null; current_stage: string | null
+  country: string | null; nationality: string | null
+  sub: Submission | null; bf: BetaFeedbackEntry | null
+}
+
 type BetaFeedbackEntry = {
   id: string
   response_id: string
@@ -1097,6 +1224,9 @@ type BetaFeedbackEntry = {
   // Launch form (7 Oct 2026); beta rows have form_version 'beta' and null for the rest.
   plan_tier: 'free' | 'paid' | null
   form_version: string | null
+  stage1_form_version?: string | null
+  result_stage_form_version?: string | null
+  stage2_form_version?: string | null
   s1_confidence: number | null
   s1_length: string | null
   first_step: string[] | null
@@ -1279,6 +1409,7 @@ export default function AdminPage() {
   const [betaFeedbackLoading, setBetaFeedbackLoading] = useState(false)
   const [betaFeedbackError, setBetaFeedbackError] = useState('')
   const [selectedBetaFeedback, setSelectedBetaFeedback] = useState<BetaFeedbackEntry | null>(null)
+  const [demoDrilldown, setDemoDrilldown] = useState<{ title: string; people: DemoPerson[] } | null>(null)
   const [betaStatDrilldown, setBetaStatDrilldown] = useState<{ title: string; rows: { bf: BetaFeedbackEntry; note: string }[] } | null>(null)
   const [betaFeedbackStageFilter, setBetaFeedbackStageFilter] = useState<'all' | BetaFeedbackStage>('all')
   const [betaFeedbackStatusFilter, setBetaFeedbackStatusFilter] = useState('all')
@@ -3092,77 +3223,62 @@ export default function AdminPage() {
             </dl>
           </div>
 
-          {/* The three launch-form stages only. Unanswered rows are hidden; the old beta fields are no longer shown. */}
+          {/* The three feedback stages, worded exactly as the forms ask them (FORM_FIELDS). Retired beta questions
+              only appear for people who answered them. */}
           {(() => {
-            const five = (v: number | null) => (v ? `${v} / 5` : null)
-            const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : null)
-            const stages: { title: string; doneAt: string | null; rows: [string, string | null | undefined][] }[] = [
-              {
-                title: 'F1 Pre-Result Short',
-                doneAt: bf.stage1_completed_at,
-                rows: [
-                  ['Understood what the assessment is for', five(bf.s1_understood)],
-                  ['Wants from results', bf.s1_intent ? formatUnderscored(bf.s1_intent) : null],
-                  ['Confidence before results', five(bf.s1_confidence)],
-                  ['Assessment length', bf.s1_length ? formatUnderscored(bf.s1_length) : null],
-                ],
-              },
-              {
-                title: 'F2 Result Page Short',
-                doneAt: bf.result_stage_completed_at,
-                rows: [
-                  ['Result accuracy', bf.result_accuracy ? formatUnderscored(bf.result_accuracy) : null],
-                  ['Understood why careers suggested', bf.career_explained ? (CAREER_EXPLAINED_LABEL[bf.career_explained] || bf.career_explained) : null],
-                  ['Careers seriously considered', bf.careers_seriously_considered ? (CAREERS_CONSIDERED_LABEL[bf.careers_seriously_considered] || bf.careers_seriously_considered) : null],
-                  ['Note', bf.other_text],
-                ],
-              },
-              {
-                title: 'F3 Email Feedback',
-                doneAt: bf.stage2_completed_at,
-                rows: [
-                  ['Felt like a coach?', bf.felt_like_mentor ? formatUnderscored(bf.felt_like_mentor) : null],
-                  ['Most useful part', bf.most_useful_part ? (REPORT_SECTION_LABEL[bf.most_useful_part] || bf.most_useful_part) : null],
-                  ['Opened AI Impact preview', bf.opened_ai_impact ? 'yes' : null],
-                  ['AI Impact changed thinking', bf.ai_impact_changed_thinking ? formatUnderscored(bf.ai_impact_changed_thinking) : null],
-                  ['First step', bf.first_step?.length ? bf.first_step.map(v => formatUnderscored(v)).join(', ') : null],
-                  ['Wants coach session', bf.wants_coach_session ? (WANTS_COACH_LABEL[bf.wants_coach_session] || bf.wants_coach_session) : null],
-                  ['Would recommend', bf.would_recommend ? formatUnderscored(bf.would_recommend) : null],
-                  ['Arabic felt natural', bf.arabic_natural ? formatUnderscored(bf.arabic_natural) : null],
-                  ['Main purchase blocker', bf.purchase_blocker ? (PAY_BLOCKER_LABEL[bf.purchase_blocker] || formatUnderscored(bf.purchase_blocker)) : null],
-                  ['Purchase blocker — other', bf.pay_blocker_other_text],
-                  ['Worth what they paid', five(bf.overall_value)],
-                  ['Jobs relevance', five(bf.jobs_relevant)],
-                  ['Courses usefulness', five(bf.courses_useful)],
-                  ['Will follow 90-day plan', bf.plan_would_follow ? formatUnderscored(bf.plan_would_follow) : null],
-                  ['Least useful part', bf.least_useful_part ? (REPORT_SECTION_LABEL[bf.least_useful_part] || bf.least_useful_part) : null],
-                  ['Missing', bf.missing_text],
-                ],
-              },
+            const launchF3 = bf.stage2_form_version === 'v4_launch'
+            const f3Max = launchF3 ? 5 : 6   // the paid-report ratings were 1-6 in the beta form, 1-5 at launch
+            const scale = (key: string, value: number | null, max = 5, label?: string, optional = false): FeedbackRow => ({ label: label || formQuestion(key), kind: 'scale', value, max, optional })
+            const choice = (key: string, value: string | null, label?: string, optional = false): FeedbackRow => ({ label: label || formQuestion(key), kind: 'choice', value: value ? answerLabel(key, value) : null, optional })
+            const multi = (key: string, values: string[] | null, label?: string, optional = false): FeedbackRow => ({ label: label || formQuestion(key), kind: 'multi', value: values && values.length ? values.map(v => answerLabel(key, v)) : null, optional })
+            const note = (label: string, value: string | null): FeedbackRow => ({ label, kind: 'text', value, optional: true })
+            const f1: FeedbackRow[] = [
+              scale('s1_understood', bf.s1_understood),
+              choice('s1_intent', bf.s1_intent),
+              scale('s1_confidence', bf.s1_confidence),
+              choice('s1_length', bf.s1_length),
+              scale('s1_clarity', bf.s1_clarity, 5, 'Clarity of questions (beta form)', true),
+              scale('s1_feeling', bf.s1_feeling, 5, 'Feeling during the assessment (beta form)', true),
             ]
-            return stages.map(st => {
-              const rows = st.rows.filter(([, v]) => v)
-              return (
-                <div key={st.title} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">{st.title}</h3>
-                    <span className="text-xs text-slate-400">{st.doneAt ? `Completed ${when(st.doneAt)}` : 'Not submitted'}</span>
-                  </div>
-                  {rows.length === 0 ? (
-                    <p className="text-sm text-slate-400">No answers yet.</p>
-                  ) : (
-                    <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                      {rows.map(([label, value]) => (
-                        <div key={label} className={String(value).length > 40 ? 'col-span-2' : ''}>
-                          <dt className="text-slate-400">{label}</dt>
-                          <dd className="text-slate-800 font-medium">{value}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  )}
-                </div>
-              )
-            })
+            const f2: FeedbackRow[] = [
+              choice('result_accuracy', bf.result_accuracy),
+              choice('career_explained', bf.career_explained),
+              choice('careers_seriously_considered', bf.careers_seriously_considered),
+              note(resultStageNoteLabel.en, bf.other_text),
+              choice('would_pay', bf.would_pay, 'Would pay for the full report? (beta form)', true),
+            ]
+            const f3: FeedbackRow[] = [
+              choice('felt_like_mentor', bf.felt_like_mentor, undefined, true),
+              choice('most_useful_part', bf.most_useful_part, undefined, true),
+              choice('ai_impact_changed_thinking', bf.ai_impact_changed_thinking, undefined, true),
+              { label: 'Opened the AI Impact preview', kind: 'choice', value: bf.opened_ai_impact ? 'Yes' : null, optional: true },
+              multi('first_step', bf.first_step, undefined, true),
+              choice('wants_coach_session', bf.wants_coach_session, undefined, true),
+              choice('would_recommend', bf.would_recommend, undefined, true),
+              choice('arabic_natural', bf.arabic_natural, undefined, true),
+              choice('purchase_blocker', bf.purchase_blocker, undefined, true),
+              note('Purchase blocker: what they meant by "Other"', bf.pay_blocker_other_text),
+              scale('overall_value', bf.overall_value, f3Max, undefined, true),
+              scale('jobs_relevant', bf.jobs_relevant, f3Max, undefined, true),
+              scale('courses_useful', bf.courses_useful, f3Max, undefined, true),
+              choice('plan_would_follow', bf.plan_would_follow, undefined, true),
+              choice('least_useful_part', bf.least_useful_part, undefined, true),
+              note(formQuestion('missing_text'), bf.missing_text),
+              // Beta-form questions, retired at launch (old rows only)
+              choice('had_issues', bf.had_issues, 'Hit an error or confusing moment? (beta form)', true),
+              note('What went wrong (beta form)', bf.issue_detail),
+              choice('would_pay_at_price', bf.would_pay_at_price, 'Would pay at the price shown (beta form)', true),
+              multi('pay_blockers', bf.pay_blockers, 'What stops them buying (beta form)', true),
+              multi('worth_paying_for', bf.worth_paying_for, 'What would make it worth paying for (beta form)', true),
+              note('First action they would take (beta form)', bf.first_action_text),
+            ]
+            return (
+              <>
+                <FeedbackStageCard badge="F1" title="Pre-result short" subtitle="Four quick taps on the loading screen" doneAt={bf.stage1_completed_at} rows={f1} />
+                <FeedbackStageCard badge="F2" title="Result page short" subtitle="Three questions and an optional note, right after the report" doneAt={bf.result_stage_completed_at} rows={f2} />
+                <FeedbackStageCard badge="F3" title="Email feedback" subtitle={`Follow-up survey${bf.plan_tier ? ` (${bf.plan_tier} version)` : ''}`} doneAt={bf.stage2_completed_at} rows={f3} />
+              </>
+            )
           })()}
         </div>
       </div>
@@ -3595,6 +3711,22 @@ export default function AdminPage() {
   const shortDay = (k: string) => new Date(`${k}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
   const submissionsTrend = trendDays120.map(k => ({ label: shortDay(k), value: subsPerDay.get(k) || 0 }))
   const salesTrend = trendDays120.map(k => ({ label: shortDay(k), value: salesPerDay.get(k) || 0 }))
+  const subByIdAll = new Map(submissions.map(s => [s.id, s]))
+  const fbByResponseAll = new Map(betaFeedbackList.map(b => [b.response_id, b]))
+  const personFromSub = (s: Submission): DemoPerson => ({
+    name: s.full_name, age_bracket: s.age_bracket ?? ageToBracket(s.age), experience_level: s.experience_level,
+    current_stage: s.current_stage, country: s.country, nationality: s.nationality,
+    sub: s, bf: fbByResponseAll.get(s.id) ?? null,
+  })
+  const personFromBf = (bf: BetaFeedbackEntry): DemoPerson => {
+    const a = bf.assessment_responses
+    return {
+      name: a?.full_name || 'Unknown', age_bracket: a?.age_bracket ?? ageToBracket(a?.age), experience_level: a?.experience_level ?? null,
+      current_stage: a?.current_stage ?? null, country: a?.country ?? null, nationality: a?.nationality ?? null,
+      sub: subByIdAll.get(bf.response_id) ?? null, bf,
+    }
+  }
+  const openFbDrill = (title: string, bfs: BetaFeedbackEntry[]) => setDemoDrilldown({ title, people: bfs.map(personFromBf) })
   const resetDashFilters = () => { setDashFrom(''); setDashTo(''); setDashCountry('all'); setDashNationality('all'); setDashAge('all') }
   // ── Excel export of everything on the Live dashboard, scoped to the filters above ──
   // Uses the very same dash* lists the tiles and tabs render, so the file always matches what is on screen.
@@ -3765,19 +3897,22 @@ export default function AdminPage() {
         ['Feedback stage', bf => BETA_FEEDBACK_STAGE_LABELS[betaFeedbackStageOf(bf)]],
         ['Plan tier', bf => bf.plan_tier || ''], ['Form version', bf => bf.form_version || ''], ['Locale', bf => bf.locale || ''], ['Device', bf => bf.device || ''],
         ['S1 clarity (1-5)', bf => bf.s1_clarity], ['S1 feeling (1-5)', bf => bf.s1_feeling], ['S1 understood (1-5)', bf => bf.s1_understood],
-        ['S1 confidence', bf => bf.s1_confidence], ['S1 length', bf => bf.s1_length || ''], ['S1 wants from results', bf => formatUnderscored(bf.s1_intent)],
+        ['S1 confidence (1-5)', bf => bf.s1_confidence], ['S1 length', bf => answerLabel('s1_length', bf.s1_length)], ['S1 wants from results', bf => answerLabel('s1_intent', bf.s1_intent)],
         ['F1 completed at', bf => dt(bf.stage1_completed_at)],
-        ['Result accuracy', bf => bf.result_accuracy || ''], ['Would recommend', bf => bf.would_recommend || ''], ['Would pay', bf => bf.would_pay || ''],
+        ['Result accuracy', bf => answerLabel('result_accuracy', bf.result_accuracy)], ['Would recommend', bf => answerLabel('would_recommend', bf.would_recommend)], ['Would pay (beta form)', bf => answerLabel('would_pay', bf.would_pay)],
         ['F2 completed at', bf => dt(bf.result_stage_completed_at)],
-        ['Understood after (1-5)', bf => bf.understood_after], ['Felt like a coach', bf => bf.felt_like_mentor || ''],
+        ['Understood after (1-5)', bf => bf.understood_after], ['Felt like a coach', bf => answerLabel('felt_like_mentor', bf.felt_like_mentor)],
         ['Careers seriously considered', bf => lab(CAREERS_CONSIDERED_LABEL, bf.careers_seriously_considered)],
         ['Understood why suggested', bf => lab(CAREER_EXPLAINED_LABEL, bf.career_explained)],
         ['Most useful part', bf => lab(REPORT_SECTION_LABEL, bf.most_useful_part)], ['Least useful part', bf => lab(REPORT_SECTION_LABEL, bf.least_useful_part)],
-        ['First action', bf => bf.first_action_text || ''], ['First step', bf => (bf.first_step || []).map(formatUnderscored).join('; ')],
+        ['First action', bf => bf.first_action_text || ''], ['First step', bf => (bf.first_step || []).map(v => answerLabel('first_step', v)).join('; ')],
         ['Would pay at price', bf => lab(WOULD_PAY_AT_PRICE_LABEL, bf.would_pay_at_price)],
         ['Pay blockers', bf => (bf.pay_blockers || []).map(k => lab(PAY_BLOCKER_LABEL, k)).join('; ')],
         ['Pay blocker (other)', bf => bf.pay_blocker_other_text || ''], ['Top pay blocker', bf => lab(PAY_BLOCKER_LABEL, bf.pay_blocker_priority)],
-        ['Purchase blocker', bf => formatUnderscored(bf.purchase_blocker)],
+        ['Purchase blocker', bf => answerLabel('purchase_blocker', bf.purchase_blocker)],
+        ['AI Impact changed thinking', bf => answerLabel('ai_impact_changed_thinking', bf.ai_impact_changed_thinking)], ['Arabic felt natural', bf => answerLabel('arabic_natural', bf.arabic_natural)],
+        ['Will follow 90-day plan', bf => answerLabel('plan_would_follow', bf.plan_would_follow)], ['Worth what they paid (1-5 launch, 1-6 beta)', bf => bf.overall_value],
+        ['Jobs relevance (1-5 launch, 1-6 beta)', bf => bf.jobs_relevant], ['Courses usefulness (1-5 launch, 1-6 beta)', bf => bf.courses_useful],
         ['Worth paying for', bf => (bf.worth_paying_for || []).map(k => lab(WORTH_PAYING_FOR_LABEL, k)).join('; ')],
         ['Wants coach session', bf => lab(WANTS_COACH_LABEL, bf.wants_coach_session)],
         ['Had issues', bf => bf.had_issues || ''], ['Issue detail', bf => bf.issue_detail || ''],
@@ -3786,7 +3921,7 @@ export default function AdminPage() {
         ['Surprised (legacy)', bf => bf.surprised_text || ''], ['Not me (legacy)', bf => bf.not_me_text || ''],
         ['Personality accuracy (legacy)', bf => bf.personality_accuracy || ''], ['Values accuracy (legacy)', bf => bf.values_accuracy || ''],
         ['Strengths accuracy (legacy)', bf => bf.strengths_accuracy || ''], ['Career matches accuracy (legacy)', bf => bf.career_matches_accuracy || ''],
-        ['Overall value (legacy 1-6)', bf => bf.overall_value], ['Would pay reason (legacy)', bf => bf.would_pay_reason || ''],
+        ['Would pay reason (legacy)', bf => bf.would_pay_reason || ''],
       ]
       sheets.push({
         name: 'Feedback',
@@ -4398,14 +4533,27 @@ export default function AdminPage() {
                       <p className="text-sm font-semibold text-slate-700">Assessments per day</p>
                       <p className="text-xs text-slate-400">{dashSubmissions.length} total</p>
                     </div>
-                    <TrendChart points={submissionsTrend} kind="line" color="#2a78d6" unit="assessments" />
+                    <TrendChart points={submissionsTrend} kind="line" color="#2a78d6" unit="assessments" onSelect={i => {
+                      const day = trendDays120[i]
+                      setDemoDrilldown({ title: `Assessments on ${submissionsTrend[i].label}`, people: dashSubmissions.filter(s => dayKey(s.created_at) === day).map(personFromSub) })
+                    }} />
                   </div>
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
                     <div className="flex items-baseline justify-between mb-2">
                       <p className="text-sm font-semibold text-slate-700">Paid orders per day</p>
                       <p className="text-xs text-slate-400">{dashPaidSales.length} total</p>
                     </div>
-                    <TrendChart points={salesTrend} kind="column" color="#1baf7a" unit="orders" />
+                    <TrendChart points={salesTrend} kind="column" color="#1baf7a" unit="orders" onSelect={i => {
+                      const day = trendDays120[i]
+                      const subByEmail = new Map(submissions.map(s => [emailKey(s.email), s]))
+                      setDemoDrilldown({
+                        title: `Paid orders on ${salesTrend[i].label}`,
+                        people: dashPaidSales.filter(t => dayKey(t.paid_at || t.created_at) === day).map(t => {
+                          const sub = subByEmail.get(emailKey(t.email))
+                          return sub ? personFromSub(sub) : { name: t.full_name || t.email || 'Unknown', age_bracket: null, experience_level: null, current_stage: null, country: t.country, nationality: null, sub: null, bf: null }
+                        }),
+                      })
+                    }} />
                   </div>
                 </div>
               </div>
@@ -4431,7 +4579,24 @@ export default function AdminPage() {
               const clarityAvg = average(stage1Responses.map(bf => bf.s1_clarity))
               const feelingAvg = average(stage1Responses.map(bf => bf.s1_feeling))
               const understoodAvg = average(stage1Responses.map(bf => bf.s1_understood))
+              const confidenceAvg = average(stage1Responses.map(bf => bf.s1_confidence))
               const stage1IntentAnswered = answered(stage1Responses, bf => bf.s1_intent)
+              const stage1LengthAnswered = answered(stage1Responses, bf => bf.s1_length)
+              // Launch F2 asks these two on the results page; the beta form asked them in the follow-up, so they
+              // are read across every feedback row rather than only the F2 completions.
+              const careerExplainedAll = answered(scopedFeedback, bf => bf.career_explained)
+              const careersConsideredAll = answered(scopedFeedback, bf => bf.careers_seriously_considered)
+              const resultNotes = scopedFeedback.filter(bf => bf.other_text)
+              // F3 launch questions (v4_launch follow-up form).
+              const feltMentorAnswered = answered(stage2Responses, bf => bf.felt_like_mentor)
+              const aiImpactAnswered = answered(stage2Responses, bf => bf.ai_impact_changed_thinking)
+              const firstStepAnswered = answered(stage2Responses, bf => bf.first_step)
+              const arabicNaturalAnswered = answered(stage2Responses, bf => bf.arabic_natural)
+              const purchaseBlockerAnswered = answered(stage2Responses, bf => bf.purchase_blocker)
+              const planFollowAnswered = answered(stage2Responses, bf => bf.plan_would_follow)
+              // Paid-report ratings were 1-6 in the beta form and 1-5 at launch, so only launch rows are averaged.
+              const launchRatings = stage2Responses.filter(bf => bf.stage2_form_version === 'v4_launch')
+              const legacyStage2 = stage2Responses.filter(bf => bf.stage2_form_version !== 'v4_launch')
 
               // Post-Result question-by-question denominators — see the `answered`
               // helper's comment above. Each tile below uses its own subset rather
@@ -4476,7 +4641,7 @@ export default function AdminPage() {
               const demoRows: DemoRow[] =
                 betaDemographicsFilter === 'all'
                   ? scopedSubmissions.map(s => ({ age_bracket: s.age_bracket ?? ageToBracket(s.age), experience_level: s.experience_level, current_stage: s.current_stage, country: s.country, nationality: s.nationality }))
-                  : (betaDemographicsFilter === 'stage1' ? scopedFeedback
+                  : (betaDemographicsFilter === 'stage1' ? stage1Responses
                     : betaDemographicsFilter === 'result' ? resultStageResponses
                     : stage2Responses).map(bf => ({
                       age_bracket: bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age),
@@ -4505,10 +4670,10 @@ export default function AdminPage() {
                   [],
                   ['Feedback funnel', ''],
                   ['Metric', 'Count'],
-                  ['Total submissions (everyone who took the beta assessment)', totalSubmissions],
-                  ['F1 Pre-Result Short (answered at least 1 of 3 taps)', betaTotal],
-                  ['F2 Result Page Short (rated accuracy/recommend/pay on results page)', resultStageTotal],
-                  ['F3 Email Feedback (completed the detailed post-report survey)', stage2Total],
+                  ['Total submissions (everyone who took the assessment)', totalSubmissions],
+                  ['F1 Pre-Result Short (answered all 4 quick taps)', stage1Total],
+                  ['F2 Result Page Short (answered the 3 questions on the results page)', resultStageTotal],
+                  ['F3 Email Feedback (completed the follow-up survey)', stage2Total],
                   [],
                   [`Demographics — ${demoFilterLabel[betaDemographicsFilter]} (${demoRows.length})`],
                   ...breakdownRows(AGE_BRACKET_ORDER, AGE_BRACKET_LABEL, countBy(demoRows, r => r.age_bracket), demoRows.length, 'Age group'),
@@ -4521,7 +4686,7 @@ export default function AdminPage() {
                   [],
                   ...breakdownRows(NATIONALITY_ORDER, NATIONALITY_LABEL, countBy(demoRows, r => r.nationality), demoRows.length, 'Nationality'),
                   [],
-                  ['Report feedback (accuracy from F2 Result Page Short, recommend/pay from all who answered)'],
+                  ['Report feedback (accuracy from F2 Result Page Short; recommend and pay from everyone who answered)'],
                   ['Overall accuracy — "spot on"', pct(countBy(resultStageResponses, bf => bf.result_accuracy).spot_on || 0, resultStageTotal), `${resultStageTotal} respondents`],
                   ['Would recommend — "yes"', pct(countBy(recommendResponses, bf => bf.would_recommend).yes || 0, recommendTotal), `${recommendTotal} respondents`],
                   ['Would pay — "definitely" or "maybe"', pct((countBy(payResponses, bf => bf.would_pay).definitely || 0) + (countBy(payResponses, bf => bf.would_pay).maybe || 0), payTotal), `${payTotal} respondents`],
@@ -4533,7 +4698,43 @@ export default function AdminPage() {
                   ...breakdownRows(SENTIMENT_ORDER.would_pay, SENTIMENT_LABEL, countBy(payResponses, bf => bf.would_pay), payTotal, 'Would pay for the full report?'),
                 ]
 
+                // Launch forms, worded as asked (formQuestion/answerLabel read the forms themselves).
+                rows.push(
+                  [],
+                  [`F1 Pre-Result Short (${stage1Total} respondents)`],
+                  ['Felt understood — average (1-5)', understoodAvg != null ? understoodAvg.toFixed(1) : ''],
+                  ['Confidence in direction — average (1-5)', confidenceAvg != null ? confidenceAvg.toFixed(1) : ''],
+                  [],
+                  ...breakdownRows(STAGE1_INTENT_ORDER, STAGE1_INTENT_LABEL, countBy(stage1IntentAnswered, bf => bf.s1_intent), stage1IntentAnswered.length, formQuestion('s1_intent')),
+                  [],
+                  ...breakdownRows(formOrder('s1_length'), formLabels('s1_length'), countBy(stage1LengthAnswered, bf => bf.s1_length), stage1LengthAnswered.length, formQuestion('s1_length')),
+                  [],
+                  [`F2 Result Page Short (${resultStageTotal} respondents)`],
+                  ...breakdownRows(formOrder('result_accuracy'), formLabels('result_accuracy'), countBy(resultStageResponses, bf => bf.result_accuracy), resultStageTotal, formQuestion('result_accuracy')),
+                  [],
+                  ...breakdownRows(formOrder('career_explained'), formLabels('career_explained'), countBy(careerExplainedAll, bf => bf.career_explained), careerExplainedAll.length, formQuestion('career_explained')),
+                  [],
+                  ...breakdownRows(CAREERS_CONSIDERED_ORDER, CAREERS_CONSIDERED_LABEL, countBy(careersConsideredAll, bf => bf.careers_seriously_considered), careersConsideredAll.length, formQuestion('careers_seriously_considered')),
+                )
                 if (stage2Total > 0) {
+                  const firstStepCounts: Record<string, number> = {}
+                  for (const bf of firstStepAnswered) for (const v of (bf.first_step || [])) firstStepCounts[v] = (firstStepCounts[v] || 0) + 1
+                  rows.push(
+                    [],
+                    [`F3 Email Feedback — launch questions (${stage2Total} respondents)`],
+                    ...breakdownRows(formOrder('felt_like_mentor'), formLabels('felt_like_mentor'), countBy(feltMentorAnswered, bf => bf.felt_like_mentor), feltMentorAnswered.length, formQuestion('felt_like_mentor')),
+                    [],
+                    ...breakdownRows(SENTIMENT_ORDER.yes_somewhat_no, SENTIMENT_LABEL, countBy(aiImpactAnswered, bf => bf.ai_impact_changed_thinking), aiImpactAnswered.length, formQuestion('ai_impact_changed_thinking')),
+                    [],
+                    ...breakdownRows(formOrder('arabic_natural'), formLabels('arabic_natural'), countBy(arabicNaturalAnswered, bf => bf.arabic_natural), arabicNaturalAnswered.length, formQuestion('arabic_natural')),
+                    [],
+                    ...breakdownRows(SENTIMENT_ORDER.yes_somewhat_no, SENTIMENT_LABEL, countBy(planFollowAnswered, bf => bf.plan_would_follow), planFollowAnswered.length, formQuestion('plan_would_follow')),
+                    [],
+                    ...breakdownRows(formOrder('purchase_blocker'), formLabels('purchase_blocker'), countBy(purchaseBlockerAnswered, bf => bf.purchase_blocker), purchaseBlockerAnswered.length, formQuestion('purchase_blocker')),
+                    [],
+                    ['First step (select all that apply)', 'Count', 'Percent'],
+                    ...Object.entries(firstStepCounts).sort((a, b) => b[1] - a[1]).map(([k, n]) => [answerLabel('first_step', k), n, pct(n, firstStepAnswered.length)]),
+                  )
                   const worthPayingCounts: Record<string, number> = {}
                   for (const bf of stage2Responses) for (const v of (bf.worth_paying_for || [])) worthPayingCounts[v] = (worthPayingCounts[v] || 0) + 1
                   const payBlockerCounts: Record<string, number> = {}
@@ -4599,7 +4800,7 @@ export default function AdminPage() {
               }
 
               return (
-                <>
+                <FbDrillContext.Provider value={openFbDrill}>
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                     <p className="text-sm font-semibold text-slate-700">Feedback funnel</p>
                     <CohortFilterPills value={cohortFilter} onChange={setCohortFilter} live={isLiveView} />
@@ -4613,22 +4814,22 @@ export default function AdminPage() {
                         <BetaStatTile
                           label="Total submissions"
                           value={String(totalSubmissions)}
-                          sublabel="everyone who took the beta assessment"
+                          sublabel="everyone who took the assessment"
                         />
                         <BetaStatTile
                           label="F1 Pre-Result Short"
-                          value={String(betaTotal)}
-                          sublabel="answered at least one of the 3 quick taps on the loading screen"
+                          value={String(stage1Total)}
+                          sublabel="answered all 4 quick taps on the loading screen"
                         />
                         <BetaStatTile
                           label="F2 Result Page Short"
                           value={String(resultStageTotal)}
-                          sublabel="rated accuracy/recommend/pay on the results page"
+                          sublabel="answered the 3 questions on the results page"
                         />
                         <BetaStatTile
                           label="F3 Email Feedback"
                           value={String(stage2Total)}
-                          sublabel="completed the detailed post-report survey"
+                          sublabel="completed the follow-up survey"
                         />
                       </div>
                     </div>
@@ -4639,21 +4840,34 @@ export default function AdminPage() {
                     // "result"/"stage2" read them off the nested assessment_responses
                     // join on a BetaFeedbackEntry — so one countBy call below works
                     // regardless of which cohort is selected.
-                    type DemoRow = { age_bracket: string | null; experience_level: string | null; current_stage: string | null; country: string | null; nationality: string | null }
+                    type DemoRow = DemoPerson
+                    const fbByResponse = new Map(betaFeedbackList.map(b => [b.response_id, b]))
+                    const subById = new Map(submissions.map(s => [s.id, s]))
                     const demoRows: DemoRow[] =
                       betaDemographicsFilter === 'all'
-                        ? scopedSubmissions.map(s => ({ age_bracket: s.age_bracket ?? ageToBracket(s.age), experience_level: s.experience_level, current_stage: s.current_stage, country: s.country, nationality: s.nationality }))
-                        : (betaDemographicsFilter === 'stage1' ? scopedFeedback
+                        ? scopedSubmissions.map(s => ({
+                            name: s.full_name, age_bracket: s.age_bracket ?? ageToBracket(s.age), experience_level: s.experience_level,
+                            current_stage: s.current_stage, country: s.country, nationality: s.nationality,
+                            sub: s, bf: fbByResponse.get(s.id) ?? null,
+                          }))
+                        : (betaDemographicsFilter === 'stage1' ? stage1Responses
                           : betaDemographicsFilter === 'result' ? resultStageResponses
                           : stage2Responses).map(bf => ({
+                            name: bf.assessment_responses?.full_name || 'Unknown',
                             age_bracket: bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age),
                             experience_level: bf.assessment_responses?.experience_level ?? null,
                             current_stage: bf.assessment_responses?.current_stage ?? null,
                             country: bf.assessment_responses?.country ?? null,
                             nationality: bf.assessment_responses?.nationality ?? null,
+                            sub: subById.get(bf.response_id) ?? null, bf,
                           }))
+                    const openDemo = (field: 'age_bracket' | 'experience_level' | 'current_stage' | 'country' | 'nationality', labels: Record<string, string>, chartTitle: string) =>
+                      (key: string) => setDemoDrilldown({
+                        title: `${chartTitle}: ${labels[key] || formatUnderscored(key)}`,
+                        people: demoRows.filter(r => r[field] === key),
+                      })
                     const demoTotal = demoRows.length
-                    const filterCount = { all: totalSubmissions, stage1: betaTotal, result: resultStageTotal, stage2: stage2Total }
+                    const filterCount = { all: totalSubmissions, stage1: stage1Total, result: resultStageTotal, stage2: stage2Total }
                     const filterLabel = { all: 'All submissions', stage1: 'F1 Pre-Result Short', result: 'F2 Result Page Short', stage2: 'F3 Email Feedback' }
                     return (
                       <div className="mb-6">
@@ -4686,6 +4900,7 @@ export default function AdminPage() {
                               counts={countBy(demoRows, r => r.age_bracket)}
                               total={demoTotal}
                               kind="column"
+                            onSelect={openDemo('age_bracket', AGE_BRACKET_LABEL, 'Age group')}
                             />
                             <BetaCategoryChart
                               title="Experience level"
@@ -4694,6 +4909,7 @@ export default function AdminPage() {
                               counts={countBy(demoRows, r => r.experience_level)}
                               total={demoTotal}
                               kind="column"
+                            onSelect={openDemo('experience_level', EXPERIENCE_LEVEL_LABEL, 'Experience level')}
                             />
                             <BetaCategoryChart
                               title="Current stage"
@@ -4702,6 +4918,7 @@ export default function AdminPage() {
                               counts={countBy(demoRows, r => r.current_stage)}
                               total={demoTotal}
                               kind="donut"
+                            onSelect={openDemo('current_stage', CURRENT_STAGE_LABEL, 'Current stage')}
                             />
                             <BetaCategoryChart
                               title="Country"
@@ -4710,6 +4927,7 @@ export default function AdminPage() {
                               counts={countBy(demoRows, r => r.country)}
                               total={demoTotal}
                               kind="donut"
+                            onSelect={openDemo('country', COUNTRY_LABEL, 'Country')}
                             />
                             <BetaCategoryChart
                               title="Nationality"
@@ -4718,6 +4936,7 @@ export default function AdminPage() {
                               counts={countBy(demoRows, r => r.nationality)}
                               total={demoTotal}
                               kind="donut"
+                            onSelect={openDemo('nationality', NATIONALITY_LABEL, 'Nationality')}
                             />
                           </div>
                         )}
@@ -4734,54 +4953,200 @@ export default function AdminPage() {
                       <p className="text-slate-400 text-xs text-center py-6">Select F1 Pre-Result Short, F2 Result Page Short, or F3 Email Feedback above to see that form's feedback charts.</p>
                     ) : betaDemographicsFilter === 'stage1' ? (
                       <>
-                        <p className="text-xs text-slate-400 mb-3">{stage1Total} respondent{stage1Total !== 1 ? 's' : ''} · quick pulse while the report loads</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <p className="text-xs text-slate-400 mb-3">{stage1Total} respondent{stage1Total !== 1 ? 's' : ''} · the four quick taps while the report loads</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <BetaAverageChart
-                            title="Assessment-taking experience (1–5)"
+                            title="Before the results (average, 1–5)"
                             max={5}
                             rows={[
-                              { label: 'Clarity of questions', avg: clarityAvg, n: stage1Responses.length },
-                              { label: 'Feeling during assessment', avg: feelingAvg, n: stage1Responses.length },
-                              { label: 'Felt understood', avg: understoodAvg, n: stage1Responses.length },
+                              { label: 'Felt understood', avg: understoodAvg, n: answered(stage1Responses, bf => bf.s1_understood).length, people: answered(stage1Responses, bf => bf.s1_understood) },
+                              { label: 'Confidence in direction', avg: confidenceAvg, n: answered(stage1Responses, bf => bf.s1_confidence).length, people: answered(stage1Responses, bf => bf.s1_confidence) },
+                              // Beta-form taps (dropped from the launch form): only listed when the cohort has them.
+                              ...(clarityAvg != null ? [{ label: 'Clarity of questions (beta)', avg: clarityAvg, n: answered(stage1Responses, bf => bf.s1_clarity).length, people: answered(stage1Responses, bf => bf.s1_clarity) }] : []),
+                              ...(feelingAvg != null ? [{ label: 'Feeling during assessment (beta)', avg: feelingAvg, n: answered(stage1Responses, bf => bf.s1_feeling).length, people: answered(stage1Responses, bf => bf.s1_feeling) }] : []),
                             ]}
                           />
                           <BetaCategoryChart
-                            title="What they want from their results"
+                            title={`${formQuestion('s1_intent')} (${stage1IntentAnswered.length} answered)`}
                             order={STAGE1_INTENT_ORDER}
                             labels={STAGE1_INTENT_LABEL}
                             counts={countBy(stage1IntentAnswered, bf => bf.s1_intent)}
+                            drill={{ items: stage1IntentAnswered, get: bf => bf.s1_intent }}
                             total={stage1IntentAnswered.length}
+                            kind="donut"
+                          />
+                          <BetaCategoryChart
+                            title={`${formQuestion('s1_length')} (${stage1LengthAnswered.length} answered)`}
+                            order={formOrder('s1_length')}
+                            labels={formLabels('s1_length')}
+                            counts={countBy(stage1LengthAnswered, bf => bf.s1_length)}
+                            drill={{ items: stage1LengthAnswered, get: bf => bf.s1_length }}
+                            total={stage1LengthAnswered.length}
                             kind="donut"
                           />
                         </div>
                       </>
                     ) : betaDemographicsFilter === 'result' ? (
                       <>
-                        <p className="text-xs text-slate-400 mb-3">{resultStageTotal} respondent{resultStageTotal !== 1 ? 's' : ''} rated the results page</p>
+                        <p className="text-xs text-slate-400 mb-3">{resultStageTotal} respondent{resultStageTotal !== 1 ? 's' : ''} answered on the results page{resultNotes.length > 0 ? ` · ${resultNotes.length} left a note` : ''}</p>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <BetaSentimentChart
-                            title={`How accurate was this? (${resultStageTotal} answered)`}
+                            title={`${formQuestion('result_accuracy')} (${resultStageTotal} answered)`}
                             orderKey="accuracy"
                             counts={countBy(resultStageResponses, bf => bf.result_accuracy)}
+                            drill={{ items: resultStageResponses, get: bf => bf.result_accuracy }}
                             total={resultStageTotal}
                           />
                           <BetaSentimentChart
-                            title={`Would recommend to a friend? (${recommendTotal} answered)`}
-                            orderKey="would_recommend"
-                            counts={countBy(recommendResponses, bf => bf.would_recommend)}
-                            total={recommendTotal}
+                            title={`${formQuestion('career_explained')} (${careerExplainedAll.length} answered)`}
+                            orderKey="career_explained"
+                            counts={countBy(careerExplainedAll, bf => bf.career_explained)}
+                            drill={{ items: careerExplainedAll, get: bf => bf.career_explained }}
+                            total={careerExplainedAll.length}
                           />
-                          <BetaSentimentChart
-                            title={`Would pay for the full report? (${payTotal} answered)`}
-                            orderKey="would_pay"
-                            counts={countBy(payResponses, bf => bf.would_pay)}
-                            total={payTotal}
+                          <BetaCategoryChart
+                            title={`${formQuestion('careers_seriously_considered')} (${careersConsideredAll.length} answered)`}
+                            order={CAREERS_CONSIDERED_ORDER}
+                            labels={CAREERS_CONSIDERED_LABEL}
+                            counts={countBy(careersConsideredAll, bf => bf.careers_seriously_considered)}
+                            drill={{ items: careersConsideredAll, get: bf => bf.careers_seriously_considered }}
+                            total={careersConsideredAll.length}
+                            kind="column"
                           />
                         </div>
+                        {resultNotes.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setBetaStatDrilldown({
+                              title: 'What felt off, or what was missing',
+                              rows: resultNotes.map(bf => ({ bf, note: bf.other_text as string })),
+                            })}
+                            className="text-xs font-medium text-primary hover:underline mt-3"
+                          >
+                            Read the {resultNotes.length} written note{resultNotes.length !== 1 ? 's' : ''} →
+                          </button>
+                        )}
+                        {/* Beta-form questions, retired from the results page: only shown for cohorts that have answers.
+                            would_recommend moved to the F3 follow-up; would_pay was dropped at launch. */}
+                        {payTotal > 0 && (
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                            <BetaSentimentChart
+                              title={`Would pay for the full report? (beta form · ${payTotal} answered)`}
+                              orderKey="would_pay"
+                              counts={countBy(payResponses, bf => bf.would_pay)}
+                              drill={{ items: payResponses, get: bf => bf.would_pay }}
+                              total={payTotal}
+                            />
+                          </div>
+                        )}
                       </>
                     ) : (
                       <>
-                        <p className="text-xs text-slate-400 mb-3">{stage2Total} respondent{stage2Total !== 1 ? 's' : ''} completed the full survey</p>
+                        <p className="text-xs text-slate-400 mb-3">{stage2Total} respondent{stage2Total !== 1 ? 's' : ''} completed the follow-up survey{launchRatings.length > 0 ? ` · ${launchRatings.length} on the launch form` : ''}</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <BetaCategoryChart
+                            title={`${formQuestion('felt_like_mentor')} (${feltMentorAnswered.length} answered)`}
+                            order={formOrder('felt_like_mentor')}
+                            labels={formLabels('felt_like_mentor')}
+                            counts={countBy(feltMentorAnswered, bf => bf.felt_like_mentor)}
+                            drill={{ items: feltMentorAnswered, get: bf => bf.felt_like_mentor }}
+                            total={feltMentorAnswered.length}
+                            kind="donut"
+                          />
+                          <BetaSentimentChart
+                            title={`${formQuestion('would_recommend')} (${recommendTotal} answered)`}
+                            orderKey="would_recommend"
+                            counts={countBy(recommendResponses, bf => bf.would_recommend)}
+                            drill={{ items: recommendResponses, get: bf => bf.would_recommend }}
+                            total={recommendTotal}
+                          />
+                          <BetaSentimentChart
+                            title={`${formQuestion('wants_coach_session')} (${wantsCoachAnswered.length} answered)`}
+                            orderKey="wants_coach_session"
+                            counts={countBy(wantsCoachAnswered, bf => bf.wants_coach_session)}
+                            drill={{ items: wantsCoachAnswered, get: bf => bf.wants_coach_session }}
+                            total={wantsCoachAnswered.length}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <BetaCategoryChart
+                            title={`${formQuestion('most_useful_part')} (${mostUsefulAnswered.length} answered)`}
+                            order={REPORT_SECTION_ORDER}
+                            labels={REPORT_SECTION_LABEL}
+                            counts={countBy(mostUsefulAnswered, bf => bf.most_useful_part)}
+                            drill={{ items: mostUsefulAnswered, get: bf => bf.most_useful_part }}
+                            total={mostUsefulAnswered.length}
+                          />
+                          <BetaCategoryChart
+                            title={`${formQuestion('least_useful_part')} (${leastUsefulAnswered.length} answered · paid version only)`}
+                            order={REPORT_SECTION_ORDER}
+                            labels={REPORT_SECTION_LABEL}
+                            counts={countBy(leastUsefulAnswered, bf => bf.least_useful_part)}
+                            drill={{ items: leastUsefulAnswered, get: bf => bf.least_useful_part }}
+                            total={leastUsefulAnswered.length}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <BetaSentimentChart
+                            title={`${formQuestion('ai_impact_changed_thinking')} (${aiImpactAnswered.length} answered)`}
+                            orderKey="yes_somewhat_no"
+                            counts={countBy(aiImpactAnswered, bf => bf.ai_impact_changed_thinking)}
+                            drill={{ items: aiImpactAnswered, get: bf => bf.ai_impact_changed_thinking }}
+                            total={aiImpactAnswered.length}
+                          />
+                          <BetaSentimentChart
+                            title={`${formQuestion('plan_would_follow')} (${planFollowAnswered.length} answered · paid version only)`}
+                            orderKey="yes_somewhat_no"
+                            counts={countBy(planFollowAnswered, bf => bf.plan_would_follow)}
+                            drill={{ items: planFollowAnswered, get: bf => bf.plan_would_follow }}
+                            total={planFollowAnswered.length}
+                          />
+                          <BetaCategoryChart
+                            title={`${formQuestion('arabic_natural')} (${arabicNaturalAnswered.length} answered · Arabic reports)`}
+                            order={formOrder('arabic_natural')}
+                            labels={formLabels('arabic_natural')}
+                            counts={countBy(arabicNaturalAnswered, bf => bf.arabic_natural)}
+                            drill={{ items: arabicNaturalAnswered, get: bf => bf.arabic_natural }}
+                            total={arabicNaturalAnswered.length}
+                            kind="donut"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <BetaRankedMultiChart
+                            title={`${formQuestion('first_step')} (${firstStepAnswered.length} answered)`}
+                            lists={firstStepAnswered.map(bf => bf.first_step)}
+                            drill={{ items: firstStepAnswered, get: bf => bf.first_step }}
+                            labels={formLabels('first_step')}
+                            total={firstStepAnswered.length}
+                          />
+                          <BetaCategoryChart
+                            title={`${formQuestion('purchase_blocker')} (${purchaseBlockerAnswered.length} answered · free version only)`}
+                            order={formOrder('purchase_blocker')}
+                            labels={PAY_BLOCKER_LABEL}
+                            counts={countBy(purchaseBlockerAnswered, bf => bf.purchase_blocker)}
+                            drill={{ items: purchaseBlockerAnswered, get: bf => bf.purchase_blocker }}
+                            total={purchaseBlockerAnswered.length}
+                          />
+                        </div>
+                        {launchRatings.some(bf => bf.overall_value != null || bf.jobs_relevant != null || bf.courses_useful != null) && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <BetaAverageChart
+                              title="Paid report ratings (average, 1–5 · paid version only)"
+                              max={5}
+                              rows={[
+                                { label: 'Worth what they paid', avg: average(launchRatings.map(bf => bf.overall_value)), n: answered(launchRatings, bf => bf.overall_value).length, people: answered(launchRatings, bf => bf.overall_value) },
+                                { label: 'Jobs relevance', avg: average(launchRatings.map(bf => bf.jobs_relevant)), n: answered(launchRatings, bf => bf.jobs_relevant).length, people: answered(launchRatings, bf => bf.jobs_relevant) },
+                                { label: 'Courses usefulness', avg: average(launchRatings.map(bf => bf.courses_useful)), n: answered(launchRatings, bf => bf.courses_useful).length, people: answered(launchRatings, bf => bf.courses_useful) },
+                              ]}
+                            />
+                          </div>
+                        )}
+                        {legacyStage2.length > 0 && (
+                          <>
+                            <p className="text-sm font-semibold text-slate-700 mt-6 mb-1">
+                              Earlier beta questions <span className="text-slate-400 font-normal">— retired at launch, {legacyStage2.length} answered them</span>
+                            </p>
+                            <p className="text-xs text-slate-400 mb-3">These are not on the current form; they are kept so the beta results stay readable.</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           <div>
                             <BetaCategoryChart
@@ -4789,6 +5154,7 @@ export default function AdminPage() {
                               order={HAD_ISSUES_ORDER}
                               labels={HAD_ISSUES_LABEL}
                               counts={countBy(hadIssuesAnswered, bf => bf.had_issues)}
+                              drill={{ items: hadIssuesAnswered, get: bf => bf.had_issues }}
                               total={hadIssuesAnswered.length}
                               kind="donut"
                             />
@@ -4805,49 +5171,62 @@ export default function AdminPage() {
                               </button>
                             )}
                           </div>
+                          {/* Moved to the F2 charts (the launch form asks it on the results page):
                           <BetaSentimentChart
                             title={`Understood why each career was suggested? (${careerExplainedAnswered.length} answered)`}
                             orderKey="career_explained"
                             counts={countBy(careerExplainedAnswered, bf => bf.career_explained)}
+                            drill={{ items: careerExplainedAnswered, get: bf => bf.career_explained }}
                             total={careerExplainedAnswered.length}
                           />
+                          */}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           <BetaSentimentChart
                             title={`Would pay @ 149 SAR, current price (${payAtPriceCurrent.length} answered)`}
                             orderKey="would_pay_at_price"
                             counts={countBy(payAtPriceCurrent, bf => bf.would_pay_at_price)}
+                            drill={{ items: payAtPriceCurrent, get: bf => bf.would_pay_at_price }}
                             total={payAtPriceCurrent.length}
                           />
                           <BetaSentimentChart
                             title={`Would pay @ 129 SAR, old price — retired 2026-09-14 (${payAtPriceLegacy.length} answered)`}
                             orderKey="would_pay_at_price"
                             counts={countBy(payAtPriceLegacy, bf => bf.would_pay_at_price)}
+                            drill={{ items: payAtPriceLegacy, get: bf => bf.would_pay_at_price }}
                             total={payAtPriceLegacy.length}
                           />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          {/* Shown in the launch follow-up charts above:
                           <BetaSentimentChart
                             title={`Wants a coach session? (${wantsCoachAnswered.length} answered)`}
                             orderKey="wants_coach_session"
                             counts={countBy(wantsCoachAnswered, bf => bf.wants_coach_session)}
+                            drill={{ items: wantsCoachAnswered, get: bf => bf.wants_coach_session }}
                             total={wantsCoachAnswered.length}
                           />
+                          */}
+                          {/* Moved to the F2 charts (the launch form asks it on the results page):
                           <BetaCategoryChart
                             title={`Careers seriously considered (${careersConsideredAnswered.length} answered)`}
                             order={CAREERS_CONSIDERED_ORDER}
                             labels={CAREERS_CONSIDERED_LABEL}
                             counts={countBy(careersConsideredAnswered, bf => bf.careers_seriously_considered)}
+                            drill={{ items: careersConsideredAnswered, get: bf => bf.careers_seriously_considered }}
                             total={careersConsideredAnswered.length}
                             kind="column"
                           />
+                          */}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          {/* Shown in the launch follow-up charts above (same question, same options):
                           <BetaCategoryChart
                             title={`Most useful part of the report (${mostUsefulAnswered.length} answered)`}
                             order={REPORT_SECTION_ORDER}
                             labels={REPORT_SECTION_LABEL}
                             counts={countBy(mostUsefulAnswered, bf => bf.most_useful_part)}
+                            drill={{ items: mostUsefulAnswered, get: bf => bf.most_useful_part }}
                             total={mostUsefulAnswered.length}
                           />
                           <BetaCategoryChart
@@ -4855,14 +5234,17 @@ export default function AdminPage() {
                             order={REPORT_SECTION_ORDER}
                             labels={REPORT_SECTION_LABEL}
                             counts={countBy(leastUsefulAnswered, bf => bf.least_useful_part)}
+                            drill={{ items: leastUsefulAnswered, get: bf => bf.least_useful_part }}
                             total={leastUsefulAnswered.length}
                           />
+                          */}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {/* Hidden: question retired 2026-09-14 (old answers still in the CSV export)
                           <BetaRankedMultiChart
                             title={`What would make it worth paying for (${worthPayingAnswered.length} answered — question retired 2026-09-14)`}
                             lists={worthPayingAnswered.map(bf => bf.worth_paying_for)}
+                            drill={{ items: worthPayingAnswered, get: bf => bf.worth_paying_for }}
                             labels={WORTH_PAYING_FOR_LABEL}
                             total={worthPayingAnswered.length}
                           />
@@ -4870,13 +5252,71 @@ export default function AdminPage() {
                           <BetaRankedMultiChart
                             title={`What's stopping them from buying (${payBlockersAnswered.length} answered — only those not saying "yes, today")`}
                             lists={payBlockersAnswered.map(bf => bf.pay_blockers)}
+                            drill={{ items: payBlockersAnswered, get: bf => bf.pay_blockers }}
                             labels={PAY_BLOCKER_LABEL}
                             total={payBlockersAnswered.length}
                           />
                         </div>
+                          </>
+                        )}
                       </>
                     )}
                   </div>
+                    {demoDrilldown && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setDemoDrilldown(null)}>
+                        <div className="absolute inset-0 bg-slate-900/40" />
+                        <div className="relative bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-3xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                            <div>
+                              <h3 className="text-sm font-semibold text-slate-800">{demoDrilldown.title}</h3>
+                              <p className="text-xs text-slate-400">{demoDrilldown.people.length} {demoDrilldown.people.length === 1 ? 'person' : 'people'}</p>
+                            </div>
+                            <button onClick={() => setDemoDrilldown(null)} className="text-slate-400 hover:text-slate-600 text-xl leading-none px-1">×</button>
+                          </div>
+                          <div className="overflow-y-auto">
+                            <table className="w-full text-sm">
+                              <thead className="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                                <tr>
+                                  <th className="text-left px-4 py-2 font-semibold">Name</th>
+                                  <th className="text-left px-3 py-2 font-semibold">Country</th>
+                                  <th className="text-left px-3 py-2 font-semibold">Nationality</th>
+                                  <th className="text-left px-3 py-2 font-semibold">Age group</th>
+                                  <th className="text-left px-3 py-2 font-semibold">Stage</th>
+                                  <th className="px-4 py-2" />
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-50">
+                                {demoDrilldown.people.map((p, i) => (
+                                  <tr key={p.sub?.id ?? p.bf?.id ?? i}>
+                                    <td className="px-4 py-2.5 font-medium text-slate-800">{p.name || 'Unknown'}</td>
+                                    <td className="px-3 py-2.5 text-slate-600">{p.country ? (COUNTRY_LABEL[p.country] || formatUnderscored(p.country)) : '—'}</td>
+                                    <td className="px-3 py-2.5 text-slate-600">{p.nationality ? (NATIONALITY_LABEL[p.nationality] || formatUnderscored(p.nationality)) : '—'}</td>
+                                    <td className="px-3 py-2.5 text-slate-600">{p.age_bracket ? (AGE_BRACKET_LABEL[p.age_bracket] || p.age_bracket) : '—'}</td>
+                                    <td className="px-3 py-2.5 text-slate-600">{p.current_stage ? (CURRENT_STAGE_LABEL[p.current_stage] || formatUnderscored(p.current_stage)) : '—'}</td>
+                                    <td className="px-4 py-2.5 whitespace-nowrap text-right space-x-2">
+                                      <button
+                                        disabled={!p.sub}
+                                        onClick={() => { if (p.sub) { setDemoDrilldown(null); handleViewResults(p.sub) } }}
+                                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-primary text-white disabled:opacity-40"
+                                      >
+                                        Submission
+                                      </button>
+                                      <button
+                                        disabled={!p.bf}
+                                        onClick={() => { if (p.bf) { setDemoDrilldown(null); setSelectedBetaFeedback(p.bf) } }}
+                                        className="text-xs font-medium px-2.5 py-1 rounded-lg border border-slate-200 text-fuchsia-700 hover:bg-fuchsia-50 disabled:opacity-40"
+                                      >
+                                        Feedback
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     {betaStatDrilldown && (
                       <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setBetaStatDrilldown(null)}>
                         <div className="absolute inset-0 bg-slate-900/40" />
@@ -4911,7 +5351,7 @@ export default function AdminPage() {
                         </div>
                       </div>
                     )}
-                </>
+                </FbDrillContext.Provider>
               )
             })()}
             {activeTab === 'liveDashboard' && shareToken && (
@@ -5181,21 +5621,23 @@ export default function AdminPage() {
                 const rows: (string | number | null)[][] = [
                   [
                     'Name', 'Email', 'Country', 'Nationality', 'Age', 'Experience', 'Current stage', 'Cohort', 'Feedback stage', 'Locale',
-                    'S1: clarity (1-5)', 'S1: feeling (1-5)', 'S1: understood (1-5)', 'S1: wants from results', 'F1 Pre-Result Short completed at',
-                    'Accuracy (result_accuracy)', 'Would recommend', 'Would pay (F2 Result Page Short)', 'F2 Result Page Short completed at',
+                    'S1: clarity (1-5, beta)', 'S1: feeling (1-5, beta)', 'S1: understood (1-5)', 'S1: wants from results', 'S1: confidence (1-5)', 'S1: assessment length', 'F1 Pre-Result Short completed at',
+                    'Accuracy (result_accuracy)', 'Would recommend', 'Would pay (beta form)', 'F2 Result Page Short completed at',
                     'Language used', 'Device', 'Understood after (1-5)', 'Felt like coach', 'Careers seriously considered',
                     'Understood why suggested', 'Most useful part', 'Least useful part', 'First action (text)',
                     'Would pay at price', 'Pay blockers', 'Pay blocker — other (text)', 'Top pay blocker',
                     'Worth paying for', 'Wants coach session', 'Had issues', 'Issue detail',
                     'F3 Email Feedback completed at', 'Submitted at',
+                    // Launch follow-up form (v4_launch)
+                    'First step', 'Purchase blocker', 'Opened AI Impact preview',
                     // Legacy Beta 1 columns, removed from the live form — kept so a CSV
                     // export spanning both cohorts doesn't silently drop old answers.
                     'Personality accuracy (legacy)', 'Values accuracy (legacy)', 'Strengths accuracy (legacy)',
                     'Career matches accuracy (legacy)', 'Wrong career (legacy text)', 'Missing career (legacy text)',
-                    'AI impact useful (legacy 1-6)', 'AI impact credible (legacy 1-6)', 'AI impact changed thinking (legacy)',
-                    'Jobs relevant (legacy 1-6)', 'Companies fit (legacy 1-6)', 'Courses useful (legacy 1-6)',
-                    'Plan would follow (legacy)', 'Clear next step (legacy)', 'Arabic natural (legacy)',
-                    'Overall value (legacy 1-6)', 'Most valuable parts (legacy)', 'Would pay reason (legacy text)',
+                    'AI impact useful (legacy 1-6)', 'AI impact credible (legacy 1-6)', 'AI impact changed thinking',
+                    'Jobs relevant (1-5 launch, 1-6 beta)', 'Companies fit (legacy 1-6)', 'Courses useful (1-5 launch, 1-6 beta)',
+                    'Plan would follow', 'Clear next step (legacy)', 'Arabic natural',
+                    'Overall value (1-5 launch, 1-6 beta)', 'Most valuable parts (legacy)', 'Would pay reason (legacy text)',
                     'Surprised (legacy text)', 'Not me (legacy text)', 'Other (text)',
                   ],
                   ...visibleBetaFeedback.map(bf => [
@@ -5205,14 +5647,14 @@ export default function AdminPage() {
                     bf.assessment_responses?.experience_level ? (EXPERIENCE_LEVEL_LABEL[bf.assessment_responses.experience_level] || bf.assessment_responses.experience_level) : '',
                     bf.assessment_responses?.current_stage || '', cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }),
                     BETA_FEEDBACK_STAGE_LABELS[betaFeedbackStageOf(bf)], bf.locale || '',
-                    bf.s1_clarity, bf.s1_feeling, bf.s1_understood, bf.s1_intent ? formatUnderscored(bf.s1_intent) : '',
+                    bf.s1_clarity, bf.s1_feeling, bf.s1_understood, answerLabel('s1_intent', bf.s1_intent), bf.s1_confidence, answerLabel('s1_length', bf.s1_length),
                     bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : '',
                     // would_recommend/would_pay are single columns asked both on the
                     // Result Stage and again in Stage 2 — one answer, not two independent
                     // captures, so one pair of columns. Stage 2's own, richer priced
                     // question (would_pay_at_price) is a separate column further down.
-                    bf.result_accuracy || '', bf.would_recommend || '', bf.would_pay || '', bf.result_stage_completed_at ? new Date(bf.result_stage_completed_at).toLocaleString() : '',
-                    bf.language_used || '', bf.device || '', bf.understood_after, bf.felt_like_mentor || '',
+                    answerLabel('result_accuracy', bf.result_accuracy), answerLabel('would_recommend', bf.would_recommend), answerLabel('would_pay', bf.would_pay), bf.result_stage_completed_at ? new Date(bf.result_stage_completed_at).toLocaleString() : '',
+                    bf.language_used || '', bf.device || '', bf.understood_after, answerLabel('felt_like_mentor', bf.felt_like_mentor),
                     bf.careers_seriously_considered ? (CAREERS_CONSIDERED_LABEL[bf.careers_seriously_considered] || bf.careers_seriously_considered) : '',
                     bf.career_explained ? (CAREER_EXPLAINED_LABEL[bf.career_explained] || bf.career_explained) : '',
                     bf.most_useful_part ? (REPORT_SECTION_LABEL[bf.most_useful_part] || bf.most_useful_part) : '',
@@ -5226,10 +5668,12 @@ export default function AdminPage() {
                     bf.wants_coach_session ? (WANTS_COACH_LABEL[bf.wants_coach_session] || bf.wants_coach_session) : '',
                     bf.had_issues || '', bf.issue_detail || '',
                     bf.stage2_completed_at ? new Date(bf.stage2_completed_at).toLocaleString() : '', new Date(bf.created_at).toLocaleString(),
+                    (bf.first_step || []).map(v => answerLabel('first_step', v)).join('; '), answerLabel('purchase_blocker', bf.purchase_blocker),
+                    bf.opened_ai_impact == null ? '' : bf.opened_ai_impact ? 'Yes' : 'No',
                     bf.personality_accuracy || '', bf.values_accuracy || '', bf.strengths_accuracy || '', bf.career_matches_accuracy || '',
                     bf.wrong_career_text || '', bf.missing_career_text || '',
-                    bf.ai_impact_useful, bf.ai_impact_credible, bf.ai_impact_changed_thinking || '', bf.jobs_relevant,
-                    bf.companies_fit, bf.courses_useful, bf.plan_would_follow || '', bf.clear_next_step || '', bf.arabic_natural || '',
+                    bf.ai_impact_useful, bf.ai_impact_credible, answerLabel('ai_impact_changed_thinking', bf.ai_impact_changed_thinking), bf.jobs_relevant,
+                    bf.companies_fit, bf.courses_useful, answerLabel('plan_would_follow', bf.plan_would_follow), bf.clear_next_step || '', answerLabel('arabic_natural', bf.arabic_natural),
                     bf.overall_value, (bf.most_valuable_parts || []).join('; '), bf.would_pay_reason || '',
                     bf.surprised_text || '', bf.not_me_text || '', bf.other_text || '',
                   ]),
