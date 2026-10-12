@@ -8,6 +8,7 @@
     "selectUpTo": "اختر حتى {max}",
     "placeholder": "إجابتك",
     "optionalPlaceholder": "مثال: سلاسل الإمداد في القطاع الصحي",
+    "emailConsent": "نحفظ إجاباتك لتتمكن من إكمال التقييم لاحقاً، وقد نرسل لك رسالة تذكير واحدة.",
     "skip": "تخطَّ",
     "otherPlaceholder": "يرجى التحديد",
     "searchLanguages": "ابحث أو اختر لغاتك",

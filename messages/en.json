@@ -8,6 +8,7 @@
     "selectUpTo": "Select up to {max}",
     "placeholder": "Your answer",
     "optionalPlaceholder": "e.g. Supply chain in healthcare",
+    "emailConsent": "We save your answers so you can finish later, and may send you one reminder email.",
     "skip": "Skip",
     "otherPlaceholder": "Please specify",
     "searchLanguages": "Search or pick your languages",
