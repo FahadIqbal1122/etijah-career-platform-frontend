@@ -78,7 +78,7 @@ export function Hexagon({ data }: { data: ReportTemplateData }) {
   const shape = items.map((r, i) => pt(i, f(r)).map(v => v.toFixed(1)).join(',')).join(' ')
   const anchor = (i: number) => (i === 0 || i === 3 ? 'middle' : i < 3 ? 'start' : 'end')
   return (
-    <svg viewBox="-70 -24 460 368" width={300} height={240} role="img" style={{ flex: '0 0 auto', maxWidth: '100%', fontFamily: 'inherit', direction: 'ltr' }}
+    <svg viewBox="-130 -24 580 368" width={380} height={241} role="img" style={{ flex: '0 0 auto', maxWidth: '100%', fontFamily: 'inherit', direction: 'ltr' }}
       aria-label={items.map(r => `${r.label} ${clampScore(r.score)}`).join(', ')}>
       <polygon points={ring(1)} fill="#f4f9ff" stroke="#9cc7e8" strokeWidth={1} />
       <polygon points={ring(0.667)} fill="none" stroke="#d3e5f4" strokeWidth={1} />
