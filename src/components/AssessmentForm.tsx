@@ -958,6 +958,9 @@ export default function AssessmentForm() {
                   maxLength={q.optional ? 80 : undefined}
                   autoFocus
                 />
+                {q.id === 'QD2' && (
+                  <p style={{ margin: '10px 4px 0', fontSize: 13, lineHeight: 1.5, opacity: 0.7 }}>{tForm('emailConsent')}</p>
+                )}
               </>
             )}
 
