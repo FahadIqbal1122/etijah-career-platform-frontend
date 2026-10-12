@@ -12,7 +12,7 @@ import { questions, BEHAVIORAL_SCALE, Question } from '@/data/questions'
 import { SPECIALISMS } from '@/data/specialisms'
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
-import { apiAuthPost } from '@/lib/api'
+import { apiAuthPost, apiGet, apiPost } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 import Constellation, { CONSTELLATION } from '@/components/brand/Constellation'
@@ -117,9 +117,44 @@ function loadDraft(): Draft | null {
 function clearDraft() {
   try {
     window.localStorage.removeItem(DRAFT_KEY)
+    window.localStorage.removeItem(DRAFT_TOKEN_KEY)
   } catch {
     // ignore
   }
+}
+
+// ── server-side copy of the draft (powers the reminder email's "continue" link) ──
+// The browser keeps working off localStorage exactly as before; this additionally mirrors the draft to the
+// backend under an unguessable resume token, so the link in the reminder email restores it on any device.
+const DRAFT_TOKEN_KEY = 'ufuq_assessment_draft_token'
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+// Nothing is sent to the server until the "Your Details" block is done (that is also when the returning-user
+// check has run), so people who leave on the first screens are never recorded.
+const DETAILS_DONE_INDEX = questions.findIndex(x => x.id === 'QD3')
+
+function getDraftToken(): string | null {
+  try { return window.localStorage.getItem(DRAFT_TOKEN_KEY) } catch { return null }
+}
+
+function setDraftToken(token: string) {
+  try { window.localStorage.setItem(DRAFT_TOKEN_KEY, token) } catch { /* best-effort */ }
+}
+
+function saveDraftToServer(answers: Record<string, unknown>, index: number, revealed: Set<string>, locale: string) {
+  const email = String(answers['QD2'] || '').trim()
+  if (index <= DETAILS_DONE_INDEX || !EMAIL_RE.test(email)) return
+  apiPost<{ resume_token: string }>('/assessment/draft', {
+    resume_token: getDraftToken(),
+    email,
+    full_name: answers['QD1'] || null,
+    locale,
+    answers,
+    current_index: index,
+    revealed_frameworks: [...revealed],
+    total_questions: questions.length,
+  })
+    .then(r => { if (r?.resume_token) setDraftToken(r.resume_token) })
+    .catch(() => { /* best-effort: the local draft still works */ })
 }
 
 const CONFIRM_MS = 560
@@ -298,10 +333,33 @@ export default function AssessmentForm() {
   // offer to resume a saved draft on mount (once). localStorage isn't available
   // during SSR, so this has to run post-mount rather than as a lazy useState
   // initializer — otherwise the server/client render would mismatch.
+  // A ?resume=<token> link from the reminder email wins over the browser-local draft, so it works on any
+  // device; if the token is stale or the question set has changed, fall back to the local draft. The token
+  // is stripped from the address bar either way.
   useEffect(() => {
-    const found = loadDraft()
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of an external (browser-only) store, not a derived/cascading update
-    if (found) setDraft(found)
+    let cancelled = false
+    const local = loadDraft()
+    const token = new URLSearchParams(window.location.search).get('resume')
+    if (!token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of an external (browser-only) store, not a derived/cascading update
+      if (local) setDraft(local)
+      return
+    }
+    apiGet<{ answers: Record<string, unknown>; current_index: number; revealed_frameworks: string[]; total_questions: number }>(
+      `/assessment/draft/${encodeURIComponent(token)}`,
+    )
+      .then(s => {
+        if (cancelled) return
+        if (s.total_questions !== questions.length || !s.answers || Object.keys(s.answers).length === 0) throw new Error('stale')
+        setDraftToken(token) // later autosaves update this same server row
+        setDraft({
+          version: DRAFT_VERSION, savedAt: Date.now(), totalQuestions: s.total_questions,
+          answers: s.answers, index: s.current_index, revealedFrameworks: s.revealed_frameworks || [],
+        })
+      })
+      .catch(() => { if (!cancelled && local) setDraft(local) })
+      .finally(() => { try { window.history.replaceState(null, '', window.location.pathname) } catch { /* ignore */ } })
+    return () => { cancelled = true }
   }, [])
 
   // Logged-in users shouldn't have to retype their name/email — pre-fill QD1/QD2
@@ -326,9 +384,10 @@ export default function AssessmentForm() {
     if (Object.keys(answers).length === 0) return
     const id = window.setTimeout(() => {
       saveDraft(answersRef.current, index, revealedRef.current)
+      saveDraftToServer(answersRef.current, index, revealedRef.current, locale)
     }, 1000)
     return () => clearTimeout(id)
-  }, [answers, index])
+  }, [answers, index, locale])
 
   function resumeDraft() {
     if (!draft) return
@@ -342,6 +401,9 @@ export default function AssessmentForm() {
   }
 
   function discardDraft() {
+    // "Start fresh": also forget the server copy so no reminder is sent for it
+    const token = getDraftToken()
+    if (token) apiPost('/assessment/draft/discard', { resume_token: token }).catch(() => { /* best-effort */ })
     clearDraft()
     setDraft(null)
     rotateTelemetrySession() // starting over — don't conflate with the abandoned attempt

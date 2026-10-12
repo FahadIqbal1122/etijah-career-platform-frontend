@@ -22,6 +22,7 @@ type ScheduledEmail = {
 
 const SEGMENTS = [
   { key: 'beta_incomplete', label: 'Beta signups — assessment not completed' },
+  { key: 'assessment_abandoned', label: 'Started the assessment but did not finish (24h+)' },
   { key: 'waitlist_all', label: 'Everyone on the waitlist' },
   { key: 'waitlist_no_assessment', label: 'Waitlist — has not done the assessment' },
   { key: 'waitlist_assessment_completed', label: 'Waitlist — completed the assessment' },
