@@ -5801,7 +5801,8 @@ export default function AdminPage() {
               }
               return (
               <>
-                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    {/* Pins under the global filter bar once scrolled past, so the stage / status / age filters stay reachable over a long table. */}
+                    <div className="sticky z-20 flex flex-wrap items-center justify-between gap-3 mb-4 bg-white/95 backdrop-blur rounded-2xl border border-slate-100 shadow-sm px-4 py-3" style={{ top: dashFilterBarH ? dashFilterBarH + 16 : 8 }}>
                       <p className="text-sm text-slate-400">{visibleBetaFeedback.length} response{visibleBetaFeedback.length !== 1 ? 's' : ''}</p>
                       <div className="flex flex-wrap items-center gap-2">
                         <DownloadCSVButton onClick={exportBetaFeedback} />
