@@ -5,61 +5,73 @@ import { clampScore } from './parts'
 
 // The two graphics of the Constellation design: the interests hexagon and the career constellation.
 
-// ascending zig-zag from the bottom-left to the top-right (the logo's rising line)
-const NODES: [number, number][] = [[40, 430], [110, 360], [190, 390], [260, 300], [330, 320], [400, 220], [470, 250], [540, 80]]
 const HEX_ORDER = ['realistic', 'investigative', 'artistic', 'social', 'enterprising', 'conventional']
 
+// The career constellation: a clean rising staircase. One row per career, best at the top right; the name sits in
+// its own row to the left of its star, right-aligned, so nothing overlaps however many careers there are.
+// Careers that are locked on this plan are dim stars with a placeholder bar.
 export function Constellation({ data, unlockedLabel, lowestLabel, lockedLabel, tone = 'dark' }: {
   data: ReportTemplateData; unlockedLabel: string; lowestLabel: string; lockedLabel: string; tone?: 'dark' | 'light'
 }) {
-  const ar = data.locale === 'ar'
   const light = tone === 'light'
-  const labelFill = light ? '#4d5056' : '#b9cfe3'
+  const nameFill = light ? '#1f2a37' : '#ffffff'
+  const metaFill = light ? '#4d5056' : '#b9cfe3'
   const nodeFill = light ? '#0770ba' : '#9cc7e8'
   const accent = light ? '#0a705a' : '#00c9a7'
-  const named = [...data.careers].sort((a, b) => b.match - a.match)
-  const total = Math.max(1, Math.min(NODES.length, named.length + data.lockedMore))
-  const shownNamed = named.slice(0, total)
-  const lockedCount = total - shownNamed.length
-  // spread the stars along the whole line, however many there are
-  const slots = total === 1 ? [NODES.length - 1] : Array.from({ length: total }, (_, i) => Math.round((i * (NODES.length - 1)) / (total - 1)))
-  // ascending (bottom-left first): the locked ones are the lowest ranks, then the named ones from the lowest up
-  const items: Array<{ c?: typeof named[number]; xy: [number, number] }> = [
-    ...Array.from({ length: lockedCount }, () => ({ c: undefined })),
-    ...[...shownNamed].reverse().map(c => ({ c })),
-  ].map((it, i) => ({ ...it, xy: NODES[slots[i]] }))
-  const best = items[items.length - 1]
-  if (!best || !best.c) return null
-  const lowestTitle = shownNamed.find(c => c.risk === 'low')?.title
-  const short = (s: string) => (s.length > 20 ? `${s.slice(0, 19)}…` : s)
-  const path = items.map(({ xy }, i) => `${i ? 'L' : 'M'}${xy[0]} ${xy[1]}`).join(' ')
-  const prev = items[items.length - 2]
-  const lockedItems = items.filter(i => !i.c)
+  const named = [...data.careers].sort((a, b) => b.match - a.match).slice(0, 8)
+  const lockedCount = Math.max(0, Math.min(8 - named.length, data.lockedMore))
+  const total = named.length + lockedCount
+  if (!named.length) return null
+  const lowestTitle = named.find(c => c.risk === 'low')?.title
+  const short = (s: string) => (s.length > 26 ? `${s.slice(0, 25)}…` : s)
+
+  // rows from the top (best) down; the best one gets a taller row for its two-line label
+  const X_RIGHT = 548, X_LEFT = 300
+  const rows = Array.from({ length: total }, (_, k) => ({
+    k,
+    x: total === 1 ? X_RIGHT : X_RIGHT - (k * (X_RIGHT - X_LEFT)) / (total - 1),
+    y: 56 + (k === 0 ? 0 : 66 + (k - 1) * 58),
+  }))
+  const height = rows[rows.length - 1].y + 52
+  const path = rows.map((r, i) => `${i ? 'L' : 'M'}${r.x} ${r.y}`).join(' ')
+  const firstLocked = named.length
+
   return (
-    <svg viewBox="0 0 600 470" width="100%" role="img" aria-label={`${total}`} style={{ display: 'block', fontFamily: 'inherit', overflow: 'visible', direction: 'ltr' }}>
-      <path d={path} stroke={nodeFill} strokeOpacity={light ? 0.45 : 0.4} strokeWidth={2} strokeDasharray="3 7" fill="none" strokeLinecap="round" />
-      {prev && <path d={`M${prev.xy[0]} ${prev.xy[1]} L${best.xy[0]} ${best.xy[1]}`} stroke="#00c9a7" strokeWidth={3} fill="none" strokeLinecap="round" />}
-      {items.slice(0, -1).map(({ c, xy }, i) => {
-        const [x, y] = xy
-        if (!c) return <circle key={i} cx={x} cy={y} r={7} fill={nodeFill} fillOpacity={0.3} />
-        // names on the right half sit to the left of the star so they never run off the picture
-        const left = x > 360
+    <svg viewBox={`0 0 600 ${height}`} width="100%" role="img" aria-label={`${total}`} style={{ display: 'block', fontFamily: 'inherit', direction: 'ltr' }}>
+      <path d={path} stroke={nodeFill} strokeOpacity={light ? 0.4 : 0.35} strokeWidth={2} strokeDasharray="3 7" fill="none" strokeLinecap="round" />
+      {rows.length > 1 && <path d={`M${rows[1].x} ${rows[1].y} L${rows[0].x} ${rows[0].y}`} stroke="#00c9a7" strokeWidth={3} fill="none" strokeLinecap="round" />}
+      {rows.map(r => {
+        const c = named[r.k]
+        const lx = r.x - 24
+        if (r.k === 0) {
+          return (
+            <g key={r.k}>
+              <circle cx={r.x} cy={r.y} r={40} fill="#00c9a7" fillOpacity={0.14} />
+              <circle cx={r.x} cy={r.y} r={26} fill="none" stroke="#00c9a7" strokeWidth={2} strokeOpacity={0.5} />
+              <circle cx={r.x} cy={r.y} r={15} fill="#00c9a7" />
+              <text x={r.x - 52} y={r.y - 2} textAnchor="end" fill={nameFill} fontSize={26} fontWeight={800}>{short(c.title)}</text>
+              <text x={r.x - 52} y={r.y + 26} textAnchor="end" fill={accent} fontSize={18} fontWeight={700}>{Math.round(c.match)}% · {unlockedLabel}</text>
+            </g>
+          )
+        }
+        if (c) {
+          return (
+            <g key={r.k}>
+              <circle cx={r.x} cy={r.y} r={10} fill={nodeFill} fillOpacity={0.75} />
+              <text x={lx} y={r.y + 6} textAnchor="end" fill={nameFill} fontSize={19} fontWeight={600}>{short(c.title)} <tspan fill={metaFill} fontWeight={500}>· {Math.round(c.match)}%</tspan></text>
+              {c.title === lowestTitle && <text x={lx} y={r.y + 26} textAnchor="end" fill={accent} fontSize={13} fontWeight={700}>{lowestLabel}</text>}
+            </g>
+          )
+        }
+        // locked on this plan: a dim star and a placeholder bar (the name is not shown)
         return (
-          <g key={i}>
-            <circle cx={x} cy={y} r={10} fill={nodeFill} fillOpacity={light ? 0.6 : 0.7} />
-            <text x={left ? x - 16 : x + 16} y={left ? y + 5 : y + 24} textAnchor={left ? 'end' : 'start'} fill={labelFill} fontSize={19}>{short(c.title)} · {clampScore(c.match)}%</text>
-            {c.title === lowestTitle && <text x={left ? x - 16 : x + 16} y={left ? y + 23 : y + 42} textAnchor={left ? 'end' : 'start'} fill={accent} fontSize={15} fontWeight={700}>{lowestLabel}</text>}
+          <g key={r.k}>
+            <circle cx={r.x} cy={r.y} r={8} fill={nodeFill} fillOpacity={0.28} />
+            <rect x={lx - 130} y={r.y - 7} width={130} height={14} rx={7} fill={nodeFill} fillOpacity={0.14} />
+            {r.k === firstLocked && <text x={lx - 144} y={r.y + 6} textAnchor="end" fill={metaFill} fontSize={16}>{lockedLabel}</text>}
           </g>
         )
       })}
-      {lockedItems.length > 0 && (
-        <text x={lockedItems[0].xy[0]} y={lockedItems[0].xy[1] + 32} textAnchor="start" fill={labelFill} fontSize={18}>{lockedLabel}</text>
-      )}
-      <circle cx={best.xy[0]} cy={best.xy[1]} r={40} fill="#00c9a7" fillOpacity={0.14} />
-      <circle cx={best.xy[0]} cy={best.xy[1]} r={26} fill="none" stroke="#00c9a7" strokeWidth={2} strokeOpacity={0.5} />
-      <circle cx={best.xy[0]} cy={best.xy[1]} r={15} fill="#00c9a7" />
-      <text x={ar ? best.xy[0] + 40 : best.xy[0] + 40} y={best.xy[1] - 56} textAnchor="end" fill={light ? '#1f2a37' : '#fff'} fontSize={26} fontWeight={800}>{short(best.c.title)}</text>
-      <text x={best.xy[0] + 40} y={best.xy[1] - 30} textAnchor="end" fill={accent} fontSize={19} fontWeight={700}>{clampScore(best.c.match)}% · {unlockedLabel}</text>
     </svg>
   )
 }
