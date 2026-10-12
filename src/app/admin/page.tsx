@@ -3588,8 +3588,8 @@ export default function AdminPage() {
       const filterNotes: string[] = []
       if (dashFiltersActive) filterNotes.push('Filters are active: every sheet only contains the matching people.')
       filterNotes.push('Sales are matched to the filtered people by email; the date range applies to the payment date.')
-      if (demoFilterOn) filterNotes.push('Country / nationality / age filters are active, so sheets with no demographics (abandoned, bug reports, waitlist, coaching log, featured courses) are left out.')
-      else filterNotes.push('Abandoned, bug reports, waitlist, coaching log and featured courses only use the date range (they carry no demographics).')
+      if (demoFilterOn) filterNotes.push('Country / nationality / age filters are active, so sheets with no demographics (abandoned, waitlist, coaching log, featured courses) are left out.')
+      else filterNotes.push('Abandoned, waitlist, coaching log and featured courses only use the date range (they carry no demographics).')
 
       const summary: SummaryBlock[] = [
         { title: 'Report', headers: ['', ''], rows: [
@@ -3778,14 +3778,15 @@ export default function AdminPage() {
             a.full_name, a.email, a.locale, a.progress_pct, a.current_index, a.total_questions, dt(a.last_activity_at), dt(a.reminder_sent_at), a.source,
           ]),
         })
-        sheets.push({
-          name: 'Bug reports',
-          headers: ['Reported at', 'Source', 'Status', 'Summary', 'Error type', 'Error message', 'Name', 'Email', 'Feature', 'Page', 'Language', 'Device', 'Country', 'Response ID'],
-          rows: bugReports.filter(b => inDashDateRange(b.created_at)).map(b => [
-            dt(b.created_at), b.source === 'user' ? 'User report' : 'System', b.status, b.description, b.error_type, b.error_message,
-            b.full_name, b.email, b.feature, b.page, b.locale, b.device_type, lab(COUNTRY_LABEL, b.country), b.response_id,
-          ]),
-        })
+        // Bug reports sheet removed from the export on request (12 Oct 2026):
+        // sheets.push({
+        //   name: 'Bug reports',
+        //   headers: ['Reported at', 'Source', 'Status', 'Summary', 'Error type', 'Error message', 'Name', 'Email', 'Feature', 'Page', 'Language', 'Device', 'Country', 'Response ID'],
+        //   rows: bugReports.filter(b => inDashDateRange(b.created_at)).map(b => [
+        //     dt(b.created_at), b.source === 'user' ? 'User report' : 'System', b.status, b.description, b.error_type, b.error_message,
+        //     b.full_name, b.email, b.feature, b.page, b.locale, b.device_type, lab(COUNTRY_LABEL, b.country), b.response_id,
+        //   ]),
+        // })
         sheets.push({
           name: 'Waitlist', headers: ['Joined at', 'Name', 'Email', 'Phone', 'Country', 'Nationality', 'Status', 'Age', 'Language', 'Source'],
           rows: waitlistList.filter(w => inDashDateRange(w.created_at)).map(w => [
