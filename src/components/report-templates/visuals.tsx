@@ -31,35 +31,35 @@ export function Constellation({ data, unlockedLabel, lowestLabel, lockedLabel, t
   const best = items[items.length - 1]
   if (!best || !best.c) return null
   const lowestTitle = shownNamed.find(c => c.risk === 'low')?.title
-  const short = (s: string) => (s.length > 22 ? `${s.slice(0, 21)}…` : s)
+  const short = (s: string) => (s.length > 20 ? `${s.slice(0, 19)}…` : s)
   const path = items.map(({ xy }, i) => `${i ? 'L' : 'M'}${xy[0]} ${xy[1]}`).join(' ')
   const prev = items[items.length - 2]
   const lockedItems = items.filter(i => !i.c)
   return (
-    <svg viewBox="0 0 600 470" width="100%" role="img" aria-label={`${total}`} style={{ display: 'block', fontFamily: 'inherit', overflow: 'visible' }}>
+    <svg viewBox="0 0 600 470" width="100%" role="img" aria-label={`${total}`} style={{ display: 'block', fontFamily: 'inherit', overflow: 'visible', direction: 'ltr' }}>
       <path d={path} stroke={nodeFill} strokeOpacity={light ? 0.45 : 0.4} strokeWidth={2} strokeDasharray="3 7" fill="none" strokeLinecap="round" />
       {prev && <path d={`M${prev.xy[0]} ${prev.xy[1]} L${best.xy[0]} ${best.xy[1]}`} stroke="#00c9a7" strokeWidth={3} fill="none" strokeLinecap="round" />}
       {items.slice(0, -1).map(({ c, xy }, i) => {
         const [x, y] = xy
-        if (!c) return <circle key={i} cx={x} cy={y} r={6} fill={nodeFill} fillOpacity={0.28} />
+        if (!c) return <circle key={i} cx={x} cy={y} r={7} fill={nodeFill} fillOpacity={0.3} />
         // names on the right half sit to the left of the star so they never run off the picture
         const left = x > 360
         return (
           <g key={i}>
-            <circle cx={x} cy={y} r={8} fill={nodeFill} fillOpacity={light ? 0.6 : 0.7} />
-            <text x={left ? x - 16 : x + 16} y={left ? y + 5 : y + 24} textAnchor={left ? 'end' : 'start'} fill={labelFill} fontSize={15}>{short(c.title)} · {clampScore(c.match)}%</text>
-            {c.title === lowestTitle && <text x={left ? x - 16 : x + 16} y={left ? y + 23 : y + 42} textAnchor={left ? 'end' : 'start'} fill={accent} fontSize={12} fontWeight={700}>{lowestLabel}</text>}
+            <circle cx={x} cy={y} r={10} fill={nodeFill} fillOpacity={light ? 0.6 : 0.7} />
+            <text x={left ? x - 16 : x + 16} y={left ? y + 5 : y + 24} textAnchor={left ? 'end' : 'start'} fill={labelFill} fontSize={19}>{short(c.title)} · {clampScore(c.match)}%</text>
+            {c.title === lowestTitle && <text x={left ? x - 16 : x + 16} y={left ? y + 23 : y + 42} textAnchor={left ? 'end' : 'start'} fill={accent} fontSize={15} fontWeight={700}>{lowestLabel}</text>}
           </g>
         )
       })}
       {lockedItems.length > 0 && (
-        <text x={lockedItems[0].xy[0]} y={lockedItems[0].xy[1] + 28} textAnchor="start" fill={labelFill} fontSize={14}>{lockedLabel}</text>
+        <text x={lockedItems[0].xy[0]} y={lockedItems[0].xy[1] + 32} textAnchor="start" fill={labelFill} fontSize={18}>{lockedLabel}</text>
       )}
       <circle cx={best.xy[0]} cy={best.xy[1]} r={40} fill="#00c9a7" fillOpacity={0.14} />
       <circle cx={best.xy[0]} cy={best.xy[1]} r={26} fill="none" stroke="#00c9a7" strokeWidth={2} strokeOpacity={0.5} />
       <circle cx={best.xy[0]} cy={best.xy[1]} r={15} fill="#00c9a7" />
-      <text x={ar ? best.xy[0] + 40 : best.xy[0] + 40} y={best.xy[1] - 50} textAnchor="end" fill={light ? '#1f2a37' : '#fff'} fontSize={20} fontWeight={800}>{short(best.c.title)}</text>
-      <text x={best.xy[0] + 40} y={best.xy[1] - 28} textAnchor="end" fill={accent} fontSize={15} fontWeight={700}>{clampScore(best.c.match)}% · {unlockedLabel}</text>
+      <text x={ar ? best.xy[0] + 40 : best.xy[0] + 40} y={best.xy[1] - 56} textAnchor="end" fill={light ? '#1f2a37' : '#fff'} fontSize={26} fontWeight={800}>{short(best.c.title)}</text>
+      <text x={best.xy[0] + 40} y={best.xy[1] - 30} textAnchor="end" fill={accent} fontSize={19} fontWeight={700}>{clampScore(best.c.match)}% · {unlockedLabel}</text>
     </svg>
   )
 }
@@ -78,7 +78,7 @@ export function Hexagon({ data }: { data: ReportTemplateData }) {
   const shape = items.map((r, i) => pt(i, f(r)).map(v => v.toFixed(1)).join(',')).join(' ')
   const anchor = (i: number) => (i === 0 || i === 3 ? 'middle' : i < 3 ? 'start' : 'end')
   return (
-    <svg viewBox="-70 -24 460 368" width={300} height={240} role="img" style={{ flex: '0 0 auto', maxWidth: '100%', fontFamily: 'inherit' }}
+    <svg viewBox="-70 -24 460 368" width={300} height={240} role="img" style={{ flex: '0 0 auto', maxWidth: '100%', fontFamily: 'inherit', direction: 'ltr' }}
       aria-label={items.map(r => `${r.label} ${clampScore(r.score)}`).join(', ')}>
       <polygon points={ring(1)} fill="#f4f9ff" stroke="#9cc7e8" strokeWidth={1} />
       <polygon points={ring(0.667)} fill="none" stroke="#d3e5f4" strokeWidth={1} />

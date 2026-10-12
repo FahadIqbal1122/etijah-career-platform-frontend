@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from 'react'
 import type { ReportTemplateData } from './types'
-import { A, Arrow, Check, Lock, Logo, MASK, MONO, clampScore } from './parts'
+import { A, Arrow, Check, Lock, MASK, MONO, clampScore } from './parts'
 import { Constellation, Hexagon } from './visuals'
 
 // Template "Clarity" (option A of the report directions): light and calm, a progress meter, one big #1 match.
@@ -13,7 +13,7 @@ import { Constellation, Hexagon } from './visuals'
 const L = {
   en: {
     ready: 'YOUR CAREER PROFILE IS READY',
-    thinkLike: 'You think like',
+    thinkLike: 'Your strongest career type is',
     sub: (n: number) => `Your answers show what drives you and how you like to work. We matched you to ${n} careers. Here is your best one.`,
     subPaid: (n: number) => `Your answers show what drives you and how you like to work. Here are your ${n} best career matches.`,
     riasec: 'RIASEC', topValue: 'TOP VALUE', topStrength: 'TOP STRENGTH',
@@ -93,10 +93,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
   const n = data.careers.length
   const totalCareers = n + data.lockedMore
   const riasecSorted = [...data.riasec].sort((a, b) => b.score - a.score)
-  const vowel = /^[aeiou]/i.test(data.topTypeLabel)
-  const heroTitle = ar
-    ? <>{c.thinkLike} <span style={{ color: '#0770ba' }}>{data.topTypeLabel}.</span></>
-    : <>{c.thinkLike} {vowel ? 'an' : 'a'} <span style={{ color: '#0770ba' }}>{data.topTypeLabel}.</span></>
+  const heroTitle = <>{c.thinkLike} <span style={{ color: '#0770ba' }}>{data.topTypeLabel}.</span></>
   const dl = data.download
 
   const pill = (text: string, bg: string, fg: string) => (
@@ -119,8 +116,8 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
     <div dir={ar ? 'rtl' : 'ltr'} style={{ containerType: 'inline-size', fontFamily: 'inherit', color: '#414142', background: '#ffffff' }}>
       <header style={{ borderBottom: '1px solid rgba(7,112,186,0.12)' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#075288', fontWeight: 800, fontSize: 20 }}><Logo size={28} />{ar ? 'اتجاهي' : 'Etijahi'}</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/* the site header above already carries the logo */}
+          <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginInlineStart: 'auto' }}>
             {paid && dl.altLabel && <button type="button" onClick={dl.onAlt} disabled={dl.busy} style={{ cursor: 'pointer', font: 'inherit', background: '#fff', color: '#075288', border: '1px solid rgba(7,112,186,0.24)', fontWeight: 700, fontSize: 14, padding: '10px 14px', borderRadius: 12 }}>{dl.altLabel}</button>}
             {topBtn}
           </span>

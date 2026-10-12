@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from 'react'
 import type { ReportTemplateData } from './types'
-import { A, Arrow, Check, Lock, Logo, MONO, clampScore } from './parts'
+import { A, Arrow, Check, Lock, MONO, clampScore } from './parts'
 import { Constellation, Hexagon } from './visuals'
 
 // Template "Constellation" (option B of the report directions): dark and premium. Every career is a star on a
@@ -100,8 +100,8 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
       {/* hero */}
       <section style={{ background: '#052640', backgroundImage: 'radial-gradient(circle at 78% 30%, rgba(7,112,186,0.55), rgba(5,38,64,0) 55%)', color: '#fff' }}>
         <header style={{ maxWidth: 1240, margin: '0 auto', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 800, fontSize: 20 }}><Logo size={28} />{ar ? 'اتجاهي' : 'Etijahi'}</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/* the site header above already carries the logo */}
+          <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginInlineStart: 'auto' }}>
             {paid ? (
               <>
                 {dl.altLabel && <button type="button" onClick={dl.onAlt} disabled={dl.busy} style={{ cursor: 'pointer', font: 'inherit', background: 'transparent', color: '#fff', border: '1px solid rgba(156,199,232,0.35)', fontWeight: 700, fontSize: 15, padding: '0 14px', borderRadius: 10, minHeight: 44 }}>{dl.altLabel}</button>}
