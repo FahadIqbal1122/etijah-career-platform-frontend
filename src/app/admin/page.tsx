@@ -1264,6 +1264,11 @@ export default function AdminPage() {
   // features shipped 2026-09-08 onward) from the original "beta" cohort,
   // instead of eyeballing the per-row cohort badge across every list.
   const [cohortFilter, setCohortFilter] = useState<SubmissionFilter>('all')
+  const [dashFrom, setDashFrom] = useState('') // yyyy-mm-dd
+  const [dashTo, setDashTo] = useState('')
+  const [dashCountry, setDashCountry] = useState('all')
+  const [dashNationality, setDashNationality] = useState('all')
+  const [dashAge, setDashAge] = useState('all')
   // Submissions tab: filter by how far (if at all) each respondent got into
   // the beta feedback flow, joined in via betaFeedbackByResponseId below.
   const [submissionFeedbackFilter, setSubmissionFeedbackFilter] = useState<SubmissionFeedbackFilter>('all')
@@ -3457,6 +3462,39 @@ export default function AdminPage() {
   const liveRevenueByCurrency = new Map<string, number>()
   for (const t of livePaidSales) liveRevenueByCurrency.set(t.currency, (liveRevenueByCurrency.get(t.currency) || 0) + Number(t.amount || 0))
   const liveRevenueLabel = liveRevenueByCurrency.size === 0 ? '0' : Array.from(liveRevenueByCurrency.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ')
+  // ── Main-dashboard filters (date range, country, nationality, age) ──
+  const demoFilterOn = dashCountry !== 'all' || dashNationality !== 'all' || dashAge !== 'all'
+  const dashFiltersActive = !!dashFrom || !!dashTo || demoFilterOn
+  const inDashDateRange = (iso: string | null | undefined) => {
+    if (!dashFrom && !dashTo) return true
+    if (!iso) return false
+    const t = new Date(iso).getTime()
+    if (dashFrom && t < new Date(`${dashFrom}T00:00:00`).getTime()) return false
+    if (dashTo && t > new Date(`${dashTo}T23:59:59.999`).getTime()) return false
+    return true
+  }
+  const matchesDashDemo = (s: Submission) =>
+    (dashCountry === 'all' || s.country === dashCountry) &&
+    (dashNationality === 'all' || s.nationality === dashNationality) &&
+    (dashAge === 'all' || (s.age_bracket ?? ageToBracket(s.age)) === dashAge)
+  const matchesDashSubmission = (s: Submission) => inDashDateRange(s.created_at) && matchesDashDemo(s)
+  const emailKey = (e: string | null | undefined) => (e || '').trim().toLowerCase()
+  const dashSubmissions = liveSubmissions.filter(matchesDashSubmission)
+  const dashSubmissionIds = new Set(dashSubmissions.map(s => s.id))
+  const dashFeedback = liveFeedbackList.filter(bf => dashSubmissionIds.has(bf.response_id))
+  const dashCareerRecs = liveCareerRecsGenerated.filter(r => dashSubmissionIds.has(r.id))
+  // Sales carry no age/nationality, so demographics are matched through the buyer's email;
+  // the date range applies to the payment date itself.
+  const demoEmails = new Set(liveSubmissions.filter(matchesDashDemo).map(s => emailKey(s.email)))
+  const dashPaidSales = livePaidSales.filter(t =>
+    inDashDateRange(t.paid_at || t.created_at) && (!demoFilterOn || demoEmails.has(emailKey(t.email))))
+  const dashCoachingSales = dashPaidSales.filter(t => t.coaching_included)
+  const dashExplorerCount = dashSubmissions.filter(s => s.completed && !livePaidEmails.has(emailKey(s.email))).length
+  const dashRevenueByCurrency = new Map<string, number>()
+  for (const t of dashPaidSales) dashRevenueByCurrency.set(t.currency, (dashRevenueByCurrency.get(t.currency) || 0) + Number(t.amount || 0))
+  const dashRevenueLabel = dashRevenueByCurrency.size === 0 ? '0'
+    : Array.from(dashRevenueByCurrency.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ')
+  const resetDashFilters = () => { setDashFrom(''); setDashTo(''); setDashCountry('all'); setDashNationality('all'); setDashAge('all') }
   const liveOpenBugCount = bugReports.filter(b => b.status === 'open').length
   const visibleBugReports = scopeBugReports
     .filter(b => bugSourceFilter === 'all' || b.source === bugSourceFilter)
@@ -3910,6 +3948,51 @@ export default function AdminPage() {
           </>
         )}
 
+        {/* Filters stay pinned while scrolling so they can be changed from anywhere on these tabs. */}
+        {(activeTab === 'liveDashboard' || activeTab === 'liveFeedback') && (
+          <div className="sticky top-2 z-30 mb-4">
+            <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-3">
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">From
+                  <input type="date" value={dashFrom} max={dashTo || undefined} onChange={e => setDashFrom(e.target.value)} className="block mt-1 text-sm font-normal normal-case text-slate-700 border border-slate-200 rounded-lg px-2 py-1.5" />
+                </label>
+                <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">To
+                  <input type="date" value={dashTo} min={dashFrom || undefined} onChange={e => setDashTo(e.target.value)} className="block mt-1 text-sm font-normal normal-case text-slate-700 border border-slate-200 rounded-lg px-2 py-1.5" />
+                </label>
+                <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Country
+                  <select value={dashCountry} onChange={e => setDashCountry(e.target.value)} className="block mt-1 text-sm font-normal normal-case text-slate-700 border border-slate-200 rounded-lg px-2 py-1.5">
+                    <option value="all">All countries</option>
+                    {COUNTRY_ORDER.map(k => <option key={k} value={k}>{COUNTRY_LABEL[k]}</option>)}
+                  </select>
+                </label>
+                <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Nationality
+                  <select value={dashNationality} onChange={e => setDashNationality(e.target.value)} className="block mt-1 text-sm font-normal normal-case text-slate-700 border border-slate-200 rounded-lg px-2 py-1.5">
+                    <option value="all">All nationalities</option>
+                    {NATIONALITY_ORDER.map(k => <option key={k} value={k}>{NATIONALITY_LABEL[k]}</option>)}
+                  </select>
+                </label>
+                <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Age
+                  <select value={dashAge} onChange={e => setDashAge(e.target.value)} className="block mt-1 text-sm font-normal normal-case text-slate-700 border border-slate-200 rounded-lg px-2 py-1.5">
+                    <option value="all">All ages</option>
+                    {AGE_BRACKET_ORDER.map(k => <option key={k} value={k}>{AGE_BRACKET_LABEL[k]}</option>)}
+                  </select>
+                </label>
+                {dashFiltersActive && (
+                  <button type="button" onClick={resetDashFilters} className="text-xs font-medium bg-white border border-slate-200 text-slate-600 px-3 py-2 rounded-lg hover:bg-slate-50">
+                    Reset filters
+                  </button>
+                )}
+              </div>
+              {dashFiltersActive && (
+                <p className="text-xs text-slate-400 mt-3">
+                  Showing {dashSubmissions.length} of {liveSubmissions.length} submissions
+                  {demoFilterOn && ' · sales are matched to filtered users by email'}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ── Beta Testing Tab ── */}
         {(activeTab === 'betaDashboard' || activeTab === 'liveDashboard') && (
           <>
@@ -3917,15 +4000,15 @@ export default function AdminPage() {
               <div className="mb-6">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">At a glance · since {LIVE_START.toLocaleDateString()}</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <BetaStatTile label="Sales" value={String(livePaidSales.length)} sublabel="Transactions (paid orders)" onClick={() => setActiveTab('liveSales')} />
-                  <BetaStatTile label="Revenue" value={liveRevenueLabel} sublabel="From paid orders" onClick={() => setActiveTab('liveSales')} />
-                  <BetaStatTile label="Explorer" value={String(liveExplorerCount)} sublabel="Free report (completed, no purchase)" onClick={() => setActiveTab('liveSubmissions')} />
-                  <BetaStatTile label="Pathfinder" value={String(livePaidSales.length - liveCoachingSales.length)} sublabel="Paid report" onClick={() => setActiveTab('liveSales')} />
-                  <BetaStatTile label="Launchpad" value={String(liveCoachingSales.length)} sublabel="Report + 1:1 coaching" onClick={() => setActiveTab('liveCoaching')} />
-                  <BetaStatTile label="Total submissions" value={String(liveSubmissions.length)} sublabel={`${liveSubmissions.filter(sub => sub.completed).length} completed`} onClick={() => setActiveTab('liveSubmissions')} />
-                  <BetaStatTile label="Career recs" value={String(liveCareerRecsGenerated.length)} sublabel="Generated" onClick={() => setActiveTab('liveCareerRecs')} />
-                  <BetaStatTile label="Feedback" value={String(liveFeedbackList.length)} sublabel={`F1 ${liveFeedbackList.filter(bf => betaFeedbackStageOf(bf) === 'stage1').length} · F2 ${liveFeedbackList.filter(bf => betaFeedbackStageOf(bf) === 'result').length} · F3 ${liveFeedbackList.filter(bf => betaFeedbackStageOf(bf) === 'stage2').length} · Incomplete ${liveFeedbackList.filter(bf => betaFeedbackStageOf(bf) === 'started').length}`} onClick={() => setActiveTab('liveFeedback')} />
-                  <BetaStatTile label="Conversion" value={liveSubmissions.length > 0 ? `${Math.round((livePaidSales.length / liveSubmissions.length) * 100)}%` : '—'} sublabel="Paid orders ÷ total submissions" />
+                  <BetaStatTile label="Number of sales" value={String(dashPaidSales.length)} sublabel="Transactions (paid orders)" onClick={() => setActiveTab('liveSales')} />
+                  <BetaStatTile label="Total revenue" value={dashRevenueLabel} sublabel="From paid orders" onClick={() => setActiveTab('liveSales')} />
+                  <BetaStatTile label="Free reports (Explorer)" value={String(dashExplorerCount)} sublabel="Completed, no purchase" onClick={() => setActiveTab('liveSubmissions')} />
+                  <BetaStatTile label="Pathfinder plans sold" value={String(dashPaidSales.length - dashCoachingSales.length)} sublabel="Paid report" onClick={() => setActiveTab('liveSales')} />
+                  <BetaStatTile label="Launchpad plans sold" value={String(dashCoachingSales.length)} sublabel="Report + 1:1 coaching" onClick={() => setActiveTab('liveCoaching')} />
+                  <BetaStatTile label="Assessments submitted" value={String(dashSubmissions.length)} sublabel={`${dashSubmissions.filter(sub => sub.completed).length} completed`} onClick={() => setActiveTab('liveSubmissions')} />
+                  <BetaStatTile label="Careers recommended" value={String(dashCareerRecs.length)} sublabel="Users who received career matches" onClick={() => setActiveTab('liveCareerRecs')} />
+                  <BetaStatTile label="Feedback responses" value={String(dashFeedback.length)} sublabel={`F1 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage1').length} · F2 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'result').length} · F3 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage2').length} · Incomplete ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'started').length}`} onClick={() => setActiveTab('liveFeedback')} />
+                  <BetaStatTile label="Conversion rate" value={dashSubmissions.length > 0 ? `${Math.round((dashPaidSales.length / dashSubmissions.length) * 100)}%` : '—'} sublabel="Paid orders ÷ assessments submitted" />
                 </div>
               </div>
             )}
@@ -3966,8 +4049,8 @@ export default function AdminPage() {
               // Cohort-scoped views of the raw lists — every count/chart/export
               // below is derived from these, so the whole dashboard (including
               // the "Who's testing" charts further down) respects cohortFilter.
-              const scopedFeedback = scopeFeedbackList.filter(bf => matchesCohortFilter({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }, cohortFilter) && matchesPlan(bf.assessment_responses?.email))
-              const scopedSubmissions = scopeSubmissions.filter(s => matchesCohortFilter(s, cohortFilter) && matchesPlan(s.email))
+              const scopedFeedback = scopeFeedbackList.filter(bf => matchesCohortFilter({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }, cohortFilter) && matchesPlan(bf.assessment_responses?.email) && (!isLiveView || dashSubmissionIds.has(bf.response_id)))
+              const scopedSubmissions = scopeSubmissions.filter(s => matchesCohortFilter(s, cohortFilter) && matchesPlan(s.email) && (!isLiveView || matchesDashSubmission(s)))
               const stage2Responses = scopedFeedback.filter(bf => bf.stage2_completed_at)
               const stage2Total = stage2Responses.length
               const resultStageResponses = scopedFeedback.filter(bf => bf.result_stage_completed_at)
@@ -4679,7 +4762,7 @@ export default function AdminPage() {
               const statusOptions = distinctValues(scopeFeedbackList.map(bf => bf.assessment_responses?.current_stage))
               const ageOptions = distinctValues(scopeFeedbackList.map(bf => bf.assessment_responses?.age_bracket ?? ageToBracket(bf.assessment_responses?.age)))
               const visibleBetaFeedback = scopeFeedbackList
-                .filter(bf => matchesCohortFilter({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }, cohortFilter) && matchesPlan(bf.assessment_responses?.email))
+                .filter(bf => matchesCohortFilter({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }, cohortFilter) && matchesPlan(bf.assessment_responses?.email) && (!isLiveView || dashSubmissionIds.has(bf.response_id)))
                 // 'All' hides incomplete rows (nothing submitted); pick the Incomplete pill to see them.
                 // .filter(bf => betaFeedbackStageFilter === 'all' || betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
                 .filter(bf => betaFeedbackStageFilter === 'all' ? betaFeedbackStageOf(bf) !== 'started' : betaFeedbackStageOf(bf) === betaFeedbackStageFilter)
