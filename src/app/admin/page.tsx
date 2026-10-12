@@ -1415,6 +1415,18 @@ export default function AdminPage() {
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackEntry | null>(null)
 
   const [betaFeedbackList, setBetaFeedbackList] = useState<BetaFeedbackEntry[]>([])
+  // The global filter bar is pinned (sticky) on the live tabs; its height is measured so the stage pills can stick just below it.
+  const dashFilterBarRef = useRef<HTMLDivElement | null>(null)
+  const [dashFilterBarH, setDashFilterBarH] = useState(0)
+  useEffect(() => {
+    const el = dashFilterBarRef.current
+    if (!el) { setDashFilterBarH(0); return }
+    const update = () => setDashFilterBarH(el.offsetHeight)
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [activeTab])
   const [betaDemographicsFilter, setBetaDemographicsFilter] = useState<'all' | 'stage1' | 'result' | 'stage2' | 'stage2_free' | 'stage2_paid'>('all')
   const [betaFeedbackLoading, setBetaFeedbackLoading] = useState(false)
   const [betaFeedbackError, setBetaFeedbackError] = useState('')
@@ -4467,7 +4479,7 @@ export default function AdminPage() {
 
         {/* Filters stay pinned while scrolling so they can be changed from anywhere on these tabs. */}
         {['liveDashboard', 'liveFeedback', 'liveSubmissions', 'liveCareerRecs', 'liveSales', 'liveCoaching', 'liveBehavior'].includes(activeTab) && (
-          <div className="sticky top-2 z-30 mb-4">
+          <div ref={dashFilterBarRef} className="sticky top-2 z-30 mb-4">
             <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-3">
               <div className="flex flex-wrap items-end gap-3">
                 <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">From
@@ -4892,13 +4904,15 @@ export default function AdminPage() {
                     const filterCount = { all: totalSubmissions, stage1: stage1Total, result: resultStageTotal, stage2: stage2Total, stage2_free: f3FreeTotal, stage2_paid: f3PaidTotal }
                     const filterLabel = demoFilterLabel
                     return (
-                      <div className="mb-6">
-                        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                      <>
+                        {/* Sits in the page until you scroll past it, then pins under the filter bar so the stage can be switched from any chart below. */}
+                        <div className="sticky z-20 mb-3 bg-white/95 backdrop-blur rounded-2xl border border-slate-100 shadow-sm px-4 py-3" style={{ top: dashFilterBarH ? dashFilterBarH + 16 : 8 }}>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
                           <p className="text-sm font-semibold text-slate-700">
                             Who&apos;s testing <span className="text-slate-400 font-normal">— {filterLabel[betaDemographicsFilter]} ({demoTotal})</span>
                           </p>
                           <div className="flex flex-wrap gap-2">
-                            {(['all', 'stage1', 'result', 'stage2', 'stage2_free', 'stage2_paid'] as const).map(key => (
+                            {(isLiveView ? ['all', 'stage1', 'result', 'stage2_free', 'stage2_paid'] as const : ['all', 'stage1', 'result', 'stage2'] as const).map(key => (
                               <button
                                 key={key}
                                 onClick={() => setBetaDemographicsFilter(key)}
@@ -4911,6 +4925,8 @@ export default function AdminPage() {
                             ))}
                           </div>
                         </div>
+                        </div>
+                        <div className="mb-6">
                         {demoTotal === 0 ? (
                           <p className="text-slate-400 text-xs text-center py-6">No submissions in this cohort yet</p>
                         ) : (
@@ -4934,15 +4950,6 @@ export default function AdminPage() {
                             onSelect={openDemo('experience_level', EXPERIENCE_LEVEL_LABEL, 'Experience level')}
                             />
                             <BetaCategoryChart
-                              title="Current stage"
-                              order={CURRENT_STAGE_ORDER}
-                              labels={CURRENT_STAGE_LABEL}
-                              counts={countBy(demoRows, r => r.current_stage)}
-                              total={demoTotal}
-                              kind="donut"
-                            onSelect={openDemo('current_stage', CURRENT_STAGE_LABEL, 'Current stage')}
-                            />
-                            <BetaCategoryChart
                               title="Country"
                               order={COUNTRY_ORDER}
                               labels={COUNTRY_LABEL}
@@ -4960,9 +4967,19 @@ export default function AdminPage() {
                               kind="donut"
                             onSelect={openDemo('nationality', NATIONALITY_LABEL, 'Nationality')}
                             />
+                            <BetaCategoryChart
+                              title="Current stage"
+                              order={CURRENT_STAGE_ORDER}
+                              labels={CURRENT_STAGE_LABEL}
+                              counts={countBy(demoRows, r => r.current_stage)}
+                              total={demoTotal}
+                              kind="donut"
+                            onSelect={openDemo('current_stage', CURRENT_STAGE_LABEL, 'Current stage')}
+                            />
                           </div>
                         )}
-                      </div>
+                        </div>
+                      </>
                     )
                   })()}
                   {/* Careers rejected: every "Not for me" tap on a career card, with why and which careers (all submissions). */}
