@@ -3803,8 +3803,8 @@ export default function AdminPage() {
       const filterNotes: string[] = []
       if (dashFiltersActive) filterNotes.push('Filters are active: every sheet only contains the matching people.')
       filterNotes.push('Sales are matched to the filtered people by email; the date range applies to the payment date.')
-      if (demoFilterOn) filterNotes.push('Country / nationality / age filters are active, so sheets with no demographics (abandoned, waitlist, coaching log, featured courses) are left out.')
-      else filterNotes.push('Abandoned, waitlist, coaching log and featured courses only use the date range (they carry no demographics).')
+      if (demoFilterOn) filterNotes.push('Country / nationality / age filters are active, so sheets with no demographics (abandoned, coaching log) are left out.')
+      else filterNotes.push('Abandoned and coaching log only use the date range (they carry no demographics).')
 
       const summary: SummaryBlock[] = [
         { title: 'Report', headers: ['', ''], rows: [
@@ -4010,17 +4010,18 @@ export default function AdminPage() {
         //     b.full_name, b.email, b.feature, b.page, b.locale, b.device_type, lab(COUNTRY_LABEL, b.country), b.response_id,
         //   ]),
         // })
-        sheets.push({
-          name: 'Waitlist', headers: ['Joined at', 'Name', 'Email', 'Phone', 'Country', 'Nationality', 'Status', 'Age', 'Language', 'Source'],
-          rows: waitlistList.filter(w => inDashDateRange(w.created_at)).map(w => [
-            dt(w.created_at), w.name, w.email, w.phone, lab(COUNTRY_LABEL, w.country), lab(NATIONALITY_LABEL, w.nationality),
-            lab(WAITLIST_STATUS_LABELS, w.status), w.age, w.locale, w.source,
-          ]),
-        })
-        sheets.push({
-          name: 'Featured courses', headers: ['At', 'Event', 'Course', 'Tier', 'Language', 'Response ID'],
-          rows: featuredEvents.filter(e => isLive(e.created_at) && inDashDateRange(e.created_at)).map(e => [dt(e.created_at), e.event_type, e.course_key, e.tier, e.locale, e.response_id]),
-        })
+        // Waitlist and Featured courses sheets removed from the export on request (12 Oct 2026):
+        // sheets.push({
+        //   name: 'Waitlist', headers: ['Joined at', 'Name', 'Email', 'Phone', 'Country', 'Nationality', 'Status', 'Age', 'Language', 'Source'],
+        //   rows: waitlistList.filter(w => inDashDateRange(w.created_at)).map(w => [
+        //     dt(w.created_at), w.name, w.email, w.phone, lab(COUNTRY_LABEL, w.country), lab(NATIONALITY_LABEL, w.nationality),
+        //     lab(WAITLIST_STATUS_LABELS, w.status), w.age, w.locale, w.source,
+        //   ]),
+        // })
+        // sheets.push({
+        //   name: 'Featured courses', headers: ['At', 'Event', 'Course', 'Tier', 'Language', 'Response ID'],
+        //   rows: featuredEvents.filter(e => isLive(e.created_at) && inDashDateRange(e.created_at)).map(e => [dt(e.created_at), e.event_type, e.course_key, e.tier, e.locale, e.response_id]),
+        // })
       }
 
       const blob = await buildWorkbook('Etijahi Live Dashboard: full export', summary, sheets)
@@ -4918,7 +4919,7 @@ export default function AdminPage() {
                         <div className="sticky z-20 mb-3 bg-white/95 backdrop-blur rounded-2xl border border-slate-100 shadow-sm px-4 py-3" style={{ top: dashFilterBarH ? dashFilterBarH + 16 : 8 }}>
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <p className="text-sm font-semibold text-slate-700">
-                            Who&apos;s testing <span className="text-slate-400 font-normal">— {filterLabel[betaDemographicsFilter]} ({demoTotal})</span>
+                            Who took the assessment <span className="text-slate-400 font-normal">— {filterLabel[betaDemographicsFilter]} ({demoTotal})</span>
                           </p>
                           <div className="flex flex-wrap gap-2">
                             {(isLiveView ? ['all', 'stage1', 'result', 'stage2_free', 'stage2_paid'] as const : ['all', 'stage1', 'result', 'stage2'] as const).map(key => (
