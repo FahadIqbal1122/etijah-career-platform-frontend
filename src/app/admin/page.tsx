@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 import DashboardStatsView, { type DashboardStats } from '@/components/admin/DashboardStatsView'
+import { DonutChart, ColumnChart, TrendChart, Sparkline, catColor } from '@/components/admin/DashCharts'
 import EmailTemplatesTab from '@/components/admin/EmailTemplatesTab'
 import EmailSchedulerTab from '@/components/admin/EmailSchedulerTab'
 import SmtpSettingsTab from '@/components/admin/SmtpSettingsTab'
@@ -408,16 +409,20 @@ const NATIONALITY_LABEL: Record<string, string> = {
   qatari: 'Qatari', omani: 'Omani', other: 'Other',
 }
 
-function BetaStatTile({ label, value, sublabel, onClick }: { label: string; value: string; sublabel?: string; onClick?: () => void }) {
+function BetaStatTile({ label, value, sublabel, onClick, accent, spark }: { label: string; value: string; sublabel?: string; onClick?: () => void; accent?: string; spark?: number[] }) {
   const Tag = onClick ? 'button' : 'div'
   return (
     <Tag
       onClick={onClick}
-      className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-4 text-left w-full ${onClick ? 'hover:border-primary/40 hover:shadow-md transition-all cursor-pointer' : ''}`}
+      className={`relative overflow-hidden bg-white rounded-2xl shadow-sm border border-slate-100 p-4 pl-5 text-left w-full ${onClick ? 'hover:border-slate-300 hover:shadow-md transition-all cursor-pointer' : ''}`}
     >
+      <span className="absolute left-0 top-0 bottom-0 w-1.5" style={{ background: accent || '#cbd5e1' }} />
       <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">{label}</p>
-      <p className="text-2xl font-bold text-slate-800 tabular-nums">{value}</p>
-      {sublabel && <p className="text-xs text-slate-400 mt-0.5">{sublabel}</p>}
+      <div className="flex items-end justify-between gap-2">
+        <p className="text-3xl font-bold text-slate-800 tabular-nums leading-tight">{value}</p>
+        {spark && <Sparkline values={spark} color={accent || '#2a78d6'} />}
+      </div>
+      {sublabel && <p className="text-xs text-slate-400 mt-1">{sublabel}</p>}
     </Tag>
   )
 }
@@ -461,14 +466,14 @@ function BetaBarRow({ valueKey, count, total }: { valueKey: string; count: numbe
 }
 
 function BetaSentimentChart({ title, orderKey, counts, total }: { title: string; orderKey: keyof typeof SENTIMENT_ORDER; counts: Record<string, number>; total: number }) {
+  // Sentiment answers have a good/bad polarity, so they keep the semantic green/amber/red colors.
+  const items = SENTIMENT_ORDER[orderKey].map(key => ({
+    key, label: SENTIMENT_LABEL[key] || formatUnderscored(key), value: counts[key] || 0, color: SENTIMENT_COLOR[key] || '#2a78d6',
+  }))
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
       <p className="text-sm font-semibold text-slate-700 mb-4">{title}</p>
-      <div className="space-y-2.5">
-        {SENTIMENT_ORDER[orderKey].map(key => (
-          <BetaBarRow key={key} valueKey={key} count={counts[key] || 0} total={total} />
-        ))}
-      </div>
+      <DonutChart items={items} total={total} />
     </div>
   )
 }
@@ -476,27 +481,33 @@ function BetaSentimentChart({ title, orderKey, counts, total }: { title: string;
 // Generic categorical breakdown with an explicit display order and label map —
 // unlike BetaSentimentChart, these values (age bracket, career stage) have no
 // good/bad connotation, so every bar shares one neutral color.
-function BetaCategoryChart({ title, order, labels, counts, total }: { title: string; order: string[]; labels: Record<string, string>; counts: Record<string, number>; total: number }) {
+function BetaCategoryChart({ title, order, labels, counts, total, kind = 'bar' }: { title: string; order: string[]; labels: Record<string, string>; counts: Record<string, number>; total: number; kind?: 'bar' | 'column' | 'donut' }) {
+  const items = order.map((key, i) => ({ key, label: labels[key] || formatUnderscored(key), value: counts[key] || 0, color: catColor(i) }))
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
       <p className="text-sm font-semibold text-slate-700 mb-4">{title}</p>
-      <div className="space-y-2.5">
-        {order.map(key => {
-          const count = counts[key] || 0
-          const pct = total > 0 ? Math.round((count / total) * 100) : 0
-          return (
-            <div key={key} className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-xs text-slate-500">{labels[key] || formatUnderscored(key)}</span>
-              <div className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+      {kind === 'donut' ? (
+        <DonutChart items={items} total={total} />
+      ) : kind === 'column' ? (
+        <ColumnChart items={items} total={total} />
+      ) : (
+        <div className="space-y-2.5">
+          {items.map(item => {
+            const pct = total > 0 ? Math.round((item.value / total) * 100) : 0
+            return (
+              <div key={item.key} className="flex items-center gap-3">
+                <span className="w-24 shrink-0 text-xs text-slate-500">{item.label}</span>
+                <div className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                  <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                </div>
+                <span className="w-20 shrink-0 text-right text-xs font-semibold text-slate-700 tabular-nums">
+                  {pct}% <span className="text-slate-400 font-normal">({item.value})</span>
+                </span>
               </div>
-              <span className="w-20 shrink-0 text-right text-xs font-semibold text-slate-700 tabular-nums">
-                {pct}% <span className="text-slate-400 font-normal">({count})</span>
-              </span>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -505,21 +516,21 @@ function BetaCategoryChart({ title, order, labels, counts, total }: { title: str
 // bar length is the average as a share of `max`, so several questions on the
 // same scale sit directly comparable to each other in one card.
 function BetaAverageChart({ title, rows, max }: { title: string; rows: { label: string; avg: number | null; n: number }[]; max: number }) {
+  const H = 110
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
       <p className="text-sm font-semibold text-slate-700 mb-4">{title}</p>
-      <div className="space-y-2.5">
-        {rows.map(row => {
-          const pct = row.avg != null ? Math.round((row.avg / max) * 100) : 0
+      <div className="flex items-end justify-around gap-4" style={{ minHeight: H + 56 }}>
+        {rows.map((row, i) => {
+          const h = row.avg != null ? Math.max(4, Math.round((row.avg / max) * H)) : 2
           return (
-            <div key={row.label} className="flex items-center gap-3">
-              <span className="w-40 shrink-0 text-xs text-slate-500">{row.label}</span>
-              <div className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+            <div key={row.label} className="flex-1 flex flex-col items-center justify-end gap-1.5" title={`${row.label}: ${row.avg != null ? row.avg.toFixed(2) : '—'} / ${max} (n=${row.n})`}>
+              <span className="text-lg font-bold text-slate-800 tabular-nums leading-none">{row.avg != null ? row.avg.toFixed(1) : '—'}<span className="text-[10px] font-normal text-slate-400">/{max}</span></span>
+              <div className="relative w-full max-w-[56px] rounded-t-lg bg-slate-100" style={{ height: H }}>
+                <div className="absolute bottom-0 left-0 right-0 rounded-t-lg" style={{ height: h, background: catColor(i) }} />
               </div>
-              <span className="w-24 shrink-0 text-right text-xs font-semibold text-slate-700 tabular-nums">
-                {row.avg != null ? row.avg.toFixed(1) : '—'}/{max} <span className="text-slate-400 font-normal">(n={row.n})</span>
-              </span>
+              <span className="text-[11px] text-slate-500 text-center leading-tight">{row.label}</span>
+              <span className="text-[10px] text-slate-400">n={row.n}</span>
             </div>
           )
         })}
@@ -3486,14 +3497,43 @@ export default function AdminPage() {
   // Sales carry no age/nationality, so demographics are matched through the buyer's email;
   // the date range applies to the payment date itself.
   const demoEmails = new Set(liveSubmissions.filter(matchesDashDemo).map(s => emailKey(s.email)))
-  const dashPaidSales = livePaidSales.filter(t =>
+  const dashRealSales = realSales.filter(t =>
     inDashDateRange(t.paid_at || t.created_at) && (!demoFilterOn || demoEmails.has(emailKey(t.email))))
+  const dashPaidSales = dashRealSales.filter(isPaidSale)
   const dashCoachingSales = dashPaidSales.filter(t => t.coaching_included)
   const dashExplorerCount = dashSubmissions.filter(s => s.completed && !livePaidEmails.has(emailKey(s.email))).length
   const dashRevenueByCurrency = new Map<string, number>()
   for (const t of dashPaidSales) dashRevenueByCurrency.set(t.currency, (dashRevenueByCurrency.get(t.currency) || 0) + Number(t.amount || 0))
   const dashRevenueLabel = dashRevenueByCurrency.size === 0 ? '0'
     : Array.from(dashRevenueByCurrency.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ')
+  // Behavior sessions link to a submission through response_id; sessions that never reached a submission
+  // (no response_id) can't be matched to demographics, so they drop out while a filter is active.
+  const dashSessionIds = new Set(telemetrySessions
+    .filter(s => isLive(s.started_at) && (!dashFiltersActive || (!!s.response_id && dashSubmissionIds.has(s.response_id))))
+    .map(s => s.session_id))
+  const dashTelemetrySummary = summarizeTelemetry(telemetryList.filter(e => dashSessionIds.has(e.session_id)))
+  const dashScopeCareerRecs = isLiveView ? dashCareerRecs : betaCareerRecsGenerated
+  // Per-day series for the dashboard trend charts (admin's local day).
+  const dayKey = (iso: string) => new Date(iso).toLocaleDateString('en-CA')
+  const trendStartKey = dashFrom || dayKey(LIVE_START.toISOString())
+  const trendEndKey = dashTo || dayKey(new Date().toISOString())
+  const trendDays: string[] = []
+  {
+    const cur = new Date(`${trendStartKey}T12:00:00`)
+    const end = new Date(`${trendEndKey}T12:00:00`)
+    while (cur <= end && trendDays.length < 366) {
+      trendDays.push(cur.toLocaleDateString('en-CA'))
+      cur.setDate(cur.getDate() + 1)
+    }
+  }
+  const trendDays120 = trendDays.slice(-120)
+  const subsPerDay = new Map<string, number>()
+  for (const s of dashSubmissions) subsPerDay.set(dayKey(s.created_at), (subsPerDay.get(dayKey(s.created_at)) || 0) + 1)
+  const salesPerDay = new Map<string, number>()
+  for (const s of dashPaidSales) { const k = dayKey(s.paid_at || s.created_at); salesPerDay.set(k, (salesPerDay.get(k) || 0) + 1) }
+  const shortDay = (k: string) => new Date(`${k}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+  const submissionsTrend = trendDays120.map(k => ({ label: shortDay(k), value: subsPerDay.get(k) || 0 }))
+  const salesTrend = trendDays120.map(k => ({ label: shortDay(k), value: salesPerDay.get(k) || 0 }))
   const resetDashFilters = () => { setDashFrom(''); setDashTo(''); setDashCountry('all'); setDashNationality('all'); setDashAge('all') }
   const liveOpenBugCount = bugReports.filter(b => b.status === 'open').length
   const visibleBugReports = scopeBugReports
@@ -3949,7 +3989,7 @@ export default function AdminPage() {
         )}
 
         {/* Filters stay pinned while scrolling so they can be changed from anywhere on these tabs. */}
-        {(activeTab === 'liveDashboard' || activeTab === 'liveFeedback') && (
+        {['liveDashboard', 'liveFeedback', 'liveSubmissions', 'liveCareerRecs', 'liveSales', 'liveCoaching', 'liveBehavior'].includes(activeTab) && (
           <div className="sticky top-2 z-30 mb-4">
             <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-3">
               <div className="flex flex-wrap items-end gap-3">
@@ -4000,43 +4040,32 @@ export default function AdminPage() {
               <div className="mb-6">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">At a glance · since {LIVE_START.toLocaleDateString()}</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <BetaStatTile label="Number of sales" value={String(dashPaidSales.length)} sublabel="Transactions (paid orders)" onClick={() => setActiveTab('liveSales')} />
-                  <BetaStatTile label="Total revenue" value={dashRevenueLabel} sublabel="From paid orders" onClick={() => setActiveTab('liveSales')} />
-                  <BetaStatTile label="Free reports (Explorer)" value={String(dashExplorerCount)} sublabel="Completed, no purchase" onClick={() => setActiveTab('liveSubmissions')} />
-                  <BetaStatTile label="Pathfinder plans sold" value={String(dashPaidSales.length - dashCoachingSales.length)} sublabel="Paid report" onClick={() => setActiveTab('liveSales')} />
-                  <BetaStatTile label="Launchpad plans sold" value={String(dashCoachingSales.length)} sublabel="Report + 1:1 coaching" onClick={() => setActiveTab('liveCoaching')} />
-                  <BetaStatTile label="Assessments submitted" value={String(dashSubmissions.length)} sublabel={`${dashSubmissions.filter(sub => sub.completed).length} completed`} onClick={() => setActiveTab('liveSubmissions')} />
-                  <BetaStatTile label="Careers recommended" value={String(dashCareerRecs.length)} sublabel="Users who received career matches" onClick={() => setActiveTab('liveCareerRecs')} />
-                  <BetaStatTile label="Feedback responses" value={String(dashFeedback.length)} sublabel={`F1 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage1').length} · F2 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'result').length} · F3 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage2').length} · Incomplete ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'started').length}`} onClick={() => setActiveTab('liveFeedback')} />
-                  <BetaStatTile label="Conversion rate" value={dashSubmissions.length > 0 ? `${Math.round((dashPaidSales.length / dashSubmissions.length) * 100)}%` : '—'} sublabel="Paid orders ÷ assessments submitted" />
+                  <BetaStatTile label="Number of sales" accent="#1baf7a" spark={salesTrend.map(p => p.value)} value={String(dashPaidSales.length)} sublabel="Transactions (paid orders)" onClick={() => setActiveTab('liveSales')} />
+                  <BetaStatTile label="Total revenue" accent="#1baf7a" value={dashRevenueLabel} sublabel="From paid orders" onClick={() => setActiveTab('liveSales')} />
+                  <BetaStatTile label="Free reports (Explorer)" accent="#2a78d6" value={String(dashExplorerCount)} sublabel="Completed, no purchase" onClick={() => setActiveTab('liveSubmissions')} />
+                  <BetaStatTile label="Pathfinder plans sold" accent="#eb6834" value={String(dashPaidSales.length - dashCoachingSales.length)} sublabel="Paid report" onClick={() => setActiveTab('liveSales')} />
+                  <BetaStatTile label="Launchpad plans sold" accent="#6250d6" value={String(dashCoachingSales.length)} sublabel="Report + 1:1 coaching" onClick={() => setActiveTab('liveCoaching')} />
+                  <BetaStatTile label="Assessments submitted" accent="#2a78d6" spark={submissionsTrend.map(p => p.value)} value={String(dashSubmissions.length)} sublabel={`${dashSubmissions.filter(sub => sub.completed).length} completed`} onClick={() => setActiveTab('liveSubmissions')} />
+                  <BetaStatTile label="Careers recommended" accent="#e87ba4" value={String(dashCareerRecs.length)} sublabel="Users who received career matches" onClick={() => setActiveTab('liveCareerRecs')} />
+                  <BetaStatTile label="Feedback responses" accent="#eda100" value={String(dashFeedback.length)} sublabel={`F1 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage1').length} · F2 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'result').length} · F3 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage2').length} · Incomplete ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'started').length}`} onClick={() => setActiveTab('liveFeedback')} />
+                  <BetaStatTile label="Conversion rate" accent="#008300" value={dashSubmissions.length > 0 ? `${Math.round((dashPaidSales.length / dashSubmissions.length) * 100)}%` : '—'} sublabel="Paid orders ÷ assessments submitted" />
                 </div>
-              </div>
-            )}
-            {activeTab === 'liveDashboard' && shareToken && (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 mb-6 flex items-center gap-3">
-                <p className="text-xs text-slate-500 flex-1">
-                  Public, no-login link to the waitlist and signup stats page (not this live dashboard) — anyone with it can view it:
-                  <span className="block font-mono text-slate-700 mt-0.5 truncate">{`${typeof window !== 'undefined' ? window.location.origin : ''}/stats/${shareToken}`}</span>
-                </p>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/stats/${shareToken}`).then(() => {
-                      setShareLinkCopied(true)
-                      setTimeout(() => setShareLinkCopied(false), 2000)
-                    }).catch(() => {})
-                  }}
-                  className="text-xs font-medium bg-sky-600 text-white px-3 py-1.5 rounded-lg hover:bg-sky-700 transition-colors flex-none"
-                >
-                  {shareLinkCopied ? 'Copied' : 'Copy link'}
-                </button>
-                <button
-                  onClick={handleRegenerateShareLink}
-                  disabled={regeneratingShareLink}
-                  title="Invalidates the current link and issues a new one"
-                  className="text-xs font-medium bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors flex-none disabled:opacity-50"
-                >
-                  {regeneratingShareLink ? '…' : 'Regenerate'}
-                </button>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <div className="flex items-baseline justify-between mb-2">
+                      <p className="text-sm font-semibold text-slate-700">Assessments per day</p>
+                      <p className="text-xs text-slate-400">{dashSubmissions.length} total</p>
+                    </div>
+                    <TrendChart points={submissionsTrend} kind="line" color="#2a78d6" unit="assessments" />
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <div className="flex items-baseline justify-between mb-2">
+                      <p className="text-sm font-semibold text-slate-700">Paid orders per day</p>
+                      <p className="text-xs text-slate-400">{dashPaidSales.length} total</p>
+                    </div>
+                    <TrendChart points={salesTrend} kind="column" color="#1baf7a" unit="orders" />
+                  </div>
+                </div>
               </div>
             )}
             {betaFeedbackLoading && (
@@ -4314,6 +4343,7 @@ export default function AdminPage() {
                               labels={AGE_BRACKET_LABEL}
                               counts={countBy(demoRows, r => r.age_bracket)}
                               total={demoTotal}
+                              kind="column"
                             />
                             <BetaCategoryChart
                               title="Experience level"
@@ -4321,6 +4351,7 @@ export default function AdminPage() {
                               labels={EXPERIENCE_LEVEL_LABEL}
                               counts={countBy(demoRows, r => r.experience_level)}
                               total={demoTotal}
+                              kind="column"
                             />
                             <BetaCategoryChart
                               title="Current stage"
@@ -4328,6 +4359,7 @@ export default function AdminPage() {
                               labels={CURRENT_STAGE_LABEL}
                               counts={countBy(demoRows, r => r.current_stage)}
                               total={demoTotal}
+                              kind="donut"
                             />
                             <BetaCategoryChart
                               title="Country"
@@ -4335,6 +4367,7 @@ export default function AdminPage() {
                               labels={COUNTRY_LABEL}
                               counts={countBy(demoRows, r => r.country)}
                               total={demoTotal}
+                              kind="donut"
                             />
                             <BetaCategoryChart
                               title="Nationality"
@@ -4342,6 +4375,7 @@ export default function AdminPage() {
                               labels={NATIONALITY_LABEL}
                               counts={countBy(demoRows, r => r.nationality)}
                               total={demoTotal}
+                              kind="donut"
                             />
                           </div>
                         )}
@@ -4375,6 +4409,7 @@ export default function AdminPage() {
                             labels={STAGE1_INTENT_LABEL}
                             counts={countBy(stage1IntentAnswered, bf => bf.s1_intent)}
                             total={stage1IntentAnswered.length}
+                            kind="donut"
                           />
                         </div>
                       </>
@@ -4413,6 +4448,7 @@ export default function AdminPage() {
                               labels={HAD_ISSUES_LABEL}
                               counts={countBy(hadIssuesAnswered, bf => bf.had_issues)}
                               total={hadIssuesAnswered.length}
+                              kind="donut"
                             />
                             {hadIssuesAnswered.some(bf => bf.had_issues === 'yes') && (
                               <button
@@ -4461,6 +4497,7 @@ export default function AdminPage() {
                             labels={CAREERS_CONSIDERED_LABEL}
                             counts={countBy(careersConsideredAnswered, bf => bf.careers_seriously_considered)}
                             total={careersConsideredAnswered.length}
+                            kind="column"
                           />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -4533,6 +4570,33 @@ export default function AdminPage() {
                 </>
               )
             })()}
+            {activeTab === 'liveDashboard' && shareToken && (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 mb-6 flex items-center gap-3">
+                <p className="text-xs text-slate-500 flex-1">
+                  Public, no-login link to the waitlist and signup stats page (not this live dashboard) — anyone with it can view it:
+                  <span className="block font-mono text-slate-700 mt-0.5 truncate">{`${typeof window !== 'undefined' ? window.location.origin : ''}/stats/${shareToken}`}</span>
+                </p>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/stats/${shareToken}`).then(() => {
+                      setShareLinkCopied(true)
+                      setTimeout(() => setShareLinkCopied(false), 2000)
+                    }).catch(() => {})
+                  }}
+                  className="text-xs font-medium bg-sky-600 text-white px-3 py-1.5 rounded-lg hover:bg-sky-700 transition-colors flex-none"
+                >
+                  {shareLinkCopied ? 'Copied' : 'Copy link'}
+                </button>
+                <button
+                  onClick={handleRegenerateShareLink}
+                  disabled={regeneratingShareLink}
+                  title="Invalidates the current link and issues a new one"
+                  className="text-xs font-medium bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors flex-none disabled:opacity-50"
+                >
+                  {regeneratingShareLink ? '…' : 'Regenerate'}
+                </button>
+              </div>
+            )}
           </>
         )}
 
@@ -4544,7 +4608,7 @@ export default function AdminPage() {
               </div>
             )}
             {fetchError && <p className="text-red-500 text-sm text-center py-8">{fetchError}</p>}
-            {!loading && !fetchError && renderSubmissionsTable(scopeSubmissions, isLiveView ? 'No submissions yet' : 'No beta submissions yet', `${isLiveView ? 'live' : 'beta'}_submissions_${new Date().toISOString().slice(0, 10)}.csv`)}
+            {!loading && !fetchError && renderSubmissionsTable(isLiveView ? scopeSubmissions.filter(matchesDashSubmission) : scopeSubmissions, isLiveView ? 'No submissions yet' : 'No beta submissions yet', `${isLiveView ? 'live' : 'beta'}_submissions_${new Date().toISOString().slice(0, 10)}.csv`)}
           </>
         )}
 
@@ -4626,7 +4690,7 @@ export default function AdminPage() {
               {(() => {
                 const exportCareerCatalog = () => {
                   const recommendedTo = new Map<string, { full_name: string | null; email: string | null }[]>()
-                  for (const sub of scopeCareerRecsGenerated) {
+                  for (const sub of dashScopeCareerRecs) {
                     for (const rec of sub.career_recommendations || []) {
                       const key = (rec.title || '').trim().toLowerCase()
                       if (!key) continue
@@ -4657,7 +4721,7 @@ export default function AdminPage() {
                 // verbatim (see careers_prompt in report_generator.py), so a title match
                 // reliably identifies which catalog row was shown.
                 const recommendedTo = new Map<string, { full_name: string | null; email: string | null }[]>()
-                for (const sub of scopeCareerRecsGenerated) {
+                for (const sub of dashScopeCareerRecs) {
                   for (const rec of sub.career_recommendations || []) {
                     const key = (rec.title || '').trim().toLowerCase()
                     if (!key) continue
@@ -4950,7 +5014,7 @@ export default function AdminPage() {
             {telemetryError && <p className="text-red-500 text-sm text-center py-8">{telemetryError}</p>}
             {!telemetryLoading && !telemetryError && (
               <TelemetryBehaviorView
-                summary={scopeTelemetrySummary}
+                summary={isLiveView ? dashTelemetrySummary : scopeTelemetrySummary}
                 drilldown={telemetryDrilldown}
                 onDrilldown={setTelemetryDrilldown}
                 onCloseDrilldown={() => setTelemetryDrilldown(null)}
@@ -4961,11 +5025,11 @@ export default function AdminPage() {
 
         {activeTab === 'liveSales' && (() => {
           const revenueByCurrency = new Map<string, number>()
-          for (const t of livePaidSales) revenueByCurrency.set(t.currency, (revenueByCurrency.get(t.currency) || 0) + Number(t.amount || 0))
-          const coachingOwed = livePaidSales.filter(t => t.coaching_included)
+          for (const t of dashPaidSales) revenueByCurrency.set(t.currency, (revenueByCurrency.get(t.currency) || 0) + Number(t.amount || 0))
+          const coachingOwed = dashPaidSales.filter(t => t.coaching_included)
           const exportSales = () => downloadCSV(`sales_${new Date().toISOString().slice(0, 10)}.csv`, [
             ['Date', 'Name', 'Email', 'Country', 'Plan', 'Amount', 'Currency', 'Status', 'Paid at', 'Coaching session included', 'Order ref'],
-            ...realSales.map(t => [t.created_at, t.full_name, t.email, t.country, t.plan_code, t.amount, t.currency, t.status, t.paid_at, t.coaching_included ? 'Yes' : 'No', t.order_ref]),
+            ...dashRealSales.map(t => [t.created_at, t.full_name, t.email, t.country, t.plan_code, t.amount, t.currency, t.status, t.paid_at, t.coaching_included ? 'Yes' : 'No', t.order_ref]),
           ])
           return (
             <>
@@ -4978,17 +5042,17 @@ export default function AdminPage() {
               {!salesLoading && !salesError && (
                 <>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                    <BetaStatTile label="Paid orders" value={String(livePaidSales.length)} sublabel={`${realSales.length} total incl. unpaid`} />
+                    <BetaStatTile label="Paid orders" value={String(dashPaidSales.length)} sublabel={`${dashRealSales.length} total incl. unpaid`} />
                     <BetaStatTile
                       label="Revenue"
                       value={revenueByCurrency.size === 0 ? '0' : Array.from(revenueByCurrency.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ')}
                       sublabel="Paid orders only"
                     />
                     <BetaStatTile label="Coaching sold" value={String(coachingOwed.length)} sublabel="Launchpad orders" onClick={() => setActiveTab('liveCoaching')} />
-                    <BetaStatTile label="Pathfinder only" value={String(livePaidSales.length - coachingOwed.length)} />
+                    <BetaStatTile label="Pathfinder only" value={String(dashPaidSales.length - coachingOwed.length)} />
                   </div>
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm text-slate-400">{realSales.length} order{realSales.length !== 1 ? 's' : ''}{hiddenTestSalesCount > 0 && ` · ${hiddenTestSalesCount} test payment${hiddenTestSalesCount !== 1 ? 's' : ''} hidden`}</p>
+                    <p className="text-sm text-slate-400">{dashRealSales.length} order{dashRealSales.length !== 1 ? 's' : ''}{hiddenTestSalesCount > 0 && ` · ${hiddenTestSalesCount} test payment${hiddenTestSalesCount !== 1 ? 's' : ''} hidden`}</p>
                     <DownloadCSVButton onClick={exportSales} />
                   </div>
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
@@ -5001,7 +5065,7 @@ export default function AdminPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {realSales.map((t, i) => (
+                        {dashRealSales.map((t, i) => (
                           <tr key={t.order_ref} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
                             <td className="px-4 py-3 text-slate-400 text-xs">{new Date(t.paid_at || t.created_at).toLocaleDateString()}</td>
                             <td className="px-4 py-3">
@@ -5017,7 +5081,7 @@ export default function AdminPage() {
                             <td className="px-4 py-3 text-slate-500">{t.coaching_included ? '1:1 session' : '—'}</td>
                           </tr>
                         ))}
-                        {realSales.length === 0 && (
+                        {dashRealSales.length === 0 && (
                           <tr>
                             <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No orders yet</td>
                           </tr>
@@ -5034,7 +5098,7 @@ export default function AdminPage() {
         {activeTab === 'liveCoaching' && (() => {
           const exportCoaching = () => downloadCSV(`coaching_${new Date().toISOString().slice(0, 10)}.csv`, [
             ['Purchased', 'Name', 'Email', 'Country', 'Plan', 'Amount', 'Currency', 'Order ref'],
-            ...liveCoachingSales.map(t => [t.paid_at || t.created_at, t.full_name, t.email, t.country, t.plan_code, t.amount, t.currency, t.order_ref]),
+            ...dashCoachingSales.map(t => [t.paid_at || t.created_at, t.full_name, t.email, t.country, t.plan_code, t.amount, t.currency, t.order_ref]),
           ])
           return (
             <>
@@ -5047,12 +5111,12 @@ export default function AdminPage() {
               {!salesLoading && !salesError && (
                 <>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                    <BetaStatTile label="Coaching sold" value={String(liveCoachingSales.length)} sublabel="Launchpad orders (1:1 session included)" />
-                    <BetaStatTile label="Coaching revenue" value={(() => { const m = new Map<string, number>(); for (const t of liveCoachingSales) m.set(t.currency, (m.get(t.currency) || 0) + Number(t.amount || 0)); return m.size === 0 ? '0' : Array.from(m.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ') })()} />
+                    <BetaStatTile label="Coaching sold" value={String(dashCoachingSales.length)} sublabel="Launchpad orders (1:1 session included)" />
+                    <BetaStatTile label="Coaching revenue" value={(() => { const m = new Map<string, number>(); for (const t of dashCoachingSales) m.set(t.currency, (m.get(t.currency) || 0) + Number(t.amount || 0)); return m.size === 0 ? '0' : Array.from(m.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ') })()} />
                   </div>
                   <p className="text-xs text-slate-400 mb-3">Who bought a 1:1 coaching session. Slot bookings and completed sessions live in the Etijah academy and are not shown here yet.</p>
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm text-slate-400">{liveCoachingSales.length} coaching purchase{liveCoachingSales.length !== 1 ? 's' : ''}</p>
+                    <p className="text-sm text-slate-400">{dashCoachingSales.length} coaching purchase{dashCoachingSales.length !== 1 ? 's' : ''}</p>
                     <DownloadCSVButton onClick={exportCoaching} />
                   </div>
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
@@ -5065,7 +5129,7 @@ export default function AdminPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {liveCoachingSales.map((t, i) => (
+                        {dashCoachingSales.map((t, i) => (
                           <tr key={t.order_ref} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
                             <td className="px-4 py-3 text-slate-400 text-xs">{new Date(t.paid_at || t.created_at).toLocaleDateString()}</td>
                             <td className="px-4 py-3">
@@ -5077,7 +5141,7 @@ export default function AdminPage() {
                             <td className="px-4 py-3 text-slate-700 font-semibold tabular-nums">{Number(t.amount).toLocaleString(undefined, { maximumFractionDigits: 2 })} {t.currency}</td>
                           </tr>
                         ))}
-                        {liveCoachingSales.length === 0 && (
+                        {dashCoachingSales.length === 0 && (
                           <tr>
                             <td colSpan={5} className="px-4 py-12 text-center text-slate-400">No coaching purchases yet</td>
                           </tr>
