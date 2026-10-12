@@ -4517,12 +4517,14 @@ export default function AdminPage() {
                           />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Hidden: question retired 2026-09-14 (old answers still in the CSV export)
                           <BetaRankedMultiChart
                             title={`What would make it worth paying for (${worthPayingAnswered.length} answered — question retired 2026-09-14)`}
                             lists={worthPayingAnswered.map(bf => bf.worth_paying_for)}
                             labels={WORTH_PAYING_FOR_LABEL}
                             total={worthPayingAnswered.length}
                           />
+                          */}
                           <BetaRankedMultiChart
                             title={`What's stopping them from buying (${payBlockersAnswered.length} answered — only those not saying "yes, today")`}
                             lists={payBlockersAnswered.map(bf => bf.pay_blockers)}
