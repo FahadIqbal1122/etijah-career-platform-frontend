@@ -509,6 +509,12 @@ html { scroll-behavior: smooth; }
 .reveal-head { font-size: 32px; line-height: 1.16; font-weight: 900; color: #fff; letter-spacing: -0.02em; text-wrap: balance; }
 [dir="rtl"] .reveal-head { letter-spacing: 0; line-height: 1.3; }
 .reveal-body { font-size: 16px; line-height: 1.5; font-weight: 500; color: rgba(255, 255, 255, 0.82); margin-top: 16px; max-width: 340px; margin-inline: auto; }
+.reveal-chapter {
+  font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.78); margin-bottom: 12px;
+}
+[dir="rtl"] .reveal-chapter { font-family: var(--font-tajawal), sans-serif; letter-spacing: 0; text-transform: none; font-size: 14px; font-weight: 700; }
+.reveal-next { font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.7); margin-top: 18px; }
 .reveal .cta { margin-top: 28px; }
 .reveal.finish .reveal-spark { color: var(--accent); opacity: 1; }
 

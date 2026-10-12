@@ -15,7 +15,7 @@ import 'react-phone-input-2/lib/style.css'
 import { apiAuthPost, apiGet, apiPost } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
-import Constellation, { CONSTELLATION } from '@/components/brand/Constellation'
+import Constellation, { CHAPTER_CONSTELLATION } from '@/components/brand/Constellation'
 import BreakPanel from '@/components/BreakPanel'
 // import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
 import CoachWidget from '@/components/CoachWidget'
@@ -33,7 +33,8 @@ import BugReportModal from '@/components/BugReportModal'
 import FieldOfStudyInfo from '@/components/FieldOfStudyInfo'
 import LanguageSelect from '@/components/LanguageSelect'
 import FieldOfStudySelect from '@/components/FieldOfStudySelect'
-import { frameworkOf, buildReveal, REVEAL_FRAMEWORKS } from '@/data/revealScoring'
+import { buildReveal } from '@/data/revealScoring'
+import { CHAPTERS, CHAPTER_COUNT, chapterIndexOf } from '@/data/chapters'
 import { initTelemetry, pushTelemetry, getTelemetrySessionId, rotateTelemetrySession, flush as flushTelemetry } from '@/lib/telemetry'
 import { track, trackOnce } from '@/lib/analytics'
 
@@ -158,7 +159,6 @@ function saveDraftToServer(answers: Record<string, unknown>, index: number, reve
 }
 
 const CONFIRM_MS = 560
-const TOTAL_NODES = CONSTELLATION.nodes.length
 const CHROME: Record<string, Record<string, string>> = {
   en: {
     asideEyebrow: 'Discovering you', // ambient label on the desktop split panel
@@ -166,6 +166,10 @@ const CHROME: Record<string, Record<string, string>> = {
     finishHead: 'Your map is taking shape.',
     finishBody: 'You’ve lit the path. This is the start of your Etijahi profile — the full reading is next.',
     finishCta: 'Reveal my result',
+    chapterWord: 'Chapter',
+    chapterOf: 'of',
+    chapterDone: 'complete',
+    chapterNext: 'Next',
     saveExit: 'Save & exit',
     welcomeTitle: 'Welcome back!',
     welcomeBody: 'We found a previous assessment linked to your details. View those results, or retake the assessment?',
@@ -182,6 +186,10 @@ const CHROME: Record<string, Record<string, string>> = {
     finishHead: 'خريطتك تتشكّل.',
     finishBody: 'لقد أضأت الطريق. هذه بداية ملفك في إتجاهي — والقراءة الكاملة تنتظرك.',
     finishCta: 'اكشف نتيجتي',
+    chapterWord: 'الفصل',
+    chapterOf: 'من',
+    chapterDone: 'اكتمل',
+    chapterNext: 'التالي',
     saveExit: 'احفظ واخرج',
     welcomeTitle: 'أهلاً بعودتك!',
     welcomeBody: 'وجدنا تقييماً سابقاً مرتبطاً ببياناتك. اعرض تلك النتائج، أو أعد التقييم؟',
@@ -243,7 +251,7 @@ function buildProgressMessage(index: number, total: number, locale: string): str
   // plain-language line the moment someone has the most attention to spare,
   // rather than a persistent number/percentage — those were tried before and
   // read as daunting (see the ENCOURAGEMENT comment above).
-  if (index === 0) return isAr ? '✦ كل نجمة تضيء كلما تقدّمت' : '✦ Each star lights up as you go'
+  if (index === 0) return isAr ? '✦ تضيء نجمة مع إكمال كل فصل' : '✦ A star lights up as you finish each chapter'
 
   if (remaining === 1) return isAr ? 'سؤال أخير!' : 'Last question!'
   if (pct >= 0.48 && pct < 0.52) return isAr ? 'منتصف الطريق! استمر' : 'Halfway there — keep going'
@@ -263,7 +271,7 @@ export default function AssessmentForm() {
   const chrome = CHROME[locale] ?? CHROME.en
 
   const tForm = useTranslations('form')
-  const tSections = useTranslations('sections')
+  // const tSections = useTranslations('sections')   // section names replaced by chapter titles (src/data/chapters.ts)
   const tQ = useTranslations('questions')
   const tScale = useTranslations('scale')
 
@@ -275,7 +283,7 @@ export default function AssessmentForm() {
   const [phase, setPhase] = useState<'question' | 'reveal' | 'finish'>('question')
   const [picked, setPicked] = useState<any>(null)
   const [confirming, setConfirming] = useState(false)
-  const [revealMsg, setRevealMsg] = useState<{ head: string; body: string } | null>(null)
+  const [revealMsg, setRevealMsg] = useState<{ head: string; body: string; chapter: number } | null>(null)
   const [rippleKey, setRippleKey] = useState(0)
   const [maxSelectHit, setMaxSelectHit] = useState(false)
   const [enterKey, setEnterKey] = useState(0)
@@ -466,10 +474,22 @@ export default function AssessmentForm() {
 
   // clamped to 1 — if skip-logic shrinks `total` below `index` mid-session
   // (editing an earlier answer while ahead of it), the raw ratio can exceed 1
-  const progress = phase === 'finish' ? 1 : total ? Math.min(1, index / total) : 0
-  const litCount = phase === 'finish'
-    ? TOTAL_NODES
-    : Math.max(1, Math.min(TOTAL_NODES, Math.round(progress * (TOTAL_NODES - 1)) + 1))
+  // Chapters: one star each, earned when the chapter is finished (the green screen lights it).
+  const chapterOfVisible = visibleQuestions.map(v => chapterIndexOf(v.id, v.section))
+  const curChapter = phase === 'finish'
+    ? CHAPTER_COUNT - 1
+    : phase === 'reveal' && revealMsg ? revealMsg.chapter : q ? chapterIndexOf(q.id, q.section) : 0
+  const chapterTotal = chapterOfVisible.filter(c => c === curChapter).length
+  const chapterPos = chapterOfVisible.slice(0, index + 1).filter(c => c === curChapter).length
+  // Stars already earned stay lit when stepping back into an earlier chapter: use the furthest chapter reached.
+  const furthestChapter = chapterOfVisible[Math.min(maxIndex, total - 1)] ?? curChapter
+  const litCount = phase === 'finish' ? CHAPTER_COUNT : phase === 'reveal' ? curChapter + 1 : Math.max(curChapter, furthestChapter)
+  const chapterTitle = (c: number) => CHAPTERS[c]?.title[locale === 'ar' ? 'ar' : 'en'] ?? ''
+  const chapterLabel = (c: number) => `${chrome.chapterWord} ${c + 1} ${chrome.chapterOf} ${CHAPTER_COUNT}`
+  // "Chapter 2 of 5 complete" / «اكتمل الفصل 2 من 5»
+  const chapterDoneLabel = (c: number) => locale === 'ar' ? `${chrome.chapterDone} ${chapterLabel(c)}` : `${chapterLabel(c)} ${chrome.chapterDone}`
+  // Arabic uses «من» between the numbers so the digits don't flip order inside the right-to-left line.
+  const chapterCount = locale === 'ar' ? `${chapterPos} من ${chapterTotal}` : `${chapterPos} / ${chapterTotal}`
 
   const progressMsg = buildProgressMessage(index, total, locale)
 
@@ -527,21 +547,21 @@ export default function AssessmentForm() {
     // the question card, not the aside. A visible pulse each time ties the
     // graphic's motion directly to the action that just happened.
     setRippleKey(k => k + 1)
-    // Fire a reveal when we cross out of a "reveal framework" block (RIASEC,
-    // Values, Strengths) — the message reflects the top dimension the user
-    // actually leaned toward in that block.
-    const curFw = q ? frameworkOf(q.id) : null
-    const nextFw = !done ? frameworkOf(visibleQuestions[next]?.id) : null
-    const shouldReveal =
-      !done &&
-      !!curFw &&
-      curFw !== nextFw &&
-      REVEAL_FRAMEWORKS.includes(curFw) &&
-      !revealedRef.current.has(curFw)
+    // Fire the green "chapter complete" screen when we cross out of a chapter. Chapters with a scoring framework
+    // (interests, values, strengths) reflect what the user leaned toward; the others use fixed copy.
+    const curCh = q ? chapterIndexOf(q.id, q.section) : 0
+    const nextCh = !done ? chapterIndexOf(visibleQuestions[next].id, visibleQuestions[next].section) : curCh
+    const chKey = `ch${curCh}`
+    const shouldReveal = !done && nextCh !== curCh && !revealedRef.current.has(chKey)
 
-    if (shouldReveal && curFw) {
-      revealedRef.current.add(curFw)
-      setRevealMsg(buildReveal(answersRef.current, curFw, locale))
+    if (shouldReveal) {
+      revealedRef.current.add(chKey)
+      const ch = CHAPTERS[curCh]
+      const lang = locale === 'ar' ? 'ar' : 'en'
+      const msg = ch.revealFramework
+        ? buildReveal(answersRef.current, ch.revealFramework, locale)
+        : ch.done?.[lang] ?? buildReveal(answersRef.current, 'riasec', locale)
+      setRevealMsg({ ...msg, chapter: curCh })
       setRevealTip(pickCoachReveal())
       pendingRef.current = next
       setPhase('reveal')
@@ -798,10 +818,10 @@ export default function AssessmentForm() {
       <div className="assess-main">
         <aside className="assess-aside">
           <div className="cst-wrap">
-            <Constellation litCount={litCount} theme={phase === 'reveal' ? 'teal' : 'dark'} rippleKey={rippleKey} accent="#00C9A7" />
+            <Constellation geometry={CHAPTER_CONSTELLATION} litCount={litCount} theme={phase === 'reveal' ? 'teal' : 'dark'} rippleKey={rippleKey} accent="#00C9A7" />
             {phase === 'question' && (
               <div className="cst-progress-text">
-                {locale === 'ar' ? `${index + 1} من ${total}` : `${index + 1} / ${total}`}
+                {`${chapterLabel(curChapter)} · ${chapterCount}`}
               </div>
             )}
           </div>
@@ -827,7 +847,8 @@ export default function AssessmentForm() {
                 key={`q-${index}-${enterKey}`}
                 onKeyDown={handleStageKeyDown}
               >
-            <div className="qsection">{safe(() => tSections(q.section), q.section)}</div>
+            {/* old: section name — <div className="qsection">{safe(() => tSections(q.section), q.section)}</div> */}
+            <div className="qsection">{chapterLabel(curChapter)} · {chapterTitle(curChapter)}</div>
 
             {q.type === 'behavioral_scale' && (
               <>
@@ -1054,8 +1075,12 @@ export default function AssessmentForm() {
         <div className="reveal" key={`rv-${enterKey}`}>
           <div className="reveal-inner">
             <div className="reveal-spark">✦</div>
+            <div className="reveal-chapter">{chapterDoneLabel(revealMsg.chapter)}</div>
             <h1 className="reveal-head">{revealMsg.head}</h1>
             <p className="reveal-body">{revealMsg.body}</p>
+            {revealMsg.chapter + 1 < CHAPTER_COUNT && (
+              <p className="reveal-next">{chrome.chapterNext}: {chapterLabel(revealMsg.chapter + 1)} · {chapterTitle(revealMsg.chapter + 1)}</p>
+            )}
           </div>
           <button className="cta" data-track="assessment_continue" onClick={continueFromReveal}>
             <span>{chrome.revealCta}</span>
@@ -1069,6 +1094,7 @@ export default function AssessmentForm() {
         <div className="reveal finish" key={`fn-${enterKey}`}>
           <div className="reveal-inner">
             <div className="reveal-spark">✦</div>
+            <div className="reveal-chapter">{chapterDoneLabel(CHAPTER_COUNT - 1)}</div>
             <h1 className="reveal-head">{chrome.finishHead}</h1>
             <p className="reveal-body">{chrome.finishBody}</p>
             {error && <p style={{ color: '#e11d48', fontSize: 14, marginTop: 12 }}>{error}</p>}
@@ -1172,11 +1198,11 @@ export default function AssessmentForm() {
   )
 }
 
-// tSections may throw for an unmapped key; fall back to the raw section name.
+/* // tSections may throw for an unmapped key; fall back to the raw section name.
 function safe(fn: () => string, fallback: string): string {
   try {
     return fn()
   } catch {
     return fallback
   }
-}
+} */

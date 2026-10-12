@@ -26,8 +26,22 @@ export const CONSTELLATION = {
   ] as [number, number][],
 }
 
+// One star per assessment chapter (5 chapters → 5 stars), rising to the north star.
+export const CHAPTER_CONSTELLATION = {
+  viewBox: '0 0 375 150',
+  nodes: [
+    { x: 40, y: 118 },
+    { x: 115, y: 88 },
+    { x: 190, y: 106 },
+    { x: 262, y: 62 },
+    { x: 338, y: 30 }, // north star
+  ],
+  links: [[0, 1], [1, 2], [2, 3], [3, 4], [1, 3]] as [number, number][],
+}
+
 type ConstellationProps = {
   litCount: number
+  geometry?: typeof CONSTELLATION
   theme?: 'dark' | 'teal'
   rippleKey?: number
   motion?: number
@@ -40,8 +54,9 @@ export default function Constellation({
   rippleKey = 0,
   motion = 1,
   accent = '#00C9A7',
+  geometry = CONSTELLATION,
 }: ConstellationProps) {
-  const { viewBox, nodes, links } = CONSTELLATION
+  const { viewBox, nodes, links } = geometry
   const total = nodes.length
   const lit = Math.max(0, Math.min(total, litCount))
   const frontier = lit - 1
