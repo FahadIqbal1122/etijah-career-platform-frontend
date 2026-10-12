@@ -1319,6 +1319,9 @@ export default function AdminPage() {
   const [abandonedLoading, setAbandonedLoading] = useState(false)
   const [abandonedError, setAbandonedError] = useState('')
   const [autoReminder, setAutoReminder] = useState(false)
+  const [abandonedDays, setAbandonedDays] = useState<'7' | '30' | 'all'>('30')
+  const [abandonedRemind, setAbandonedRemind] = useState<'all' | 'sent' | 'unsent'>('all')
+  const [abandonedSection, setAbandonedSection] = useState<string | null>(null)
   const [autoReminderSaving, setAutoReminderSaving] = useState(false)
   const [featuredEvents, setFeaturedEvents] = useState<{ id: string; created_at: string; event_type: 'view' | 'click'; course_key: string; response_id: string | null; tier: string | null; locale: string | null }[]>([])
   const [featuredLoading, setFeaturedLoading] = useState(false)
@@ -3546,6 +3549,32 @@ export default function AdminPage() {
   const dashTelemetrySummary = summarizeTelemetry(telemetryList.filter(e => dashSessionIds.has(e.session_id)))
   const dashScopeCareerRecs = isLiveView ? dashCareerRecs : betaCareerRecsGenerated
   // Per-day series for the dashboard trend charts (admin's local day).
+  // ── Abandoned tab: where each person stopped (question number/section), range + reminder + section filters ──
+  const abandonedStop = (a: AbandonedAssessment) => {
+    if (a.current_index == null) return null
+    const i = Math.min(Math.max(a.current_index, 0), questions.length - 1)
+    const q = questions[i]
+    return q ? { n: i + 1, id: q.id, section: q.section, text: q.text } : null
+  }
+  const abandonedCutoff = abandonedDays === 'all' ? 0 : Date.now() - Number(abandonedDays) * 86400000
+  const abandonedInRange = abandonedList.filter(a => !a.last_activity_at || new Date(a.last_activity_at).getTime() >= abandonedCutoff)
+  const abandonedShown = abandonedInRange
+    .filter(a => abandonedRemind === 'all' || (abandonedRemind === 'sent' ? !!a.reminder_sent_at : !a.reminder_sent_at))
+    .filter(a => !abandonedSection || abandonedStop(a)?.section === abandonedSection)
+  const abandonedSections: string[] = []
+  for (const q of questions) if (!abandonedSections.includes(q.section)) abandonedSections.push(q.section)
+  const abandonedBySection = new Map<string, number>()
+  const abandonedByQuestion = new Map<number, number>()
+  for (const a of abandonedInRange) {
+    const st = abandonedStop(a)
+    if (!st) continue
+    abandonedBySection.set(st.section, (abandonedBySection.get(st.section) || 0) + 1)
+    abandonedByQuestion.set(st.n, (abandonedByQuestion.get(st.n) || 0) + 1)
+  }
+  const abandonedWithPosition = Array.from(abandonedBySection.values()).reduce((x, y) => x + y, 0)
+  const abandonedTopQuestions = Array.from(abandonedByQuestion.entries()).sort((x, y) => y[1] - x[1] || x[0] - y[0]).slice(0, 6)
+  const abandonedAvgProgress = average(abandonedInRange.map(a => a.progress_pct))
+
   const dayKey = (iso: string) => new Date(iso).toLocaleDateString('en-CA')
   const trendStartKey = dashFrom || dayKey(LIVE_START.toISOString())
   const trendEndKey = dashTo || dayKey(new Date().toISOString())
@@ -5709,35 +5738,120 @@ export default function AdminPage() {
                     {autoReminder ? 'Turn off' : 'Turn on'}
                   </button>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                  <p className="text-sm text-slate-400">
-                    {abandonedList.length} {abandonedList.length === 1 ? 'person' : 'people'} started the assessment but never finished
-                    {' · '}{abandonedList.filter(a => a.reminder_sent_at).length} reminded
-                  </p>
+                {/* range + reminder filters */}
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mb-4">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-slate-400 mr-1">Last activity</span>
+                    {([['7', 'Last 7 days'], ['30', 'Last 30 days'], ['all', 'All']] as const).map(([k, l]) => (
+                      <button key={k} onClick={() => setAbandonedDays(k)}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${abandonedDays === k ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{l}</button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-slate-400 mr-1">Reminder</span>
+                    {([['all', 'All'], ['unsent', 'Not sent'], ['sent', 'Sent']] as const).map(([k, l]) => (
+                      <button key={k} onClick={() => setAbandonedRemind(k)}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${abandonedRemind === k ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{l}</button>
+                    ))}
+                  </div>
+                  {abandonedSection && (
+                    <button onClick={() => setAbandonedSection(null)} className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100">
+                      Stopped in: {abandonedSection} ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* summary tiles */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                  <BetaStatTile label="Did not finish" accent="#eda100" value={String(abandonedInRange.length)} sublabel="gave an email, never completed" />
+                  <BetaStatTile label="Reminded" accent="#1baf7a" value={String(abandonedInRange.filter(a => a.reminder_sent_at).length)} sublabel={`${abandonedInRange.filter(a => !a.reminder_sent_at).length} not yet reminded`} />
+                  <BetaStatTile label="Average progress" accent="#2a78d6" value={abandonedAvgProgress != null ? `${Math.round(abandonedAvgProgress)}%` : '—'} sublabel="of the assessment answered" />
+                  <BetaStatTile label="Position known" accent="#6250d6" value={String(abandonedWithPosition)} sublabel="autosaved, so we know the question" />
+                </div>
+
+                {/* where they stopped */}
+                {abandonedWithPosition > 0 && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                      <p className="text-sm font-semibold text-slate-700 mb-1">Where they stopped — by section</p>
+                      <p className="text-xs text-slate-400 mb-4">Click a section to list only those people.</p>
+                      <div className="space-y-2">
+                        {abandonedSections.map(sec => {
+                          const n = abandonedBySection.get(sec) || 0
+                          const pct = abandonedWithPosition > 0 ? Math.round((n / abandonedWithPosition) * 100) : 0
+                          return (
+                            <button key={sec} onClick={() => setAbandonedSection(abandonedSection === sec ? null : sec)}
+                              className={`w-full flex items-center gap-3 rounded-lg px-1.5 py-0.5 text-left hover:bg-slate-50 ${abandonedSection === sec ? 'bg-amber-50' : ''}`}>
+                              <span className="w-32 shrink-0 text-xs text-slate-600 truncate" title={sec}>{sec}</span>
+                              <span className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                                <span className="block h-full rounded-full bg-amber-500" style={{ width: `${pct}%` }} />
+                              </span>
+                              <span className="w-16 shrink-0 text-right text-xs font-semibold text-slate-700 tabular-nums">{n} <span className="text-slate-400 font-normal">({pct}%)</span></span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                      <p className="text-sm font-semibold text-slate-700 mb-4">Questions people stop at most</p>
+                      <ul className="space-y-2.5">
+                        {abandonedTopQuestions.map(([n, c]) => {
+                          const q = questions[n - 1]
+                          return (
+                            <li key={n} className="flex items-start gap-3">
+                              <span className="shrink-0 w-14 text-xs font-semibold text-slate-700">Q{n}</span>
+                              <span className="flex-1 min-w-0">
+                                <span className="block text-xs text-slate-600 truncate" title={q?.text}>{q?.text}</span>
+                                <span className="block text-[11px] text-slate-400">{q?.section}</span>
+                              </span>
+                              <span className="shrink-0 text-xs font-semibold text-slate-700 tabular-nums">{c}</span>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                  <p className="text-sm text-slate-400">Showing {abandonedShown.length} of {abandonedInRange.length} {abandonedInRange.length === 1 ? 'person' : 'people'}</p>
                   <DownloadCSVButton onClick={() => downloadCSV(`abandoned_assessments_${new Date().toISOString().slice(0, 10)}.csv`, [
-                    ['Name', 'Email', 'Locale', 'Progress %', 'Questions answered', 'Total questions', 'Last activity', 'Reminder sent', 'Source'],
-                    ...abandonedList.map(a => [
-                      a.full_name, a.email, a.locale, a.progress_pct, a.current_index, a.total_questions,
-                      a.last_activity_at ? new Date(a.last_activity_at).toLocaleString() : '',
-                      a.reminder_sent_at ? new Date(a.reminder_sent_at).toLocaleString() : '', a.source,
-                    ]),
+                    ['Name', 'Email', 'Locale', 'Stopped at question', 'Section', 'Question text', 'Progress %', 'Questions answered', 'Total questions', 'Last activity', 'Reminder sent', 'Source'],
+                    ...abandonedShown.map(a => {
+                      const st = abandonedStop(a)
+                      return [
+                        a.full_name, a.email, a.locale, st ? `Q${st.n}` : '', st?.section || '', st?.text || '', a.progress_pct, a.current_index, a.total_questions,
+                        a.last_activity_at ? new Date(a.last_activity_at).toLocaleString() : '',
+                        a.reminder_sent_at ? new Date(a.reminder_sent_at).toLocaleString() : '', a.source,
+                      ]
+                    }),
                   ])} />
                 </div>
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-slate-100 bg-slate-50">
-                        {['Name', 'Email', 'Locale', 'Progress', 'Last activity', 'Reminder'].map(h => (
+                        {['Name', 'Email', 'Locale', 'Stopped at', 'Progress', 'Last activity', 'Reminder'].map(h => (
                           <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {abandonedList.map((a, i) => (
+                      {abandonedShown.map((a, i) => {
+                        const st = abandonedStop(a)
+                        return (
                         <tr key={a.email} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
                           <td className="px-4 py-3 font-medium text-slate-800">{a.full_name || '—'}</td>
                           <td className="px-4 py-3 text-slate-500">{a.email}</td>
                           <td className="px-4 py-3 text-slate-500 uppercase">{a.locale || '—'}</td>
+                          <td className="px-4 py-3 text-xs max-w-[240px]">
+                            {st ? (
+                              <>
+                                <span className="font-semibold text-slate-700">Q{st.n}</span> <span className="text-slate-400">· {st.section}</span>
+                                <span className="block text-slate-400 truncate" title={st.text}>{st.text}</span>
+                              </>
+                            ) : <span className="text-slate-400">unknown</span>}
+                          </td>
                           <td className="px-4 py-3 text-slate-500">
                             {a.progress_pct != null ? (
                               <div className="flex items-center gap-2 min-w-[140px]">
@@ -5748,17 +5862,18 @@ export default function AdminPage() {
                               </div>
                             ) : <span className="text-xs text-slate-400">unknown</span>}
                           </td>
-                          <td className="px-4 py-3 text-slate-400 text-xs">{a.last_activity_at ? new Date(a.last_activity_at).toLocaleString() : '—'}</td>
+                          <td className="px-4 py-3 text-slate-400 text-xs"><DateTimeCell iso={a.last_activity_at} /></td>
                           <td className="px-4 py-3 text-xs">
                             {a.reminder_sent_at
-                              ? <span className="font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700">Sent {new Date(a.reminder_sent_at).toLocaleDateString()}</span>
+                              ? <span className="inline-block font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700">Sent <DateTimeCell iso={a.reminder_sent_at} /></span>
                               : <span className="text-slate-400">Not sent</span>}
                           </td>
                         </tr>
-                      ))}
-                      {abandonedList.length === 0 && (
+                        )
+                      })}
+                      {abandonedShown.length === 0 && (
                         <tr>
-                          <td colSpan={6} className="px-4 py-12 text-center text-slate-400">No abandoned assessments</td>
+                          <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No abandoned assessments for these filters</td>
                         </tr>
                       )}
                     </tbody>
