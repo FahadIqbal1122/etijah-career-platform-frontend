@@ -1306,6 +1306,8 @@ export default function AdminPage() {
   const [abandonedList, setAbandonedList] = useState<AbandonedAssessment[]>([])
   const [abandonedLoading, setAbandonedLoading] = useState(false)
   const [abandonedError, setAbandonedError] = useState('')
+  const [autoReminder, setAutoReminder] = useState(false)
+  const [autoReminderSaving, setAutoReminderSaving] = useState(false)
   const [featuredEvents, setFeaturedEvents] = useState<{ id: string; created_at: string; event_type: 'view' | 'click'; course_key: string; response_id: string | null; tier: string | null; locale: string | null }[]>([])
   const [featuredLoading, setFeaturedLoading] = useState(false)
   const [featuredError, setFeaturedError] = useState('')
@@ -1604,6 +1606,7 @@ export default function AdminPage() {
     setAbandonedLoading(true)
     setAbandonedError('')
     try {
+      fetch('/api/admin/auto-abandoned-reminder').then(r => r.ok ? r.json() : null).then(j => { if (j) setAutoReminder(j.enabled === true) }).catch(() => {})
       const res = await fetch('/api/admin/abandoned-assessments')
       if (!res.ok) throw new Error('Failed to load abandoned assessments')
       setAbandonedList(await res.json())
@@ -1791,6 +1794,20 @@ export default function AdminPage() {
       setMultiCurrencyLoading(false)
     }
   }, [])
+
+  async function toggleAutoReminder(enabled: boolean) {
+    setAutoReminderSaving(true)
+    try {
+      const res = await fetch('/api/admin/auto-abandoned-reminder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      })
+      if (res.ok) setAutoReminder((await res.json()).enabled === true)
+    } finally {
+      setAutoReminderSaving(false)
+    }
+  }
 
   async function toggleMultiCurrency(enabled: boolean) {
     setMultiCurrencySaving(true)
@@ -5666,6 +5683,20 @@ export default function AdminPage() {
             {abandonedError && <p className="text-red-500 text-sm text-center py-8">{abandonedError}</p>}
             {!abandonedLoading && !abandonedError && (
               <>
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-white rounded-2xl border border-slate-100 px-4 py-3 mb-4">
+                  <p className="text-sm text-slate-600">
+                    <span className="font-semibold text-slate-800">Automatic reminder:</span>{' '}
+                    <span className={autoReminder ? 'text-emerald-600 font-semibold' : 'text-slate-500'}>{autoReminder ? 'ON' : 'OFF'}</span>
+                    <span className="text-slate-400"> — when on, anyone idle for 24h+ who has not finished gets one “continue where you left off” email, sent by the scheduler.</span>
+                  </p>
+                  <button
+                    onClick={() => toggleAutoReminder(!autoReminder)}
+                    disabled={autoReminderSaving}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 ${autoReminder ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
+                  >
+                    {autoReminder ? 'Turn off' : 'Turn on'}
+                  </button>
+                </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                   <p className="text-sm text-slate-400">
                     {abandonedList.length} {abandonedList.length === 1 ? 'person' : 'people'} started the assessment but never finished
