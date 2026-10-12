@@ -1416,17 +1416,17 @@ export default function AdminPage() {
 
   const [betaFeedbackList, setBetaFeedbackList] = useState<BetaFeedbackEntry[]>([])
   // The global filter bar is pinned (sticky) on the live tabs; its height is measured so the stage pills can stick just below it.
-  const dashFilterBarRef = useRef<HTMLDivElement | null>(null)
+  // A state-backed callback ref: the bar only mounts after login / on the live tabs, so measuring has to follow the element itself.
+  const [dashFilterBarEl, setDashFilterBarEl] = useState<HTMLDivElement | null>(null)
   const [dashFilterBarH, setDashFilterBarH] = useState(0)
   useEffect(() => {
-    const el = dashFilterBarRef.current
-    if (!el) { setDashFilterBarH(0); return }
-    const update = () => setDashFilterBarH(el.offsetHeight)
+    if (!dashFilterBarEl) { setDashFilterBarH(0); return }
+    const update = () => setDashFilterBarH(dashFilterBarEl.offsetHeight)
     update()
     const ro = new ResizeObserver(update)
-    ro.observe(el)
+    ro.observe(dashFilterBarEl)
     return () => ro.disconnect()
-  }, [activeTab])
+  }, [dashFilterBarEl])
   const [betaDemographicsFilter, setBetaDemographicsFilter] = useState<'all' | 'stage1' | 'result' | 'stage2' | 'stage2_free' | 'stage2_paid'>('all')
   const [betaFeedbackLoading, setBetaFeedbackLoading] = useState(false)
   const [betaFeedbackError, setBetaFeedbackError] = useState('')
@@ -4479,7 +4479,7 @@ export default function AdminPage() {
 
         {/* Filters stay pinned while scrolling so they can be changed from anywhere on these tabs. */}
         {['liveDashboard', 'liveFeedback', 'liveSubmissions', 'liveCareerRecs', 'liveSales', 'liveCoaching', 'liveBehavior'].includes(activeTab) && (
-          <div ref={dashFilterBarRef} className="sticky top-2 z-30 mb-4">
+          <div ref={setDashFilterBarEl} className="sticky top-2 z-30 mb-4">
             <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-3">
               <div className="flex flex-wrap items-end gap-3">
                 <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">From
