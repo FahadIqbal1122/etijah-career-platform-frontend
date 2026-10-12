@@ -8,6 +8,7 @@ import { DonutChart, ColumnChart, TrendChart, Sparkline, catColor } from '@/comp
 import EmailTemplatesTab from '@/components/admin/EmailTemplatesTab'
 import EmailSchedulerTab from '@/components/admin/EmailSchedulerTab'
 import SmtpSettingsTab from '@/components/admin/SmtpSettingsTab'
+import ReportTemplatesTab from '@/components/admin/ReportTemplatesTab'
 import { questions, BEHAVIORAL_SCALE, type Question } from '@/data/questions'
 import { stage1Questions, resultStageQuestions, resultStageNoteLabel, followUpSections } from '@/components/beta-feedback/content'
 import { buildWorkbook, saveBlob, type SheetSpec, type SummaryBlock } from '@/lib/adminExcel'
@@ -1361,7 +1362,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'liveCoaching' | 'abandoned' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider'>('liveDashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'liveCoaching' | 'abandoned' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider' | 'reportTemplates'>('liveDashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -3759,8 +3760,8 @@ export default function AdminPage() {
     try {
       const answersById: Record<string, { answers: Record<string, unknown>; locale: string | null }> = {}
       const scoresById: Record<string, { framework: string; dimension: string; raw_score: number | null; normalized_score: number | null }[]> = {}
-      const ids = dashSubmissions.map(s => s.id)
       const topById: Record<string, Record<string, string[]>> = {}
+      const ids = dashSubmissions.map(s => s.id)
       for (let i = 0; i < ids.length; i += 1000) {
         const res = await fetch('/api/admin/export/assessment-details', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: ids.slice(i, i + 1000) }),
@@ -3769,8 +3770,8 @@ export default function AdminPage() {
         const d = await res.json()
         Object.assign(answersById, d.answers || {})
         Object.assign(scoresById, d.scores || {})
-      }
         Object.assign(topById, d.top || {})
+      }
 
       const dt = (iso: string | null | undefined) => iso ? new Date(iso).toLocaleString('en-GB') : ''
       const lab = (map: Record<string, string>, k: string | null | undefined) => k ? (map[k] || formatUnderscored(k)) : ''
@@ -4289,6 +4290,7 @@ export default function AdminPage() {
                 { key: 'homepage', label: 'Homepage', color: 'bg-fuchsia-600', badge: homepageMode, onSelect: fetchHomepageMode },
                 { key: 'currency', label: 'Currency', color: 'bg-emerald-600', badge: multiCurrency ? 'ON' : undefined, onSelect: fetchMultiCurrency },
                 { key: 'betaclosed', label: 'Beta Access', color: 'bg-red-600', badge: betaClosed ? 'CLOSED' : undefined, onSelect: fetchBetaClosed },
+                { key: 'reportTemplates', label: 'Report Templates', color: 'bg-violet-600' },
                 { key: 'templates', label: 'Email Templates', color: 'bg-pink-600' },
                 { key: 'emailScheduler', label: 'Email Scheduler', color: 'bg-rose-600' },
                 { key: 'smtp', label: 'SMTP Settings', color: 'bg-cyan-700' },
@@ -7596,6 +7598,8 @@ export default function AdminPage() {
           <EmailSchedulerTab />
         </div>
       )}
+
+      {activeTab === 'reportTemplates' && <ReportTemplatesTab />}
 
       {activeTab === 'smtp' && (
         <div className="px-4 py-8">

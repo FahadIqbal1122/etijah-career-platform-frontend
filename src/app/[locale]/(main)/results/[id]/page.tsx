@@ -4,7 +4,8 @@ import ReadMore from '@/components/ReadMore'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
-import { apiAuthGet, apiAuthPost, apiAuthDelete, apiAuthGetBlob } from '@/lib/api'
+import { apiGet, apiAuthGet, apiAuthPost, apiAuthDelete, apiAuthGetBlob } from '@/lib/api'
+import { ReportTemplateHero, ProfileHexagon, CareerMap, isReportTemplateId, templateFeatures, type ReportTemplateData, type ReportTemplateId } from '@/components/report-templates'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { Link, useRouter, usePathname } from '@/i18n/navigation'
 import { setLocaleLock } from '@/lib/localeLock'
@@ -251,6 +252,20 @@ export default function ResultsPage() {
   // const dismissCoach = useCallback(() => setCoachMsg(null), [])
   const [tier, setTier] = useState<'free' | 'pathfinder' | 'launchpad'>('launchpad')
   const [betaMode, setBetaMode] = useState(false)
+  // Which presentation of the report to show (admin: Report templates). 'default' is this page as it always was.
+  // Admins can preview another one on a real report with ?template=clarity (or constellation).
+  const [reportTemplate, setReportTemplate] = useState<ReportTemplateId>('default')
+  const [templateKnown, setTemplateKnown] = useState(false)
+  useEffect(() => {
+    let live = true
+    const fromUrl = new URLSearchParams(window.location.search).get('template')
+    if (isReportTemplateId(fromUrl)) { setReportTemplate(fromUrl); setTemplateKnown(true); return }
+    apiGet<{ template?: string }>('/report-template')
+      .then(d => { if (live && isReportTemplateId(d?.template)) setReportTemplate(d.template) })
+      .catch(() => {})
+      .finally(() => { if (live) setTemplateKnown(true) })
+    return () => { live = false }
+  }, [])
   const [stage1Done, setStage1Done] = useState(false)
   const [resultStageDone, setResultStageDone] = useState(false)
   // Local "already answered" markers, same keys the original form cards write.
@@ -556,7 +571,7 @@ export default function ResultsPage() {
     )
   }
 
-  const allLoaded = !!summary && !jobsSuggestionsLoading && !aiLoading && !jobsLoading && !companiesLoading && !coursesLoading
+  const allLoaded = !!summary && templateKnown && !jobsSuggestionsLoading && !aiLoading && !jobsLoading && !companiesLoading && !coursesLoading
 
   // On a fresh completion (justCompleted), hold the report back until the
   // user has answered the stage-1 feedback survey, even after the data
@@ -885,6 +900,63 @@ export default function ResultsPage() {
     </div>
   )
 
+  // Report template (admin: Report templates). Design only: a non-default template swaps the hero, themes the page
+  // and can add the hexagon / career constellation. What the free and paid plans see is decided by the code above and
+  // is the same for every template; the template only receives what the page already shows to this person.
+  const tplFeatures = templateFeatures(reportTemplate)
+  const useTemplate = reportTemplate !== 'default'
+  const tplData: ReportTemplateData | null = useTemplate ? {
+    locale,
+    strings: {
+      eyebrow: t('hero.eyebrow'),
+      title: t('hero.title'),
+      subtitle: t('hero.subtitle'),
+      typeLine: t('hero.typeLabel', { type: riasecLabel(topType) }),
+      codeLine: t('hero.riasecCode', { code: riasecCode }),
+      topValue: summary.values?.top_values?.[0] ? { label: t('coreValues.title'), value: valueLabel(summary.values.top_values[0]) } : undefined,
+      topStrength: summary.strengths?.top_strengths?.[0] ? { label: t('topStrengths.title'), value: strengthLabel(summary.strengths.top_strengths[0]) } : undefined,
+      match: t('suggestedCareers.matchLabel'),
+      aiRisk: t('aiImpact.riskLabel'),
+      careers: t('suggestedCareers.title'),
+      topMatch: t('suggestedCareers.title'),
+      riskName: { low: levelLabel('low'), medium: levelLabel('medium'), high: levelLabel('high') },
+      directionName: {
+        builds_on_background: t('suggestedCareers.directionTag.builds_on_background'),
+        new_direction: t('suggestedCareers.directionTag.new_direction'),
+      },
+      mapTitle: t('suggestedCareers.title'),
+      mapUnlocked: t('suggestedCareers.matchLabel'),
+      mapLowestRisk: `${t('aiImpact.riskLabel')}: ${levelLabel('low')}`,
+      hexTitle: t('careerTypes.title'),
+    },
+    riasec: ['realistic', 'investigative', 'artistic', 'social', 'enterprising', 'conventional']
+      .map(k => ({ key: k, label: riasecLabel(k), score: scoreMap[k] ?? 0 })),
+    // exactly the careers the page shows this person (the backend gives the free plan 3)
+    careers: [...jobs].sort((a: any, b: any) => (b.match_score ?? 0) - (a.match_score ?? 0)).map((job: any) => {
+      const ai: any = aiImpact?.careers?.find((c: any) => normTitle(c.title) === normTitle(job.title))
+      const risk = ai?.ai_risk_level
+      return {
+        title: String(job.title || ''),
+        match: Number(job.match_score) || 0,
+        risk: risk === 'low' || risk === 'medium' || risk === 'high' ? risk : undefined,
+        direction: job.direction_tag === 'builds_on_background' || job.direction_tag === 'new_direction' ? job.direction_tag : undefined,
+      }
+    }),
+    // same actions as the default hero: free = locked link to the plans, paid = the PDF downloads
+    download: {
+      locked: tier === 'free',
+      lockedLabel: t('hero.downloadLocked'),
+      href: upgradeHref,
+      label: t('hero.downloadPdf'),
+      altLabel: tier !== 'free' && !arabicOnly ? (reportLocale === 'ar' ? t('hero.downloadEnglish') : t('hero.downloadArabic')) : undefined,
+      busy: downloadingReport,
+      busyLabel: t('hero.downloading'),
+      onDownload: () => downloadReport(),
+      onAlt: () => downloadReport(reportLocale === 'ar' ? 'en' : 'ar'),
+      error: downloadError || undefined,
+    },
+  } : null
+
   const sectionBlocks: Record<string, ReactNode> = {
     summary: (<>
         {/* Short guide to what is on the page, in plain language (the report used to start with data and no explanation) */}
@@ -1158,6 +1230,7 @@ export default function ResultsPage() {
 
       </>),
     careers: (<>
+        {tplData && tplFeatures.careerMap && <CareerMap data={tplData} />}
         {/* Suggested Careers */}
         {jobs.length > 0 && (
           <div className="card p-5">
@@ -2086,6 +2159,7 @@ export default function ResultsPage() {
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.07A2.25 2.25 0 0118 20.47H6a2.25 2.25 0 01-2.25-2.25v-4.07M15.75 9.75V6a3.75 3.75 0 00-7.5 0v3.75M3.75 9.75h16.5" /></svg>}
             />
             {introText(pd?.overview?.riasec, pd?.full?.overview?.riasec)}
+            {tplData && tplFeatures.hexagon && <ProfileHexagon data={tplData} />}
             {/* All six types, same look, highest first, each with its percentage (no single "main" type) */}
             <div className="space-y-2.5">
               {['realistic', 'investigative', 'artistic', 'social', 'enterprising', 'conventional']
@@ -2266,10 +2340,16 @@ export default function ResultsPage() {
     return [...rest.slice(0, at), 'unlock', ...rest.slice(at)]
   })()
 
+  const shownKeys = orderedKeys
+
   return (
-    <div className="min-h-screen brand-surface page-fade-in">
+    <div className={`min-h-screen brand-surface page-fade-in${useTemplate ? ` rt-${reportTemplate}` : ''}`}>
+
+      {/* Report template hero (replaces the default hero below) */}
+      {tplData && <ReportTemplateHero id={reportTemplate} data={tplData} />}
 
       {/* Hero */}
+      {!tplData && (
       <div className="brand-hero px-4 pt-10 pb-16 text-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute top-4 left-8 w-32 h-32 rounded-full bg-white" />
@@ -2327,6 +2407,7 @@ export default function ResultsPage() {
           </div>
         </div>
       </div>
+      )}
 
       <div className="max-w-5xl mx-auto px-6 mt-8 pb-16 space-y-4 relative z-10">
 
@@ -2350,9 +2431,9 @@ export default function ResultsPage() {
         {/* Every section can be folded away; all start open. A section with nothing to show hides its bar too. */}
         <div className="flex justify-end gap-3 text-xs text-charcoal/70">
           <button type="button" className="underline" onClick={() => setCollapsedSections({})}>{t('sections.expandAll')}</button>
-          <button type="button" className="underline" onClick={() => setCollapsedSections(Object.fromEntries(orderedKeys.map(k => [k, true])))}>{t('sections.collapseAll')}</button>
+          <button type="button" className="underline" onClick={() => setCollapsedSections(Object.fromEntries(shownKeys.map(k => [k, true])))}>{t('sections.collapseAll')}</button>
         </div>
-        {orderedKeys.map(k => {
+        {shownKeys.map(k => {
           const closed = !!collapsedSections[k]
           const barTitle =
             k === 'summary' ? t('sections.summary')

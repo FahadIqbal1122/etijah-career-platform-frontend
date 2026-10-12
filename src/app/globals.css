@@ -1106,3 +1106,17 @@ html { scroll-behavior: smooth; }
 .coach-summon:hover, .coach-summon:focus-visible { transform: translateX(0); }
 @media (hover: none) { .coach-summon, .coach-summon[dir="rtl"] { transform: translateX(0) } .coach-summon span { display: none } .coach-summon { padding: 6px } }
 @media (prefers-reduced-motion: reduce) { .coach-summon { transition: none } }
+
+/* ============================================================================
+   REPORT TEMPLATES (admin: Report templates) — theme only, scoped to the results page.
+   The wrapper gets rt-clarity / rt-clarity-map / rt-constellation; the default report has none of these.
+   ========================================================================== */
+.rt-clarity .card, .rt-clarity-map .card { border-radius: 20px; border-color: rgba(7, 112, 186, 0.14); box-shadow: none; }
+.rt-clarity .report-section-bar, .rt-clarity-map .report-section-bar { background: #fff; border-color: rgba(7, 112, 186, 0.14); border-radius: 16px; }
+.rt-clarity .rp-h, .rt-clarity-map .rp-h { font-weight: 800; }
+
+.rt-constellation.brand-surface { background: #f6f9fc; }
+.rt-constellation .card { border-radius: 22px; border-color: rgba(7, 112, 186, 0.14); box-shadow: none; }
+.rt-constellation .report-section-bar { background: #052640; border-color: #052640; border-radius: 14px; }
+.rt-constellation .report-section-bar .rp-h { color: #fff; }
+.rt-constellation .report-section-bar [aria-hidden="true"] { color: #9cc7e8; }
