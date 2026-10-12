@@ -38,7 +38,7 @@ export const REPORT_TEMPLATES: ReportTemplateInfo[] = [
     id: 'clarity-map',
     name: 'Clarity Plus',
     tagline: 'Light · map and graph',
-    description: 'Clarity with two graphics from Constellation: the interests hexagon in the profile, and the career constellation above the career cards.',
+    description: 'Clarity with two graphics from Constellation: the career constellation at the top (in the hero, as in Constellation), and the interests hexagon in the profile.',
     tags: ['Light', 'Hexagon graph', 'Career constellation'],
     swatch: ['#ffffff', '#0770ba', '#f4f9ff', '#00c9a7'],
   },

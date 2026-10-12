@@ -6,7 +6,8 @@ import { A, Arrow, Check, Lock, Logo, MASK, MONO, clampScore } from './parts'
 import { Constellation, Hexagon } from './visuals'
 
 // Template "Clarity" (option A of the report directions): light and calm, a progress meter, one big #1 match.
-// withMap = "Clarity Plus": the same page with the interests hexagon and the career constellation added.
+// withMap = "Clarity Plus": the same page with the career constellation in the hero (in place of the #1 match
+// card, as in the Constellation template) and the interests hexagon added to the profile.
 // Free plan: the careers the page gives it, the locked cards for the rest and for the plan. Paid: everything open.
 
 const L = {
@@ -151,7 +152,16 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
             )}
           </div>
 
-          {top && (
+          {top && withMap && (
+            <div style={{ flex: '1 1 380px', minWidth: 0, maxWidth: 560, background: '#fff', border: '1px solid rgba(7,112,186,0.16)', borderRadius: 22, boxShadow: '0 24px 60px rgba(7,82,136,0.14)', padding: 'clamp(12px, 3cqw, 24px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontFamily: ar ? undefined : MONO, fontSize: 12, letterSpacing: ls('0.14em'), color: '#0a705a', fontWeight: 600 }}>{c.mapTag(totalCareers)}</div>
+              <Constellation data={data} unlockedLabel={c.mapBest} lowestLabel={c.mapLowest} lockedLabel={c.mapLocked(data.lockedMore)} tone="light" />
+              {data.lockedMore > 0 && (
+                <A href="#rt-unlock" preview={p} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ebf3ff', color: '#075288', fontWeight: 800, borderRadius: 12, padding: 13, minHeight: 44, boxSizing: 'border-box' }}>{c.reveal(data.lockedMore)}</A>
+              )}
+            </div>
+          )}
+          {top && !withMap && (
             <div style={{ flex: '1 1 340px', minWidth: 0, maxWidth: 460, position: 'relative', paddingBottom: data.lockedMore > 0 ? 28 : 0 }}>
               {data.lockedMore > 0 && <>
                 <div style={{ position: 'absolute', left: 28, right: 28, bottom: 0, height: 60, background: '#fff', border: '1px solid rgba(7,112,186,0.12)', borderRadius: 20, opacity: 0.6 }} />
@@ -265,19 +275,6 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
           </div>
         )}
       </section>
-
-      {/* career constellation (Clarity Plus) */}
-      {withMap && top && (
-        <section style={{ ...section, paddingBottom: 0 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={eyebrow}>{c.mapTag(totalCareers)}</div>
-            <h2 style={{ margin: 0, fontSize: 'clamp(26px, 5cqw, 40px)', fontWeight: 800, color: '#1f2a37' }}>{c.mapTitle}</h2>
-          </div>
-          <div style={{ ...card, background: '#f4f9ff', padding: 'clamp(12px, 3cqw, 28px)' }}>
-            <Constellation data={data} unlockedLabel={c.mapBest} lowestLabel={c.mapLowest} lockedLabel={c.mapLocked(data.lockedMore)} tone="light" />
-          </div>
-        </section>
-      )}
 
       {/* careers */}
       {top && (
