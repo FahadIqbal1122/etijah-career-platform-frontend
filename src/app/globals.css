@@ -151,13 +151,13 @@ html { scroll-behavior: smooth; }
 [dir="rtl"] .assess-progress-label { font-family: var(--font-tajawal), sans-serif; letter-spacing: 0; text-transform: none; font-size: 13px; }
 @media (min-width: 900px) { .assess-progress-label { display: none; } }
 
-/* tiny numeric counter under the constellation stars, clarifying it's progress */
+/* chapter + percentage done, under the stars (no question counts) */
 .cst-progress-text {
   text-align: center;
   font-family: var(--font-mono), monospace;
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: .08em;
-  color: color-mix(in srgb, #fff 55%, transparent);
+  color: color-mix(in srgb, #fff 75%, transparent);
   /* sits in the space reserved at the bottom of .cst-wrap, so it never spills onto the label below */
   position: absolute; left: 0; right: 0; bottom: 0; line-height: 14px;
 }
@@ -340,6 +340,12 @@ html { scroll-behavior: smooth; }
 }
 @keyframes ripple { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(7); opacity: 0; } }
 @keyframes cstCometFade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+/* ChapterStars (assessment star map): background dust twinkles, the newest / next star breathes */
+.cs-twinkle { animation: csTwinkle 3.6s ease-in-out infinite; }
+@keyframes csTwinkle { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+.cs-breathe { transform-box: fill-box; transform-origin: center; animation: csBreathe 3.2s ease-in-out infinite; }
+@keyframes csBreathe { 0%, 100% { transform: scale(.88); opacity: .7; } 50% { transform: scale(1.1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .cs-twinkle, .cs-breathe { animation: none; } }
 
 /* the question body — a white card floating on the gradient */
 .qbody {
@@ -1012,7 +1018,7 @@ html { scroll-behavior: smooth; }
 
 /* Coach inside the assessment's left panel (desktop): sits with the stars and text, not in a corner */
 /* Desktop spots she can stand on during the assessment. The widget measures these and glides to them. */
-.coach-slot { width: 100%; min-height: 128px; margin: 0; position: relative; }   /* her home: between the stars and the writing */
+.coach-slot { width: 100%; min-height: 176px; margin: 14px 0 0; position: relative; }   /* 144px avatar + room, so she never covers the caption above her */   /* her home: between the stars and the writing */
 @media (max-width: 899px) { .coach-slot { display: none; } }   /* phones: no spots, she hops between the corners */
 .coach-spot { position: absolute; width: 1px; height: 1px; pointer-events: none; }
 .assess-aside-context { position: relative; }

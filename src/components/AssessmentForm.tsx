@@ -15,7 +15,8 @@ import 'react-phone-input-2/lib/style.css'
 import { apiAuthPost, apiGet, apiPost } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
-import Constellation, { CHAPTER_CONSTELLATION } from '@/components/brand/Constellation'
+// import Constellation, { CHAPTER_CONSTELLATION } from '@/components/brand/Constellation'   // replaced by ChapterStars
+import ChapterStars from '@/components/brand/ChapterStars'
 import BreakPanel from '@/components/BreakPanel'
 // import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
 import CoachWidget from '@/components/CoachWidget'
@@ -490,8 +491,8 @@ export default function AssessmentForm() {
   const curChapter = phase === 'finish'
     ? CHAPTER_COUNT - 1
     : phase === 'reveal' && revealMsg ? revealMsg.chapter : q ? chapterIndexOf(q.id, q.section) : 0
-  const chapterTotal = chapterOfVisible.filter(c => c === curChapter).length
-  const chapterPos = chapterOfVisible.slice(0, index + 1).filter(c => c === curChapter).length
+  // const chapterTotal = chapterOfVisible.filter(c => c === curChapter).length
+  // const chapterPos = chapterOfVisible.slice(0, index + 1).filter(c => c === curChapter).length
   // Stars already earned stay lit when stepping back into an earlier chapter: use the furthest chapter reached.
   const furthestChapter = chapterOfVisible[Math.min(maxIndex, total - 1)] ?? curChapter
   const litCount = phase === 'finish' ? CHAPTER_COUNT : phase === 'reveal' ? curChapter + 1 : Math.max(curChapter, furthestChapter)
@@ -500,7 +501,10 @@ export default function AssessmentForm() {
   // "Chapter 2 of 5 complete" / «اكتمل الفصل 2 من 5»
   const chapterDoneLabel = (c: number) => locale === 'ar' ? `${chrome.chapterDone} ${chapterLabel(c)}` : `${chapterLabel(c)} ${chrome.chapterDone}`
   // Arabic uses «من» between the numbers so the digits don't flip order inside the right-to-left line.
-  const chapterCount = locale === 'ar' ? `${chapterPos} من ${chapterTotal}` : `${chapterPos} / ${chapterTotal}`
+  // const chapterCount = locale === 'ar' ? `${chapterPos} من ${chapterTotal}` : `${chapterPos} / ${chapterTotal}`   // question counts are not shown any more
+  // Overall progress as a percentage of the assessment (no question counts).
+  const percentDone = total ? Math.max(0, Math.min(100, Math.round((index / total) * 100))) : 0
+  const percentLabel = locale === 'ar' ? `اكتمل ${percentDone}%` : `${percentDone}% complete`
 
   const progressMsg = buildProgressMessage(index, total, locale)
 
@@ -829,10 +833,11 @@ export default function AssessmentForm() {
       <div className="assess-main">
         <aside className="assess-aside">
           <div className="cst-wrap">
-            <Constellation geometry={CHAPTER_CONSTELLATION} litCount={litCount} theme={phase === 'reveal' ? 'teal' : 'dark'} rippleKey={rippleKey} accent="#00C9A7" />
+            {/* <Constellation geometry={CHAPTER_CONSTELLATION} litCount={litCount} theme={phase === 'reveal' ? 'teal' : 'dark'} rippleKey={rippleKey} accent="#00C9A7" /> */}
+            <ChapterStars litCount={litCount} theme={phase === 'reveal' ? 'teal' : 'dark'} rippleKey={rippleKey} accent="#00C9A7" />
             {phase === 'question' && (
               <div className="cst-progress-text">
-                {`${chapterLabel(curChapter)} · ${chapterCount}`}
+                {`${chapterLabel(curChapter)} · ${percentLabel}`}
               </div>
             )}
           </div>
