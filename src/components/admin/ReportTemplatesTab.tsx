@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  REPORT_TEMPLATES, TemplatePreview, isReportTemplateId, sampleTemplateData,
+  REPORT_TEMPLATES, ReportTemplateView, isReportTemplateId, sampleTemplateData,
   type ReportTemplateId,
 } from '@/components/report-templates'
 
@@ -66,9 +66,9 @@ export default function ReportTemplatesTab() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <h2 className="text-xl font-bold text-slate-800 mb-1">Report templates</h2>
       <p className="text-sm text-slate-400 mb-6">
-        Choose how the results report looks. Templates change the design only (the hero, colours and the optional
-        graphics). What the free and paid plans see or don't see is the same in every template. Previews use sample
-        data and show a short version of the report.
+        Choose how the results report looks. A template is a full-page design; what the free and paid plans see or
+        don't see is the same in every template. Previews use sample data. On the live report the detailed sections
+        (plan, jobs, courses and so on) follow below the template.
       </p>
 
       {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
@@ -163,7 +163,7 @@ export default function ReportTemplatesTab() {
             className="mx-auto bg-white rounded-xl shadow-sm overflow-auto"
             style={{ width: device === 'phone' ? 390 : '100%', maxWidth: '100%', maxHeight: 760 }}
           >
-            <TemplatePreview id={selected} data={data} />
+            <ReportTemplateView id={selected} data={data} />
           </div>
         </div>
       )}

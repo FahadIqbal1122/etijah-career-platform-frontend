@@ -5,7 +5,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type React
 import { useParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { apiGet, apiAuthGet, apiAuthPost, apiAuthDelete, apiAuthGetBlob } from '@/lib/api'
-import { ReportTemplateHero, ProfileHexagon, CareerMap, isReportTemplateId, templateFeatures, type ReportTemplateData, type ReportTemplateId } from '@/components/report-templates'
+import { ReportTemplateView, isReportTemplateId, type ReportTemplateData, type ReportTemplateId } from '@/components/report-templates'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { Link, useRouter, usePathname } from '@/i18n/navigation'
 import { setLocaleLock } from '@/lib/localeLock'
@@ -900,55 +900,45 @@ export default function ResultsPage() {
     </div>
   )
 
-  // Report template (admin: Report templates). Design only: a non-default template swaps the hero, themes the page
-  // and can add the hexagon / career constellation. What the free and paid plans see is decided by the code above and
-  // is the same for every template; the template only receives what the page already shows to this person.
-  const tplFeatures = templateFeatures(reportTemplate)
+  // Report template (admin: Report templates). A full-page design shown at the top of the report. What each plan
+  // sees is decided here, not by the template: it only receives what the default report shows to this person
+  // (free: the 3 careers it is given, no plan, the locked cards; paid: everything).
   const useTemplate = reportTemplate !== 'default'
   const tplData: ReportTemplateData | null = useTemplate ? {
     locale,
-    strings: {
-      eyebrow: t('hero.eyebrow'),
-      title: t('hero.title'),
-      subtitle: t('hero.subtitle'),
-      typeLine: t('hero.typeLabel', { type: riasecLabel(topType) }),
-      codeLine: t('hero.riasecCode', { code: riasecCode }),
-      topValue: summary.values?.top_values?.[0] ? { label: t('coreValues.title'), value: valueLabel(summary.values.top_values[0]) } : undefined,
-      topStrength: summary.strengths?.top_strengths?.[0] ? { label: t('topStrengths.title'), value: strengthLabel(summary.strengths.top_strengths[0]) } : undefined,
-      match: t('suggestedCareers.matchLabel'),
-      aiRisk: t('aiImpact.riskLabel'),
-      careers: t('suggestedCareers.title'),
-      topMatch: t('suggestedCareers.title'),
-      riskName: { low: levelLabel('low'), medium: levelLabel('medium'), high: levelLabel('high') },
-      directionName: {
-        builds_on_background: t('suggestedCareers.directionTag.builds_on_background'),
-        new_direction: t('suggestedCareers.directionTag.new_direction'),
-      },
-      mapTitle: t('suggestedCareers.title'),
-      mapUnlocked: t('suggestedCareers.matchLabel'),
-      mapLowestRisk: `${t('aiImpact.riskLabel')}: ${levelLabel('low')}`,
-      hexTitle: t('careerTypes.title'),
-    },
+    paid: tier !== 'free',
     riasec: ['realistic', 'investigative', 'artistic', 'social', 'enterprising', 'conventional']
       .map(k => ({ key: k, label: riasecLabel(k), score: scoreMap[k] ?? 0 })),
-    // exactly the careers the page shows this person (the backend gives the free plan 3)
-    careers: [...jobs].sort((a: any, b: any) => (b.match_score ?? 0) - (a.match_score ?? 0)).map((job: any) => {
+    riasecCode,
+    topTypeLabel: riasecLabel(topType),
+    values: (summary.values?.top_values || []).slice(0, 3).map((v: string) => ({ label: valueLabel(v), score: scoreMap[v] ?? 0 })),
+    strengths: (summary.strengths?.top_strengths || []).slice(0, 3).map((v: string) => ({ label: strengthLabel(v), score: scoreMap[v] ?? 0 })),
+    personality: Object.entries(summary.big_five || {}).map(([k, level]: any) => ({ label: traitLabel(k), score: parseInt(levelToWidth[level] ?? '50', 10) })),
+    careers: [...jobs].sort((a: any, b: any) => (b.match_score ?? 0) - (a.match_score ?? 0)).map((job: any, i: number) => {
       const ai: any = aiImpact?.careers?.find((c: any) => normTitle(c.title) === normTitle(job.title))
       const risk = ai?.ai_risk_level
       return {
         title: String(job.title || ''),
         match: Number(job.match_score) || 0,
+        summary: job.fit_summary || undefined,
         risk: risk === 'low' || risk === 'medium' || risk === 'high' ? risk : undefined,
         direction: job.direction_tag === 'builds_on_background' || job.direction_tag === 'new_direction' ? job.direction_tag : undefined,
+        gap: i === 0 && typeof job.gap === 'string' ? job.gap : undefined,
       }
     }),
-    // same actions as the default hero: free = locked link to the plans, paid = the PDF downloads
+    // the free plan is given 3 of 8 careers (the page's own locked card says "5 more")
+    lockedMore: tier === 'free' ? 5 : 0,
+    unlockHref: upgradeHref,
+    locked: {
+      moreTitle: t('suggestedCareers.moreLockedTitle'),
+      moreBody: t('suggestedCareers.moreLockedBody'),
+      planTitle: t('firstStep.lockedTitle'),
+      planBody: t('firstStep.lockedBody'),
+      planCta: t('firstStep.lockedCta'),
+    },
     download: {
-      locked: tier === 'free',
-      lockedLabel: t('hero.downloadLocked'),
-      href: upgradeHref,
       label: t('hero.downloadPdf'),
-      altLabel: tier !== 'free' && !arabicOnly ? (reportLocale === 'ar' ? t('hero.downloadEnglish') : t('hero.downloadArabic')) : undefined,
+      altLabel: !arabicOnly ? (reportLocale === 'ar' ? t('hero.downloadEnglish') : t('hero.downloadArabic')) : undefined,
       busy: downloadingReport,
       busyLabel: t('hero.downloading'),
       onDownload: () => downloadReport(),
@@ -1230,7 +1220,6 @@ export default function ResultsPage() {
 
       </>),
     careers: (<>
-        {tplData && tplFeatures.careerMap && <CareerMap data={tplData} />}
         {/* Suggested Careers */}
         {jobs.length > 0 && (
           <div className="card p-5">
@@ -2159,7 +2148,6 @@ export default function ResultsPage() {
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.07A2.25 2.25 0 0118 20.47H6a2.25 2.25 0 01-2.25-2.25v-4.07M15.75 9.75V6a3.75 3.75 0 00-7.5 0v3.75M3.75 9.75h16.5" /></svg>}
             />
             {introText(pd?.overview?.riasec, pd?.full?.overview?.riasec)}
-            {tplData && tplFeatures.hexagon && <ProfileHexagon data={tplData} />}
             {/* All six types, same look, highest first, each with its percentage (no single "main" type) */}
             <div className="space-y-2.5">
               {['realistic', 'investigative', 'artistic', 'social', 'enterprising', 'conventional']
@@ -2340,13 +2328,17 @@ export default function ResultsPage() {
     return [...rest.slice(0, at), 'unlock', ...rest.slice(at)]
   })()
 
-  const shownKeys = orderedKeys
+  // With a template the sections it already covers are left out: the overview and profile cards everywhere, and on
+  // the free plan also the careers and the unlock card (the template has its own). Paid plans keep the detailed
+  // careers (next steps, AI panels) and the profile narratives below the template.
+  const TEMPLATE_COVERS = tier === 'free' ? ['summary', 'careers', 'profile', 'unlock'] : ['summary']
+  const shownKeys = tplData ? orderedKeys.filter(k => !TEMPLATE_COVERS.includes(k)) : orderedKeys
 
   return (
     <div className={`min-h-screen brand-surface page-fade-in${useTemplate ? ` rt-${reportTemplate}` : ''}`}>
 
-      {/* Report template hero (replaces the default hero below) */}
-      {tplData && <ReportTemplateHero id={reportTemplate} data={tplData} />}
+      {/* Report template (replaces the default hero below) */}
+      {tplData && <ReportTemplateView id={reportTemplate} data={tplData} />}
 
       {/* Hero */}
       {!tplData && (

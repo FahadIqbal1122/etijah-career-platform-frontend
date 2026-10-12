@@ -1,11 +1,11 @@
 'use client'
 
-import TemplateHero from './TemplateHero'
-import { Constellation, Hexagon } from './visuals'
+import ClarityTemplate from './ClarityTemplate'
+import ConstellationTemplate from './ConstellationTemplate'
 import type { ReportTemplateData, ReportTemplateId } from './types'
 
 export { REPORT_TEMPLATE_IDS } from './types'
-export type { ReportTemplateData, ReportTemplateId, TemplateCareer, TemplateScore, TemplateStrings, TemplateDownload } from './types'
+export type { ReportTemplateData, ReportTemplateId, TemplateCareer, TemplateScore } from './types'
 
 export interface ReportTemplateInfo {
   id: ReportTemplateId
@@ -30,15 +30,15 @@ export const REPORT_TEMPLATES: ReportTemplateInfo[] = [
     id: 'clarity',
     name: 'Clarity',
     tagline: 'Light · calm',
-    description: 'A light, calm look: a bright hero with your best match as a ring, clean cards with a soft blue outline.',
-    tags: ['Light', 'Ring hero'],
+    description: 'Option A of the report directions: light and calm. Big headline, your best match as a ring, a progress meter, a #1 match card and an unlock panel.',
+    tags: ['Light', 'Progress meter', 'Ring hero'],
     swatch: ['#ffffff', '#0770ba', '#ebf3ff', '#00c9a7'],
   },
   {
     id: 'clarity-map',
     name: 'Clarity Plus',
     tagline: 'Light · map and graph',
-    description: 'The Clarity look plus two graphics from Constellation: the interests hexagon in the profile, and the career constellation above the career cards.',
+    description: 'Clarity with two graphics from Constellation: the interests hexagon in the profile, and the career constellation above the career cards.',
     tags: ['Light', 'Hexagon graph', 'Career constellation'],
     swatch: ['#ffffff', '#0770ba', '#f4f9ff', '#00c9a7'],
   },
@@ -46,8 +46,8 @@ export const REPORT_TEMPLATES: ReportTemplateInfo[] = [
     id: 'constellation',
     name: 'Constellation',
     tagline: 'Dark · premium',
-    description: 'A dark, premium hero with your careers drawn as a rising constellation, navy section bars, and the interests hexagon in the profile.',
-    tags: ['Dark', 'Constellation hero', 'Hexagon graph'],
+    description: 'Option B of the report directions: dark and premium. Careers drawn as a rising constellation, the interests hexagon, a careers table, and the Free vs Full comparison.',
+    tags: ['Dark', 'Constellation', 'Hexagon graph', 'Free vs Full'],
     swatch: ['#052640', '#00c9a7', '#0770ba', '#9cc7e8'],
   },
 ]
@@ -56,40 +56,16 @@ export function isReportTemplateId(v: unknown): v is ReportTemplateId {
   return v === 'default' || v === 'clarity' || v === 'clarity-map' || v === 'constellation'
 }
 
-// What each template adds to the page.
-export function templateFeatures(id: ReportTemplateId) {
-  return {
-    hero: id === 'clarity' || id === 'clarity-map' ? ('clarity' as const) : id === 'constellation' ? ('constellation' as const) : null,
-    hexagon: id === 'clarity-map' || id === 'constellation',
-    careerMap: id === 'clarity-map',
-  }
-}
-
-export function ReportTemplateHero({ id, data }: { id: ReportTemplateId; data: ReportTemplateData }) {
-  const f = templateFeatures(id)
-  return f.hero ? <TemplateHero data={data} variant={f.hero} /> : null
-}
-
-// The interests hexagon, placed above the interest bars in the profile.
-export function ProfileHexagon({ data }: { data: ReportTemplateData }) {
-  return <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><Hexagon data={data} /></div>
-}
-
-// The career constellation (light version), placed at the top of the careers section.
-export function CareerMap({ data }: { data: ReportTemplateData }) {
-  if (!data.careers.length) return null
-  return (
-    <div className="card p-5">
-      <p className="rp-h text-charcoal mb-3">{data.strings.mapTitle}</p>
-      <div style={{ background: '#f4f9ff', borderRadius: 16, padding: 'clamp(8px, 2vw, 20px)' }}>
-        <Constellation data={data} unlockedLabel={data.strings.mapUnlocked} lowestLabel={data.strings.mapLowestRisk} tone="light" />
-      </div>
-    </div>
-  )
+// Renders a non-default template as the top of the results page. 'default' is the page itself.
+export function ReportTemplateView({ id, data }: { id: ReportTemplateId; data: ReportTemplateData }) {
+  if (id === 'clarity') return <ClarityTemplate data={data} />
+  if (id === 'clarity-map') return <ClarityTemplate data={data} withMap />
+  if (id === 'constellation') return <ConstellationTemplate data={data} />
+  return null
 }
 
 // Made-up data for the admin preview (no real person). `paid` only changes what the page itself changes: the
-// download action and how many careers the person is given (3 free, 8 paid).
+// careers given (3 free + 5 locked, 8 paid), the locked cards and the download action.
 export function sampleTemplateData(locale: 'en' | 'ar', paid: boolean): ReportTemplateData {
   const ar = locale === 'ar'
   const riasec = [
@@ -100,68 +76,42 @@ export function sampleTemplateData(locale: 'en' | 'ar', paid: boolean): ReportTe
     ? [['مهندس برمجيات', 95], ['مهندس DevOps', 92], ['مطور تطبيقات جوال', 90], ['محلل أمن سيبراني', 88], ['مهندس شبكات', 85], ['محلل نظم', 82], ['مدير قواعد بيانات', 80], ['مهندس اتصالات', 78]]
     : [['Software Engineer', 95], ['DevOps Engineer', 92], ['Mobile App Developer', 90], ['Cybersecurity Analyst', 88], ['Network Engineer', 85], ['Systems Analyst', 82], ['Database Administrator', 80], ['Telecom Engineer', 78]]
   const risks: Array<'low' | 'medium' | 'high'> = ['medium', 'medium', 'medium', 'low', 'medium', 'medium', 'medium', 'medium']
+  const shown = paid ? 8 : 3
   return {
     locale,
+    paid,
     preview: true,
-    strings: ar ? {
-      eyebrow: 'نتائج التقييم المهني', title: 'ملفك المهني', subtitle: 'هذا ما تقوله إجاباتك عنك، والمسارات المهنية المناسبة لك، وما تفعله بعد ذلك',
-      typeLine: 'نمط استقصائي', codeLine: 'RIASEC: ICR',
-      topValue: { label: 'أهم قيمة', value: 'خدمة الوطن' }, topStrength: { label: 'أبرز نقطة قوة', value: 'التفكير الاستراتيجي' },
-      match: 'تطابق', aiRisk: 'أثر الذكاء الاصطناعي', careers: 'مسارات', topMatch: 'أفضل مسار لك',
-      riskName: { low: 'منخفض', medium: 'متوسط', high: 'مرتفع' }, directionName: { builds_on_background: 'يبني على خلفيتك', new_direction: 'اتجاه جديد' },
-      mapTitle: 'كوكبة مساراتك المهنية', mapUnlocked: 'الأفضل', mapLowestRisk: 'الأقل تأثراً بالذكاء الاصطناعي', hexTitle: 'اهتماماتك',
-    } : {
-      eyebrow: 'Career Assessment Results', title: 'Your Career Profile', subtitle: 'Here is what your answers say about you, the careers that fit, and what to do next',
-      typeLine: 'Investigative type', codeLine: 'RIASEC: ICR',
-      topValue: { label: 'Top value', value: 'National Contribution' }, topStrength: { label: 'Top strength', value: 'Strategic Thinking' },
-      match: 'match', aiRisk: 'AI risk', careers: 'careers', topMatch: 'YOUR #1 CAREER MATCH',
-      riskName: { low: 'Low', medium: 'Medium', high: 'High' }, directionName: { builds_on_background: 'Builds on your background', new_direction: 'New direction' },
-      mapTitle: 'Your career constellation', mapUnlocked: 'best match', mapLowestRisk: 'LOWEST AI RISK', hexTitle: 'Your interests',
-    },
     riasec: riasec.map(([key, label, score]) => ({ key, label, score })),
-    careers: all.slice(0, paid ? 8 : 3).map(([title, match], i) => ({
-      title: title as string, match: match as number, risk: risks[i],
+    riasecCode: 'ICR',
+    topTypeLabel: ar ? 'استقصائي' : 'Investigative',
+    values: ar
+      ? [{ label: 'خدمة الوطن', score: 100 }, { label: 'الثروة', score: 90 }, { label: 'الإبداع', score: 80 }]
+      : [{ label: 'National Contribution', score: 100 }, { label: 'Wealth', score: 90 }, { label: 'Creativity', score: 80 }],
+    strengths: ar
+      ? [{ label: 'التفكير الاستراتيجي', score: 100 }, { label: 'التعلّم', score: 100 }, { label: 'التنفيذ', score: 80 }]
+      : [{ label: 'Strategic Thinking', score: 100 }, { label: 'Learning', score: 100 }, { label: 'Execution', score: 80 }],
+    personality: ar
+      ? [{ label: 'الانفتاح', score: 80 }, { label: 'الضمير الحي', score: 100 }, { label: 'الانبساط', score: 20 }, { label: 'الوداعة', score: 50 }, { label: 'الاتزان', score: 80 }]
+      : [{ label: 'Openness', score: 80 }, { label: 'Conscientiousness', score: 100 }, { label: 'Extraversion', score: 20 }, { label: 'Agreeableness', score: 50 }, { label: 'Stability', score: 80 }],
+    careers: all.slice(0, shown).map(([title, match], i) => ({
+      title: title as string,
+      match: match as number,
+      risk: risks[i],
       direction: i % 3 === 2 ? 'new_direction' as const : 'builds_on_background' as const,
+      summary: ar
+        ? 'هذا المسار يبني على دراستك. درجتك المرتفعة في الاهتمام الاستقصائي تعني أنك تستمتع بفهم الأنظمة المعقدة وحل مشكلاتها.'
+        : 'This career builds on your studies. Your high Investigative score says you enjoy understanding complex systems and solving problems.',
+      ...(i === 0 ? { gap: ar ? 'خبرة عملية في مشاريع حقيقية.' : 'Practical experience on real projects.' } : {}),
     })),
-    download: paid
-      ? { locked: false, lockedLabel: '', href: '#', label: ar ? 'تحميل التقرير PDF' : 'Download PDF Report', altLabel: ar ? 'تحميل النسخة الإنجليزية' : 'Download Arabic PDF', busyLabel: '…' }
-      : { locked: true, lockedLabel: ar ? 'تحميل PDF (مرشد المسار)' : 'Download PDF (Pathfinder)', href: '#', label: '', busyLabel: '…' },
+    lockedMore: paid ? 0 : 5,
+    unlockHref: '#',
+    locked: ar ? {
+      moreTitle: 'افتح ٥ مسارات مهنية أخرى', moreBody: 'رقِّ إلى مرشد المسار لترى المسارات الخمسة الأخرى التي تناسبك، مع التفاصيل الكاملة لكل منها.',
+      planTitle: 'افتح خطتك', planBody: 'احصل على خطوتك الأولى هذا الأسبوع وخطة الأيام التسعين والمهارات والتمرين التطبيقي.', planCta: 'افتح التقرير الكامل',
+    } : {
+      moreTitle: 'Unlock 5 more careers', moreBody: 'Upgrade to Pathfinder to see the other 5 careers that fit you, each with the full detail.',
+      planTitle: 'Unlock your plan', planBody: 'Get your first step for this week, your 90-day roadmap, and the skills and practice exercise to build for it.', planCta: 'Unlock Full Report',
+    },
+    download: { label: ar ? 'تحميل التقرير PDF' : 'Download PDF Report', altLabel: ar ? 'تحميل النسخة الإنجليزية' : 'Download Arabic PDF', busyLabel: '…' },
   }
-}
-
-// A cut-down report for the admin preview: the template's hero, then a section bar, the profile card (with the
-// hexagon when the template has it), and the career card (with the constellation when it has it).
-export function TemplatePreview({ id, data }: { id: ReportTemplateId; data: ReportTemplateData }) {
-  const f = templateFeatures(id)
-  const ar = data.locale === 'ar'
-  const sorted = [...data.riasec].sort((a, b) => b.score - a.score)
-  return (
-    <div dir={ar ? 'rtl' : 'ltr'} className={`rt-${id} brand-surface`} style={{ minHeight: 200 }}>
-      <ReportTemplateHero id={id} data={data} />
-      <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
-        <div className="report-section-bar w-full flex items-center justify-between rounded-xl bg-white/70 border border-[var(--line)] px-4 py-2.5">
-          <span className="rp-h text-charcoal">{data.strings.hexTitle}</span><span aria-hidden="true">▾</span>
-        </div>
-        <div className="card p-5">
-          {f.hexagon && <ProfileHexagon data={data} />}
-          <div className="space-y-2.5">
-            {sorted.map(r => (
-              <div key={r.label}>
-                <div className="flex justify-between text-sm"><span className="font-medium">{r.label}</span><span className="font-semibold">{r.score}%</span></div>
-                <div className="w-full bg-lightblue rounded-full h-1.5"><div className="bg-primary h-1.5 rounded-full" style={{ width: `${r.score}%` }} /></div>
-              </div>
-            ))}
-          </div>
-        </div>
-        {f.careerMap && <CareerMap data={data} />}
-        <div className="card p-5 space-y-2">
-          {data.careers.slice(0, 3).map(c => (
-            <div key={c.title} className="flex justify-between gap-3 rounded-xl border border-[var(--line)] px-4 py-3">
-              <span className="rp-h">{c.title}</span><span className="rp-pill rp-blue">{c.match}% {data.strings.match}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
 }
