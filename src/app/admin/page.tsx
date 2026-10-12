@@ -9,6 +9,7 @@ import EmailTemplatesTab from '@/components/admin/EmailTemplatesTab'
 import EmailSchedulerTab from '@/components/admin/EmailSchedulerTab'
 import SmtpSettingsTab from '@/components/admin/SmtpSettingsTab'
 import { questions, BEHAVIORAL_SCALE, type Question } from '@/data/questions'
+import { buildWorkbook, saveBlob, type SheetSpec, type SummaryBlock } from '@/lib/adminExcel'
 
 const levelToWidth: Record<string, string> = {
   low: '20%',
@@ -1280,6 +1281,8 @@ export default function AdminPage() {
   const [dashCountry, setDashCountry] = useState('all')
   const [dashNationality, setDashNationality] = useState('all')
   const [dashAge, setDashAge] = useState('all')
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState('')
   // Submissions tab: filter by how far (if at all) each respondent got into
   // the beta feedback flow, joined in via betaFeedbackByResponseId below.
   const [submissionFeedbackFilter, setSubmissionFeedbackFilter] = useState<SubmissionFeedbackFilter>('all')
@@ -3535,6 +3538,276 @@ export default function AdminPage() {
   const submissionsTrend = trendDays120.map(k => ({ label: shortDay(k), value: subsPerDay.get(k) || 0 }))
   const salesTrend = trendDays120.map(k => ({ label: shortDay(k), value: salesPerDay.get(k) || 0 }))
   const resetDashFilters = () => { setDashFrom(''); setDashTo(''); setDashCountry('all'); setDashNationality('all'); setDashAge('all') }
+  // ── Excel export of everything on the Live dashboard, scoped to the filters above ──
+  // Uses the very same dash* lists the tiles and tabs render, so the file always matches what is on screen.
+  // Answers and scores aren't loaded in the page, so they come from one bulk admin call for the filtered submissions.
+  async function exportDashboardWorkbook() {
+    setExporting(true)
+    setExportError('')
+    try {
+      const answersById: Record<string, { answers: Record<string, unknown>; locale: string | null }> = {}
+      const scoresById: Record<string, { framework: string; dimension: string; raw_score: number | null; normalized_score: number | null }[]> = {}
+      const ids = dashSubmissions.map(s => s.id)
+      for (let i = 0; i < ids.length; i += 1000) {
+        const res = await fetch('/api/admin/export/assessment-details', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: ids.slice(i, i + 1000) }),
+        })
+        if (!res.ok) throw new Error(`Could not load answers and scores (error ${res.status}). Nothing was downloaded; please try again.`)
+        const d = await res.json()
+        Object.assign(answersById, d.answers || {})
+        Object.assign(scoresById, d.scores || {})
+      }
+
+      const dt = (iso: string | null | undefined) => iso ? new Date(iso).toLocaleString('en-GB') : ''
+      const lab = (map: Record<string, string>, k: string | null | undefined) => k ? (map[k] || formatUnderscored(k)) : ''
+      const pctOf = (n: number, total: number) => total > 0 ? Math.round((n / total) * 1000) / 10 : null
+      const ageText = (s: { age: number | null; age_bracket: string | null }) => s.age ?? (s.age_bracket ? lab(AGE_BRACKET_LABEL, s.age_bracket) : '')
+      const ageGroup = (s: { age: number | null; age_bracket: string | null }) => lab(AGE_BRACKET_LABEL, s.age_bracket ?? ageToBracket(s.age))
+      const today = new Date().toISOString().slice(0, 10)
+
+      // Plan per buyer email: Launchpad (report + coaching) > Pathfinder (paid report) > Explorer (completed, no purchase).
+      const planByEmail = new Map<string, string>()
+      for (const t of livePaidSales) {
+        const k = emailKey(t.email)
+        if (!k) continue
+        if (t.coaching_included) planByEmail.set(k, 'Launchpad')
+        else if (!planByEmail.has(k)) planByEmail.set(k, 'Pathfinder')
+      }
+      const planOf = (s: Submission) => planByEmail.get(emailKey(s.email)) || (s.completed ? 'Explorer (free)' : 'No purchase')
+      const sessionOf = (id: string) => telemetryByResponseId.get(id)
+
+      // ── Summary ──
+      const countryCounts = countBy(dashSubmissions, s => s.country)
+      const breakdown = (title: string, counts: Record<string, number>, labels: Record<string, string>, total: number): SummaryBlock => ({
+        title, headers: ['Value', 'Count', '% of total'],
+        rows: Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([k, n]) => [labels[k] || formatUnderscored(k), n, pctOf(n, total)]),
+      })
+      const nSub = dashSubmissions.length
+      const stageCount = (stage: BetaFeedbackStage) => dashFeedback.filter(bf => betaFeedbackStageOf(bf) === stage).length
+      const sessions = dashTelemetrySummary.sessions
+      const filterNotes: string[] = []
+      if (dashFiltersActive) filterNotes.push('Filters are active: every sheet only contains the matching people.')
+      filterNotes.push('Sales are matched to the filtered people by email; the date range applies to the payment date.')
+      if (demoFilterOn) filterNotes.push('Country / nationality / age filters are active, so sheets with no demographics (abandoned, bug reports, waitlist, coaching log, featured courses) are left out.')
+      else filterNotes.push('Abandoned, bug reports, waitlist, coaching log and featured courses only use the date range (they carry no demographics).')
+
+      const summary: SummaryBlock[] = [
+        { title: 'Report', headers: ['', ''], rows: [
+          ['Generated', new Date().toLocaleString('en-GB')],
+          ['Data scope', `Live data since ${LIVE_START.toLocaleDateString('en-GB')} (beta-era rows are not included)`],
+        ] },
+        { title: 'Filters applied', headers: ['Filter', 'Value'], rows: [
+          ['From', dashFrom || 'Any'], ['To', dashTo || 'Any'],
+          ['Country', dashCountry === 'all' ? 'All' : lab(COUNTRY_LABEL, dashCountry)],
+          ['Nationality', dashNationality === 'all' ? 'All' : lab(NATIONALITY_LABEL, dashNationality)],
+          ['Age', dashAge === 'all' ? 'All' : lab(AGE_BRACKET_LABEL, dashAge)],
+          ['People matching the filters', `${nSub} of ${liveSubmissions.length}`],
+          ...filterNotes.map(n => ['Note', n]),
+        ] },
+        { title: 'Key numbers', headers: ['Metric', 'Value'], rows: [
+          ['Number of sales (paid orders)', dashPaidSales.length],
+          ['Total revenue', dashRevenueLabel],
+          ['Free reports (Explorer): completed, no purchase', dashExplorerCount],
+          ['Pathfinder plans sold', dashPaidSales.length - dashCoachingSales.length],
+          ['Launchpad plans sold (report + 1:1 coaching)', dashCoachingSales.length],
+          ['Assessments submitted', nSub],
+          ['Assessments completed', dashSubmissions.filter(s => s.completed).length],
+          ['Users who received career matches', dashCareerRecs.length],
+          ['Feedback rows', dashFeedback.length],
+          ['  F1 Pre-Result Short', stageCount('stage1')], ['  F2 Result Page Short', stageCount('result')],
+          ['  F3 Email Feedback', stageCount('stage2')], ['  Incomplete', stageCount('started')],
+          ['Conversion rate (paid orders ÷ assessments submitted)', nSub > 0 ? `${Math.round((dashPaidSales.length / nSub) * 100)}%` : '—'],
+          ['Unpaid / pending orders in range', dashRealSales.length - dashPaidSales.length],
+        ] },
+        { title: 'Revenue by currency (paid orders)', headers: ['Currency', 'Amount', 'Orders'], rows:
+          Array.from(dashRevenueByCurrency.entries()).map(([c, v]) => [c, Math.round(v * 100) / 100, dashPaidSales.filter(t => t.currency === c).length]) },
+        breakdown('Submissions by plan', countBy(dashSubmissions, s => planOf(s)), {}, nSub),
+        breakdown('Submissions by country', countryCounts, COUNTRY_LABEL, nSub),
+        breakdown('Submissions by nationality', countBy(dashSubmissions, s => s.nationality), NATIONALITY_LABEL, nSub),
+        breakdown('Submissions by age group', countBy(dashSubmissions, s => s.age_bracket ?? ageToBracket(s.age)), AGE_BRACKET_LABEL, nSub),
+        breakdown('Submissions by experience level', countBy(dashSubmissions, s => s.experience_level), EXPERIENCE_LEVEL_LABEL, nSub),
+        breakdown('Submissions by current stage', countBy(dashSubmissions, s => s.current_stage), CURRENT_STAGE_LABEL, nSub),
+        { title: 'Behavior (assessment sessions)', headers: ['Metric', 'Value'], rows: [
+          ['Sessions started', sessions.length], ['Sessions that reached a submission', sessions.filter(s => s.completed).length],
+          ['Sessions that played a break game', sessions.filter(s => s.activities.length > 0).length],
+          ...Object.entries(countBy(sessions, s => s.device_type)).map(([k, n]) => [`Device: ${formatUnderscored(k)}`, n]),
+          ...Object.entries(dashTelemetrySummary.activityCounts).map(([k, n]) => [`Game opened: ${ACTIVITY_LABEL[k] || k}`, n]),
+        ] },
+      ]
+
+      // ── Data sheets ──
+      const sheets: SheetSpec[] = []
+
+      sheets.push({
+        name: 'Daily trend', headers: ['Date', 'Assessments submitted', 'Completed', 'Paid orders'],
+        rows: trendDays.map(k => [
+          k, subsPerDay.get(k) || 0,
+          dashSubmissions.filter(s => s.completed && dayKey(s.created_at) === k).length,
+          salesPerDay.get(k) || 0,
+        ]),
+      })
+
+      sheets.push({
+        name: 'Submissions',
+        headers: ['Submitted at', 'Name', 'Email', 'Phone', 'Country', 'Nationality', 'Age', 'Age group', 'Experience', 'Education field',
+          'Major own choice', 'Major choice reason', 'Career direction', 'Current stage', 'Status', 'Plan', 'Feedback stage', 'Device', 'Games played', 'Response ID'],
+        rows: [...dashSubmissions].sort((a, b) => b.created_at.localeCompare(a.created_at)).map(s => {
+          const bf = betaFeedbackByResponseId.get(s.id)
+          const sess = sessionOf(s.id)
+          return [
+            dt(s.created_at), s.full_name, s.email, s.phone, lab(COUNTRY_LABEL, s.country), lab(NATIONALITY_LABEL, s.nationality),
+            ageText(s), ageGroup(s), lab(EXPERIENCE_LEVEL_LABEL, s.experience_level), (s.education_field || []).join('; '),
+            s.major_was_own_choice === 'no' ? 'No' : s.major_was_own_choice === 'yes' ? 'Yes' : '', s.major_was_own_choice === 'no' ? s.major_choice_reason : '',
+            formatUnderscored(s.career_direction), lab(CURRENT_STAGE_LABEL, s.current_stage), s.completed ? 'Complete' : 'Incomplete', planOf(s),
+            bf ? BETA_FEEDBACK_STAGE_LABELS[betaFeedbackStageOf(bf)] : 'None', sess?.device_type || '',
+            sess ? sess.activities.map(k => ACTIVITY_LABEL[k] || k).join('; ') : '', s.id,
+          ]
+        }),
+      })
+
+      // One row per submission, one column per assessment question that anyone answered.
+      const answeredQs = questions.filter(q => dashSubmissions.some(s => {
+        const v = answersById[s.id]?.answers?.[q.id]
+        return v !== undefined && v !== null && v !== ''
+      }))
+      sheets.push({
+        name: 'Answers',
+        note: 'Each column is one assessment question (id · question text). Values are shown as the option label the person picked.',
+        headers: ['Submitted at', 'Name', 'Email', 'Language', ...answeredQs.map(q => `${q.id} · ${q.text}`)],
+        widths: [18, 24, 28, 10, ...answeredQs.map(() => 30)],
+        rows: dashSubmissions.filter(s => answersById[s.id]).map(s => {
+          const a = answersById[s.id]
+          return [
+            dt(s.created_at), s.full_name, s.email, a.locale || '',
+            ...answeredQs.map(q => {
+              const raw = a.answers?.[q.id]
+              return raw === undefined || raw === null || raw === '' ? '' : formatAnswer(q, raw)
+            }),
+          ]
+        }),
+      })
+
+      const scoreRows: (string | number | null)[][] = []
+      for (const s of dashSubmissions) {
+        for (const r of scoresById[s.id] || []) {
+          scoreRows.push([s.full_name, s.email, dt(s.created_at), r.framework, r.dimension, r.raw_score, r.normalized_score])
+        }
+      }
+      sheets.push({ name: 'Scores', headers: ['Name', 'Email', 'Submitted at', 'Framework', 'Dimension', 'Raw score', 'Normalized score (0-100)'], rows: scoreRows })
+
+      const careerRows: (string | number | null)[][] = []
+      for (const r of dashCareerRecs) {
+        ;(r.career_recommendations || []).forEach((c: any, i: number) => {
+          careerRows.push([r.full_name, r.email, dt(r.created_at), i + 1, c.title, c.match_score ?? null, c.fit_tag || '', c.fit_summary || '', c.growth_note || ''])
+        })
+      }
+      sheets.push({ name: 'Career matches', headers: ['Name', 'Email', 'Submitted at', 'Rank', 'Career', 'Match score', 'Fit', 'Why it fits', 'Growth note'], rows: careerRows })
+
+      const FEEDBACK_COLUMNS: [string, (bf: BetaFeedbackEntry) => string | number | null][] = [
+        ['Feedback stage', bf => BETA_FEEDBACK_STAGE_LABELS[betaFeedbackStageOf(bf)]],
+        ['Plan tier', bf => bf.plan_tier || ''], ['Form version', bf => bf.form_version || ''], ['Locale', bf => bf.locale || ''], ['Device', bf => bf.device || ''],
+        ['S1 clarity (1-5)', bf => bf.s1_clarity], ['S1 feeling (1-5)', bf => bf.s1_feeling], ['S1 understood (1-5)', bf => bf.s1_understood],
+        ['S1 confidence', bf => bf.s1_confidence], ['S1 length', bf => bf.s1_length || ''], ['S1 wants from results', bf => formatUnderscored(bf.s1_intent)],
+        ['F1 completed at', bf => dt(bf.stage1_completed_at)],
+        ['Result accuracy', bf => bf.result_accuracy || ''], ['Would recommend', bf => bf.would_recommend || ''], ['Would pay', bf => bf.would_pay || ''],
+        ['F2 completed at', bf => dt(bf.result_stage_completed_at)],
+        ['Understood after (1-5)', bf => bf.understood_after], ['Felt like a coach', bf => bf.felt_like_mentor || ''],
+        ['Careers seriously considered', bf => lab(CAREERS_CONSIDERED_LABEL, bf.careers_seriously_considered)],
+        ['Understood why suggested', bf => lab(CAREER_EXPLAINED_LABEL, bf.career_explained)],
+        ['Most useful part', bf => lab(REPORT_SECTION_LABEL, bf.most_useful_part)], ['Least useful part', bf => lab(REPORT_SECTION_LABEL, bf.least_useful_part)],
+        ['First action', bf => bf.first_action_text || ''], ['First step', bf => (bf.first_step || []).map(formatUnderscored).join('; ')],
+        ['Would pay at price', bf => lab(WOULD_PAY_AT_PRICE_LABEL, bf.would_pay_at_price)],
+        ['Pay blockers', bf => (bf.pay_blockers || []).map(k => lab(PAY_BLOCKER_LABEL, k)).join('; ')],
+        ['Pay blocker (other)', bf => bf.pay_blocker_other_text || ''], ['Top pay blocker', bf => lab(PAY_BLOCKER_LABEL, bf.pay_blocker_priority)],
+        ['Purchase blocker', bf => formatUnderscored(bf.purchase_blocker)],
+        ['Worth paying for', bf => (bf.worth_paying_for || []).map(k => lab(WORTH_PAYING_FOR_LABEL, k)).join('; ')],
+        ['Wants coach session', bf => lab(WANTS_COACH_LABEL, bf.wants_coach_session)],
+        ['Had issues', bf => bf.had_issues || ''], ['Issue detail', bf => bf.issue_detail || ''],
+        ['Missing (text)', bf => bf.missing_text || ''], ['Opened AI impact', bf => bf.opened_ai_impact == null ? '' : bf.opened_ai_impact ? 'Yes' : 'No'],
+        ['F3 completed at', bf => dt(bf.stage2_completed_at)], ['Other (text)', bf => bf.other_text || ''],
+        ['Surprised (legacy)', bf => bf.surprised_text || ''], ['Not me (legacy)', bf => bf.not_me_text || ''],
+        ['Personality accuracy (legacy)', bf => bf.personality_accuracy || ''], ['Values accuracy (legacy)', bf => bf.values_accuracy || ''],
+        ['Strengths accuracy (legacy)', bf => bf.strengths_accuracy || ''], ['Career matches accuracy (legacy)', bf => bf.career_matches_accuracy || ''],
+        ['Overall value (legacy 1-6)', bf => bf.overall_value], ['Would pay reason (legacy)', bf => bf.would_pay_reason || ''],
+      ]
+      sheets.push({
+        name: 'Feedback',
+        headers: ['Submitted at', 'Name', 'Email', 'Country', 'Nationality', 'Age group', 'Experience', 'Current stage', ...FEEDBACK_COLUMNS.map(c => c[0])],
+        rows: [...dashFeedback].sort((a, b) => b.created_at.localeCompare(a.created_at)).map(bf => {
+          const p = bf.assessment_responses
+          return [
+            dt(bf.created_at), p?.full_name || '', p?.email || '', lab(COUNTRY_LABEL, p?.country), lab(NATIONALITY_LABEL, p?.nationality),
+            lab(AGE_BRACKET_LABEL, p?.age_bracket ?? ageToBracket(p?.age)), lab(EXPERIENCE_LEVEL_LABEL, p?.experience_level), lab(CURRENT_STAGE_LABEL, p?.current_stage),
+            ...FEEDBACK_COLUMNS.map(c => c[1](bf)),
+          ]
+        }),
+      })
+
+      const saleHeaders = ['Ordered at', 'Paid at', 'Name', 'Email', 'Country', 'Plan', 'Amount', 'Currency', 'Status', 'Paid', 'Coaching session included', 'Order ref']
+      const saleRow = (t: SaleEntry) => [dt(t.created_at), dt(t.paid_at), t.full_name, t.email, lab(COUNTRY_LABEL, t.country), t.plan_code, Number(t.amount),
+        t.currency, t.status, isPaidSale(t) ? 'Yes' : 'No', t.coaching_included ? 'Yes' : 'No', t.order_ref]
+      sheets.push({ name: 'Sales', headers: saleHeaders, rows: dashRealSales.map(saleRow) })
+      sheets.push({ name: 'Coaching purchases', note: 'Paid Launchpad orders: each includes one 1:1 coaching session.', headers: saleHeaders, rows: dashCoachingSales.map(saleRow) })
+
+      if (!demoFilterOn) {
+        const coachingLog = coachingSessions.filter(c => inDashDateRange(c.session_date || c.created_at))
+        sheets.push({
+          name: 'Coaching sessions log', headers: ['Session date', 'Client', 'Topic', 'Logged at'],
+          rows: coachingLog.map(c => [c.session_date ? c.session_date.slice(0, 10) : '', c.client_label, c.topic, dt(c.created_at)]),
+        })
+      }
+
+      sheets.push({
+        name: 'Behavior sessions', headers: ['Started at', 'Name', 'Email', 'Device', 'Language', 'Reached a submission', 'Games played', 'Session ID'],
+        rows: [...sessions].sort((a, b) => b.started_at.localeCompare(a.started_at)).map(s => [
+          dt(s.started_at), s.full_name, s.email, s.device_type, s.locale, s.completed ? 'Yes' : 'No', s.activities.map(k => ACTIVITY_LABEL[k] || k).join('; '), s.session_id,
+        ]),
+      })
+      sheets.push({
+        name: 'Question pacing', headers: ['Question', 'Section', 'Question text', 'Times reached', 'Average (s)', 'Median (s)'],
+        rows: dashTelemetrySummary.pacing.map(p => [p.question_id, p.section, questions.find(q => q.id === p.question_id)?.text || '', p.reached,
+          Math.round(p.avgMs / 100) / 10, Math.round(p.medianMs / 100) / 10]),
+      })
+
+      if (!demoFilterOn) {
+        sheets.push({
+          name: 'Abandoned',
+          note: 'People who gave an email and started but did not finish the assessment (date filter uses last activity).',
+          headers: ['Name', 'Email', 'Language', 'Progress %', 'Questions answered', 'Total questions', 'Last activity', 'Reminder sent', 'Source'],
+          rows: abandonedList.filter(a => inDashDateRange(a.last_activity_at)).map(a => [
+            a.full_name, a.email, a.locale, a.progress_pct, a.current_index, a.total_questions, dt(a.last_activity_at), dt(a.reminder_sent_at), a.source,
+          ]),
+        })
+        sheets.push({
+          name: 'Bug reports',
+          headers: ['Reported at', 'Source', 'Status', 'Summary', 'Error type', 'Error message', 'Name', 'Email', 'Feature', 'Page', 'Language', 'Device', 'Country', 'Response ID'],
+          rows: bugReports.filter(b => inDashDateRange(b.created_at)).map(b => [
+            dt(b.created_at), b.source === 'user' ? 'User report' : 'System', b.status, b.description, b.error_type, b.error_message,
+            b.full_name, b.email, b.feature, b.page, b.locale, b.device_type, lab(COUNTRY_LABEL, b.country), b.response_id,
+          ]),
+        })
+        sheets.push({
+          name: 'Waitlist', headers: ['Joined at', 'Name', 'Email', 'Phone', 'Country', 'Nationality', 'Status', 'Age', 'Language', 'Source'],
+          rows: waitlistList.filter(w => inDashDateRange(w.created_at)).map(w => [
+            dt(w.created_at), w.name, w.email, w.phone, lab(COUNTRY_LABEL, w.country), lab(NATIONALITY_LABEL, w.nationality),
+            lab(WAITLIST_STATUS_LABELS, w.status), w.age, w.locale, w.source,
+          ]),
+        })
+        sheets.push({
+          name: 'Featured courses', headers: ['At', 'Event', 'Course', 'Tier', 'Language', 'Response ID'],
+          rows: featuredEvents.filter(e => isLive(e.created_at) && inDashDateRange(e.created_at)).map(e => [dt(e.created_at), e.event_type, e.course_key, e.tier, e.locale, e.response_id]),
+        })
+      }
+
+      const blob = await buildWorkbook('Etijahi Live Dashboard: full export', summary, sheets)
+      saveBlob(`etijahi_dashboard_export_${dashFrom || 'start'}_to_${dashTo || today}.xlsx`, blob)
+    } catch (err: any) {
+      setExportError(err?.message || 'Export failed. Please try again.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const liveOpenBugCount = bugReports.filter(b => b.status === 'open').length
   const visibleBugReports = scopeBugReports
     .filter(b => bugSourceFilter === 'all' || b.source === bugSourceFilter)
@@ -4022,7 +4295,17 @@ export default function AdminPage() {
                     Reset filters
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={exportDashboardWorkbook}
+                  disabled={exporting || loading || betaFeedbackLoading || salesLoading || telemetryLoading || allCareerRecsLoading}
+                  title={dashFiltersActive ? 'Downloads only the data matching the filters above' : 'Downloads all live data'}
+                  className="ml-auto text-xs font-semibold bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {exporting ? 'Preparing Excel…' : `Download Excel${dashFiltersActive ? ' (filtered)' : ''}`}
+                </button>
               </div>
+              {exportError && <p className="text-xs text-red-500 mt-3">{exportError}</p>}
               {dashFiltersActive && (
                 <p className="text-xs text-slate-400 mt-3">
                   Showing {dashSubmissions.length} of {liveSubmissions.length} submissions
