@@ -958,6 +958,18 @@ function distinctValues(values: (string | null | undefined)[]): string[] {
 // already has its rows in memory from the tab's own state, so there's nothing
 // to fetch. A UTF-8 BOM is prepended so Excel renders the Arabic text in
 // names/answers correctly instead of mangling it as Latin-1.
+// Date with the time of day underneath, for table cells ("12/10/2026" / "14:35").
+function DateTimeCell({ iso }: { iso: string | null | undefined }) {
+  if (!iso) return <>—</>
+  const d = new Date(iso)
+  return (
+    <>
+      {d.toLocaleDateString()}
+      <span className="block text-[11px] text-slate-500 tabular-nums">{d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+    </>
+  )
+}
+
 function csvCell(value: unknown): string {
   if (value === null || value === undefined) return ''
   const s = String(value)
@@ -3933,7 +3945,7 @@ export default function AdminPage() {
                     <td className="px-3 py-3 text-slate-500">{sub.experience_level ? (EXPERIENCE_LEVEL_LABEL[sub.experience_level] || sub.experience_level) : '—'}</td>
                     <td className="px-3 py-3 text-slate-500 capitalize">{(sub.education_field || []).map(f => f.replace(/_/g, ' ')).join(', ') || '—'}</td>
                     <td className="px-3 py-3 text-slate-500 capitalize">{sub.current_stage?.replace(/_/g, ' ') || '—'}</td>
-                    <td className="px-3 py-3 text-slate-400 text-xs">{new Date(sub.created_at).toLocaleDateString()}</td>
+                    <td className="px-3 py-3 text-slate-400 text-xs"><DateTimeCell iso={sub.created_at} /></td>
                     <td className="px-3 py-3">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sub.completed ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-600'}`}>
                         {sub.completed ? 'Complete' : 'Incomplete'}
@@ -4255,7 +4267,7 @@ export default function AdminPage() {
                                   <span className="font-semibold text-slate-700">{fb.rating_overall}<span className="text-slate-400 font-normal">/6</span></span>
                                 ) : '—'}
                               </td>
-                              <td className="px-4 py-3 text-slate-400 text-xs">{new Date(fb.created_at).toLocaleDateString()}</td>
+                              <td className="px-4 py-3 text-slate-400 text-xs"><DateTimeCell iso={fb.created_at} /></td>
                               <td className="px-4 py-3">
                                 <button
                                   onClick={() => setSelectedFeedback(fb)}
@@ -5281,7 +5293,7 @@ export default function AdminPage() {
                                   ) : '—'}
                                 </td>
                                 <td className="px-4 py-3 text-slate-500 capitalize">{bf.would_recommend?.replace(/_/g, ' ') || '—'}</td>
-                                <td className="px-4 py-3 text-slate-400 text-xs">{new Date(betaFeedbackLatestAt(bf)).toLocaleDateString()}</td>
+                                <td className="px-4 py-3 text-slate-400 text-xs"><DateTimeCell iso={betaFeedbackLatestAt(bf)} /></td>
                                 <td className="px-4 py-3">
                                   <button
                                     onClick={() => setSelectedBetaFeedback(bf)}
@@ -5370,7 +5382,7 @@ export default function AdminPage() {
                       <tbody>
                         {dashRealSales.map((t, i) => (
                           <tr key={t.order_ref} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
-                            <td className="px-4 py-3 text-slate-400 text-xs">{new Date(t.paid_at || t.created_at).toLocaleDateString()}</td>
+                            <td className="px-4 py-3 text-slate-400 text-xs"><DateTimeCell iso={t.paid_at || t.created_at} /></td>
                             <td className="px-4 py-3">
                               <p className="font-medium text-slate-800">{t.full_name || '—'}</p>
                               <p className="text-xs text-slate-400">{t.email || '—'}</p>
@@ -5434,7 +5446,7 @@ export default function AdminPage() {
                       <tbody>
                         {dashCoachingSales.map((t, i) => (
                           <tr key={t.order_ref} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? '' : 'bg-slate-50/40'}`}>
-                            <td className="px-4 py-3 text-slate-400 text-xs">{new Date(t.paid_at || t.created_at).toLocaleDateString()}</td>
+                            <td className="px-4 py-3 text-slate-400 text-xs"><DateTimeCell iso={t.paid_at || t.created_at} /></td>
                             <td className="px-4 py-3">
                               <p className="font-medium text-slate-800">{t.full_name || '—'}</p>
                               <p className="text-xs text-slate-400">{t.email || '—'}</p>
