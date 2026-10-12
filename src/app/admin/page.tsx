@@ -3760,6 +3760,7 @@ export default function AdminPage() {
       const answersById: Record<string, { answers: Record<string, unknown>; locale: string | null }> = {}
       const scoresById: Record<string, { framework: string; dimension: string; raw_score: number | null; normalized_score: number | null }[]> = {}
       const ids = dashSubmissions.map(s => s.id)
+      const topById: Record<string, Record<string, string[]>> = {}
       for (let i = 0; i < ids.length; i += 1000) {
         const res = await fetch('/api/admin/export/assessment-details', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: ids.slice(i, i + 1000) }),
@@ -3769,6 +3770,7 @@ export default function AdminPage() {
         Object.assign(answersById, d.answers || {})
         Object.assign(scoresById, d.scores || {})
       }
+        Object.assign(topById, d.top || {})
 
       const dt = (iso: string | null | undefined) => iso ? new Date(iso).toLocaleString('en-GB') : ''
       const lab = (map: Record<string, string>, k: string | null | undefined) => k ? (map[k] || formatUnderscored(k)) : ''
@@ -3902,10 +3904,15 @@ export default function AdminPage() {
       const scoreRows: (string | number | null)[][] = []
       for (const s of dashSubmissions) {
         for (const r of scoresById[s.id] || []) {
-          scoreRows.push([s.full_name, s.email, dt(s.created_at), r.framework, r.dimension, r.raw_score, r.normalized_score])
+          const rankIdx = (topById[s.id]?.[r.framework] || []).indexOf(r.dimension)
+          scoreRows.push([s.full_name, s.email, dt(s.created_at), r.framework, r.dimension, r.raw_score, r.normalized_score, rankIdx >= 0 ? rankIdx + 1 : ''])
         }
       }
-      sheets.push({ name: 'Scores', headers: ['Name', 'Email', 'Submitted at', 'Framework', 'Dimension', 'Raw score', 'Normalized score (0-100)'], rows: scoreRows })
+      sheets.push({
+        name: 'Scores',
+        note: "Raw score = plain sum of the answers (1-6 per question). Normalized = 0-100. 'Rank in top 3' is the position the report uses for RIASEC, values and strengths: it is chosen after adjusting each score for how high most people score on that dimension, so it can differ from the order of the normalized scores. Blank = not in the top 3.",
+        headers: ['Name', 'Email', 'Submitted at', 'Framework', 'Dimension', 'Raw score', 'Normalized score (0-100)', 'Rank in top 3'], rows: scoreRows,
+      })
 
       const careerRows: (string | number | null)[][] = []
       for (const r of dashCareerRecs) {

@@ -7,7 +7,7 @@
 type FrameworkKey = 'riasec' | 'big_five' | 'values' | 'strengths' | 'resilience' | 'work_style' | 'entrepreneurship'
 
 const FORCED_CHOICE_SCORES: Record<string, Record<string, number>> = {
-  Q6: { A: 5, B: 3 },
+  Q6: { A: 6, B: 1 },
   Q17: { A: 6, B: 1 },
   Q36: { A: 6, B: 1 },
   Q38: { A: 6, B: 1 },
@@ -20,11 +20,15 @@ const FORCED_CHOICE_SCORES: Record<string, Record<string, number>> = {
   Q66: { A: 1, B: 6 },
   Q67: { A: 1, B: 6 },
   Q71: { A: 6, B: 1 },
-  QFC_RI: { A: 5, B: 1 },
-  QFC_SE: { A: 5, B: 1 },
+  QFC_RI: { A: 6, B: 1 },
+  QFC_SE: { A: 6, B: 1 },
 }
 
-const REVERSE_SCORED = new Set(['Q21', 'Q22'])
+// Q21/Q22 are worded positively (agree = more stable), so nothing is reverse-scored (matches the backend)
+const REVERSE_SCORED = new Set<string>()
+
+// Either/or RIASEC questions also credit the opposite type with the mirror score (7 - score), as in the backend.
+const FORCED_CHOICE_OPPOSITE: Record<string, string> = { Q6: 'conventional', QFC_RI: 'investigative', QFC_SE: 'enterprising' }
 
 // question id → [framework, dimension]  (ported from backend QUESTION_MAP)
 const QUESTION_MAP: Record<string, [FrameworkKey, string]> = {
@@ -91,8 +95,15 @@ export function computeLeaning(answers: Record<string, any>, framework: Framewor
     const v = answers[id]
     if (v === undefined || v === null || v === '') continue
     if (!acc[dim]) acc[dim] = { sum: 0, n: 0 }
-    acc[dim].sum += scoreAnswer(id, v)
+    const sc = scoreAnswer(id, v)
+    acc[dim].sum += sc
     acc[dim].n += 1
+    const opp = FORCED_CHOICE_OPPOSITE[id]
+    if (opp && entry[0] === 'riasec') {
+      if (!acc[opp]) acc[opp] = { sum: 0, n: 0 }
+      acc[opp].sum += 7 - sc
+      acc[opp].n += 1
+    }
   }
   const ranked = Object.entries(acc)
     .map(([dimension, { sum, n }]) => ({ dimension, score: sum / n }))
