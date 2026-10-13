@@ -660,10 +660,14 @@ html { scroll-behavior: smooth; }
     font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: .28em;
     text-transform: uppercase; color: color-mix(in srgb, #fff 82%, transparent);
   }
-  [dir="rtl"] .assess-aside-eyebrow { font-family: var(--font-tajawal), sans-serif; letter-spacing: 0; font-size: 14px; text-transform: none; font-weight: 500; }
+  /* the percentage is the one status line on desktop (the caption under the map is for phones) */
+  .assess-aside-eyebrow { font-size: 15px; letter-spacing: .14em; color: #fff; font-weight: 700; }
+  .assess-aside .cst-progress-text { display: none; }
+  .assess-aside .cst-wrap { padding-bottom: 0; }
+  [dir="rtl"] .assess-aside-eyebrow { font-family: var(--font-tajawal), sans-serif; letter-spacing: 0; font-size: 17px; text-transform: none; font-weight: 700; }
   .assess-aside-progress-msg {
     margin-top: 12px; color: #fff; font-weight: 700; letter-spacing: -0.01em;
-    font-size: clamp(23px, 2.6vw, 30px); max-width: 260px; margin-inline: auto;
+    font-size: clamp(19px, 2vw, 24px); max-width: 300px; margin-inline: auto;
   }
   [dir="rtl"] .assess-aside-progress-msg { font-family: var(--font-tajawal), sans-serif; font-weight: 600; }
 
@@ -1177,9 +1181,22 @@ html { scroll-behavior: smooth; }
 :is(.rt-clarity, .rt-clarity-map) .rt-top-career { background: #fff; border: 2px solid #00c9a7; box-shadow: none; }
 .rt-constellation .rt-top-career { background: #052640; }
 
-/* Wide screens: the career cards sit two per row (the #1 card spans both) instead of one very long line each. */
+/* Wide screens: the career cards flow into two columns (masonry-style), so a short card never leaves a hole beside a
+   tall one. The #1 card spans both columns. Reading order is down the left column, then the right. */
 @media (min-width: 1200px) {
-  :is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-career-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
-  :is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-career-list > * { margin-top: 0 !important; }
-  :is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-career-list > .rt-top-career { grid-column: 1 / -1; }
+  :is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-career-list { display: block; column-count: 2; column-gap: 14px; }
+  :is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-career-list > * { margin: 0 0 14px !important; break-inside: avoid; }
+  :is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-career-list > .rt-top-career { column-span: all; }
+}
+
+/* Profile cards (interests, values, strengths, personality): two columns that fill from the top, so a short card does
+   not leave a hole beside a tall one. */
+@media (min-width: 640px) {
+  :is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-masonry { display: block; column-count: 2; column-gap: 16px; }
+  :is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-masonry > * { margin: 0 0 16px !important; break-inside: avoid; }
+}
+
+/* the quick list of the top careers: as many columns as fit, so three cards fill one row instead of two plus a gap */
+@media (min-width: 900px) {
+  :is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-quick { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
 }

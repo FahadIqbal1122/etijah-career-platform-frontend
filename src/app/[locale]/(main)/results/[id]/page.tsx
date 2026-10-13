@@ -1259,7 +1259,7 @@ export default function ResultsPage() {
             />
             {/* Quick list of the top three careers up front (details follow below): why each was suggested and its AI risk.
                 Free plan also gets a card for the ones locked behind Pathfinder. */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5 rt-quick">
               {jobs.slice(0, 3).map((job: any) => {
                 const qAi: any = aiImpact?.careers?.find((c: any) => normTitle(c.title) === normTitle(job.title))
                 const qRisk: string | undefined = qAi?.ai_risk_level
@@ -2169,7 +2169,7 @@ export default function ResultsPage() {
       </>),
     profile: (<>
         {/* Career Types + Values + Strengths + Personality */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 rt-masonry">
 
           {/* Career Types */}
           <div className="card p-5" data-coach="types">
