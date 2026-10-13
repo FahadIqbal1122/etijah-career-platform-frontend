@@ -186,6 +186,12 @@ const CHROME: Record<string, Record<string, string>> = {
     draftTitle: 'Pick up where you left off?',
     draftBody: 'You have an assessment in progress. Continue from where you saved, or start fresh?',
     draftContinue: 'Continue where I left off',
+    journeyTitle: 'Your journey',
+    journeySub: 'Each star is a chapter. Finish it and it lights up.',
+    youLabel: 'You',
+    towardStar: 'On the way to star',
+    starLit: 'star',
+    starLitDone: 'is lit',
     draftRestart: 'Start over',
   },
   ar: {
@@ -210,6 +216,12 @@ const CHROME: Record<string, Record<string, string>> = {
     draftTitle: 'أتريد إكمال ما بدأته؟',
     draftBody: 'لديك تقييم لم تكمله بعد. أكمل من حيث توقفت، أم تفضّل البدء من جديد؟',
     draftContinue: 'أكمل من حيث توقفت',
+    journeyTitle: 'رحلتك',
+    journeySub: 'كل نجمة فصل. أكمله فتضيء.',
+    youLabel: 'أنت',
+    towardStar: 'في طريقك إلى النجمة',
+    starLit: 'أضاءت النجمة',
+    starLitDone: '',
     draftRestart: 'ابدأ من جديد',
   },
 }
@@ -496,8 +508,9 @@ export default function AssessmentForm() {
   const curChapter = phase === 'finish'
     ? CHAPTER_COUNT - 1
     : phase === 'reveal' && revealMsg ? revealMsg.chapter : q ? chapterIndexOf(q.id, q.section) : 0
-  // const chapterTotal = chapterOfVisible.filter(c => c === curChapter).length
-  // const chapterPos = chapterOfVisible.slice(0, index + 1).filter(c => c === curChapter).length
+  // Where the person is inside the current chapter; only used to place the travelling light, never shown as numbers.
+  const chapterTotal = chapterOfVisible.filter(c => c === curChapter).length
+  const chapterPos = chapterOfVisible.slice(0, index + 1).filter(c => c === curChapter).length
   // Stars already earned stay lit when stepping back into an earlier chapter: use the furthest chapter reached.
   const furthestChapter = chapterOfVisible[Math.min(maxIndex, total - 1)] ?? curChapter
   const litCount = phase === 'finish' ? CHAPTER_COUNT : phase === 'reveal' ? curChapter + 1 : Math.max(curChapter, furthestChapter)
@@ -518,6 +531,16 @@ export default function AssessmentForm() {
   // a multi_select array.
   function otherTextFilled(questionId: string): boolean {
     return String(answers[`${questionId}_other`] || '').trim().length > 0
+  // The travelling light: finished chapters plus how far through the current one (never moves backwards past a lit star).
+  const journeyProgress = Math.max(
+    litCount,
+    phase === 'finish' ? CHAPTER_COUNT : phase === 'reveal' ? curChapter + 1 : curChapter + Math.max(0, chapterPos - 1) / Math.max(1, chapterTotal),
+  )
+  const starTarget = Math.min(litCount, CHAPTER_COUNT - 1)   // 0-based star being travelled to
+  const starShort = (c: number) => CHAPTERS[c]?.short[locale === 'ar' ? 'ar' : 'en'] ?? ''
+  // "Chapter 2 of 5 complete · star 2 is lit" / «اكتمل الفصل 2 من 5 · أضاءت النجمة 2»
+  const starLitLabel = (c: number) => `${chrome.starLit} ${c + 1}${chrome.starLitDone ? ` ${chrome.starLitDone}` : ''}`
+  const journeyCaption = `${chrome.towardStar} ${starTarget + 1} ${chrome.chapterOf} ${CHAPTER_COUNT} · ${percentLabel}`
   }
 
   function isAnswerValid(question: Question): boolean {
@@ -839,10 +862,21 @@ export default function AssessmentForm() {
         <aside className="assess-aside">
           <div className="cst-wrap">
             {/* <Constellation geometry={CHAPTER_CONSTELLATION} litCount={litCount} theme={phase === 'reveal' ? 'teal' : 'dark'} rippleKey={rippleKey} accent="#00C9A7" /> */}
-            <ChapterStars litCount={litCount} theme={phase === 'reveal' ? 'teal' : 'dark'} rippleKey={rippleKey} accent="#00C9A7" />
+            <ChapterStars
+              litCount={litCount} progress={journeyProgress} theme={phase === 'reveal' ? 'teal' : 'dark'}
+              rippleKey={rippleKey} accent="#00C9A7"
+              youLabel={phase === 'question' ? chrome.youLabel : undefined}
+              nextLabel={phase === 'question' ? starShort(starTarget) : undefined}
+            />
+            {phase === 'question' && (
+              <div className="cst-heading">
+                <strong>{chrome.journeyTitle}</strong>
+                <span>{chrome.journeySub}</span>
+              </div>
+            )}
             {phase === 'question' && (
               <div className="cst-progress-text">
-                {`${chapterLabel(curChapter)} · ${percentLabel}`}
+                {journeyCaption}
               </div>
             )}
           </div>
@@ -1120,7 +1154,7 @@ export default function AssessmentForm() {
         <div className="reveal" key={`rv-${enterKey}`}>
           <div className="reveal-inner">
             <div className="reveal-spark">✦</div>
-            <div className="reveal-chapter">{chapterDoneLabel(revealMsg.chapter)}</div>
+            <div className="reveal-chapter">{chapterDoneLabel(revealMsg.chapter)} · {starLitLabel(revealMsg.chapter)} ✦</div>
             <h1 className="reveal-head">{revealMsg.head}</h1>
             <p className="reveal-body">{revealMsg.body}</p>
             {revealMsg.chapter + 1 < CHAPTER_COUNT && (
@@ -1139,7 +1173,7 @@ export default function AssessmentForm() {
         <div className="reveal finish" key={`fn-${enterKey}`}>
           <div className="reveal-inner">
             <div className="reveal-spark">✦</div>
-            <div className="reveal-chapter">{chapterDoneLabel(CHAPTER_COUNT - 1)}</div>
+            <div className="reveal-chapter">{chapterDoneLabel(CHAPTER_COUNT - 1)} · {starLitLabel(CHAPTER_COUNT - 1)} ✦</div>
             <h1 className="reveal-head">{chrome.finishHead}</h1>
             <p className="reveal-body">{chrome.finishBody}</p>
             {error && <p style={{ color: '#e11d48', fontSize: 14, marginTop: 12 }}>{error}</p>}

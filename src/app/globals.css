@@ -151,6 +151,23 @@ html { scroll-behavior: smooth; }
 [dir="rtl"] .assess-progress-label { font-family: var(--font-tajawal), sans-serif; letter-spacing: 0; text-transform: none; font-size: 13px; }
 @media (min-width: 900px) { .assess-progress-label { display: none; } }
 
+/* "Your journey" heading in the empty top-left of the star map: says out loud that the stars are progress */
+.cst-heading {
+  position: absolute; top: 0; left: 14px; z-index: 1; width: max-content; max-width: 48%;
+  display: flex; flex-direction: column; gap: 2px; text-align: left; pointer-events: none;
+  color: color-mix(in srgb, #fff 82%, transparent); line-height: 1.25;
+}
+.cst-heading strong { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #fff; }
+.cst-heading span { font-size: 11px; font-weight: 500; }
+[dir="rtl"] .cst-heading { left: 14px; right: auto; text-align: left; direction: rtl; }
+[dir="rtl"] .cst-heading strong { letter-spacing: 0; text-transform: none; font-size: 13px; }
+[dir="rtl"] .cst-heading span { font-size: 12px; }
+@media (min-width: 900px) {
+  .assess-aside .cst-heading { left: 0; }
+  .cst-heading strong { font-size: 12.5px; }
+  .cst-heading span { font-size: 13px; }
+}
+
 /* chapter + percentage done, under the stars (no question counts) */
 .cst-progress-text {
   text-align: center;

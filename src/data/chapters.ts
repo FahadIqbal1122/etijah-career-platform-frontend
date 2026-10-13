@@ -7,6 +7,7 @@ export type ChapterCopy = { en: string; ar: string }
 export type Chapter = {
   key: string
   title: ChapterCopy
+  short: ChapterCopy // one or two words, written next to the chapter's star on the progress map
   sections: string[] // questions.ts `section` values that belong to this chapter
   // Framework whose leaning personalises the end-of-chapter screen (see revealScoring.ts); null = fixed copy.
   revealFramework: 'riasec' | 'values' | 'strengths' | null
@@ -18,6 +19,7 @@ export const CHAPTERS: Chapter[] = [
   {
     key: 'about',
     title: { en: 'About You', ar: 'عنك' },
+    short: { en: 'About you', ar: 'عنك' },
     sections: ['Your Details', 'Onboarding'],
     revealFramework: null,
     done: {
@@ -28,24 +30,28 @@ export const CHAPTERS: Chapter[] = [
   {
     key: 'personality',
     title: { en: 'Interests & Personality', ar: 'الميول والشخصية' },
+    short: { en: 'Interests', ar: 'الميول' },
     sections: ['Holland RIASEC', 'Big Five'],
     revealFramework: 'riasec',
   },
   {
     key: 'values',
     title: { en: 'Values', ar: 'القيم' },
+    short: { en: 'Values', ar: 'القيم' },
     sections: ['Values'],
     revealFramework: 'values',
   },
   {
     key: 'strengths',
     title: { en: 'Strengths', ar: 'نقاط القوة' },
+    short: { en: 'Strengths', ar: 'نقاط القوة' },
     sections: ['Strengths'],
     revealFramework: 'strengths',
   },
   {
     key: 'workstyle',
     title: { en: 'Work Style & Drive', ar: 'أسلوب العمل والدافع' },
+    short: { en: 'Work style', ar: 'أسلوب العمل' },
     sections: ['Resilience', 'Work Style', 'Entrepreneurship'],
     revealFramework: null,
   },
