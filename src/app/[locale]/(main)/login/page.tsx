@@ -59,7 +59,8 @@ function LoginForm() {
     // Only follow `next` if it's a same-app relative path — a leading "//" (or "/\") is
     // protocol-relative and would silently redirect off-site after a real login.
     const safeNext = next && /^\/(?!\/|\\)/.test(next) ? next : null
-    router.push(safeNext ? `/${locale}${safeNext}` : claimId ? `/${locale}/#pricing` : `/${locale}/dashboard`)
+    // from an "Unlock" button (claim + plans): the dashboard's plans card, not the homepage pricing section
+    router.push(safeNext ? `/${locale}${safeNext}` : claimId && searchParams.get('plans') === '1' ? `/${locale}/dashboard?plans=1` : claimId ? `/${locale}/#pricing` : `/${locale}/dashboard`)
   }
 
   return (
@@ -130,7 +131,7 @@ function LoginForm() {
           </button>
           <p className="text-center text-sm text-charcoal/40">
             No account?{' '}
-            <a href={`/${locale}/signup${searchParams.get('claim') ? `?claim=${encodeURIComponent(searchParams.get('claim')!)}` : ''}`} className="text-primary font-medium hover:underline">Sign up</a>
+            <a href={`/${locale}/signup${searchParams.get('claim') ? `?claim=${encodeURIComponent(searchParams.get('claim')!)}${searchParams.get('plans') === '1' ? '&plans=1' : ''}` : ''}`} className="text-primary font-medium hover:underline">Sign up</a>
           </p>
         </form>
       </div>

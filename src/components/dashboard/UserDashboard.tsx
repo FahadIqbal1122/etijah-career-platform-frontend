@@ -258,6 +258,8 @@ export default function UserDashboard() {
   const [downloadingReport, setDownloadingReport] = useState(false)
   const [downloadError, setDownloadError] = useState('')
   const [justVerified, setJustVerified] = useState(false)
+  // Opened from an "Unlock" button on a report (?plans=1): scroll to the plans card and mark it for a few seconds.
+  const [plansFocus, setPlansFocus] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -369,7 +371,8 @@ export default function UserDashboard() {
     if (!user) return
     if (searchParams.get('verified') === '1') {
       setJustVerified(true)
-      navRouter.replace(`/${locale}/dashboard`)
+      // keep "open at the plans" (the buyer came from an Unlock button) through the email confirmation
+      navRouter.replace(`/${locale}/dashboard${searchParams.get('plans') === '1' ? '?plans=1' : ''}`)
       return
     }
     const buy = searchParams.get('buy')
@@ -383,6 +386,20 @@ export default function UserDashboard() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, assessmentsLoading])
+
+  // ?plans=1: wait until the plan card has loaded, scroll to it, mark it for a few seconds, then clean the address
+  // (the address is cleaned inside the timer, so changing it does not cancel the scroll).
+  useEffect(() => {
+    if (!user || planLoading || searchParams.get('plans') !== '1') return
+    const t = setTimeout(() => {
+      document.getElementById('sec-billing')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setPlansFocus(true)
+      setTimeout(() => setPlansFocus(false), 5000)
+      navRouter.replace(`/${locale}/dashboard`)
+    }, 200)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, planLoading, searchParams])
 
   // The shop redirects the buyer back with ?order_ref=…&status=paid. That redirect is unsigned,
   // so it is only a cue to look — the signed webhook is what marks the order paid, and it can land
@@ -696,7 +713,7 @@ export default function UserDashboard() {
           </section>
           */}
 
-          <section id="sec-billing" className="card p-6">
+          <section id="sec-billing" className={`card p-6 transition-shadow ${plansFocus ? 'ring-2 ring-teal shadow-lg' : ''}`}>
             <div className="flex items-center gap-2 mb-4"><h3 className="font-bold text-charcoal">{t.billingHead}</h3></div>
             {planLoading ? (
               <div className="animate-pulse">

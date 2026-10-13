@@ -26,6 +26,8 @@ export default function SignupPage() {
   // Coming from a results page: save that report to the new account (the claim travels in the account's metadata, so it
   // works even when the confirmation email is opened in another browser).
   const claimId = searchParams.get('claim')
+  // Coming from an "Unlock" button: after the email is confirmed the dashboard opens at the plans.
+  const wantsPlans = searchParams.get('plans') === '1'
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
@@ -37,7 +39,7 @@ export default function SignupPage() {
       // Hardcoded rather than window.location.origin — a stale bookmark/link to a
       // decommissioned domain (e.g. the old careercompass.etijahcoaching.com) would
       // otherwise bake that dead domain into the verification email itself.
-      options: { data: { full_name: fullName, ...(claimId ? { claim: { response_id: claimId, token: readClaimToken(claimId) } } : {}) }, emailRedirectTo: `https://myetijahi.com/${locale}/dashboard?verified=1` },
+      options: { data: { full_name: fullName, ...(claimId ? { claim: { response_id: claimId, token: readClaimToken(claimId) } } : {}) }, emailRedirectTo: `https://myetijahi.com/${locale}/dashboard?verified=1${wantsPlans ? '&plans=1' : ''}` },
     })
     if (error) {
       setError(error.message)
@@ -139,7 +141,7 @@ export default function SignupPage() {
           </button>
           <p className="text-center text-sm text-charcoal/40">
             Already have an account?{' '}
-            <a href={`/${locale}/login${claimId ? `?claim=${encodeURIComponent(claimId)}` : ''}`} className="text-primary font-medium hover:underline">Sign in</a>
+            <a href={`/${locale}/login${claimId ? `?claim=${encodeURIComponent(claimId)}${wantsPlans ? '&plans=1' : ''}` : ''}`} className="text-primary font-medium hover:underline">Sign in</a>
           </p>
         </form>
       </div>
