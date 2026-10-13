@@ -1177,15 +1177,9 @@ html { scroll-behavior: smooth; }
 :is(.rt-clarity, .rt-clarity-map) .rt-top-career { background: #fff; border: 2px solid #00c9a7; box-shadow: none; }
 .rt-constellation .rt-top-career { background: #052640; }
 
-/* Clarity looks: each career card is two columns on wide screens, as in the design: title, summary, tags and the gap
-   on the left; next steps, AI impact, courses and actions on the right (unlocked). One column on phones. */
-.rt-career-cols { display: block; }
-@media (min-width: 900px) {
-  :is(.rt-clarity, .rt-clarity-map) .rt-career-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+/* Wide screens: the career cards sit two per row (the #1 card spans both) instead of one very long line each. */
+@media (min-width: 1200px) {
+  :is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-career-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+  :is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-career-list > * { margin-top: 0 !important; }
+  :is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-career-list > .rt-top-career { grid-column: 1 / -1; }
 }
-:is(.rt-clarity, .rt-clarity-map) .rt-career-right > * + * { margin-top: 12px; }
-:is(.rt-clarity, .rt-clarity-map) .rt-top-career .rt-career-left .rp-h { font-size: clamp(24px, 2.6vw, 34px); line-height: 1.15; font-weight: 800; color: #1f2a37; }
-:is(.rt-clarity, .rt-clarity-map) .rt-career-right { min-width: 0; }
-/* the #1 card header as in the design: the match chip above the large title */
-:is(.rt-clarity, .rt-clarity-map) .rt-top-career .rt-career-left > div:first-child { flex-direction: column-reverse; align-items: flex-start; gap: 10px; }
-:is(.rt-clarity, .rt-clarity-map) .rt-top-career .rt-career-left > div:first-child .rp-pill { background: #00c9a7; border-color: #00c9a7; color: #04323f; font-family: var(--font-mono), ui-monospace, monospace; font-weight: 600; }

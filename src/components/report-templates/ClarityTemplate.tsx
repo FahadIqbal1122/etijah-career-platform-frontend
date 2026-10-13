@@ -80,7 +80,7 @@ const L = {
 }
 
 const card: CSSProperties = { background: '#ffffff', border: '1px solid rgba(7,112,186,0.14)', borderRadius: 20 }
-const section: CSSProperties = { maxWidth: 1200, margin: '0 auto', padding: '48px 24px 16px', display: 'flex', flexDirection: 'column', gap: 24 }
+const section: CSSProperties = { maxWidth: 1560, margin: '0 auto', padding: '48px 24px 16px', display: 'flex', flexDirection: 'column', gap: 24 }
 
 export default function ClarityTemplate({ data, withMap = false }: { data: ReportTemplateData; withMap?: boolean }) {
   const ar = data.locale === 'ar'
@@ -119,7 +119,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
   return (
     <div dir={ar ? 'rtl' : 'ltr'} style={{ containerType: 'inline-size', fontFamily: 'inherit', color: '#414142', background: '#ffffff' }}>
       <header style={{ borderBottom: '1px solid rgba(7,112,186,0.12)' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ maxWidth: 1560, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           {/* the site header above already carries the logo */}
           <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginInlineStart: 'auto' }}>
             {paid && dl.altLabel && <button type="button" onClick={dl.onAlt} disabled={dl.busy} style={{ cursor: 'pointer', font: 'inherit', background: '#fff', color: '#075288', border: '1px solid rgba(7,112,186,0.24)', fontWeight: 700, fontSize: 14, padding: '10px 14px', borderRadius: 12 }}>{dl.altLabel}</button>}
@@ -131,7 +131,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
 
       {/* hero */}
       <section style={{ background: '#f4f9ff', borderBottom: '1px solid rgba(7,112,186,0.12)' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '56px 24px 64px', display: 'flex', flexWrap: 'wrap', gap: 48, alignItems: 'center' }}>
+        <div style={{ maxWidth: 1560, margin: '0 auto', padding: '56px 24px 64px', display: 'flex', flexWrap: 'wrap', gap: 48, alignItems: 'center' }}>
           <div style={{ flex: '1 1 440px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div style={{ ...eyebrow, display: 'inline-flex', alignItems: 'center', gap: 10 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#00c9a7', display: 'inline-block' }} />{c.ready}
@@ -204,7 +204,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
 
       {/* progress meter (free plan) */}
       {!paid && (
-        <section id="rt-preview" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 8px' }}>
+        <section id="rt-preview" style={{ maxWidth: 1560, margin: '0 auto', padding: '32px 24px 8px' }}>
           <div style={{ ...card, padding: '22px 26px', display: 'flex', flexWrap: 'wrap', gap: 22, alignItems: 'center' }}>
             <div style={{ flex: '1 1 240px', display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: '#1f2a37' }}>{c.viewing(freeCount, meter.length)}</div>
@@ -372,7 +372,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
 
       {/* unlock panel (free plan) */}
       {!paid && (
-        <section id="rt-unlock" style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px 40px' }}>
+        <section id="rt-unlock" style={{ maxWidth: 1560, margin: '0 auto', padding: '48px 24px 40px' }}>
           <div style={{ background: '#075288', borderRadius: 28, padding: 'clamp(24px, 5cqw, 48px)', display: 'flex', flexWrap: 'wrap', gap: 36, alignItems: 'center' }}>
             <div style={{ flex: '1.3 1 340px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div style={{ fontFamily: ar ? undefined : MONO, fontSize: 13, letterSpacing: ls('0.14em'), color: '#8fd8c3' }}>{c.fullTitle}</div>

@@ -79,7 +79,7 @@ const L = {
 }
 
 const outline: CSSProperties = { border: '1px solid rgba(7,112,186,0.14)', borderRadius: 22 }
-const wrap: CSSProperties = { maxWidth: 1240, margin: '0 auto', padding: '56px 24px 16px', display: 'flex', flexDirection: 'column', gap: 28 }
+const wrap: CSSProperties = { maxWidth: 1560, margin: '0 auto', padding: '56px 24px 16px', display: 'flex', flexDirection: 'column', gap: 28 }
 
 export default function ConstellationTemplate({ data }: { data: ReportTemplateData }) {
   const ar = data.locale === 'ar'
@@ -103,7 +103,7 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
     <div dir={ar ? 'rtl' : 'ltr'} style={{ containerType: 'inline-size', color: '#414142', background: '#fff' }}>
       {/* hero */}
       <section style={{ background: '#052640', backgroundImage: 'radial-gradient(circle at 78% 30%, rgba(7,112,186,0.55), rgba(5,38,64,0) 55%)', color: '#fff' }}>
-        <header style={{ maxWidth: 1240, margin: '0 auto', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <header style={{ maxWidth: 1560, margin: '0 auto', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           {/* the site header above already carries the logo */}
           <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginInlineStart: 'auto' }}>
             {paid ? (
@@ -117,7 +117,7 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
           </span>
         </header>
         {dl.error && <p style={{ margin: 0, textAlign: 'center', color: '#fda4af', fontSize: 13 }}>{dl.error}</p>}
-        <div style={{ maxWidth: 1240, margin: '0 auto', padding: '32px 24px 64px', display: 'flex', flexWrap: 'wrap', gap: 36, alignItems: 'center' }}>
+        <div style={{ maxWidth: 1560, margin: '0 auto', padding: '32px 24px 64px', display: 'flex', flexWrap: 'wrap', gap: 36, alignItems: 'center' }}>
           <div style={{ flex: '1 1 420px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div style={{ ...eyebrow('#00c9a7'), fontWeight: 500 }}>{c.eyebrow(data.riasecCode)}</div>
             <h1 style={{ margin: 0, fontSize: 'clamp(30px, 6.4cqw, 58px)', lineHeight: 1.08, fontWeight: 800 }}>
