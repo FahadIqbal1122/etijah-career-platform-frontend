@@ -63,6 +63,14 @@ const SKIP_RULES: { condition: (a: Record<string, any>) => boolean; ids: Record<
   // who is working or between roles. Exactly one of the two is shown once QO4 is answered.
   { condition: a => PRO_STAGES.includes(a['QO4']), ids: { QO5C: '' } },
   { condition: a => !!a['QO4'] && !PRO_STAGES.includes(a['QO4']), ids: { QO5C_PRO: '' } },
+  // Resilience chapter. Q58 never fed a score, so nobody is asked it. School students and the first three
+  // years of university skip the whole block (long-term focus Q53–Q57 and the four job scenarios Q59/60/61/64):
+  // the dimension is then simply absent, and the report leaves resilience out. Nothing is filled in for it.
+  { condition: () => true, ids: { Q58: '' } },
+  {
+    condition: a => a['QO4'] === 'high_school' || (a['QO4'] === 'university' && ['year_1', 'year_2', 'year_3'].includes(a['QOYR'])),
+    ids: { Q53: '', Q54: '', Q55: '', Q56: '', Q57: '', Q59: '', Q60: '', Q61: '', Q64: '' },
+  },
   { condition: a => a['QO7'] === 'employee', ids: { Q69: 1, Q71: 'B', Q73: 1 } },
   // Someone who wants to stay local is not asked which country to work in: it is where they live now.
   { condition: a => a['QO9'] === 'no', ids: { QOTC: 'same_as_current' } },

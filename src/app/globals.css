@@ -478,7 +478,8 @@ html { scroll-behavior: smooth; }
 /* "this or that" cards: large centred cards; an "or" chip sits between the two sides of an A/B pair.
    The letter tag stays in the DOM (it is the stored value) but is not shown. */
 .choices.cards .choice { align-items: center; justify-content: center; text-align: center; min-height: 104px; padding: 22px 18px; }
-.choices.cards .choice:hover { transform: translateY(-3px); border-color: var(--accent); }
+/* No movement on hover: a card that lifts out from under a pointer resting on its bottom edge flickers. */
+.choices.cards .choice:hover { border-color: var(--accent); box-shadow: 0 10px 26px -14px color-mix(in srgb, var(--accent) 70%, transparent); }
 .choices.cards .choice.sel:hover { transform: scale(1.015); }
 .choices.cards .choice-tag { display: none; }
 .choices.cards .choice-text { font-size: 17px; font-weight: 600; }
