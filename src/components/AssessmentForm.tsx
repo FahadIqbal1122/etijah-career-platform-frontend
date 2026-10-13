@@ -540,7 +540,8 @@ export default function AssessmentForm() {
   const starShort = (c: number) => CHAPTERS[c]?.short[locale === 'ar' ? 'ar' : 'en'] ?? ''
   // "Chapter 2 of 5 complete · star 2 is lit" / «اكتمل الفصل 2 من 5 · أضاءت النجمة 2»
   const starLitLabel = (c: number) => `${chrome.starLit} ${c + 1}${chrome.starLitDone ? ` ${chrome.starLitDone}` : ''}`
-  const journeyCaption = `${chrome.towardStar} ${starTarget + 1} ${chrome.chapterOf} ${CHAPTER_COUNT} · ${percentLabel}`
+  // const journeyCaption = `${chrome.towardStar} ${starTarget + 1} ${chrome.chapterOf} ${CHAPTER_COUNT} · ${percentLabel}`   // shortened to the percentage only
+  const journeyCaption = percentLabel
 
   const progressMsg = buildProgressMessage(index, total, locale)
 
@@ -876,12 +877,13 @@ export default function AssessmentForm() {
               youLabel={phase === 'question' ? chrome.youLabel : undefined}
               nextLabel={phase === 'question' ? starShort(starTarget) : undefined}
             />
+            {/* "Your journey / Each star is a chapter…" heading removed: too much text; the map explains itself
             {phase === 'question' && (
               <div className="cst-heading">
                 <strong>{chrome.journeyTitle}</strong>
                 <span>{chrome.journeySub}</span>
               </div>
-            )}
+            )} */}
             {phase === 'question' && (
               <div className="cst-progress-text">
                 {journeyCaption}
@@ -893,9 +895,9 @@ export default function AssessmentForm() {
           {/* desktop-only progress context beneath the constellation */}
           <div className="assess-aside-context">
             {phase === 'question' ? (
-              <BreakPanel locale={locale as 'en' | 'ar'} eyebrow={chrome.asideEyebrow} progressMsg={progressMsg} questionIndex={index} hideTrigger={coachEnabled || !gamesEnabled} />
+              <BreakPanel locale={locale as 'en' | 'ar'} eyebrow={percentLabel} progressMsg={progressMsg} questionIndex={index} hideTrigger={coachEnabled || !gamesEnabled} />
             ) : (
-              <div className="assess-aside-eyebrow">{chrome.asideEyebrow}</div>
+              <div className="assess-aside-eyebrow">{percentLabel}</div>
             )}
           </div>
         </aside>
