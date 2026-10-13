@@ -14,11 +14,12 @@ const L = {
   en: {
     ready: 'YOUR CAREER PROFILE IS READY',
     thinkLike: 'Your strongest career type is',
-    sub: (n: number) => `Your answers show what drives you and how you like to work. We matched you to ${n} careers. Here is your best one.`,
+    sub: 'Your answers show what drives you and how you like to work. Here is your best match.',
+    subNone: 'Your answers show what drives you and how you like to work.',
     subPaid: (n: number) => `Your answers show what drives you and how you like to work. Here are your ${n} best career matches.`,
     riasec: 'RIASEC', topValue: 'TOP VALUE', topStrength: 'TOP STRENGTH',
     unlockMy: 'Unlock my full report', unlockFull: 'Unlock full report', seePreview: 'See your free preview',
-    best: 'YOUR #1 CAREER MATCH', match: 'match', reveal: (n: number) => `Reveal all ${n} more matches`,
+    best: 'YOUR #1 CAREER MATCH', match: 'match', reveal: 'Reveal more matches',
     viewing: (a: number, b: number) => `You are viewing ${a} of ${b} sections`,
     viewingSub: (r: number) => `Your free preview. The other ${r} are ready and waiting.`,
     free: 'FREE', yours: 'YOUR PROFILE', drives: 'What drives you',
@@ -26,32 +27,32 @@ const L = {
     values: 'What matters to you', strengths: 'What you are good at', pers: 'How you think and act',
     careersTitle: 'Careers that fit you',
     careersSub: 'We compared your personality, values and strengths with each career. The percentage shows how close the fit is.',
-    careersTag: (n: number) => `02 · ${n} CAREERS`, careersTagFree: (a: number, b: number) => `02 · ${a} OF ${b} SHOWN`,
-    rank1: (m: number) => `#1 · ${m}% MATCH`, strong: 'Strong fit',
+    careersTag: (n: number) => `02 · ${n} CAREERS`, careersTagFree: (n: number) => `02 · YOUR TOP ${n} CAREERS`,
+    rank1: (m: number) => `#1 · ${m}% MATCH`,
     gap: 'GAP TO CLOSE', inFull: 'IN YOUR FULL REPORT',
     inFull1: ['3 next steps for this career', 'Internship, portfolio and a course to take'],
     inFull2: ['How AI will change this job', 'Tasks that are changing, skills that stay valuable'],
     inFull3: ['Courses picked for this career', 'Free and paid, with hours and level'],
-    builds: 'Builds on your degree', newDir: 'A new direction',
     risk: (r: string) => `AI risk: ${r}`, lowRisk: 'Low AI risk',
     riskName: { low: 'Low', medium: 'Medium', high: 'High' } as Record<string, string>,
-    seeAll: (n: number) => `See ${n} more careers, why they fit, and what to do next`, unlockNow: 'Unlock now',
+    unlockNow: 'Unlock now',
     planTag: '03 · YOUR PLAN', planTitle: 'Start this week, finish in 90 days',
     planRows: [['DAYS 1-7', 'Your first step and the days after it'], ['WEEKS 2-4', 'Learning and people to join'], ['MONTHS 2-3', 'A finished project and a first application'], ['SKILLS', 'What to build and a practice exercise']],
     fullTitle: 'YOUR FULL CAREER REPORT', fullH: 'Everything we found for you, in one report.',
     fullItems: ['All career matches, explained', 'How AI will change each career', 'Your 90-day plan and worksheet', 'Courses and certificates for you', 'Job and internship listings', 'English and Arabic PDF', 'Job tracker for your applications'],
     fullCard: 'Full Career Report', secure: 'Secure checkout · Instant access',
     meter: ['Interests', 'Values and strengths', 'Personality', 'Your top careers', 'More careers', 'AI impact', '90-day plan', 'Courses and certificates', 'Job listings'],
-    mapTag: (n: number) => `YOUR ${n} MATCHES`, mapTitle: 'Your career constellation', mapBest: 'best match', mapLowest: 'LOWEST AI RISK', mapLocked: (n: number) => `${n} more locked`,
+    mapTag: (n: number, paid: boolean) => (paid ? `YOUR ${n} MATCHES` : `YOUR TOP ${n} MATCHES`), mapTitle: 'Your career constellation', mapBest: 'best match', mapLowest: 'LOWEST AI RISK', mapLocked: 'More careers in your full report',
   },
   ar: {
     ready: 'ملفك المهني جاهز',
     thinkLike: 'أنت من نمط',
-    sub: (n: number) => `تُظهر إجاباتك ما يحركك وكيف تحب أن تعمل. طابقناك مع ${n} مسارات مهنية، وهذا أفضلها لك.`,
+    sub: 'تُظهر إجاباتك ما يحركك وكيف تحب أن تعمل. وهذا أفضل مساراتك تطابقاً.',
+    subNone: 'تُظهر إجاباتك ما يحركك وكيف تحب أن تعمل.',
     subPaid: (n: number) => `تُظهر إجاباتك ما يحركك وكيف تحب أن تعمل. هذه أفضل ${n} مسارات مهنية تناسبك.`,
     riasec: 'RIASEC', topValue: 'أهم قيمة', topStrength: 'أبرز نقطة قوة',
     unlockMy: 'افتح تقريري الكامل', unlockFull: 'افتح التقرير الكامل', seePreview: 'شاهد المعاينة المجانية',
-    best: 'أفضل مسار مهني لك', match: 'تطابق', reveal: (n: number) => `اكشف المسارات الـ${n} الأخرى`,
+    best: 'أفضل مسار مهني لك', match: 'تطابق', reveal: 'اكشف المزيد من المسارات',
     viewing: (a: number, b: number) => `تشاهد ${a} من ${b} أقسام`,
     viewingSub: (r: number) => `هذه معاينتك المجانية. الأقسام الـ${r} الأخرى جاهزة بانتظارك.`,
     free: 'مجاني', yours: 'ملفك الشخصي', drives: 'ما يحركك',
@@ -59,23 +60,22 @@ const L = {
     values: 'ما يهمك', strengths: 'ما تجيده', pers: 'كيف تفكر وتتصرف',
     careersTitle: 'مسارات مهنية تناسبك',
     careersSub: 'قارنّا شخصيتك وقيمك ونقاط قوتك مع كل مسار مهني. تُظهر النسبة مدى قرب التوافق.',
-    careersTag: (n: number) => `٠٢ · ${n} مسارات`, careersTagFree: (a: number, b: number) => `٠٢ · ${a} من ${b} ظاهرة`,
-    rank1: (m: number) => `الأول · تطابق ${m}%`, strong: 'تطابق قوي',
+    careersTag: (n: number) => `٠٢ · ${n} مسارات`, careersTagFree: (n: number) => `٠٢ · أفضل ${n} مسارات لك`,
+    rank1: (m: number) => `الأول · تطابق ${m}%`,
     gap: 'الفجوة التي تحتاج سدّها', inFull: 'في تقريرك الكامل',
     inFull1: ['٣ خطوات تالية لهذا المسار', 'تدريب ومشروع وإحدى الدورات'],
     inFull2: ['كيف سيغيّر الذكاء الاصطناعي هذه المهنة', 'مهام تتغير ومهارات تبقى قيّمة'],
     inFull3: ['دورات مختارة لهذا المسار', 'مجانية ومدفوعة، مع الساعات والمستوى'],
-    builds: 'يبني على دراستك', newDir: 'اتجاه جديد',
     risk: (r: string) => `أثر الذكاء الاصطناعي: ${r}`, lowRisk: 'أثر منخفض للذكاء الاصطناعي',
     riskName: { low: 'منخفض', medium: 'متوسط', high: 'مرتفع' } as Record<string, string>,
-    seeAll: (n: number) => `اطّلع على ${n} مسارات أخرى، ولماذا تناسبك، وما تفعله بعد ذلك`, unlockNow: 'افتح الآن',
+    unlockNow: 'افتح الآن',
     planTag: '٠٣ · خطتك', planTitle: 'ابدأ هذا الأسبوع وأنجز في ٩٠ يوماً',
     planRows: [['الأيام ١-٧', 'خطوتك الأولى وما بعدها'], ['الأسابيع ٢-٤', 'تعلّم وأشخاص تنضم إليهم'], ['الشهران ٢-٣', 'مشروع مكتمل وأول طلب توظيف'], ['المهارات', 'ما تبنيه وتمرين تطبيقي']],
     fullTitle: 'تقريرك المهني الكامل', fullH: 'كل ما وجدناه لك، في تقرير واحد.',
     fullItems: ['جميع المسارات المهنية مشروحة', 'كيف سيغيّر الذكاء الاصطناعي كل مسار', 'خطة ٩٠ يوماً وورقة العمل', 'دورات وشهادات مناسبة لك', 'فرص العمل والتدريب', 'تقرير PDF بالإنجليزية والعربية', 'متابع لطلبات التوظيف'],
     fullCard: 'التقرير المهني الكامل', secure: 'دفع آمن · وصول فوري',
     meter: ['الاهتمامات', 'القيم ونقاط القوة', 'الشخصية', 'أفضل مساراتك', 'مسارات أخرى', 'أثر الذكاء الاصطناعي', 'خطة ٩٠ يوماً', 'الدورات والشهادات', 'فرص العمل'],
-    mapTag: (n: number) => `مساراتك الـ${n}`, mapTitle: 'كوكبة مساراتك المهنية', mapBest: 'الأفضل', mapLowest: 'الأقل تأثراً بالذكاء الاصطناعي', mapLocked: (n: number) => `${n} مسارات أخرى مقفلة`,
+    mapTag: (n: number, paid: boolean) => (paid ? `مساراتك الـ${n}` : `أفضل ${n} مسارات لك`), mapTitle: 'كوكبة مساراتك المهنية', mapBest: 'الأفضل', mapLowest: 'الأقل تأثراً بالذكاء الاصطناعي', mapLocked: 'مسارات أخرى في تقريرك الكامل',
   },
 }
 
@@ -89,10 +89,14 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
   const ls = (v: string) => (ar ? '0' : v)
   const eyebrow: CSSProperties = { fontFamily: ar ? undefined : MONO, fontSize: 13, letterSpacing: ls('0.14em'), color: '#0b5c99', fontWeight: 500 }
   const p = data.preview
-  const [top, ...rest] = data.careers
+  // the page's order is kept; the best card is the first career the person has not marked "not for me"
+  const topIndex = Math.max(0, data.careers.findIndex(x => !x.rejected))
+  const top = data.careers[topIndex]
+  const rest = data.careers.filter((_, i) => i !== topIndex)
   const n = data.careers.length
-  const totalCareers = n + data.lockedMore
-  const riasecSorted = [...data.riasec].sort((a, b) => b.score - a.score)
+  const hasScores = data.riasec.length > 0 && data.riasec.every(r => typeof r.score === 'number')
+  const riasecSorted = [...data.riasec].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+  const fitText = (f?: string) => (f === 'strong_fit' ? data.labels.strong_fit : f === 'worth_exploring' ? data.labels.worth_exploring : '')
   const heroTitle = <>{c.thinkLike} <span style={{ color: '#0770ba' }}>{data.topTypeLabel}.</span></>
   const dl = data.download
 
@@ -102,14 +106,14 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
   const riskPill = (r?: string) => r
     ? (r === 'low' ? pill(c.lowRisk, '#e2f6f0', '#0a705a') : pill(c.risk(c.riskName[r] || r), r === 'high' ? '#fde4e1' : '#fff1d1', r === 'high' ? '#a1261a' : '#8a5300'))
     : null
-  const dirPill = (d?: string, bg = '#e2f6f0', fg = '#0a705a') => d ? pill(d === 'new_direction' ? c.newDir : c.builds, bg, fg) : null
+  const dirPill = (d?: 'builds_on_background' | 'new_direction', bg = '#e2f6f0', fg = '#0a705a') => d ? pill(data.labels[d], bg, fg) : null
 
   const topBtn = paid
     ? <button type="button" onClick={dl.onDownload} disabled={dl.busy} style={{ border: 0, cursor: 'pointer', font: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 8, background: '#0770ba', color: '#fff', fontWeight: 800, fontSize: 15, padding: '11px 18px', borderRadius: 12, opacity: dl.busy ? 0.6 : 1 }}>{dl.busy ? dl.busyLabel : dl.label}</button>
-    : <A href="#rt-unlock" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 15, padding: '11px 18px', borderRadius: 12, minHeight: 44, boxSizing: 'border-box' }}><Lock size={16} />{c.unlockFull}</A>
+    : <A href="#rt-unlock" track="results_tpl_header_unlock" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 15, padding: '11px 18px', borderRadius: 12, minHeight: 44, boxSizing: 'border-box' }}><Lock size={16} />{c.unlockFull}</A>
 
   // sections the free plan has not opened yet (the progress meter)
-  const freeCount = 4
+  const freeCount = n > 0 ? 4 : 3   // "your top careers" only counts when there are some
   const meter = c.meter
 
   return (
@@ -133,7 +137,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#00c9a7', display: 'inline-block' }} />{c.ready}
             </div>
             <h1 style={{ margin: 0, fontSize: 'clamp(32px, 7cqw, 60px)', lineHeight: 1.08, fontWeight: 800, color: '#1f2a37' }}>{heroTitle}</h1>
-            <p style={{ margin: 0, fontSize: 'clamp(16px, 2.4cqw, 20px)', lineHeight: 1.6, color: '#4d5056', maxWidth: 560 }}>{paid ? c.subPaid(n) : c.sub(totalCareers)}</p>
+            <p style={{ margin: 0, fontSize: 'clamp(16px, 2.4cqw, 20px)', lineHeight: 1.6, color: '#4d5056', maxWidth: 560 }}>{n === 0 ? c.subNone : paid ? c.subPaid(n) : c.sub}</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               {[[c.riasec, data.riasecCode], [c.topValue, data.values[0]?.label], [c.topStrength, data.strengths[0]?.label]].filter(x => x[1]).map(([k, v]) => (
                 <span key={k} style={{ display: 'inline-flex', gap: 8, alignItems: 'baseline', background: '#fff', border: '1px solid rgba(7,112,186,0.18)', borderRadius: 999, padding: '9px 16px', fontSize: 15 }}>
@@ -143,7 +147,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
             </div>
             {!paid && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', paddingTop: 6 }}>
-                <A href="#rt-unlock" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: '#0770ba', color: '#fff', fontWeight: 800, fontSize: 18, padding: '16px 26px', borderRadius: 14, boxShadow: '0 10px 24px rgba(7,112,186,0.28)' }}>{c.unlockMy}<Arrow flip={ar} /></A>
+                <A href="#rt-unlock" track="results_tpl_hero_unlock" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: '#0770ba', color: '#fff', fontWeight: 800, fontSize: 18, padding: '16px 26px', borderRadius: 14, boxShadow: '0 10px 24px rgba(7,112,186,0.28)' }}>{c.unlockMy}<Arrow flip={ar} /></A>
                 <A href="#rt-preview" preview={p} style={{ fontWeight: 700, fontSize: 16, padding: '14px 10px', color: '#075288' }}>{c.seePreview}</A>
               </div>
             )}
@@ -151,10 +155,10 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
 
           {top && withMap && (
             <div style={{ flex: '1 1 380px', minWidth: 0, maxWidth: 560, background: '#fff', border: '1px solid rgba(7,112,186,0.16)', borderRadius: 22, boxShadow: '0 24px 60px rgba(7,82,136,0.14)', padding: 'clamp(12px, 3cqw, 24px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ fontFamily: ar ? undefined : MONO, fontSize: 12, letterSpacing: ls('0.14em'), color: '#0a705a', fontWeight: 600 }}>{c.mapTag(totalCareers)}</div>
-              <Constellation data={data} unlockedLabel={c.mapBest} lowestLabel={c.mapLowest} lockedLabel={c.mapLocked(data.lockedMore)} tone="light" />
+              <div style={{ fontFamily: ar ? undefined : MONO, fontSize: 12, letterSpacing: ls('0.14em'), color: '#0a705a', fontWeight: 600 }}>{c.mapTag(n, paid)}</div>
+              <Constellation data={data} unlockedLabel={c.mapBest} lowestLabel={c.mapLowest} lockedLabel={c.mapLocked} tone="light" />
               {data.lockedMore > 0 && (
-                <A href="#rt-unlock" preview={p} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ebf3ff', color: '#075288', fontWeight: 800, borderRadius: 12, padding: 13, minHeight: 44, boxSizing: 'border-box' }}>{c.reveal(data.lockedMore)}</A>
+                <A href="#rt-unlock" track="results_careers_upgrade" preview={p} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ebf3ff', color: '#075288', fontWeight: 800, borderRadius: 12, padding: 13, minHeight: 44, boxSizing: 'border-box' }}>{c.reveal}</A>
               )}
             </div>
           )}
@@ -175,7 +179,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
                 </div>
                 {rest.length > 0 && (
                   <div style={{ borderTop: '1px dashed rgba(7,112,186,0.2)', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {rest.slice(0, 3).map((r, i) => (
+                    {rest.filter(x => !x.rejected).slice(0, 3).map((r, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                         <span style={{ fontWeight: 700, color: '#1f2a37', overflowWrap: 'anywhere' }}>{r.title}</span>
                         <span style={{ fontWeight: 800, color: '#075288' }}>{clampScore(r.match)}%</span>
@@ -190,7 +194,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
                   </div>
                 )}
                 {data.lockedMore > 0 && (
-                  <A href="#rt-unlock" preview={p} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ebf3ff', color: '#075288', fontWeight: 800, borderRadius: 12, padding: 13, minHeight: 44, boxSizing: 'border-box' }}>{c.reveal(data.lockedMore)}</A>
+                  <A href="#rt-unlock" track="results_careers_upgrade" preview={p} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ebf3ff', color: '#075288', fontWeight: 800, borderRadius: 12, padding: 13, minHeight: 44, boxSizing: 'border-box' }}>{c.reveal}</A>
                 )}
               </div>
             </div>
@@ -230,18 +234,23 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
               <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#1f2a37' }}>{c.interests}</h3>
               <span style={{ fontSize: 14, color: '#5c6068' }}>{c.riasecProfile}</span>
             </div>
-            {withMap && <div style={{ display: 'flex', justifyContent: 'center' }}><Hexagon data={data} /></div>}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {withMap && hasScores && <div style={{ display: 'flex', justifyContent: 'center' }}><Hexagon data={data} /></div>}
+            {!hasScores && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {data.riasec.slice(0, 3).map(r => <span key={r.label} style={{ background: '#ebf3ff', color: '#075288', borderRadius: 999, padding: '7px 14px', fontWeight: 700 }}>{r.label}</span>)}
+              </div>
+            )}
+            {hasScores && <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {riasecSorted.map((r, i) => (
                 <div key={r.label} style={{ display: 'grid', gridTemplateColumns: 'minmax(96px, 140px) minmax(0, 1fr) 44px', gap: 12, alignItems: 'center' }}>
                   <span style={{ fontWeight: i < 2 ? 800 : 700, color: i < 2 ? '#1f2a37' : undefined }}>{r.label}</span>
                   <span style={{ height: 14, background: '#ebf3ff', borderRadius: 8, overflow: 'hidden' }}>
-                    <span style={{ display: 'block', height: '100%', width: `${clampScore(r.score)}%`, background: i < 2 ? '#0770ba' : '#9cc7e8', borderRadius: 8 }} />
+                    <span style={{ display: 'block', height: '100%', width: `${clampScore(r.score ?? 0)}%`, background: i < 2 ? '#0770ba' : '#9cc7e8', borderRadius: 8 }} />
                   </span>
-                  <span style={{ fontFamily: MONO, fontWeight: 600, color: i < 2 ? '#075288' : '#545968', textAlign: ar ? 'left' : 'right' }}>{clampScore(r.score)}</span>
+                  <span style={{ fontFamily: MONO, fontWeight: 600, color: i < 2 ? '#075288' : '#545968', textAlign: ar ? 'left' : 'right' }}>{clampScore(r.score ?? 0)}</span>
                 </div>
               ))}
-            </div>
+            </div>}
           </div>
           <div style={{ flex: '2 1 300px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
             {[[c.values, data.values], [c.strengths, data.strengths]].map(([title, rows]) => (
@@ -250,7 +259,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
                 {(rows as ReportTemplateData['values']).map((r, i, arr) => (
                   <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, borderBottom: i < arr.length - 1 ? '1px solid #eef3f9' : undefined, paddingBottom: i < arr.length - 1 ? 10 : 0 }}>
                     <span style={{ fontWeight: 700 }}>{r.label}</span>
-                    <span style={{ fontFamily: MONO, fontWeight: 600, color: '#075288' }}>{clampScore(r.score)}</span>
+                    {typeof r.score === 'number' && <span style={{ fontFamily: MONO, fontWeight: 600, color: '#075288' }}>{clampScore(r.score)}</span>}
                   </div>
                 ))}
               </div>
@@ -265,7 +274,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
               {data.personality.map(t => (
                 <div key={t.label} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <span style={{ fontWeight: 800 }}>{t.label}</span>
-                  <span style={{ height: 10, background: '#ebf3ff', borderRadius: 6 }}><span style={{ display: 'block', height: '100%', width: `${clampScore(t.score)}%`, background: '#0770ba', borderRadius: 6 }} /></span>
+                  <span style={{ height: 10, background: '#ebf3ff', borderRadius: 6 }}><span style={{ display: 'block', height: '100%', width: `${clampScore(t.score ?? 50)}%`, background: '#0770ba', borderRadius: 6 }} /></span>
                 </div>
               ))}
             </div>
@@ -277,7 +286,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
       {top && (
         <section style={section}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={eyebrow}>{paid ? c.careersTag(n) : c.careersTagFree(n, totalCareers)}</div>
+            <div style={eyebrow}>{paid ? c.careersTag(n) : c.careersTagFree(n)}</div>
             <h2 style={{ margin: 0, fontSize: 'clamp(26px, 5cqw, 40px)', fontWeight: 800, color: '#1f2a37' }}>{c.careersTitle}</h2>
             <p style={{ margin: 0, fontSize: 17, color: '#4d5056', maxWidth: 720 }}>{c.careersSub}</p>
           </div>
@@ -286,7 +295,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
             <div style={{ flex: '1 1 340px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <span style={{ fontFamily: ar ? undefined : MONO, fontSize: 13, fontWeight: 600, color: '#04323f', background: '#00c9a7', borderRadius: 8, padding: '5px 10px' }}>{c.rank1(clampScore(top.match))}</span>
-                {top.match >= 80 && <span style={{ fontSize: 14, fontWeight: 700, color: '#0a705a' }}>{c.strong}</span>}
+                {fitText(top.fit) && <span style={{ fontSize: 14, fontWeight: 700, color: '#0a705a' }}>{fitText(top.fit)}</span>}
               </div>
               <h3 style={{ margin: 0, fontSize: 'clamp(24px, 4.5cqw, 34px)', fontWeight: 800, color: '#1f2a37', overflowWrap: 'anywhere' }}>{top.title}</h3>
               {top.summary && <p style={{ margin: 0, fontSize: 17, lineHeight: 1.65, color: '#4d5056' }}>{top.summary}</p>}
@@ -314,7 +323,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
           {(rest.length > 0 || data.lockedMore > 0) && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
               {rest.map((r, i) => (
-                <div key={i} style={{ background: '#fff', border: '1px solid rgba(7,112,186,0.16)', borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div key={i} style={{ background: '#fff', border: '1px solid rgba(7,112,186,0.16)', borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', gap: 12, opacity: r.rejected ? 0.55 : 1 }}>
                   <span style={{ fontSize: 28, fontWeight: 800, color: '#075288' }}>{clampScore(r.match)}%</span>
                   <span style={{ fontSize: 19, fontWeight: 800, color: '#1f2a37', overflowWrap: 'anywhere' }}>{r.title}</span>
                   {(r.direction || r.risk) && <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{dirPill(r.direction, '#e6f1fa', '#0b5c99')}{riskPill(r.risk)}</span>}
@@ -322,7 +331,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
                 </div>
               ))}
               {data.lockedMore > 0 && (
-                <A href="#rt-unlock" preview={p} style={{ background: '#075288', color: '#fff', borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
+                <A href="#rt-unlock" track="results_careers_upgrade" preview={p} style={{ background: '#075288', color: '#fff', borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span style={{ fontSize: 19, fontWeight: 800, lineHeight: 1.3 }}>{data.locked.moreTitle}</span>
                     <span style={{ fontSize: 14, lineHeight: 1.5, color: '#d6e6f4' }}>{data.locked.moreBody}</span>
@@ -353,7 +362,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
               <span style={{ display: 'inline-flex', width: 40, height: 40, borderRadius: 12, background: '#075288', color: '#fff', alignItems: 'center', justifyContent: 'center' }}><Lock size={18} /></span>
               <span style={{ fontSize: 20, fontWeight: 800, color: '#1f2a37' }}>{data.locked.planTitle}</span>
               <span style={{ fontSize: 15, color: '#4d5056', maxWidth: 520 }}>{data.locked.planBody}</span>
-              <A href="#rt-unlock" preview={p} style={{ fontWeight: 800, color: '#075288' }}>{data.locked.planCta}</A>
+              <A href="#rt-unlock" track="results_unlock_all" preview={p} style={{ fontWeight: 800, color: '#075288' }}>{data.locked.planCta}</A>
             </div>
           </div>
         </section>
@@ -372,7 +381,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
             </div>
             <div style={{ flex: '1 1 280px', minWidth: 0, maxWidth: 400, background: '#fff', borderRadius: 22, padding: 28, display: 'flex', flexDirection: 'column', gap: 14, boxShadow: '0 24px 60px rgba(0,0,0,0.25)' }}>
               <div style={{ fontWeight: 800, fontSize: 18, color: '#1f2a37' }}>{c.fullCard}</div>
-              <A href={data.unlockHref} preview={p} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 18, padding: 16, borderRadius: 14, minHeight: 52, boxSizing: 'border-box' }}>{data.locked.planCta}</A>
+              <A href={data.unlockHref} track="results_unlock_all" preview={p} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 18, padding: 16, borderRadius: 14, minHeight: 52, boxSizing: 'border-box' }}>{data.locked.planCta}</A>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14, color: '#5c6068' }}><Lock size={14} />{c.secure}</div>
             </div>
           </div>

@@ -98,12 +98,16 @@ export function sampleTemplateData(locale: 'en' | 'ar', paid: boolean): ReportTe
       match: match as number,
       risk: risks[i],
       direction: i % 3 === 2 ? 'new_direction' as const : 'builds_on_background' as const,
+      fit: i < 4 ? 'strong_fit' as const : 'worth_exploring' as const,
       summary: ar
         ? 'هذا المسار يبني على دراستك. درجتك المرتفعة في الاهتمام الاستقصائي تعني أنك تستمتع بفهم الأنظمة المعقدة وحل مشكلاتها.'
         : 'This career builds on your studies. Your high Investigative score says you enjoy understanding complex systems and solving problems.',
       ...(i === 0 ? { gap: ar ? 'خبرة عملية في مشاريع حقيقية.' : 'Practical experience on real projects.' } : {}),
     })),
-    lockedMore: paid ? 0 : 5,
+    lockedMore: paid ? 0 : 3,
+    labels: ar
+      ? { builds_on_background: 'يبني على خلفيتك', new_direction: 'اتجاه جديد', strong_fit: 'تطابق قوي', worth_exploring: 'يستحق الاستكشاف' }
+      : { builds_on_background: 'Builds on your background', new_direction: 'A new direction', strong_fit: 'Strong fit', worth_exploring: 'Worth exploring' },
     unlockHref: '#',
     locked: ar ? {
       moreTitle: 'افتح ٥ مسارات مهنية أخرى', moreBody: 'رقِّ إلى مرشد المسار لترى المسارات الخمسة الأخرى التي تناسبك، مع التفاصيل الكاملة لكل منها.',

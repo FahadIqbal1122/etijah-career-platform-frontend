@@ -12,17 +12,17 @@ import { Constellation, Hexagon } from './visuals'
 const L = {
   en: {
     eyebrow: (code: string) => `CAREER ASSESSMENT · ${code}`,
-    h1a: (n: number) => `${n} careers fit you.`, h1b: 'We lit up your best one.', h1bPaid: 'Here they all are.',
+    h1a: 'Careers fit you.', h1aPaid: (n: number) => `${n} careers fit you.`, h1b: 'We lit up your best one.', h1bPaid: 'Here they all are.',
     sub: (type: string) => `Your answers point to the ${type} type. Your brightest match is `,
-    careersMatched: 'careers matched', topMatch: 'top match', plan: 'day plan',
-    unlockAll: (n: number) => `Unlock all ${n} careers`, preview: 'Explore free preview', getFull: 'Get full report',
-    mapBest: 'best match', mapLowest: 'LOWEST AI RISK', mapLocked: (n: number) => `${n} more locked`,
+    careersMatched: 'careers shown', topMatch: 'top match', plan: 'day plan',
+    unlockAll: 'Unlock all careers', preview: 'Explore free preview', getFull: 'Get full report',
+    mapBest: 'best match', mapLowest: 'LOWEST AI RISK', mapLocked: 'More careers in your full report',
     freeProfile: 'FREE · YOUR PROFILE', yourProfile: 'YOUR PROFILE', who: 'Who you are at work',
     careerType: 'CAREER TYPE', topValue: 'TOP VALUE', topStrength: 'TOP STRENGTH',
     interests: 'Your interests', valuesStrengths: 'Values and strengths', persTitle: 'How you think and act',
-    matchesFree: (a: number, b: number) => `${a} OF ${b} MATCHES SHOWN`, matchesPaid: (n: number) => `YOUR ${n} MATCHES`,
+    matchesFree: (n: number) => `YOUR TOP ${n} MATCHES`, matchesPaid: (n: number) => `YOUR ${n} MATCHES`,
     careersTitle: 'Careers that fit you',
-    matchOf: (n: number) => `MATCH · #1 OF ${n}`, strong: 'Strong fit', builds: 'Builds on your degree', newDir: 'A new direction',
+    matchOf: 'MATCH · #1',
     riskLabel: (r: string) => `AI risk: ${r}`, gapLabel: (g: string) => `Gap: ${g}`,
     unlockFor: 'UNLOCK FOR THIS CAREER',
     unl1: ['3 next steps', 'Internship · Portfolio · Course'], unl2: ['AI impact deep dive', 'Global and local view'], unl3: ['Courses for this career', 'Free and paid, with level'],
@@ -40,22 +40,22 @@ const L = {
     ],
     compare: 'Compare', free: 'Free', fullR: 'Full report',
     rows: [['Interests, values and strengths', 1], ['Your top careers', 1], ['More careers, in depth', 'Locked'], ['AI impact for every career', 'Locked'], ['90-day plan and worksheet', 'Locked'], ['Courses, certificates, listings', 'Locked'], ['PDF in English and Arabic', 'Locked']] as [string, string | number][],
-    passTag: 'FULL CAREER REPORT', passH: (n: number) => `Light up all ${n} careers`,
+    passTag: 'FULL CAREER REPORT', passH: 'Light up all your careers',
     pass1: 'Instant access, yours to keep', pass2: 'Secure checkout',
   },
   ar: {
     eyebrow: (code: string) => `التقييم المهني · ${code}`,
-    h1a: (n: number) => `${n} مسارات مهنية تناسبك.`, h1b: 'أضأنا لك أفضلها.', h1bPaid: 'ها هي كلها أمامك.',
+    h1a: 'مسارات مهنية تناسبك.', h1aPaid: (n: number) => `${n} مسارات مهنية تناسبك.`, h1b: 'أضأنا لك أفضلها.', h1bPaid: 'ها هي كلها أمامك.',
     sub: (type: string) => `تشير إجاباتك إلى نمط ${type}. وأقوى مساراتك تطابقاً هو `,
-    careersMatched: 'مسارات مطابقة', topMatch: 'أعلى تطابق', plan: 'يوماً لخطتك',
-    unlockAll: (n: number) => `افتح المسارات الـ${n}`, preview: 'استكشف المعاينة المجانية', getFull: 'احصل على التقرير الكامل',
-    mapBest: 'الأفضل', mapLowest: 'الأقل تأثراً بالذكاء الاصطناعي', mapLocked: (n: number) => `${n} مسارات أخرى مقفلة`,
+    careersMatched: 'مسارات ظاهرة', topMatch: 'أعلى تطابق', plan: 'يوماً لخطتك',
+    unlockAll: 'افتح كل المسارات', preview: 'استكشف المعاينة المجانية', getFull: 'احصل على التقرير الكامل',
+    mapBest: 'الأفضل', mapLowest: 'الأقل تأثراً بالذكاء الاصطناعي', mapLocked: 'مسارات أخرى في تقريرك الكامل',
     freeProfile: 'مجاني · ملفك الشخصي', yourProfile: 'ملفك الشخصي', who: 'من أنت في العمل',
     careerType: 'نمط المسار', topValue: 'أهم قيمة', topStrength: 'أبرز نقطة قوة',
     interests: 'اهتماماتك', valuesStrengths: 'القيم ونقاط القوة', persTitle: 'كيف تفكر وتتصرف',
-    matchesFree: (a: number, b: number) => `${a} من ${b} مسارات ظاهرة`, matchesPaid: (n: number) => `مساراتك الـ${n}`,
+    matchesFree: (n: number) => `أفضل ${n} مسارات لك`, matchesPaid: (n: number) => `مساراتك الـ${n}`,
     careersTitle: 'مسارات مهنية تناسبك',
-    matchOf: (n: number) => `تطابق · الأول من ${n}`, strong: 'تطابق قوي', builds: 'يبني على دراستك', newDir: 'اتجاه جديد',
+    matchOf: 'تطابق · الأول',
     riskLabel: (r: string) => `أثر الذكاء الاصطناعي: ${r}`, gapLabel: (g: string) => `الفجوة: ${g}`,
     unlockFor: 'افتح لهذا المسار',
     unl1: ['٣ خطوات تالية', 'تدريب · مشروع · دورة'], unl2: ['تحليل أثر الذكاء الاصطناعي', 'نظرة عالمية ومحلية'], unl3: ['دورات لهذا المسار', 'مجانية ومدفوعة، مع المستوى'],
@@ -73,7 +73,7 @@ const L = {
     ],
     compare: 'المقارنة', free: 'مجاني', fullR: 'التقرير الكامل',
     rows: [['الاهتمامات والقيم ونقاط القوة', 1], ['أفضل مساراتك', 1], ['مسارات أخرى بالتفصيل', 'مقفل'], ['أثر الذكاء الاصطناعي لكل مسار', 'مقفل'], ['خطة ٩٠ يوماً وورقة العمل', 'مقفل'], ['الدورات والشهادات والفرص', 'مقفل'], ['PDF بالإنجليزية والعربية', 'مقفل']] as [string, string | number][],
-    passTag: 'التقرير المهني الكامل', passH: (n: number) => `أضئ المسارات الـ${n}`,
+    passTag: 'التقرير المهني الكامل', passH: 'أضئ كل مساراتك',
     pass1: 'وصول فوري، ملكك للأبد', pass2: 'دفع آمن',
   },
 }
@@ -88,12 +88,16 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
   const p = data.preview
   const ls = (v: string) => (ar ? '0' : v)
   const mono = ar ? undefined : MONO
-  const [top, ...rest] = data.careers
+  // the page's order is kept; the best card is the first career not marked "not for me"
+  const topIndex = Math.max(0, data.careers.findIndex(x => !x.rejected))
+  const top = data.careers[topIndex]
+  const rest = data.careers.filter((_, i) => i !== topIndex)
   const n = data.careers.length
-  const total = n + data.lockedMore
+  const hasScores = data.riasec.length > 0 && data.riasec.every(r => typeof r.score === 'number')
+  const fitText = (f?: string) => (f === 'strong_fit' ? data.labels.strong_fit : f === 'worth_exploring' ? data.labels.worth_exploring : '')
   const dl = data.download
   const eyebrow = (color: string): CSSProperties => ({ fontFamily: mono, fontSize: 13, letterSpacing: ls('0.16em'), color, fontWeight: 600 })
-  const tag = (d?: string) => d === 'new_direction' ? c.newDir : d ? c.builds : ''
+  const tag = (d?: 'builds_on_background' | 'new_direction') => (d ? data.labels[d] : '')
 
   return (
     <div dir={ar ? 'rtl' : 'ltr'} style={{ containerType: 'inline-size', color: '#414142', background: '#fff' }}>
@@ -108,7 +112,7 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
                 <button type="button" onClick={dl.onDownload} disabled={dl.busy} style={{ border: 0, cursor: 'pointer', font: 'inherit', background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 15, padding: '0 18px', borderRadius: 12, minHeight: 44, opacity: dl.busy ? 0.6 : 1 }}>{dl.busy ? dl.busyLabel : dl.label}</button>
               </>
             ) : (
-              <A href="#rt-pass" preview={p} style={{ display: 'inline-flex', alignItems: 'center', background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 15, padding: '0 18px', borderRadius: 12, minHeight: 44 }}>{c.getFull}</A>
+              <A href="#rt-pass" track="results_careers_upgrade" preview={p} style={{ display: 'inline-flex', alignItems: 'center', background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 15, padding: '0 18px', borderRadius: 12, minHeight: 44 }}>{c.getFull}</A>
             )}
           </span>
         </header>
@@ -117,11 +121,11 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
           <div style={{ flex: '1 1 420px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div style={{ ...eyebrow('#00c9a7'), fontWeight: 500 }}>{c.eyebrow(data.riasecCode)}</div>
             <h1 style={{ margin: 0, fontSize: 'clamp(30px, 6.4cqw, 58px)', lineHeight: 1.08, fontWeight: 800 }}>
-              {c.h1a(total)}<br /><span style={{ color: '#9cc7e8' }}>{paid ? c.h1bPaid : c.h1b}</span>
+              {paid ? c.h1aPaid(n) : c.h1a}<br /><span style={{ color: '#9cc7e8' }}>{paid ? c.h1bPaid : c.h1b}</span>
             </h1>
             {top && <p style={{ margin: 0, fontSize: 'clamp(16px, 2.4cqw, 19px)', lineHeight: 1.6, color: '#c9dcef', maxWidth: 560 }}>{c.sub(data.topTypeLabel)}<strong style={{ color: '#fff' }}>{top.title}</strong>.</p>}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 1, background: 'rgba(156,199,232,0.2)', border: '1px solid rgba(156,199,232,0.2)', borderRadius: 18, overflow: 'hidden', maxWidth: 520 }}>
-              {[[String(total), c.careersMatched, false], [top ? `${clampScore(top.match)}%` : '-', c.topMatch, true], ['90', c.plan, false]].map(([v, k, hi]) => (
+              {[[String(n), c.careersMatched, false], [top ? `${clampScore(top.match)}%` : '-', c.topMatch, true], ['90', c.plan, false]].map(([v, k, hi]) => (
                 <div key={k as string} style={{ background: '#072d4b', padding: 16, display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <span style={{ fontSize: 30, fontWeight: 800, lineHeight: 1, color: hi ? '#00c9a7' : undefined }}>{v as string}</span>
                   <span style={{ fontSize: 14, color: '#b9cfe3' }}>{k as string}</span>
@@ -130,13 +134,13 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
             </div>
             {!paid && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-                <A href="#rt-pass" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 18, padding: '0 26px', borderRadius: 14, minHeight: 56 }}>{c.unlockAll(total)}<Arrow flip={ar} /></A>
+                <A href="#rt-pass" track="results_careers_upgrade" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 18, padding: '0 26px', borderRadius: 14, minHeight: 56 }}>{c.unlockAll}<Arrow flip={ar} /></A>
                 <A href="#rt-profile" preview={p} style={{ display: 'inline-flex', alignItems: 'center', color: '#fff', fontWeight: 700, fontSize: 16, padding: '0 20px', border: '1px solid rgba(156,199,232,0.4)', borderRadius: 14, minHeight: 56 }}>{c.preview}</A>
               </div>
             )}
           </div>
           <div style={{ flex: '1 1 380px', minWidth: 0, padding: '0 8px' }}>
-            <Constellation data={data} unlockedLabel={c.mapBest} lowestLabel={c.mapLowest} lockedLabel={c.mapLocked(data.lockedMore)} />
+            <Constellation data={data} unlockedLabel={c.mapBest} lowestLabel={c.mapLowest} lockedLabel={c.mapLocked} />
           </div>
         </div>
       </section>
@@ -157,11 +161,11 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'stretch' }}>
           <div style={{ ...outline, flex: '1 1 380px', minWidth: 0, padding: 24, display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'center', justifyContent: 'center' }}>
-            <Hexagon data={data} />
+            {hasScores && <Hexagon data={data} />}
             <div style={{ flex: '1 1 160px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
               <h3 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#1f2a37' }}>{c.interests}</h3>
               <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: '#4d5056' }}>
-                {[...data.riasec].sort((a, b) => b.score - a.score).slice(0, 3).map(r => `${r.label} ${clampScore(r.score)}`).join(' · ')}
+                {[...data.riasec].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 3).map(r => (typeof r.score === 'number' ? `${r.label} ${clampScore(r.score)}` : r.label)).join(' · ')}
               </p>
             </div>
           </div>
@@ -170,7 +174,7 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
               <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#1f2a37' }}>{c.valuesStrengths}</h3>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {[...data.values, ...data.strengths].map((v, i) => (
-                  <span key={`${v.label}${i}`} style={{ background: i % 3 === 0 ? '#075288' : '#e6f1fa', color: i % 3 === 0 ? '#fff' : '#0b5c99', borderRadius: 999, padding: '7px 14px', fontWeight: 700, fontSize: 15 }}>{v.label} {clampScore(v.score)}</span>
+                  <span key={`${v.label}${i}`} style={{ background: i % 3 === 0 ? '#075288' : '#e6f1fa', color: i % 3 === 0 ? '#fff' : '#0b5c99', borderRadius: 999, padding: '7px 14px', fontWeight: 700, fontSize: 15 }}>{v.label}{typeof v.score === 'number' ? ` ${clampScore(v.score)}` : ''}</span>
                 ))}
               </div>
             </div>
@@ -180,8 +184,8 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
                 {data.personality.map(t => (
                   <div key={t.label} style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 150px) minmax(0, 1fr) 36px', gap: 12, alignItems: 'center' }}>
                     <span style={{ fontWeight: 700 }}>{t.label}</span>
-                    <span style={{ height: 8, background: '#ebf3ff', borderRadius: 5 }}><span style={{ display: 'block', height: '100%', width: `${clampScore(t.score)}%`, background: '#0770ba', borderRadius: 5 }} /></span>
-                    <span style={{ fontFamily: MONO, color: '#075288', fontWeight: 600, textAlign: ar ? 'left' : 'right' }}>{clampScore(t.score)}</span>
+                    <span style={{ height: 8, background: '#ebf3ff', borderRadius: 5 }}><span style={{ display: 'block', height: '100%', width: `${clampScore(t.score ?? 50)}%`, background: '#0770ba', borderRadius: 5 }} /></span>
+                    <span style={{ fontFamily: MONO, color: '#075288', fontWeight: 600, textAlign: ar ? 'left' : 'right' }}>{typeof t.score === 'number' ? clampScore(t.score) : ''}</span>
                   </div>
                 ))}
               </div>
@@ -194,7 +198,7 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
       {top && (
         <section style={wrap}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={eyebrow('#0a705a')}>{paid ? c.matchesPaid(n) : c.matchesFree(n, total)}</div>
+            <div style={eyebrow('#0a705a')}>{paid ? c.matchesPaid(n) : c.matchesFree(n)}</div>
             <h2 style={{ margin: 0, fontSize: 'clamp(26px, 5.4cqw, 42px)', fontWeight: 800, color: '#1f2a37' }}>{c.careersTitle}</h2>
           </div>
 
@@ -203,8 +207,8 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 52, fontWeight: 800, color: '#00c9a7', lineHeight: 1 }}>{clampScore(top.match)}%</span>
                 <span style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontFamily: mono, fontSize: 12, letterSpacing: ls('0.14em'), color: '#9cc7e8' }}>{c.matchOf(total)}</span>
-                  <span style={{ fontSize: 15, color: '#c9dcef' }}>{[top.match >= 80 ? c.strong : '', tag(top.direction)].filter(Boolean).join(' · ')}</span>
+                  <span style={{ fontFamily: mono, fontSize: 12, letterSpacing: ls('0.14em'), color: '#9cc7e8' }}>{c.matchOf}</span>
+                  <span style={{ fontSize: 15, color: '#c9dcef' }}>{[fitText(top.fit), tag(top.direction)].filter(Boolean).join(' · ')}</span>
                 </span>
               </div>
               <h3 style={{ margin: 0, fontSize: 'clamp(26px, 5cqw, 38px)', fontWeight: 800, overflowWrap: 'anywhere' }}>{top.title}</h3>
@@ -237,7 +241,7 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
                       <span>{c.th[0]}</span><span>{c.th[1]}</span><span>{c.th[2]}</span><span>{c.th[3]}</span><span style={{ textAlign: ar ? 'left' : 'right' }}>{c.th[4]}</span>
                     </div>
                     {rest.map((r, i) => (
-                      <div key={i} style={{ ...row, background: r.risk === 'low' ? '#f3fbf8' : undefined }}>
+                      <div key={i} style={{ ...row, background: r.risk === 'low' ? '#f3fbf8' : undefined, opacity: r.rejected ? 0.55 : 1 }}>
                         <span style={{ fontFamily: MONO, color: '#545968' }}>{String(i + 2).padStart(2, '0')}</span>
                         <strong style={{ fontSize: 18, color: '#1f2a37', overflowWrap: 'anywhere' }}>{r.title}</strong>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -252,12 +256,12 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
                         <span style={{ justifySelf: ar ? 'start' : 'end' }}>
                           {paid
                             ? <span style={{ fontSize: 14, color: '#5c6068' }}>{tag(r.direction)}</span>
-                            : <A href="#rt-pass" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#075288', minHeight: 44 }}><Lock size={14} />{c.locked}</A>}
+                            : <A href="#rt-pass" track="results_careers_upgrade" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#075288', minHeight: 44 }}><Lock size={14} />{c.locked}</A>}
                         </span>
                       </div>
                     ))}
                     {data.lockedMore > 0 && (
-                      <A href="#rt-pass" preview={p} style={{ ...row, color: '#075288', fontWeight: 700 }}>
+                      <A href="#rt-pass" track="results_careers_upgrade" preview={p} style={{ ...row, color: '#075288', fontWeight: 700 }}>
                         <span><Lock size={14} /></span>
                         <span style={{ display: 'flex', flexDirection: 'column', gridColumn: 'span 3' }}>
                           <strong style={{ color: '#1f2a37' }}>{data.locked.moreTitle}</strong>
@@ -311,9 +315,9 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
             </div>
             <div style={{ flex: '1 1 320px', minWidth: 0, background: '#052640', color: '#fff', borderRadius: 24, padding: 32, display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div style={{ fontFamily: mono, fontSize: 12, letterSpacing: ls('0.16em'), color: '#00c9a7' }}>{c.passTag}</div>
-              <h2 style={{ margin: 0, fontSize: 'clamp(26px, 4.6cqw, 34px)', lineHeight: 1.14, fontWeight: 800 }}>{c.passH(total)}</h2>
+              <h2 style={{ margin: 0, fontSize: 'clamp(26px, 4.6cqw, 34px)', lineHeight: 1.14, fontWeight: 800 }}>{c.passH}</h2>
               <p style={{ margin: 0, fontSize: 15, color: '#c9dcef', lineHeight: 1.5 }}>{data.locked.planBody}</p>
-              <A href={data.unlockHref} preview={p} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 18, borderRadius: 14, minHeight: 56 }}>{data.locked.planCta}</A>
+              <A href={data.unlockHref} track="results_unlock_all" preview={p} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 18, borderRadius: 14, minHeight: 56 }}>{data.locked.planCta}</A>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 15, color: '#c9dcef' }}>
                 <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}><span style={{ color: '#00c9a7' }}><Check size={16} /></span>{c.pass1}</span>
                 <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}><span style={{ color: '#00c9a7' }}><Check size={16} /></span>{c.pass2}</span>

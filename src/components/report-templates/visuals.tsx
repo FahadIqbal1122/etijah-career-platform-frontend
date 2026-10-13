@@ -18,7 +18,8 @@ export function Constellation({ data, unlockedLabel, lowestLabel, lockedLabel, t
   const metaFill = light ? '#4d5056' : '#b9cfe3'
   const nodeFill = light ? '#0770ba' : '#9cc7e8'
   const accent = light ? '#0a705a' : '#00c9a7'
-  const named = [...data.careers].sort((a, b) => b.match - a.match).slice(0, 8)
+  // the page's order (best first), without the careers the person marked "not for me"
+  const named = data.careers.filter(c => !c.rejected).slice(0, 8)
   const lockedCount = Math.max(0, Math.min(8 - named.length, data.lockedMore))
   const total = named.length + lockedCount
   if (!named.length) return null
@@ -37,7 +38,7 @@ export function Constellation({ data, unlockedLabel, lowestLabel, lockedLabel, t
   const firstLocked = named.length
 
   return (
-    <svg viewBox={`0 0 600 ${height}`} width="100%" role="img" aria-label={`${total}`} style={{ display: 'block', fontFamily: 'inherit', direction: 'ltr' }}>
+    <svg viewBox={`0 0 600 ${height}`} width="100%" role="img" aria-label={named.map(c => `${c.title} ${Math.round(c.match)}%`).join(', ')} style={{ display: 'block', fontFamily: 'inherit', direction: 'ltr' }}>
       <path d={path} stroke={nodeFill} strokeOpacity={light ? 0.4 : 0.35} strokeWidth={2} strokeDasharray="3 7" fill="none" strokeLinecap="round" />
       {rows.length > 1 && <path d={`M${rows[1].x} ${rows[1].y} L${rows[0].x} ${rows[0].y}`} stroke="#00c9a7" strokeWidth={3} fill="none" strokeLinecap="round" />}
       {rows.map(r => {
@@ -78,20 +79,21 @@ export function Constellation({ data, unlockedLabel, lowestLabel, lockedLabel, t
 
 export function Hexagon({ data }: { data: ReportTemplateData }) {
   const R = 130, cx = 160, cy = 160
-  const items = HEX_ORDER.map((k, i) => data.riasec.find(r => r.key === k) || data.riasec[i]).filter(Boolean)
-  if (items.length < 6) return null
-  const maxScore = Math.max(...items.map(r => r.score))
+  const items = HEX_ORDER.map((k, i) => data.riasec.find(r => r.key === k) || data.riasec[i]).filter(Boolean) as Array<{ key?: string; label: string; score?: number }>
+  // no scores (or only some): no graph, rather than a collapsed shape of zeros
+  if (items.length < 6 || items.some(r => typeof r.score !== 'number')) return null
+  const maxScore = Math.max(...items.map(r => r.score as number))
   const pt = (i: number, f: number) => {
     const a = ((-90 + 60 * i) * Math.PI) / 180
     return [cx + R * f * Math.cos(a), cy + R * f * Math.sin(a)] as const
   }
   const ring = (f: number) => HEX_ORDER.map((_, i) => pt(i, f).map(v => v.toFixed(1)).join(',')).join(' ')
-  const f = (r: { score: number }) => Math.max(0.04, clampScore(r.score) / 100)
+  const f = (r: { score?: number }) => Math.max(0.04, clampScore(r.score ?? 0) / 100)
   const shape = items.map((r, i) => pt(i, f(r)).map(v => v.toFixed(1)).join(',')).join(' ')
   const anchor = (i: number) => (i === 0 || i === 3 ? 'middle' : i < 3 ? 'start' : 'end')
   return (
     <svg viewBox="-130 -24 580 368" width={380} height={241} role="img" style={{ flex: '0 0 auto', maxWidth: '100%', fontFamily: 'inherit', direction: 'ltr' }}
-      aria-label={items.map(r => `${r.label} ${clampScore(r.score)}`).join(', ')}>
+      aria-label={items.map(r => `${r.label} ${clampScore(r.score ?? 0)}`).join(', ')}>
       <polygon points={ring(1)} fill="#f4f9ff" stroke="#9cc7e8" strokeWidth={1} />
       <polygon points={ring(0.667)} fill="none" stroke="#d3e5f4" strokeWidth={1} />
       <polygon points={ring(0.333)} fill="none" stroke="#d3e5f4" strokeWidth={1} />
@@ -103,7 +105,7 @@ export function Hexagon({ data }: { data: ReportTemplateData }) {
         return (
           <g key={r.label}>
             <circle cx={x} cy={y} r={hi ? 6 : 4.5} fill={hi ? '#00c9a7' : '#0770ba'} />
-            <text x={lx} y={ly + (i === 0 ? -2 : i === 3 ? 12 : 5)} textAnchor={anchor(i)} fill={hi ? '#075288' : '#545968'} fontSize={15} fontWeight={hi ? 800 : 700}>{r.label} {clampScore(r.score)}</text>
+            <text x={lx} y={ly + (i === 0 ? -2 : i === 3 ? 12 : 5)} textAnchor={anchor(i)} fill={hi ? '#075288' : '#545968'} fontSize={15} fontWeight={hi ? 800 : 700}>{r.label} {clampScore(r.score ?? 0)}</text>
           </g>
         )
       })}

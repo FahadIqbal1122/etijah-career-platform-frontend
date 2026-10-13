@@ -265,11 +265,15 @@ export default function ResultsPage() {
     let live = true
     const fromUrl = new URLSearchParams(window.location.search).get('template')
     if (isReportTemplateId(fromUrl)) { setReportTemplate(fromUrl); setTemplateKnown(true); return }
+    // The report waits for this answer, so it is given 3 seconds at most; after that the default report is shown
+    // and a late answer is ignored (the layout never changes under someone who is already reading).
+    let settled = false
+    const giveUp = setTimeout(() => { if (live && !settled) { settled = true; setTemplateKnown(true) } }, 3000)
     apiGet<{ template?: string }>('/report-template')
-      .then(d => { if (live && isReportTemplateId(d?.template)) setReportTemplate(d.template) })
+      .then(d => { if (live && !settled && isReportTemplateId(d?.template)) setReportTemplate(d.template) })
       .catch(() => {})
-      .finally(() => { if (live) setTemplateKnown(true) })
-    return () => { live = false }
+      .finally(() => { if (live && !settled) { settled = true; clearTimeout(giveUp); setTemplateKnown(true) } })
+    return () => { live = false; clearTimeout(giveUp) }
   }, [])
   const [stage1Done, setStage1Done] = useState(false)
   const [resultStageDone, setResultStageDone] = useState(false)
@@ -909,30 +913,44 @@ export default function ResultsPage() {
   // sees is decided here, not by the template: it only receives what the default report shows to this person
   // (free: the 3 careers it is given, no plan, the locked cards; paid: everything).
   const useTemplate = reportTemplate !== 'default'
+  // same capitalisation the default report applies to career titles (English only)
+  const capTitle = (v: string) => (locale === 'en' ? v.replace(/\b([a-z])/g, c => c.toUpperCase()) : v)
+  const hasScores = Object.keys(scoreMap).length > 0
+  const scoreOf = (k: string) => (hasScores && scoreMap[k] !== undefined ? scoreMap[k] : undefined)
+  // the careers in the page's own order (the one the plan is built around first), "not for me" ones last
+  const tplJobs = [...jobs].sort((x: any, y: any) => (recFeedback[x.title] ? 1 : 0) - (recFeedback[y.title] ? 1 : 0))
   const tplData: ReportTemplateData | null = useTemplate ? {
     locale,
     paid: tier !== 'free',
     riasec: ['realistic', 'investigative', 'artistic', 'social', 'enterprising', 'conventional']
-      .map(k => ({ key: k, label: riasecLabel(k), score: scoreMap[k] ?? 0 })),
+      .map(k => ({ key: k, label: riasecLabel(k), score: scoreOf(k) })),
     riasecCode,
     topTypeLabel: riasecLabel(topType),
-    values: (summary.values?.top_values || []).slice(0, 3).map((v: string) => ({ label: valueLabel(v), score: scoreMap[v] ?? 0 })),
-    strengths: (summary.strengths?.top_strengths || []).slice(0, 3).map((v: string) => ({ label: strengthLabel(v), score: scoreMap[v] ?? 0 })),
+    values: (summary.values?.top_values || []).slice(0, 3).map((v: string) => ({ label: valueLabel(v), score: scoreOf(v) })),
+    strengths: (summary.strengths?.top_strengths || []).slice(0, 3).map((v: string) => ({ label: strengthLabel(v), score: scoreOf(v) })),
     personality: Object.entries(summary.big_five || {}).map(([k, level]: any) => ({ label: traitLabel(k), score: parseInt(levelToWidth[level] ?? '50', 10) })),
-    careers: [...jobs].sort((a: any, b: any) => (b.match_score ?? 0) - (a.match_score ?? 0)).map((job: any, i: number) => {
+    careers: tplJobs.map((job: any, i: number) => {
       const ai: any = aiImpact?.careers?.find((c: any) => normTitle(c.title) === normTitle(job.title))
       const risk = ai?.ai_risk_level
       return {
-        title: String(job.title || ''),
+        title: capTitle(String(job.title || '')),
         match: Number(job.match_score) || 0,
         summary: job.fit_summary || undefined,
         risk: risk === 'low' || risk === 'medium' || risk === 'high' ? risk : undefined,
         direction: job.direction_tag === 'builds_on_background' || job.direction_tag === 'new_direction' ? job.direction_tag : undefined,
+        fit: job.fit_tag === 'strong_fit' || job.fit_tag === 'worth_exploring' ? job.fit_tag : undefined,
+        rejected: !!recFeedback[job.title],
         gap: i === 0 && typeof job.gap === 'string' ? job.gap : undefined,
       }
     }),
-    // the free plan is given 3 of 8 careers (the page's own locked card says "5 more")
-    lockedMore: tier === 'free' ? 5 : 0,
+    // free plan: a few dim stars as a hint that there are more careers (the real total is not known here)
+    lockedMore: tier === 'free' && jobs.length > 0 ? 3 : 0,
+    labels: {
+      builds_on_background: t('suggestedCareers.directionTag.builds_on_background'),
+      new_direction: t('suggestedCareers.directionTag.new_direction'),
+      strong_fit: t('suggestedCareers.fitTag.strong_fit'),
+      worth_exploring: t('suggestedCareers.fitTag.worth_exploring'),
+    },
     unlockHref: upgradeHref,
     locked: {
       moreTitle: t('suggestedCareers.moreLockedTitle'),
