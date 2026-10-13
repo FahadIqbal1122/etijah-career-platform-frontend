@@ -1161,7 +1161,11 @@ export default function AssessmentForm() {
       {phase === 'reveal' && revealMsg && (
         <div className="reveal" key={`rv-${enterKey}`}>
           <div className="reveal-inner">
-            <div className="reveal-spark">✦</div>
+            {/* <div className="reveal-spark">✦</div>  — replaced by the star map: the newly lit star, and the next one named */}
+            <div className="reveal-stars">
+              <ChapterStars litCount={litCount} progress={litCount} theme="dark" rippleKey={rippleKey} accent="#FFFFFF"
+                youLabel={chrome.youLabel} nextLabel={revealMsg.chapter + 1 < CHAPTER_COUNT ? starShort(revealMsg.chapter + 1) : undefined} />
+            </div>
             <div className="reveal-chapter">{chapterDoneLabel(revealMsg.chapter)} · {starLitLabel(revealMsg.chapter)} ✦</div>
             <h1 className="reveal-head">{revealMsg.head}</h1>
             <p className="reveal-body">{revealMsg.body}</p>
@@ -1180,7 +1184,10 @@ export default function AssessmentForm() {
       {phase === 'finish' && (
         <div className="reveal finish" key={`fn-${enterKey}`}>
           <div className="reveal-inner">
-            <div className="reveal-spark">✦</div>
+            {/* <div className="reveal-spark">✦</div>  — replaced by the finished star map */}
+            <div className="reveal-stars">
+              <ChapterStars litCount={CHAPTER_COUNT} progress={CHAPTER_COUNT} theme="dark" rippleKey={rippleKey} accent="#FFFFFF" />
+            </div>
             <div className="reveal-chapter">{chapterDoneLabel(CHAPTER_COUNT - 1)} · {starLitLabel(CHAPTER_COUNT - 1)} ✦</div>
             <h1 className="reveal-head">{chrome.finishHead}</h1>
             <p className="reveal-body">{chrome.finishBody}</p>
