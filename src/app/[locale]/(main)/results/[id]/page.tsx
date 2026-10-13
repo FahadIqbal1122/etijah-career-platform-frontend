@@ -1332,7 +1332,8 @@ export default function ResultsPage() {
                 const rejected = recFeedback[job.title]
                 const top = i === 0 && !rejected
                 // Clarity looks: the #1 card is white with a teal outline (CSS), so its inner colours stay the normal ones
-                const topDark = top && reportTemplate !== 'clarity' && reportTemplate !== 'clarity-map'
+                const clarityLook = reportTemplate === 'clarity' || reportTemplate === 'clarity-map'
+                const topDark = top && !clarityLook
                 // AI impact for this career (top matches only): the risk pill sits on the card and the detail is a
                 // collapsible panel at the bottom of it (the top match starts open).
                 const aiCareer: any = aiImpact?.careers?.find((c: any) => normTitle(c.title) === normTitle(job.title))
@@ -1341,6 +1342,36 @@ export default function ResultsPage() {
                 const hasSteps = Array.isArray(job.next_steps) && job.next_steps.length > 0
                 // The plan section shows this career's plan when it was built for it, or (no plan built yet) the top match's.
                 const planIsShown = dp ? String(direction?.label || '').toLowerCase() === String(job.title || '').toLowerCase() : i === 0
+                // The gap to close and the next steps, as nodes: the default report stacks them in one block; the Clarity
+                // looks put the gap on the left (with the title and summary) and the steps on the right.
+                const gapNode = job.gap ? (
+
+                          <div className={`rp-note ${topDark ? 'rp-ondark-note' : 'rp-amber'}`}>
+                            <span className="rp-note-label">{t(isNew ? 'suggestedCareers.gapPaths' : 'suggestedCareers.gapBuild')}</span>
+                            <p className={`rp-sub ${topDark ? 'text-white/95!' : 'rp-note-text'}`}>{job.gap}</p>
+                          </div>
+                ) : null
+                const stepsNode = hasSteps ? (
+                          // Students / new graduates: three ordered steps, each with why it matters, replace the single action.
+                          <div className={`rp-note ${topDark ? 'rp-ondark-note' : 'rp-green'}`}>
+                            <span className="rp-note-label">{t('suggestedCareers.nextSteps')}</span>
+                            <ol className="mt-1 space-y-2">
+                              {job.next_steps.slice(0, 3).map((s: any, si: number) => (
+                                <li key={si} className={`rp-sub flex gap-2 ${topDark ? 'text-white/95!' : 'rp-note-text'}`}>
+                                  <span className="font-bold shrink-0">{si + 1}.</span>
+                                  <span><span className="font-bold">{s.step}</span>{s.why ? <> — {s.why}</> : null}</span>
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
+                        ) : job.next_action ? (
+
+                          <div className={`rp-note ${topDark ? 'rp-ondark-note' : 'rp-green'}`}>
+                            <span className="rp-note-label">{t('suggestedCareers.nextAction')}</span>
+                            <p className={`rp-sub ${topDark ? 'text-white/95!' : 'rp-note-text'}`}>{job.next_action}</p>
+                          </div>
+                        ) : null
+
                 return (
                   <div
                     key={job.title}
@@ -1349,6 +1380,8 @@ export default function ResultsPage() {
                         : `bg-lightblue/40 border border-[var(--line)] border-s-4 ${isNew ? 'border-s-[var(--rp-purple-line)]' : 'border-s-[var(--rp-blue-line)]'}`
                     } ${rejected ? 'opacity-60' : ''}`}
                   >
+                    <div className={clarityLook ? 'rt-career-cols' : 'contents'}>
+                    <div className={clarityLook ? 'rt-career-left' : 'contents'}>
                     <div className="flex items-start justify-between gap-3">
                       <p className={`rp-h capitalize ${topDark ? 'text-white' : 'text-charcoal'}`}>{job.title}</p>
                       {typeof job.match_score === 'number' && (
@@ -1384,35 +1417,17 @@ export default function ResultsPage() {
                     {job.fit_summary && (
                       <p className={`rp-body mt-3 ${topDark ? 'text-white/95' : 'text-charcoal/90'}`}>{job.fit_summary}</p>
                     )}
-                    {(job.gap || job.next_action || hasSteps) && (
-                      <div className={`mt-3 grid grid-cols-1 ${hasSteps ? '' : 'sm:grid-cols-2'} gap-2.5`}>
-                        {job.gap && (
-                          <div className={`rp-note ${topDark ? 'rp-ondark-note' : 'rp-amber'}`}>
-                            <span className="rp-note-label">{t(isNew ? 'suggestedCareers.gapPaths' : 'suggestedCareers.gapBuild')}</span>
-                            <p className={`rp-sub ${topDark ? 'text-white/95!' : 'rp-note-text'}`}>{job.gap}</p>
-                          </div>
-                        )}
-                        {hasSteps ? (
-                          // Students / new graduates: three ordered steps, each with why it matters, replace the single action.
-                          <div className={`rp-note ${topDark ? 'rp-ondark-note' : 'rp-green'}`}>
-                            <span className="rp-note-label">{t('suggestedCareers.nextSteps')}</span>
-                            <ol className="mt-1 space-y-2">
-                              {job.next_steps.slice(0, 3).map((s: any, si: number) => (
-                                <li key={si} className={`rp-sub flex gap-2 ${topDark ? 'text-white/95!' : 'rp-note-text'}`}>
-                                  <span className="font-bold shrink-0">{si + 1}.</span>
-                                  <span><span className="font-bold">{s.step}</span>{s.why ? <> — {s.why}</> : null}</span>
-                                </li>
-                              ))}
-                            </ol>
-                          </div>
-                        ) : job.next_action && (
-                          <div className={`rp-note ${topDark ? 'rp-ondark-note' : 'rp-green'}`}>
-                            <span className="rp-note-label">{t('suggestedCareers.nextAction')}</span>
-                            <p className={`rp-sub ${topDark ? 'text-white/95!' : 'rp-note-text'}`}>{job.next_action}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    {clarityLook
+                      ? (gapNode && <div className="mt-3">{gapNode}</div>)
+                      : (job.gap || job.next_action || hasSteps) && (
+                        <div className={`mt-3 grid grid-cols-1 ${hasSteps ? '' : 'sm:grid-cols-2'} gap-2.5`}>
+                          {gapNode}
+                          {stepsNode}
+                        </div>
+                      )}
+                    </div>
+                    <div className={clarityLook ? 'rt-career-right' : 'contents'}>
+                    {clarityLook && stepsNode && <div className="mt-3 lg:mt-0">{stepsNode}</div>}
                     {/* Working people (paid): a full plan for each of the top 3 careers, built when they ask for it. */}
                     {canBuildPlans && i < 3 && !rejected && (
                       <div className="mt-3">
@@ -1607,6 +1622,8 @@ export default function ResultsPage() {
                       ) : (
                         <button type="button" onClick={() => setFeedbackOpen(job.title)} className="underline">{t('suggestedCareers.feedback.button')}</button>
                       )}
+                    </div>
+                    </div>
                     </div>
                   </div>
                 )
