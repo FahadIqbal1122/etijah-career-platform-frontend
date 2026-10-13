@@ -186,6 +186,12 @@ const CHROME: Record<string, Record<string, string>> = {
     chapterOf: 'of',
     chapterDone: 'complete',
     chapterNext: 'Next',
+    journeyTitle: 'Your journey',
+    journeySub: 'Each star is a chapter. Finish it and it lights up.',
+    youLabel: 'You',
+    towardStar: 'On the way to star',
+    starLit: 'star',
+    starLitDone: 'is lit',
     saveExit: 'Save & exit',
     welcomeTitle: 'Welcome back!',
     welcomeBody: 'We found a previous assessment linked to your details. View those results, or retake the assessment?',
@@ -194,12 +200,6 @@ const CHROME: Record<string, Record<string, string>> = {
     draftTitle: 'Pick up where you left off?',
     draftBody: 'You have an assessment in progress. Continue from where you saved, or start fresh?',
     draftContinue: 'Continue where I left off',
-    journeyTitle: 'Your journey',
-    journeySub: 'Each star is a chapter. Finish it and it lights up.',
-    youLabel: 'You',
-    towardStar: 'On the way to star',
-    starLit: 'star',
-    starLitDone: 'is lit',
     draftRestart: 'Start over',
   },
   ar: {
@@ -216,6 +216,12 @@ const CHROME: Record<string, Record<string, string>> = {
     chapterOf: 'من',
     chapterDone: 'اكتمل',
     chapterNext: 'التالي',
+    journeyTitle: 'رحلتك',
+    journeySub: 'كل نجمة فصل. أكمله فتضيء.',
+    youLabel: 'أنت',
+    towardStar: 'في طريقك إلى النجمة',
+    starLit: 'أضاءت النجمة',
+    starLitDone: '',
     saveExit: 'احفظ واخرج',
     welcomeTitle: 'أهلاً بعودتك!',
     welcomeBody: 'وجدنا تقييماً سابقاً مرتبطاً ببياناتك. اعرض تلك النتائج، أو أعد التقييم؟',
@@ -224,12 +230,6 @@ const CHROME: Record<string, Record<string, string>> = {
     draftTitle: 'أتريد إكمال ما بدأته؟',
     draftBody: 'لديك تقييم لم تكمله بعد. أكمل من حيث توقفت، أم تفضّل البدء من جديد؟',
     draftContinue: 'أكمل من حيث توقفت',
-    journeyTitle: 'رحلتك',
-    journeySub: 'كل نجمة فصل. أكمله فتضيء.',
-    youLabel: 'أنت',
-    towardStar: 'في طريقك إلى النجمة',
-    starLit: 'أضاءت النجمة',
-    starLitDone: '',
     draftRestart: 'ابدأ من جديد',
   },
 }
@@ -329,6 +329,10 @@ export default function AssessmentForm() {
   const [draft, setDraft] = useState<Draft | null>(null)
   const [ageTyping, setAgeTyping] = useState(false) // age question: typed box instead of the wheel
 
+  // Admin switch (Coach tab): off = no coach in the assessment, the break-panel button is back as it was before her.
+  // The riddle / games button is a separate switch (Coach tab): off = no game button anywhere in the assessment.
+  const { coach: coachEnabled, games: gamesEnabled } = useCoachSwitches()
+
   // One-way coach bubble: a random break/motivation nudge every 4–7 questions
   // (first around Q4–6), never during reveal/finish, each message at most once.
   const [coachMsg, setCoachMsg] = useState<Bi | null>(null)
@@ -337,10 +341,6 @@ export default function AssessmentForm() {
   // Sarah moves around so she is never parked in one place: on desktop she glides between a few spots (under the
   // text, in the sky above the stars, over the top of the question card), on phones she hops between the two
   // bottom corners. She changes spot every time she has a tip, and comes to the middle of the screen on the green
-  // Admin switch (Coach tab): off = no coach in the assessment, the break-panel button is back as it was before her.
-  // The riddle / games button is a separate switch (Coach tab): off = no game button anywhere in the assessment.
-  const { coach: coachEnabled, games: gamesEnabled } = useCoachSwitches()
-
   // reveal screen with an encouraging line (revealTip).
   const [coachSide, setCoachSide] = useState<'end' | 'start'>('end')
   const [coachSpot, setCoachSpot] = useState(0)
@@ -531,14 +531,6 @@ export default function AssessmentForm() {
   // Overall progress as a percentage of the assessment (no question counts).
   const percentDone = total ? Math.max(0, Math.min(100, Math.round((index / total) * 100))) : 0
   const percentLabel = locale === 'ar' ? `اكتمل ${percentDone}%` : `${percentDone}% complete`
-
-  const progressMsg = buildProgressMessage(index, total, locale)
-
-  // "Other" needs its free-text field filled before the answer counts —
-  // applies whether "other" is a lone value (single_select) or one entry in
-  // a multi_select array.
-  function otherTextFilled(questionId: string): boolean {
-    return String(answers[`${questionId}_other`] || '').trim().length > 0
   // The travelling light: finished chapters plus how far through the current one (never moves backwards past a lit star).
   const journeyProgress = Math.max(
     litCount,
@@ -549,6 +541,14 @@ export default function AssessmentForm() {
   // "Chapter 2 of 5 complete · star 2 is lit" / «اكتمل الفصل 2 من 5 · أضاءت النجمة 2»
   const starLitLabel = (c: number) => `${chrome.starLit} ${c + 1}${chrome.starLitDone ? ` ${chrome.starLitDone}` : ''}`
   const journeyCaption = `${chrome.towardStar} ${starTarget + 1} ${chrome.chapterOf} ${CHAPTER_COUNT} · ${percentLabel}`
+
+  const progressMsg = buildProgressMessage(index, total, locale)
+
+  // "Other" needs its free-text field filled before the answer counts —
+  // applies whether "other" is a lone value (single_select) or one entry in
+  // a multi_select array.
+  function otherTextFilled(questionId: string): boolean {
+    return String(answers[`${questionId}_other`] || '').trim().length > 0
   }
 
   function isAnswerValid(question: Question): boolean {
