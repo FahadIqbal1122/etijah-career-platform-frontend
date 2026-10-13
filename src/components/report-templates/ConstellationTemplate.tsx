@@ -112,7 +112,7 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
                 <button type="button" onClick={dl.onDownload} disabled={dl.busy} style={{ border: 0, cursor: 'pointer', font: 'inherit', background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 15, padding: '0 18px', borderRadius: 12, minHeight: 44, opacity: dl.busy ? 0.6 : 1 }}>{dl.busy ? dl.busyLabel : dl.label}</button>
               </>
             ) : (
-              <A href="#rt-pass" track="results_careers_upgrade" preview={p} style={{ display: 'inline-flex', alignItems: 'center', background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 15, padding: '0 18px', borderRadius: 12, minHeight: 44 }}>{c.getFull}</A>
+              <A href={data.unlockHref} track="results_careers_upgrade" preview={p} style={{ display: 'inline-flex', alignItems: 'center', background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 15, padding: '0 18px', borderRadius: 12, minHeight: 44 }}>{c.getFull}</A>
             )}
           </span>
         </header>
@@ -134,7 +134,7 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
             </div>
             {!paid && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-                <A href="#rt-pass" track="results_careers_upgrade" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 18, padding: '0 26px', borderRadius: 14, minHeight: 56 }}>{c.unlockAll}<Arrow flip={ar} /></A>
+                <A href={data.unlockHref} track="results_careers_upgrade" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 18, padding: '0 26px', borderRadius: 14, minHeight: 56 }}>{c.unlockAll}<Arrow flip={ar} /></A>
                 <A href="#rt-profile" preview={p} style={{ display: 'inline-flex', alignItems: 'center', color: '#fff', fontWeight: 700, fontSize: 16, padding: '0 20px', border: '1px solid rgba(156,199,232,0.4)', borderRadius: 14, minHeight: 56 }}>{c.preview}</A>
               </div>
             )}
@@ -259,12 +259,12 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
                         <span style={{ justifySelf: ar ? 'start' : 'end' }}>
                           {paid
                             ? <span style={{ fontSize: 14, color: '#5c6068' }}>{tag(r.direction)}</span>
-                            : <A href="#rt-pass" track="results_careers_upgrade" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#075288', minHeight: 44 }}><Lock size={14} />{c.locked}</A>}
+                            : <A href={data.unlockHref} track="results_careers_upgrade" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#075288', minHeight: 44 }}><Lock size={14} />{c.locked}</A>}
                         </span>
                       </div>
                     ))}
                     {data.lockedMore > 0 && (
-                      <A href="#rt-pass" track="results_careers_upgrade" preview={p} style={{ ...row, color: '#075288', fontWeight: 700 }}>
+                      <A href={data.unlockHref} track="results_careers_upgrade" preview={p} style={{ ...row, color: '#075288', fontWeight: 700 }}>
                         <span><Lock size={14} /></span>
                         <span style={{ display: 'flex', flexDirection: 'column', gridColumn: 'span 3' }}>
                           <strong style={{ color: '#1f2a37' }}>{data.locked.moreTitle}</strong>

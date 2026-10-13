@@ -110,7 +110,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
 
   const topBtn = paid
     ? <button type="button" onClick={dl.onDownload} disabled={dl.busy} style={{ border: 0, cursor: 'pointer', font: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 8, background: '#0770ba', color: '#fff', fontWeight: 800, fontSize: 15, padding: '11px 18px', borderRadius: 12, opacity: dl.busy ? 0.6 : 1 }}>{dl.busy ? dl.busyLabel : dl.label}</button>
-    : <A href="#rt-unlock" track="results_tpl_header_unlock" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 15, padding: '11px 18px', borderRadius: 12, minHeight: 44, boxSizing: 'border-box' }}><Lock size={16} />{c.unlockFull}</A>
+    : <A href={data.unlockHref} track="results_tpl_header_unlock" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#00c9a7', color: '#04323f', fontWeight: 800, fontSize: 15, padding: '11px 18px', borderRadius: 12, minHeight: 44, boxSizing: 'border-box' }}><Lock size={16} />{c.unlockFull}</A>
 
   // sections the free plan has not opened yet (the progress meter)
   const freeCount = n > 0 ? 4 : 3   // "your top careers" only counts when there are some
@@ -147,7 +147,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
             </div>
             {!paid && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', paddingTop: 6 }}>
-                <A href="#rt-unlock" track="results_tpl_hero_unlock" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: '#0770ba', color: '#fff', fontWeight: 800, fontSize: 18, padding: '16px 26px', borderRadius: 14, boxShadow: '0 10px 24px rgba(7,112,186,0.28)' }}>{c.unlockMy}<Arrow flip={ar} /></A>
+                <A href={data.unlockHref} track="results_tpl_hero_unlock" preview={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: '#0770ba', color: '#fff', fontWeight: 800, fontSize: 18, padding: '16px 26px', borderRadius: 14, boxShadow: '0 10px 24px rgba(7,112,186,0.28)' }}>{c.unlockMy}<Arrow flip={ar} /></A>
                 <A href="#rt-preview" preview={p} style={{ fontWeight: 700, fontSize: 16, padding: '14px 10px', color: '#075288' }}>{c.seePreview}</A>
               </div>
             )}
@@ -158,7 +158,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
               <div style={{ fontFamily: ar ? undefined : MONO, fontSize: 12, letterSpacing: ls('0.14em'), color: '#0a705a', fontWeight: 600 }}>{c.mapTag(n, paid)}</div>
               <Constellation data={data} unlockedLabel={c.mapBest} lowestLabel={c.mapLowest} lockedLabel={c.mapLocked} tone="light" />
               {data.lockedMore > 0 && (
-                <A href="#rt-unlock" track="results_careers_upgrade" preview={p} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ebf3ff', color: '#075288', fontWeight: 800, borderRadius: 12, padding: 13, minHeight: 44, boxSizing: 'border-box' }}>{c.reveal}</A>
+                <A href={data.unlockHref} track="results_careers_upgrade" preview={p} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ebf3ff', color: '#075288', fontWeight: 800, borderRadius: 12, padding: 13, minHeight: 44, boxSizing: 'border-box' }}>{c.reveal}</A>
               )}
             </div>
           )}
@@ -194,7 +194,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
                   </div>
                 )}
                 {data.lockedMore > 0 && (
-                  <A href="#rt-unlock" track="results_careers_upgrade" preview={p} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ebf3ff', color: '#075288', fontWeight: 800, borderRadius: 12, padding: 13, minHeight: 44, boxSizing: 'border-box' }}>{c.reveal}</A>
+                  <A href={data.unlockHref} track="results_careers_upgrade" preview={p} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ebf3ff', color: '#075288', fontWeight: 800, borderRadius: 12, padding: 13, minHeight: 44, boxSizing: 'border-box' }}>{c.reveal}</A>
                 )}
               </div>
             </div>
@@ -333,7 +333,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
                 </div>
               ))}
               {data.lockedMore > 0 && (
-                <A href="#rt-unlock" track="results_careers_upgrade" preview={p} style={{ background: '#075288', color: '#fff', borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
+                <A href={data.unlockHref} track="results_careers_upgrade" preview={p} style={{ background: '#075288', color: '#fff', borderRadius: 18, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span style={{ fontSize: 19, fontWeight: 800, lineHeight: 1.3 }}>{data.locked.moreTitle}</span>
                     <span style={{ fontSize: 14, lineHeight: 1.5, color: '#d6e6f4' }}>{data.locked.moreBody}</span>
@@ -364,7 +364,7 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
               <span style={{ display: 'inline-flex', width: 40, height: 40, borderRadius: 12, background: '#075288', color: '#fff', alignItems: 'center', justifyContent: 'center' }}><Lock size={18} /></span>
               <span style={{ fontSize: 20, fontWeight: 800, color: '#1f2a37' }}>{data.locked.planTitle}</span>
               <span style={{ fontSize: 15, color: '#4d5056', maxWidth: 520 }}>{data.locked.planBody}</span>
-              <A href="#rt-unlock" track="results_unlock_all" preview={p} style={{ fontWeight: 800, color: '#075288' }}>{data.locked.planCta}</A>
+              <A href={data.unlockHref} track="results_unlock_all" preview={p} style={{ fontWeight: 800, color: '#075288' }}>{data.locked.planCta}</A>
             </div>
           </div>
         </section>

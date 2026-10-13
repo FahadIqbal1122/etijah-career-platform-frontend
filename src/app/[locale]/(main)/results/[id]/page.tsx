@@ -957,7 +957,8 @@ export default function ResultsPage() {
       strong_fit: t('suggestedCareers.fitTag.strong_fit'),
       worth_exploring: t('suggestedCareers.fitTag.worth_exploring'),
     },
-    unlockHref: upgradeHref,
+    // the template draws plain links, so the page language is added here (the default report uses the locale-aware Link)
+    unlockHref: `/${locale}${upgradeHref}`,
     locked: {
       moreTitle: t('suggestedCareers.moreLockedTitle'),
       moreBody: t('suggestedCareers.moreLockedBody'),

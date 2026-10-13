@@ -1200,3 +1200,16 @@ html { scroll-behavior: smooth; }
 @media (min-width: 900px) {
   :is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-quick { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
 }
+
+/* Career cards: a clear header (large bold title, a rule under it) so each career reads as its own block. */
+:is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-career-list > div:not(.rt-top-career) { background: #fff; padding: 18px 20px 16px; }
+:is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-career-list > div { padding-top: 18px; padding-bottom: 16px; }
+:is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-career-list > div > div:first-child {
+  align-items: center; padding-bottom: 12px; margin-bottom: 2px; border-bottom: 1px solid rgba(7, 112, 186, 0.16);
+}
+:is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-career-list > div > div:first-child .rp-h {
+  font-size: clamp(20px, 1.7vw, 26px); line-height: 1.2; font-weight: 800; letter-spacing: -0.01em;
+}
+:is(.rt-clarity, .rt-clarity-map) .rt-career-list > div > div:first-child .rp-h { color: #1f2a37; }
+.rt-constellation .rt-top-career > div:first-child { border-bottom-color: rgba(156, 199, 232, 0.3); }
+:is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-career-list > div > div:first-child .rp-pill { font-size: 13px; padding: 5px 12px; }
