@@ -598,12 +598,16 @@ html { scroll-behavior: smooth; }
 .reveal-next { font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.7); margin-top: 18px; }
 .reveal .cta { margin-top: 28px; }
 .reveal.finish .reveal-spark { color: var(--accent); opacity: 1; }
+/* the star map on the green screen: sized to sit above the text, never pushing the button off short phones */
+.reveal-stars { width: min(320px, 100%); height: 130px; margin: 0 auto 18px; padding: 0 10px; box-sizing: border-box; }
+.reveal-stars .cst { width: 100%; height: 100%; }
 /* Sarah's tip sits at the bottom centre of the green screen: keep the text and button clear of it, so the
    "Keep going" button is never covered by her bubble (taller content now carries a chapter label + next line). */
 .reveal { padding-bottom: 270px; overflow-y: auto; }
 @media (max-height: 760px) {
   .reveal { padding-top: 70px; padding-bottom: 215px; }
   .reveal-spark { display: none; }
+  .reveal-stars { height: 96px; margin-bottom: 10px; }
   .reveal-head { font-size: 26px; }
   .reveal-body { font-size: 14.5px; margin-top: 10px; }
   .reveal-next { margin-top: 12px; }
@@ -1141,6 +1145,34 @@ html { scroll-behavior: smooth; }
 
 .rt-constellation.brand-surface { background: #f6f9fc; }
 .rt-constellation .card { border-radius: 22px; border-color: rgba(7, 112, 186, 0.14); box-shadow: none; }
-.rt-constellation .report-section-bar { background: #052640; border-color: #052640; border-radius: 14px; }
-.rt-constellation .report-section-bar .rp-h { color: #fff; }
-.rt-constellation .report-section-bar [aria-hidden="true"] { color: #9cc7e8; }
+
+/* ── Report templates: the report's own sections in the template's look ──────────────────────────────────────
+   The template supplies the top of the page; everything below it is the report's normal sections, restyled so the
+   whole page reads as one design: soft blue outlines, large section headings with a mono eyebrow number.
+   Clarity / Clarity Plus: white page, teal-outlined #1 career card. Constellation: pale page, dark #1 career
+   card, green eyebrows. Counters: free plans continue after the template's own sections (rt-free). */
+:is(.rt-clarity, .rt-clarity-map, .rt-constellation) { counter-reset: rtsec; }
+:is(.rt-clarity, .rt-clarity-map, .rt-constellation).rt-free { counter-reset: rtsec 3; }
+:is(.rt-clarity, .rt-clarity-map).brand-surface { background: #fff; }
+:is(.rt-clarity, .rt-clarity-map, .rt-constellation) .report-section { counter-increment: rtsec; }
+:is(.rt-clarity, .rt-clarity-map, .rt-constellation) .report-section-bar {
+  background: transparent; border: 0; border-radius: 0; padding: 28px 0 4px; box-shadow: none;
+}
+:is(.rt-clarity, .rt-clarity-map, .rt-constellation) .report-section-bar .rp-h {
+  font-size: clamp(26px, 3.4vw, 38px); line-height: 1.1; font-weight: 800; letter-spacing: -0.01em; color: #1f2a37;
+  display: flex; flex-direction: column; gap: 6px;
+}
+:is(.rt-clarity, .rt-clarity-map, .rt-constellation) .report-section-bar .rp-h::before {
+  content: counter(rtsec, decimal-leading-zero);
+  font-family: var(--font-mono), ui-monospace, monospace; font-size: 13px; font-weight: 500; letter-spacing: .14em; color: #0b5c99;
+}
+.rt-constellation .report-section-bar .rp-h::before { color: #0a705a; font-weight: 600; letter-spacing: .16em; }
+[dir="rtl"] :is(.rt-clarity, .rt-clarity-map, .rt-constellation) .report-section-bar .rp-h::before { letter-spacing: 0; }
+:is(.rt-clarity, .rt-clarity-map, .rt-constellation) .report-section-bar [aria-hidden="true"] { color: #0b5c99; font-size: 18px; }
+:is(.rt-clarity, .rt-clarity-map) .card { background: #fff; border: 1px solid rgba(7, 112, 186, 0.14); border-radius: 20px; box-shadow: none; }
+:is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rp-title { font-weight: 800; color: #1f2a37; }
+:is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rp-pill { font-weight: 700; }
+:is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rp-note { border-radius: 14px; }
+/* the #1 career card */
+:is(.rt-clarity, .rt-clarity-map) .rt-top-career { background: #fff; border: 2px solid #00c9a7; box-shadow: none; }
+.rt-constellation .rt-top-career { background: #052640; }

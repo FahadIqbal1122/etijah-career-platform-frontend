@@ -1,12 +1,12 @@
 'use client'
 
 import ReadMore from '@/components/ReadMore'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Fragment, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCoachSwitches } from '@/lib/useCoachEnabled'
 import { apiGet, apiAuthGet, apiAuthPost, apiAuthDelete, apiAuthGetBlob } from '@/lib/api'
-import { ReportTemplateView, isReportTemplateId, type ReportTemplateData, type ReportTemplateId } from '@/components/report-templates'
+import { ReportTemplateView, ProfileHexagon, isReportTemplateId, type ReportTemplateData, type ReportTemplateId } from '@/components/report-templates'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { Link, useRouter, usePathname } from '@/i18n/navigation'
 import { setLocaleLock } from '@/lib/localeLock'
@@ -152,8 +152,14 @@ function PillIcon({ name, size }: { name: keyof typeof PILL_ICONS; size?: number
   )
 }
 
+// With a report template the big section heading already says what the card says, so a card whose title repeats
+// the section's own title shows only its subtitle. null = no template (the default report): nothing changes.
+const SectionBarTitleContext = createContext<string | null>(null)
+
 // Brand section header (teal icon tile + title/subtitle) used across the report.
 function SectionHead({ icon, title, subtitle }: { icon: ReactNode; title: string; subtitle: string }) {
+  const barTitle = useContext(SectionBarTitleContext)
+  if (barTitle !== null && barTitle === title) return <p className="rp-sub mb-4">{subtitle}</p>
   return (
     <div className="flex items-center gap-3 mb-5">
       <div className="w-10 h-10 rounded-xl bg-lightblue flex items-center justify-center shrink-0 text-primary">
@@ -1325,6 +1331,8 @@ export default function ResultsPage() {
                 const isNew = job.direction_tag === 'new_direction'
                 const rejected = recFeedback[job.title]
                 const top = i === 0 && !rejected
+                // Clarity looks: the #1 card is white with a teal outline (CSS), so its inner colours stay the normal ones
+                const topDark = top && reportTemplate !== 'clarity' && reportTemplate !== 'clarity-map'
                 // AI impact for this career (top matches only): the risk pill sits on the card and the detail is a
                 // collapsible panel at the bottom of it (the top match starts open).
                 const aiCareer: any = aiImpact?.careers?.find((c: any) => normTitle(c.title) === normTitle(job.title))
@@ -1337,14 +1345,14 @@ export default function ResultsPage() {
                   <div
                     key={job.title}
                     className={`rounded-2xl px-4 py-4 ${
-                      top ? 'bg-primary text-white'
+                      topDark ? 'bg-primary text-white rt-top-career' : top ? 'rt-top-career bg-white border-2 border-[#00c9a7]'
                         : `bg-lightblue/40 border border-[var(--line)] border-s-4 ${isNew ? 'border-s-[var(--rp-purple-line)]' : 'border-s-[var(--rp-blue-line)]'}`
                     } ${rejected ? 'opacity-60' : ''}`}
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <p className={`rp-h capitalize ${top ? 'text-white' : 'text-charcoal'}`}>{job.title}</p>
+                      <p className={`rp-h capitalize ${topDark ? 'text-white' : 'text-charcoal'}`}>{job.title}</p>
                       {typeof job.match_score === 'number' && (
-                        <span className={`rp-pill shrink-0 ${top ? 'rp-ondark' : 'rp-blue'}`}>
+                        <span className={`rp-pill shrink-0 ${topDark ? 'rp-ondark' : 'rp-blue'}`}>
                           {job.match_score}% {t('suggestedCareers.matchLabel')}
                         </span>
                       )}
@@ -1352,20 +1360,20 @@ export default function ResultsPage() {
                     {(job.fit_tag || job.direction_tag || aiRisk) && (
                       <div className="flex flex-wrap gap-2 mt-2.5">
                         {job.fit_tag && ['strong_fit', 'worth_exploring'].includes(job.fit_tag) && (
-                          <span className={`rp-pill ${top ? 'rp-ondark' : job.fit_tag === 'strong_fit' ? 'rp-green' : 'rp-amber'}`}>
+                          <span className={`rp-pill ${topDark ? 'rp-ondark' : job.fit_tag === 'strong_fit' ? 'rp-green' : 'rp-amber'}`}>
                             <PillIcon name={job.fit_tag === 'strong_fit' ? 'check' : 'search'} />
                             {t(`suggestedCareers.fitTag.${job.fit_tag}`)}
                           </span>
                         )}
                         {job.direction_tag && ['builds_on_background', 'new_direction'].includes(job.direction_tag) && (
-                          <span className={`rp-pill ${top ? 'rp-ondark' : job.direction_tag === 'new_direction' ? 'rp-purple' : 'rp-blue'}`}>
+                          <span className={`rp-pill ${topDark ? 'rp-ondark' : job.direction_tag === 'new_direction' ? 'rp-purple' : 'rp-blue'}`}>
                             <PillIcon name={job.direction_tag === 'new_direction' ? 'sparkles' : 'layers'} />
                             {t(`suggestedCareers.directionTag.${job.direction_tag}`)}
                           </span>
                         )}
                         {aiRisk && ['low', 'medium', 'high'].includes(aiRisk) && (
                           <button type="button" title={t('suggestedCareers.aiRiskLink')} onClick={() => { setAiOpen(prev => ({ ...prev, [job.title]: true })); setTimeout(() => document.getElementById(`ai-${i}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 60) }} className={`rp-pill ${
-                            top ? 'rp-ondark' : aiRisk === 'low' ? 'rp-green' : aiRisk === 'medium' ? 'rp-amber' : 'rp-rose'
+                            topDark ? 'rp-ondark' : aiRisk === 'low' ? 'rp-green' : aiRisk === 'medium' ? 'rp-amber' : 'rp-rose'
                           }`}>
                             <PillIcon name="shield" />
                             {t('aiImpact.riskLabel')}: {levelLabel(aiRisk)}
@@ -1374,23 +1382,23 @@ export default function ResultsPage() {
                       </div>
                     )}
                     {job.fit_summary && (
-                      <p className={`rp-body mt-3 ${top ? 'text-white/95' : 'text-charcoal/90'}`}>{job.fit_summary}</p>
+                      <p className={`rp-body mt-3 ${topDark ? 'text-white/95' : 'text-charcoal/90'}`}>{job.fit_summary}</p>
                     )}
                     {(job.gap || job.next_action || hasSteps) && (
                       <div className={`mt-3 grid grid-cols-1 ${hasSteps ? '' : 'sm:grid-cols-2'} gap-2.5`}>
                         {job.gap && (
-                          <div className={`rp-note ${top ? 'rp-ondark-note' : 'rp-amber'}`}>
+                          <div className={`rp-note ${topDark ? 'rp-ondark-note' : 'rp-amber'}`}>
                             <span className="rp-note-label">{t(isNew ? 'suggestedCareers.gapPaths' : 'suggestedCareers.gapBuild')}</span>
-                            <p className={`rp-sub ${top ? 'text-white/95!' : 'rp-note-text'}`}>{job.gap}</p>
+                            <p className={`rp-sub ${topDark ? 'text-white/95!' : 'rp-note-text'}`}>{job.gap}</p>
                           </div>
                         )}
                         {hasSteps ? (
                           // Students / new graduates: three ordered steps, each with why it matters, replace the single action.
-                          <div className={`rp-note ${top ? 'rp-ondark-note' : 'rp-green'}`}>
+                          <div className={`rp-note ${topDark ? 'rp-ondark-note' : 'rp-green'}`}>
                             <span className="rp-note-label">{t('suggestedCareers.nextSteps')}</span>
                             <ol className="mt-1 space-y-2">
                               {job.next_steps.slice(0, 3).map((s: any, si: number) => (
-                                <li key={si} className={`rp-sub flex gap-2 ${top ? 'text-white/95!' : 'rp-note-text'}`}>
+                                <li key={si} className={`rp-sub flex gap-2 ${topDark ? 'text-white/95!' : 'rp-note-text'}`}>
                                   <span className="font-bold shrink-0">{si + 1}.</span>
                                   <span><span className="font-bold">{s.step}</span>{s.why ? <> — {s.why}</> : null}</span>
                                 </li>
@@ -1398,9 +1406,9 @@ export default function ResultsPage() {
                             </ol>
                           </div>
                         ) : job.next_action && (
-                          <div className={`rp-note ${top ? 'rp-ondark-note' : 'rp-green'}`}>
+                          <div className={`rp-note ${topDark ? 'rp-ondark-note' : 'rp-green'}`}>
                             <span className="rp-note-label">{t('suggestedCareers.nextAction')}</span>
-                            <p className={`rp-sub ${top ? 'text-white/95!' : 'rp-note-text'}`}>{job.next_action}</p>
+                            <p className={`rp-sub ${topDark ? 'text-white/95!' : 'rp-note-text'}`}>{job.next_action}</p>
                           </div>
                         )}
                       </div>
@@ -1409,7 +1417,7 @@ export default function ResultsPage() {
                     {canBuildPlans && i < 3 && !rejected && (
                       <div className="mt-3">
                         {planIsShown ? (
-                          <button type="button" onClick={scrollToPlan} className={`text-xs font-semibold underline ${top ? 'text-white' : 'text-primary'}`}>
+                          <button type="button" onClick={scrollToPlan} className={`text-xs font-semibold underline ${topDark ? 'text-white' : 'text-primary'}`}>
                             {t('suggestedCareers.planShown')}
                           </button>
                         ) : (
@@ -1417,7 +1425,7 @@ export default function ResultsPage() {
                             type="button"
                             disabled={dirBusy}
                             onClick={() => buildCareerPlan(job.title)}
-                            className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold disabled:opacity-60 ${top ? 'border-white/50 text-white hover:bg-white/10' : 'border-primary text-primary hover:bg-primary/5'}`}
+                            className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold disabled:opacity-60 ${topDark ? 'border-white/50 text-white hover:bg-white/10' : 'border-primary text-primary hover:bg-primary/5'}`}
                           >
                             {planBuilding === job.title ? t('suggestedCareers.planBuilding') : t('suggestedCareers.planBuild')}
                           </button>
@@ -1575,11 +1583,11 @@ export default function ResultsPage() {
                     )}
                     {careerCourses(job.title).length > 0 && (
                       <div className="mt-3">
-                        <p className="rp-label mb-2" style={top ? { color: 'rgba(255,255,255,.9)' } : undefined}>{t('courses.forThisCareer')}</p>
+                        <p className="rp-label mb-2" style={topDark ? { color: 'rgba(255,255,255,.9)' } : undefined}>{t('courses.forThisCareer')}</p>
                         <div className="space-y-2">{careerCourses(job.title).map((c: any) => courseCard(c))}</div>
                       </div>
                     )}
-                    <div className={`mt-3 flex flex-wrap items-center gap-2 text-xs ${top ? 'text-white/85' : 'text-charcoal/70'}`}>
+                    <div className={`mt-3 flex flex-wrap items-center gap-2 text-xs ${topDark ? 'text-white/85' : 'text-charcoal/70'}`}>
                       {rejected ? (
                         <>
                           <span>{t('suggestedCareers.feedback.marked', { reason: t(`suggestedCareers.feedback.${rejected}`) })}</span>
@@ -1590,7 +1598,7 @@ export default function ResultsPage() {
                           <span>{t('suggestedCareers.feedback.why')}</span>
                           {['uninterested', 'unqualified', 'unfamiliar', 'impractical'].map(r => (
                             <button key={r} type="button" onClick={() => markCareer(job.title, r)}
-                              className={`rounded-full border px-2 py-0.5 ${top ? 'border-white/40 hover:bg-white/10' : 'border-[var(--line-strong)] hover:border-primary hover:text-primary'}`}>
+                              className={`rounded-full border px-2 py-0.5 ${topDark ? 'border-white/40 hover:bg-white/10' : 'border-[var(--line-strong)] hover:border-primary hover:text-primary'}`}>
                               {t(`suggestedCareers.feedback.${r}`)}
                             </button>
                           ))}
@@ -2171,6 +2179,8 @@ export default function ResultsPage() {
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.07A2.25 2.25 0 0118 20.47H6a2.25 2.25 0 01-2.25-2.25v-4.07M15.75 9.75V6a3.75 3.75 0 00-7.5 0v3.75M3.75 9.75h16.5" /></svg>}
             />
             {introText(pd?.overview?.riasec, pd?.full?.overview?.riasec)}
+            {/* paid plans with a template: the interests hexagon (free plans have it in the template itself) */}
+            {tplData && tier !== 'free' && (reportTemplate === 'clarity-map' || reportTemplate === 'constellation') && <ProfileHexagon data={tplData} />}
             {/* All six types, same look, highest first, each with its percentage (no single "main" type) */}
             <div className="space-y-2.5">
               {['realistic', 'investigative', 'artistic', 'social', 'enterprising', 'conventional']
@@ -2358,7 +2368,7 @@ export default function ResultsPage() {
   const shownKeys = tplData ? orderedKeys.filter(k => !TEMPLATE_COVERS.includes(k)) : orderedKeys
 
   return (
-    <div className={`min-h-screen brand-surface page-fade-in${useTemplate ? ` rt-${reportTemplate}` : ''}`}>
+    <div className={`min-h-screen brand-surface page-fade-in${useTemplate ? ` rt-${reportTemplate}${tier === 'free' ? ' rt-free' : ''}` : ''}`}>
 
       {/* Report template (replaces the default hero below) */}
       {tplData && <ReportTemplateView id={reportTemplate} data={tplData} />}
@@ -2424,7 +2434,7 @@ export default function ResultsPage() {
       </div>
       )}
 
-      <div className="max-w-5xl mx-auto px-6 mt-8 pb-16 space-y-4 relative z-10">
+      <div className={`${useTemplate ? 'max-w-[1200px]' : 'max-w-5xl'} mx-auto px-6 mt-8 pb-16 space-y-4 relative z-10`}>
 
         {/* Signup CTA */}
         {!loggedIn && (
@@ -2476,7 +2486,9 @@ export default function ResultsPage() {
                 <span aria-hidden="true" className={`transition-transform ${closed ? '' : 'rotate-180'}`}>▾</span>
               </button>
               <div id={`section-${k}`} className="report-section-body space-y-4" hidden={closed}>
-                <Fragment>{sectionBlocks[k]}</Fragment>
+                <SectionBarTitleContext.Provider value={useTemplate ? barTitle : null}>
+                  <Fragment>{sectionBlocks[k]}</Fragment>
+                </SectionBarTitleContext.Provider>
               </div>
             </div>
           )

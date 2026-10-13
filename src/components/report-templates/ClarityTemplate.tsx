@@ -222,7 +222,8 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
         </section>
       )}
 
-      {/* profile */}
+      {/* profile (free plan; on paid plans the report's own profile section follows, in this look) */}
+      {!paid && (
       <section style={section}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={eyebrow}>01 · {paid ? c.yours : c.free}</div>
@@ -281,9 +282,10 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
           </div>
         )}
       </section>
+      )}
 
-      {/* careers */}
-      {top && (
+      {/* careers (free plan; on paid plans the report's own careers section follows, in this look) */}
+      {!paid && top && (
         <section style={section}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={eyebrow}>{paid ? c.careersTag(n) : c.careersTagFree(n)}</div>

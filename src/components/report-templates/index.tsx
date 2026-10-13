@@ -2,6 +2,7 @@
 
 import ClarityTemplate from './ClarityTemplate'
 import ConstellationTemplate from './ConstellationTemplate'
+import { Hexagon } from './visuals'
 import type { ReportTemplateData, ReportTemplateId } from './types'
 
 export { REPORT_TEMPLATE_IDS } from './types'
@@ -62,6 +63,11 @@ export function ReportTemplateView({ id, data }: { id: ReportTemplateId; data: R
   if (id === 'clarity-map') return <ClarityTemplate data={data} withMap />
   if (id === 'constellation') return <ConstellationTemplate data={data} />
   return null
+}
+
+// The interests hexagon, for placing inside the report's own interests card (paid plans).
+export function ProfileHexagon({ data }: { data: ReportTemplateData }) {
+  return <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}><Hexagon data={data} /></div>
 }
 
 // Made-up data for the admin preview (no real person). `paid` only changes what the page itself changes: the

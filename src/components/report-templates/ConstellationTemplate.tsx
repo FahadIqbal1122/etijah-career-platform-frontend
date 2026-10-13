@@ -145,7 +145,8 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
         </div>
       </section>
 
-      {/* profile */}
+      {/* profile (free plan; on paid plans the report's own profile section follows, in this look) */}
+      {!paid && (
       <section id="rt-profile" style={wrap}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={eyebrow('#0a705a')}>{paid ? c.yourProfile : c.freeProfile}</div>
@@ -194,8 +195,10 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
         </div>
       </section>
 
-      {/* careers */}
-      {top && (
+      )}
+
+      {/* careers (free plan; on paid plans the report's own careers section follows) */}
+      {!paid && top && (
         <section style={wrap}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={eyebrow('#0a705a')}>{paid ? c.matchesPaid(n) : c.matchesFree(n)}</div>
