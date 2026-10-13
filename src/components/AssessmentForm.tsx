@@ -20,6 +20,7 @@ import ChapterStars from '@/components/brand/ChapterStars'
 import BreakPanel from '@/components/BreakPanel'
 // import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
 import CoachWidget from '@/components/CoachWidget'
+import { useCoachSwitches } from '@/lib/useCoachEnabled'
 import { COACH_BREAK, COACH_MOTIVATION, COACH_REVEAL, type Bi } from '@/data/coachMessages'
 
 // module-level so the random call stays out of render (only used in an effect)
@@ -316,6 +317,10 @@ export default function AssessmentForm() {
   // Sarah moves around so she is never parked in one place: on desktop she glides between a few spots (under the
   // text, in the sky above the stars, over the top of the question card), on phones she hops between the two
   // bottom corners. She changes spot every time she has a tip, and comes to the middle of the screen on the green
+  // Admin switch (Coach tab): off = no coach in the assessment, the break-panel button is back as it was before her.
+  // The riddle / games button is a separate switch (Coach tab): off = no game button anywhere in the assessment.
+  const { coach: coachEnabled, games: gamesEnabled } = useCoachSwitches()
+
   // reveal screen with an encouraging line (revealTip).
   const [coachSide, setCoachSide] = useState<'end' | 'start'>('end')
   const [coachSpot, setCoachSpot] = useState(0)
@@ -326,7 +331,7 @@ export default function AssessmentForm() {
   const [coachQuestionSlot, setCoachQuestionSlot] = useState<HTMLElement | null>(null)
   const dismissCoach = useCallback(() => { setCoachMsg(null); setRevealTip(null); setCoachSpot(0) }, [])
   useEffect(() => {
-    if (phase !== 'question' || index < coachNextAt.current) return
+    if (!coachEnabled || phase !== 'question' || index < coachNextAt.current) return
     const { pool: basePool, isBreak } = pickCoachPool()
     const pool = basePool.filter(m => !coachUsed.current.has(m.en))
     coachNextAt.current = index + 4 + Math.floor(Math.random() * 4)
@@ -824,7 +829,7 @@ export default function AssessmentForm() {
         <>
           <div className="assess-progress-label">{progressMsg}</div>
           <div className="assess-break-mobile-slot">
-            <BreakPanel locale={locale as 'en' | 'ar'} eyebrow={chrome.asideEyebrow} progressMsg={progressMsg} questionIndex={index} compact hideTrigger />
+            <BreakPanel locale={locale as 'en' | 'ar'} eyebrow={chrome.asideEyebrow} progressMsg={progressMsg} questionIndex={index} compact hideTrigger={coachEnabled || !gamesEnabled} />
           </div>
         </>
       )}
@@ -842,11 +847,11 @@ export default function AssessmentForm() {
             )}
           </div>
           {/* Sarah's home on desktop: between the stars and the writing */}
-          <div className="coach-slot" ref={setCoachSlot} />
+          {coachEnabled && <div className="coach-slot" ref={setCoachSlot} />}
           {/* desktop-only progress context beneath the constellation */}
           <div className="assess-aside-context">
             {phase === 'question' ? (
-              <BreakPanel locale={locale as 'en' | 'ar'} eyebrow={chrome.asideEyebrow} progressMsg={progressMsg} questionIndex={index} hideTrigger />
+              <BreakPanel locale={locale as 'en' | 'ar'} eyebrow={chrome.asideEyebrow} progressMsg={progressMsg} questionIndex={index} hideTrigger={coachEnabled || !gamesEnabled} />
             ) : (
               <div className="assess-aside-eyebrow">{chrome.asideEyebrow}</div>
             )}
@@ -855,7 +860,7 @@ export default function AssessmentForm() {
 
         {/* ── question ──────────────────────────────────────────────────── */}
         <div className="assess-content">
-          <div className="coach-spot coach-spot-question" ref={setCoachQuestionSlot} />
+          {coachEnabled && <div className="coach-spot coach-spot-question" ref={setCoachQuestionSlot} />}
           {phase === 'question' && q && (
             <div className="assess-stage">
               <div
@@ -1216,7 +1221,7 @@ export default function AssessmentForm() {
         </div>
       )}
       {/* <CoachBubble locale={locale as 'en' | 'ar'} message={phase === 'question' ? coachMsg : null} onDismiss={dismissCoach} /> */}
-      <CoachWidget
+      {coachEnabled && <CoachWidget
         locale={locale as 'en' | 'ar'} mode="assessment" sessionId={getTelemetrySessionId}
         questionIndex={index + 1} questionTotal={total}
         getQuestion={() => {
@@ -1230,10 +1235,10 @@ export default function AssessmentForm() {
         place={phase === 'question' ? coachSide : 'center'}
         spots={phase === 'question' ? { wide: [coachSlot, coachQuestionSlot], narrow: [] } : undefined}
         spotIndex={coachSpot}
-        games tipOffersGame={phase === 'question' && coachTipGame}
+        games={gamesEnabled} tipOffersGame={gamesEnabled && phase === 'question' && coachTipGame}
         tip={phase === 'question' ? coachMsg : phase === 'reveal' ? revealTip : null}
         tipAutoHideMs={phase === 'reveal' ? 0 : 9000} onTipDismiss={dismissCoach}
-      />
+      />}
     </div>
   )
 }

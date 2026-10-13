@@ -1362,7 +1362,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'liveCoaching' | 'abandoned' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider' | 'reportTemplates'>('liveDashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'liveCoaching' | 'abandoned' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider' | 'reportTemplates' | 'coach'>('liveDashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -1549,6 +1549,15 @@ export default function AdminPage() {
   const [multiCurrencyLoading, setMultiCurrencyLoading] = useState(false)
   const [multiCurrencySaving, setMultiCurrencySaving] = useState(false)
   const [multiCurrencyError, setMultiCurrencyError] = useState('')
+  // Sarah (coach) switch: off = the original break-panel button and feedback form cards (see Coach tab)
+  const [coachOn, setCoachOn] = useState(false)
+  const [coachLoading, setCoachLoading] = useState(false)
+  const [coachSaving, setCoachSaving] = useState(false)
+  const [coachError, setCoachError] = useState('')
+  // Riddle / games button switch (same tab): off = no game button in the assessment, the loading screen or from Sarah
+  const [gamesOn, setGamesOn] = useState(false)
+  const [gamesSaving, setGamesSaving] = useState(false)
+  const [gamesError, setGamesError] = useState('')
   const [betaClosed, setBetaClosed] = useState(false)
   const [betaPreviewSecret, setBetaPreviewSecret] = useState('')
   const [betaBusy, setBetaBusy] = useState(false)
@@ -1963,6 +1972,58 @@ export default function AdminPage() {
       setMultiCurrencyLoading(false)
     }
   }, [])
+
+  const fetchCoachEnabled = useCallback(async () => {
+    setCoachLoading(true)
+    setCoachError('')
+    try {
+      const res = await fetch('/api/admin/coach-enabled')
+      if (!res.ok) throw new Error('Failed to load coach setting')
+      setCoachOn((await res.json()).enabled === true)
+      const g = await fetch('/api/admin/games-enabled')
+      if (g.ok) setGamesOn((await g.json()).enabled === true)
+    } catch (err: any) {
+      setCoachError(err.message)
+    } finally {
+      setCoachLoading(false)
+    }
+  }, [])
+
+  async function toggleGames(enabled: boolean) {
+    setGamesSaving(true)
+    setGamesError('')
+    try {
+      const res = await fetch('/api/admin/games-enabled', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      })
+      if (!res.ok) throw new Error('Failed to save games setting')
+      setGamesOn((await res.json()).enabled === true)
+    } catch (err: any) {
+      setGamesError(err.message)
+    } finally {
+      setGamesSaving(false)
+    }
+  }
+
+  async function toggleCoach(enabled: boolean) {
+    setCoachSaving(true)
+    setCoachError('')
+    try {
+      const res = await fetch('/api/admin/coach-enabled', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      })
+      if (!res.ok) throw new Error('Failed to save coach setting')
+      setCoachOn((await res.json()).enabled === true)
+    } catch (err: any) {
+      setCoachError(err.message)
+    } finally {
+      setCoachSaving(false)
+    }
+  }
 
   async function toggleAutoReminder(enabled: boolean) {
     setAutoReminderSaving(true)
@@ -4291,6 +4352,7 @@ export default function AdminPage() {
                 { key: 'homepage', label: 'Homepage', color: 'bg-fuchsia-600', badge: homepageMode, onSelect: fetchHomepageMode },
                 { key: 'currency', label: 'Currency', color: 'bg-emerald-600', badge: multiCurrency ? 'ON' : undefined, onSelect: fetchMultiCurrency },
                 { key: 'betaclosed', label: 'Beta Access', color: 'bg-red-600', badge: betaClosed ? 'CLOSED' : undefined, onSelect: fetchBetaClosed },
+                { key: 'coach', label: 'Coach', color: 'bg-teal-600', badge: coachOn || gamesOn ? 'ON' : undefined, onSelect: fetchCoachEnabled },
                 { key: 'reportTemplates', label: 'Report Templates', color: 'bg-violet-600' },
                 { key: 'templates', label: 'Email Templates', color: 'bg-pink-600' },
                 { key: 'emailScheduler', label: 'Email Scheduler', color: 'bg-rose-600' },
@@ -7428,6 +7490,75 @@ export default function AdminPage() {
       )}
 
       {/* ── Currency Tab ── */}
+      {activeTab === 'coach' && (
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <h2 className="text-xl font-bold text-slate-800 mb-1">Coach (Sarah)</h2>
+          <p className="text-sm text-slate-400 mb-6">
+            Two switches. <strong>Coach</strong> off: the assessment has no coach, and the feedback questions on the loading
+            screen and at the end of the report are the original form cards. On: Sarah is in the assessment (tips, chat)
+            and asks the feedback questions herself. <strong>Riddle and games</strong> off: no game button anywhere (assessment
+            break button, results loading screen, and the games Sarah offers). On: the button is back; it is the original
+            &quot;take a break&quot; button when the coach is off, and Sarah offers the games when the coach is on. Neither
+            switch changes the coach on the landing page or the chat on the results page.
+          </p>
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <p className="font-semibold text-slate-800">
+              The coach is <span className={coachOn ? 'text-teal-600' : 'text-slate-500'}>{coachOn ? 'ON' : 'OFF'}</span>
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">Takes effect for visitors within about 10 seconds (people mid-assessment see it on their next page load).</p>
+            <div className="flex gap-2 mt-4">
+              <button
+                disabled={coachLoading || coachSaving}
+                onClick={() => toggleCoach(false)}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+                  !coachOn ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                No coach (off)
+              </button>
+              <button
+                disabled={coachLoading || coachSaving}
+                onClick={() => toggleCoach(true)}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+                  coachOn ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Sarah in the assessment (on)
+              </button>
+            </div>
+            {coachError && <p className="text-xs text-red-500 mt-3">{coachError}</p>}
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mt-4">
+            <p className="font-semibold text-slate-800">
+              Riddle and games are <span className={gamesOn ? 'text-teal-600' : 'text-slate-500'}>{gamesOn ? 'ON' : 'OFF'}</span>
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">The &quot;take a break&quot; riddle / mini-games button. Takes effect within about 10 seconds.</p>
+            <div className="flex gap-2 mt-4">
+              <button
+                disabled={coachLoading || gamesSaving}
+                onClick={() => toggleGames(false)}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+                  !gamesOn ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                No games (off)
+              </button>
+              <button
+                disabled={coachLoading || gamesSaving}
+                onClick={() => toggleGames(true)}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+                  gamesOn ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Riddle and games (on)
+              </button>
+            </div>
+            {gamesError && <p className="text-xs text-red-500 mt-3">{gamesError}</p>}
+          </div>
+        </div>
+      )}
+
       {activeTab === 'currency' && (
         <div className="max-w-2xl mx-auto px-4 py-8">
           <h2 className="text-xl font-bold text-slate-800 mb-1">Currency</h2>

@@ -4,6 +4,7 @@ import ReadMore from '@/components/ReadMore'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useParams } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
+import { useCoachSwitches } from '@/lib/useCoachEnabled'
 import { apiGet, apiAuthGet, apiAuthPost, apiAuthDelete, apiAuthGetBlob } from '@/lib/api'
 import { ReportTemplateView, isReportTemplateId, type ReportTemplateData, type ReportTemplateId } from '@/components/report-templates'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
@@ -223,9 +224,10 @@ function AiImpactDeepDivePlaceholder() {
   )
 }
 
-// true = the coach asks the beta feedback questions (CoachFeedback); false = the original form cards
-// (BetaFeedbackStage1 on the loading screen, BetaFeedbackResultStage at the end of the report).
-const COACH_FEEDBACK = true
+// Whether the coach asks the beta feedback questions (CoachFeedback) or the original form cards do
+// (BetaFeedbackStage1 on the loading screen, BetaFeedbackResultStage at the end of the report). Follows the admin
+// Coach switch: on = the coach asks, off (default) = the original cards. See COACH_FEEDBACK inside ResultsPage.
+// const COACH_FEEDBACK = true
 
 const COACH_NUDGE_STAGE1 = { en: 'Four quick taps and I’ll show your report', ar: 'أربع نقرات سريعة وسأعرض لك تقريرك' }
 const COACH_NUDGE_RESULT = { en: 'Four quick questions about your results?', ar: 'أربعة أسئلة سريعة عن نتائجك؟' }
@@ -252,6 +254,9 @@ export default function ResultsPage() {
   // const dismissCoach = useCallback(() => setCoachMsg(null), [])
   const [tier, setTier] = useState<'free' | 'pathfinder' | 'launchpad'>('launchpad')
   const [betaMode, setBetaMode] = useState(false)
+  // Admin Coach switch: the coach asks the feedback questions (true) or the original form cards do (false, default).
+  const { coach: COACH_FEEDBACK, games: gamesEnabled } = useCoachSwitches()
+
   // Which presentation of the report to show (admin: Report templates). 'default' is this page as it always was.
   // Admins can preview another one on a real report with ?template=clarity (or constellation).
   const [reportTemplate, setReportTemplate] = useState<ReportTemplateId>('default')
@@ -754,7 +759,7 @@ export default function ResultsPage() {
 
           {showFeedbackCol && (
             <div className="report-loading-col report-loading-right" id="report-loading-feedback">
-              <BreakPanel locale={locale} eyebrow="" progressMsg="" questionIndex={0} compact forceVisible />
+              <BreakPanel locale={locale} eyebrow="" progressMsg="" questionIndex={0} compact forceVisible hideTrigger={!gamesEnabled} />
               {!COACH_FEEDBACK && <BetaFeedbackStage1 responseId={id} locale={locale} onComplete={() => setStage1Done(true)} />}
             </div>
           )}
