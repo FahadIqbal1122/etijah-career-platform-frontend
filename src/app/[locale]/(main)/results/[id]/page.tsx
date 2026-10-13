@@ -808,7 +808,10 @@ export default function ResultsPage() {
     setDownloadingReport(true)
     setDownloadError('')
     try {
-      const query = reportLang ? `?locale=${reportLang}` : ''
+      // a ?template= preview carries into the PDF, so the paper copy can be checked in the same look
+      const tplOverride = new URLSearchParams(window.location.search).get('template')
+      const qs = [reportLang ? `locale=${reportLang}` : '', tplOverride && isReportTemplateId(tplOverride) ? `template=${tplOverride}` : ''].filter(Boolean).join('&')
+      const query = qs ? `?${qs}` : ''
       const { blob, filename } = await apiAuthGetBlob(`/assessment/${id}/report${query}`)
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
