@@ -124,11 +124,11 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
               {paid ? c.h1aPaid(n) : c.h1a}<br /><span style={{ color: '#9cc7e8' }}>{paid ? c.h1bPaid : c.h1b}</span>
             </h1>
             {top && <p style={{ margin: 0, fontSize: 'clamp(16px, 2.4cqw, 19px)', lineHeight: 1.6, color: '#c9dcef', maxWidth: 560 }}>{c.sub(data.topTypeLabel)}<strong style={{ color: '#fff' }}>{top.title}</strong>.</p>}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 1, background: 'rgba(156,199,232,0.2)', border: '1px solid rgba(156,199,232,0.2)', borderRadius: 18, overflow: 'hidden', maxWidth: 520 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 1, background: 'rgba(156,199,232,0.2)', border: '1px solid rgba(156,199,232,0.2)', borderRadius: 18, overflow: 'hidden', maxWidth: 520 }}>
               {[[String(n), c.careersMatched, false], [top ? `${clampScore(top.match)}%` : '-', c.topMatch, true], ['90', c.plan, false]].map(([v, k, hi]) => (
-                <div key={k as string} style={{ background: '#072d4b', padding: 16, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontSize: 30, fontWeight: 800, lineHeight: 1, color: hi ? '#00c9a7' : undefined }}>{v as string}</span>
-                  <span style={{ fontSize: 14, color: '#b9cfe3' }}>{k as string}</span>
+                <div key={k as string} style={{ background: '#072d4b', padding: 'clamp(10px, 3cqw, 16px)', display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                  <span style={{ fontSize: 'clamp(22px, 6.5cqw, 30px)', fontWeight: 800, lineHeight: 1, color: hi ? '#00c9a7' : undefined }}>{v as string}</span>
+                  <span style={{ fontSize: 'clamp(12px, 3.4cqw, 14px)', color: '#b9cfe3' }}>{k as string}</span>
                 </div>
               ))}
             </div>
@@ -240,11 +240,11 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
                 const row: CSSProperties = { display: 'grid', minWidth: 720, gridTemplateColumns: cols, gap: 16, alignItems: 'center', padding: '16px 24px', borderTop: '1px solid #eef3f9' }
                 return (
                   <>
-                    <div style={{ ...row, borderTop: 0, padding: '14px 24px', background: '#f6f8fb', fontFamily: mono, fontSize: 12, letterSpacing: ls('0.1em'), color: '#545968' }}>
+                    <div className="rt-cn-row rt-cn-head" style={{ ...row, borderTop: 0, padding: '14px 24px', background: '#f6f8fb', fontFamily: mono, fontSize: 12, letterSpacing: ls('0.1em'), color: '#545968' }}>
                       <span>{c.th[0]}</span><span>{c.th[1]}</span><span>{c.th[2]}</span><span>{c.th[3]}</span><span style={{ textAlign: ar ? 'left' : 'right' }}>{c.th[4]}</span>
                     </div>
                     {rest.map((r, i) => (
-                      <div key={i} style={{ ...row, background: r.risk === 'low' ? '#f3fbf8' : undefined, opacity: r.rejected ? 0.55 : 1 }}>
+                      <div key={i} className="rt-cn-row" style={{ ...row, background: r.risk === 'low' ? '#f3fbf8' : undefined, opacity: r.rejected ? 0.55 : 1 }}>
                         <span style={{ fontFamily: MONO, color: '#545968' }}>{String(i + 2).padStart(2, '0')}</span>
                         <strong style={{ fontSize: 18, color: '#1f2a37', overflowWrap: 'anywhere' }}>{r.title}</strong>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -264,7 +264,7 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
                       </div>
                     ))}
                     {data.lockedMore > 0 && (
-                      <A href={data.unlockHref} track="results_careers_upgrade" preview={p} style={{ ...row, color: '#075288', fontWeight: 700 }}>
+                      <A href={data.unlockHref} track="results_careers_upgrade" preview={p} className="rt-cn-row rt-cn-more" style={{ ...row, color: '#075288', fontWeight: 700 }}>
                         <span><Lock size={14} /></span>
                         <span style={{ display: 'flex', flexDirection: 'column', gridColumn: 'span 3' }}>
                           <strong style={{ color: '#1f2a37' }}>{data.locked.moreTitle}</strong>
@@ -303,13 +303,13 @@ export default function ConstellationTemplate({ data }: { data: ReportTemplateDa
 
           <section id="rt-pass" style={{ ...wrap, flexDirection: 'row', flexWrap: 'wrap', gap: 24, alignItems: 'stretch', paddingBottom: 48 }}>
             <div style={{ ...outline, borderRadius: 24, overflow: 'hidden', flex: '1.3 1 420px', minWidth: 0 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 96px 96px', gap: 12, padding: '16px 22px', background: '#f6f8fb', alignItems: 'end' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 68px 68px', gap: 8, padding: '16px 16px', background: '#f6f8fb', alignItems: 'end' }}>
                 <strong style={{ fontSize: 18, color: '#1f2a37' }}>{c.compare}</strong>
                 <span style={{ textAlign: 'center', fontWeight: 700, color: '#545968' }}>{c.free}</span>
                 <span style={{ textAlign: 'center', fontWeight: 800, color: '#075288' }}>{c.fullR}</span>
               </div>
               {c.rows.map(([label, f]) => (
-                <div key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 96px 96px', gap: 12, padding: '13px 22px', borderTop: '1px solid #eef3f9', alignItems: 'center' }}>
+                <div key={label} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 68px 68px', gap: 8, padding: '13px 16px', borderTop: '1px solid #eef3f9', alignItems: 'center' }}>
                   <span>{label}</span>
                   <span style={{ textAlign: 'center', color: f === 1 ? '#0a705a' : '#6b707a', display: 'flex', justifyContent: 'center' }}>{f === 1 ? <Check /> : f}</span>
                   <span style={{ textAlign: 'center', color: '#0a705a', display: 'flex', justifyContent: 'center' }}><Check /></span>

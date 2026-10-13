@@ -355,9 +355,9 @@ export default function ClarityTemplate({ data, withMap = false }: { data: Repor
           </div>
           <div style={{ ...card, borderRadius: 22, padding: 26, position: 'relative', overflow: 'hidden' }}>
             {c.planRows.map(([when, what], i, arr) => (
-              <div key={when} style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 120px) minmax(0, 1fr)', gap: 16, padding: '14px 0', borderBottom: i < arr.length - 1 ? '1px solid #eef3f9' : undefined }}>
-                <span style={{ fontFamily: ar ? undefined : MONO, fontSize: 13, color: '#0b5c99', fontWeight: 600 }}>{when}</span>
-                <span aria-hidden="true" style={{ filter: 'blur(5px)', userSelect: 'none' }}>{what}</span>
+              <div key={when} style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', padding: '14px 0', borderBottom: i < arr.length - 1 ? '1px solid #eef3f9' : undefined }}>
+                <span style={{ flex: '0 0 auto', minWidth: 90, fontFamily: ar ? undefined : MONO, fontSize: 13, color: '#0b5c99', fontWeight: 600 }}>{when}</span>
+                <span aria-hidden="true" style={{ flex: '1 1 160px', minWidth: 0, filter: 'blur(5px)', userSelect: 'none' }}>{what}</span>
               </div>
             ))}
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.78)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 20, textAlign: 'center' }}>

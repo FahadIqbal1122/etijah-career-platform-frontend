@@ -22,8 +22,8 @@ export function Logo({ size = 28, color }: { size?: number; color?: string }) {
 }
 
 // A link that behaves in the admin preview (no navigation) and on the live page.
-export function A({ href, preview, style, track, children }: { href: string; preview?: boolean; style?: CSSProperties; track?: string; children: ReactNode }) {
-  return <a href={href} data-track={track} onClick={preview ? e => e.preventDefault() : undefined} style={{ textDecoration: 'none', ...style }}>{children}</a>
+export function A({ href, preview, style, track, className, children }: { href: string; preview?: boolean; style?: CSSProperties; track?: string; className?: string; children: ReactNode }) {
+  return <a href={href} className={className} data-track={track} onClick={preview ? e => e.preventDefault() : undefined} style={{ textDecoration: 'none', ...style }}>{children}</a>
 }
 
 // Stand-in text drawn (blurred) in place of a locked career name, so the real name is not in the markup.

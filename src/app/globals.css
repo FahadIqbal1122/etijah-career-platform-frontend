@@ -1213,3 +1213,15 @@ html { scroll-behavior: smooth; }
 :is(.rt-clarity, .rt-clarity-map) .rt-career-list > div > div:first-child .rp-h { color: #1f2a37; }
 .rt-constellation .rt-top-career > div:first-child { border-bottom-color: rgba(156, 199, 232, 0.3); }
 :is(.rt-clarity, .rt-clarity-map, .rt-constellation) .rt-career-list > div > div:first-child .rp-pill { font-size: 13px; padding: 5px 12px; }
+
+/* Constellation template: the careers table becomes stacked rows when its container is narrow (phones), instead of
+   a table that scrolls sideways. */
+@container (max-width: 720px) {
+  .rt-cn-row { grid-template-columns: 32px minmax(0, 1fr) auto !important; min-width: 0 !important; padding: 14px 16px !important; gap: 8px 12px !important; }
+  .rt-cn-head { display: none !important; }
+  .rt-cn-row > :nth-child(3) { grid-column: 2 / 4; }
+  .rt-cn-row > :nth-child(4) { grid-column: 2 / 4; justify-self: start !important; }
+  .rt-cn-row > :nth-child(5) { grid-column: 3 / 4; grid-row: 1; }
+  .rt-cn-row.rt-cn-more > :nth-child(2) { grid-column: 2 / 3 !important; }
+  .rt-cn-row.rt-cn-more > :nth-child(3) { grid-column: 3 / 4; grid-row: 1; }
+}

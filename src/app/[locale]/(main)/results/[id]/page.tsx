@@ -81,7 +81,7 @@ function FreeUnlockBtn({ label, track, tone = 'primary' }: { label: string; trac
     <Link
       href={upgradeHref}
       data-track={track}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-bold text-white whitespace-nowrap ${tone === 'teal' ? 'bg-teal text-[#05221c]!' : 'bg-primary'}`}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-bold text-white max-w-full text-center ${tone === 'teal' ? 'bg-teal text-[#05221c]!' : 'bg-primary'}`}
       style={{ boxShadow: tone === 'teal' ? '0 10px 26px -10px rgba(0,201,167,.7)' : '0 10px 26px -10px rgba(7,112,186,.7)' }}
     >
       {label} <span aria-hidden="true" className="rtl:rotate-180">›</span>
@@ -871,8 +871,8 @@ export default function ResultsPage() {
       rel="noopener noreferrer"
       className="block border border-[var(--line)] rounded-xl p-3.5 hover:border-[var(--line-strong)] hover:bg-lightblue/50 transition-colors group bg-white text-charcoal"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
+        <div className="flex-1 basis-0 min-w-[7rem]">
           <p className="rp-h text-charcoal group-hover:text-primary">{course.title}</p>
           <p className="rp-sub">{course.provider} · {course.level}{course.duration_hours ? ` · ${course.duration_hours}h` : ''}</p>
         </div>
@@ -1000,15 +1000,15 @@ export default function ResultsPage() {
         </div>
 
         {/* Top 3 quick cards */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-3 min-[480px]:gap-4">
           {[
             { label: t('quickCards.careerType'), value: riasecLabel(summary.riasec.top_types[0]) },
             { label: t('quickCards.topValue'), value: valueLabel(summary.values.top_values[0]) },
             { label: t('quickCards.topStrength'), value: strengthLabel(summary.strengths.top_strengths[0]) },
           ].map(({ label, value }) => (
-            <div key={label} className="card p-5 text-center">
+            <div key={label} className="card p-4 min-[480px]:p-5 text-center min-w-0">
               <p className="eyebrow mb-1.5">{label}</p>
-              <p className="text-base font-extrabold text-charcoal">{value}</p>
+              <p className="text-base font-extrabold text-charcoal break-words">{value}</p>
             </div>
           ))}
         </div>
@@ -1181,9 +1181,9 @@ export default function ResultsPage() {
                     <p className="rp-label mb-2.5">{t('plan.days27')}</p>
                     <ol className="space-y-3.5">
                       {weekPlan.map((w: any, i: number) => (
-                        <li key={i} className="flex gap-3 items-start">
-                          <span className="rp-pill rp-blue rp-wrap shrink-0 min-w-[5.5rem] justify-center">{w.when}</span>
-                          <div>
+                        <li key={i} className="flex flex-col gap-1.5 items-start sm:flex-row sm:gap-3">
+                          <span className="rp-pill rp-blue rp-wrap shrink-0 sm:min-w-[5.5rem] justify-center">{w.when}</span>
+                          <div className="min-w-0">
                             <p className="rp-body font-bold text-charcoal">{w.action}</p>
                             {w.why && <p className="rp-sub">{w.why}</p>}
                             {w.output && (
@@ -1206,7 +1206,7 @@ export default function ResultsPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {roadmap.map(([label, items], colIdx) => (
                         <div key={label} className="rounded-xl border border-[var(--line)] p-3.5">
-                          <span className={`rp-pill ${['rp-blue', 'rp-green', 'rp-purple', 'rp-gray'][colIdx % 4]}`}>{label}</span>
+                          <span className={`rp-pill rp-wrap ${['rp-blue', 'rp-green', 'rp-purple', 'rp-gray'][colIdx % 4]}`}>{label}</span>
                           <ul className="mt-3 space-y-2.5">
                             {(items as string[]).map((item, i) => (
                               <li key={i} className="rp-body text-charcoal/90 flex items-start gap-2">
@@ -1269,8 +1269,8 @@ export default function ResultsPage() {
                 const qRisk: string | undefined = qAi?.ai_risk_level
                 return (
                   <div key={job.title} className="rounded-2xl border border-[var(--line)] bg-lightblue/40 px-4 py-3.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="rp-h capitalize text-charcoal">{job.title}</p>
+                    <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+                      <p className="rp-h capitalize text-charcoal flex-1 basis-0 min-w-[7rem]">{job.title}</p>
                       {typeof job.match_score === 'number' && (
                         <span className="rp-pill rp-blue shrink-0">{job.match_score}% {t('suggestedCareers.matchLabel')}</span>
                       )}
@@ -1353,8 +1353,8 @@ export default function ResultsPage() {
                         : `bg-lightblue/40 border border-[var(--line)] border-s-4 ${isNew ? 'border-s-[var(--rp-purple-line)]' : 'border-s-[var(--rp-blue-line)]'}`
                     } ${rejected ? 'opacity-60' : ''}`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <p className={`rp-h capitalize ${topDark ? 'text-white' : 'text-charcoal'}`}>{job.title}</p>
+                    <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+                      <p className={`rp-h capitalize flex-1 basis-0 min-w-[7rem] ${topDark ? 'text-white' : 'text-charcoal'}`}>{job.title}</p>
                       {typeof job.match_score === 'number' && (
                         <span className={`rp-pill shrink-0 ${topDark ? 'rp-ondark' : 'rp-blue'}`}>
                           {job.match_score}% {t('suggestedCareers.matchLabel')}
@@ -1443,10 +1443,10 @@ export default function ResultsPage() {
                           type="button"
                           aria-expanded={aiIsOpen}
                           onClick={() => { if (!aiIsOpen) noteAiImpactOpened(); setAiOpen(prev => ({ ...prev, [job.title]: !aiIsOpen })) }}
-                          className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 text-start"
+                          className="w-full flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 px-3.5 py-2.5 text-start"
                         >
-                          <span className="flex items-center gap-2 rp-body font-bold"><PillIcon name="shield" size={16} />{t('aiImpact.rowTitle')}</span>
-                          <span className="flex items-center gap-2">
+                          <span className="flex items-center gap-2 rp-body font-bold min-w-0"><PillIcon name="shield" size={16} />{t('aiImpact.rowTitle')}</span>
+                          <span className="flex items-center gap-2 ms-auto">
                             {aiRisk && ['low', 'medium', 'high'].includes(aiRisk) && (
                               <span className={`rp-pill ${aiRisk === 'low' ? 'rp-green' : aiRisk === 'medium' ? 'rp-amber' : 'rp-rose'}`}>{t('aiImpact.riskLabel')}: {levelLabel(aiRisk)}</span>
                             )}
@@ -1466,7 +1466,7 @@ export default function ResultsPage() {
                                 <FreeCheckRow>{aiCareer.at_risk_tasks[0]}</FreeCheckRow>
                                 {(aiCareer.at_risk_tasks_total ?? 2) > 1 && (
                                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/80 border border-primary/20 p-4">
-                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1 basis-[13rem]">
                                       <FreeLockIcon tone="primary" />
                                       <div className="min-w-0">
                                         <p className="rp-h text-charcoal">{aiCareer.at_risk_tasks_total ? t('aiImpact.free_moreTasksTitle', { n: aiCareer.at_risk_tasks_total - 1 }) : t('aiImpact.free_moreTasksTitleGeneric')}</p>
@@ -1508,7 +1508,7 @@ export default function ResultsPage() {
                                 <FreeCheckRow>{aiCareer.protected_skills[0]}</FreeCheckRow>
                                 {(aiCareer.protected_skills_total ?? 2) > 1 && (
                                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/80 border border-teal/30 p-4">
-                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1 basis-[13rem]">
                                       <FreeLockIcon tone="teal" />
                                       <div className="min-w-0">
                                         <p className="rp-h text-charcoal">{aiCareer.protected_skills_total ? t('aiImpact.free_moreSkillsTitle', { n: aiCareer.protected_skills_total - 1 }) : t('aiImpact.free_moreSkillsTitleGeneric')}</p>
@@ -1552,14 +1552,14 @@ export default function ResultsPage() {
                                 <p className="rp-body text-charcoal">{aiCareer.what_this_means_for_you}</p>
                                 <div className="rounded-xl bg-white border border-primary/20 p-4" style={{ boxShadow: '0 12px 32px -18px rgba(7,112,186,.5)' }}>
                                   <div className="flex flex-wrap gap-x-6 gap-y-3">
-                                    <div className="flex items-start gap-3 min-w-[220px] flex-1">
+                                    <div className="flex items-start gap-3 min-w-0 basis-[220px] flex-1">
                                       <FreeLockIcon tone="primary" />
                                       <div>
                                         <p className="rp-h text-charcoal">{t('aiImpact.free_roadmapTitle')}</p>
                                         <p className="rp-sub mt-1">{t('aiImpact.free_roadmapLead')}</p>
                                       </div>
                                     </div>
-                                    <ul className="space-y-1.5 min-w-[220px] flex-1">
+                                    <ul className="space-y-1.5 min-w-0 basis-[220px] flex-1">
                                       {(t.raw('aiImpact.free_roadmapItems') as string[]).map(x => (
                                         <li key={x} className="rp-sub flex gap-2 text-charcoal/85"><span className="text-teal font-black">✓</span>{x}</li>
                                       ))}
@@ -1717,7 +1717,7 @@ export default function ResultsPage() {
                     {m.careers?.length > 0 && (
                       <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                         <span className="rp-label">{t('studentTrack.leadsTo')}</span>
-                        {m.careers.map((c: string) => <span key={c} className="rp-pill rp-blue">{c}</span>)}
+                        {m.careers.map((c: string) => <span key={c} className="rp-pill rp-blue rp-wrap">{c}</span>)}
                       </div>
                     )}
                     {safeLink(m.link) && (
@@ -1799,7 +1799,7 @@ export default function ResultsPage() {
               {saveError && <p className="text-xs text-rose-500 mb-2">{saveError}</p>}
               <div className="space-y-2">
                 {jobListings.map((job: any, i: number) => (
-                  <div key={i} className="flex items-start justify-between gap-3 border border-[var(--line)] rounded-xl p-3.5 hover:border-[var(--line-strong)] hover:bg-lightblue/50 transition-colors">
+                  <div key={i} className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border border-[var(--line)] rounded-xl p-3.5 hover:border-[var(--line-strong)] hover:bg-lightblue/50 transition-colors">
                     <a href={job.url} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 group">
                       <p className="rp-h text-charcoal group-hover:text-primary truncate">{job.title}</p>
                       <p className="rp-sub truncate">{job.company} · {job.location}</p>
@@ -1814,7 +1814,7 @@ export default function ResultsPage() {
                         </div>
                       )}
                     </a>
-                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <div className="flex flex-row sm:flex-col items-center sm:items-end gap-1.5 shrink-0">
                       <span className="rp-pill rp-gray">{job.source}</span>
                       <button
                         onClick={() => saveJob(job, i)}
@@ -1893,9 +1893,9 @@ export default function ResultsPage() {
                     <p className={`rp-label ${i > 0 ? 'mt-4' : ''} mb-2`}>{t('courses.forCareer', { career: cert.for_career })}</p>
                   )}
                   <div className="border border-[var(--line)] rounded-xl p-3.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="rp-h text-charcoal">{cert.title}</p>
-                      {cert.provider_type && <span className="rp-pill rp-gray">{cert.provider_type}</span>}
+                    <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="rp-h text-charcoal min-w-0 sm:flex-1">{cert.title}</p>
+                      {cert.provider_type && <span className="rp-pill rp-gray rp-wrap max-w-full sm:max-w-[55%]">{cert.provider_type}</span>}
                     </div>
                     {cert.about && (
                       <p className="rp-sub mt-1.5"><span className="font-bold text-charcoal">{t('courses.about')}:</span> {cert.about}</p>
@@ -1936,8 +1936,8 @@ export default function ResultsPage() {
                     rel="noopener noreferrer"
                     className="block border border-[var(--line)] rounded-xl p-3.5 hover:border-[var(--line-strong)] hover:bg-lightblue/50 transition-colors group"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
+                    <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
+                      <div className="flex-1 basis-0 min-w-[7rem]">
                         <p className="rp-h text-charcoal group-hover:text-primary">{course.title}</p>
                         <p className="rp-sub">{course.provider} · {course.level}{course.duration_hours ? ` · ${course.duration_hours}h` : ''}</p>
                       </div>
@@ -2057,8 +2057,8 @@ export default function ResultsPage() {
             <div className="space-y-3">
               {aiImpact.careers?.map((c: any) => (
                 <div key={c.title} className="border border-[var(--line)] rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="rp-h text-charcoal">{c.title}</span>
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <span className="rp-h text-charcoal min-w-0">{c.title}</span>
                     <span className={`rp-pill ${
                       c.ai_risk_level === 'low' ? 'rp-green' :
                       c.ai_risk_level === 'medium' ? 'rp-amber' :
@@ -2262,7 +2262,7 @@ export default function ResultsPage() {
               subtitle={t('workStyle.subtitle')}
               icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>}
             />
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3">
+            <div className="grid grid-cols-1 min-[430px]:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3">
               {[
                 { label: t('workStyle.pace'), low: t('workStyle.steady'), high: t('workStyle.fastPaced'), score: summary.work_style.pace },
                 { label: t('workStyle.environment'), low: t('workStyle.largeOrg'), high: t('workStyle.startup'), score: summary.work_style.environment },
@@ -2274,7 +2274,7 @@ export default function ResultsPage() {
                 ] : []),
               ].map(({ label, low, high, score }) => (
                 <div key={label}>
-                  <div className="flex justify-between items-center mb-1">
+                  <div className="flex flex-wrap justify-between items-center gap-x-2 gap-y-1 mb-1">
                     <span className="rp-sub font-medium">{label}</span>
                     <span className={`rp-pill ${score >= 50 ? 'rp-blue' : 'rp-gray'}`}>{score >= 50 ? high : low}</span>
                   </div>
