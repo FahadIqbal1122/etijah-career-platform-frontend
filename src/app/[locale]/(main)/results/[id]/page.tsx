@@ -235,7 +235,7 @@ function AiImpactDeepDivePlaceholder() {
 // Coach switch: on = the coach asks, off (default) = the original cards. See COACH_FEEDBACK inside ResultsPage.
 // const COACH_FEEDBACK = true
 
-const COACH_NUDGE_STAGE1 = { en: 'Four quick taps and I’ll show your report', ar: 'أربع نقرات سريعة وسأعرض لك تقريرك' }
+const COACH_NUDGE_STAGE1 = { en: 'Three quick taps and I’ll show your report', ar: 'ثلاث نقرات سريعة وسأعرض لك تقريرك' }
 const COACH_NUDGE_RESULT = { en: 'Four quick questions about your results?', ar: 'أربعة أسئلة سريعة عن نتائجك؟' }
 
 export default function ResultsPage() {

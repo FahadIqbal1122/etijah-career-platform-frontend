@@ -86,6 +86,12 @@ type Submission = {
 // Resolves a raw stored answer (option value(s), a 1-6 scale number, or free
 // text) back to the human-readable label a reviewer would recognize — so the
 // admin answers panel reads like the assessment itself, not a value dump.
+// What the person typed when they picked "Other" (stored beside the answer as `<questionId>_other`).
+function withOtherText(base: string, answers: Record<string, any> | null | undefined, qid: string): string {
+  const typed = String(answers?.[`${qid}_other`] ?? '').trim()
+  return typed ? `${base} — ${typed}` : base
+}
+
 function formatAnswer(q: Question, raw: unknown): string {
   if (raw === null || raw === undefined || raw === '') return '—'
   if (q.type === 'behavioral_scale') {
@@ -2688,8 +2694,8 @@ export default function AdminPage() {
                     ['Name', selected.full_name],
                     ['Email', selected.email],
                     ['Phone', selected.phone],
-                    ['Country', selected.country],
-                    ['Nationality', selected.nationality],
+                    ['Country', selected.country === 'other' ? withOtherText('other', adminAnswers, 'QO1') : selected.country],
+                    ['Nationality', selected.nationality === 'other' ? withOtherText('other', adminAnswers, 'QO2') : selected.nationality],
                     ['Age', selected.age ?? (selected.age_bracket ? AGE_BRACKET_LABEL[selected.age_bracket] || selected.age_bracket : null)],
                     ['Experience', selected.experience_level ? (EXPERIENCE_LEVEL_LABEL[selected.experience_level] || selected.experience_level) : null],
                     ['Education field', (selected.education_field || []).join(', ')],
@@ -2753,7 +2759,7 @@ export default function AdminPage() {
                           {qs.map(q => (
                             <div key={q.id} className="text-sm">
                               <dt className="text-slate-500">{q.text}</dt>
-                              <dd className="text-slate-800 font-medium">{formatAnswer(q, adminAnswers[q.id])}</dd>
+                              <dd className="text-slate-800 font-medium">{withOtherText(formatAnswer(q, adminAnswers[q.id]), adminAnswers, q.id)}</dd>
                             </div>
                           ))}
                         </dl>
@@ -3319,7 +3325,7 @@ export default function AdminPage() {
             const f1: FeedbackRow[] = [
               scale('s1_understood', bf.s1_understood),
               choice('s1_intent', bf.s1_intent),
-              scale('s1_confidence', bf.s1_confidence),
+              // scale('s1_confidence', bf.s1_confidence),   // question removed from F1
               choice('s1_length', bf.s1_length),
               scale('s1_clarity', bf.s1_clarity, 5, 'Clarity of questions (beta form)', true),
               scale('s1_feeling', bf.s1_feeling, 5, 'Feeling during the assessment (beta form)', true),
@@ -3966,7 +3972,7 @@ export default function AdminPage() {
             dt(s.created_at), s.full_name, s.email, a.locale || '',
             ...answeredQs.map(q => {
               const raw = a.answers?.[q.id]
-              return raw === undefined || raw === null || raw === '' ? '' : formatAnswer(q, raw)
+              return raw === undefined || raw === null || raw === '' ? '' : withOtherText(formatAnswer(q, raw), a.answers, q.id)
             }),
           ]
         }),
@@ -3997,7 +4003,8 @@ export default function AdminPage() {
         ['Feedback stage', bf => BETA_FEEDBACK_STAGE_LABELS[betaFeedbackStageOf(bf)]],
         ['Plan tier', bf => bf.plan_tier || ''], ['Form version', bf => bf.form_version || ''], ['Locale', bf => bf.locale || ''], ['Device', bf => bf.device || ''],
         ['S1 clarity (1-5)', bf => bf.s1_clarity], ['S1 feeling (1-5)', bf => bf.s1_feeling], ['S1 understood (1-5)', bf => bf.s1_understood],
-        ['S1 confidence (1-5)', bf => bf.s1_confidence], ['S1 length', bf => answerLabel('s1_length', bf.s1_length)], ['S1 wants from results', bf => answerLabel('s1_intent', bf.s1_intent)],
+        // ['S1 confidence (1-5)', bf => bf.s1_confidence],   // question removed from F1
+        ['S1 length', bf => answerLabel('s1_length', bf.s1_length)], ['S1 wants from results', bf => answerLabel('s1_intent', bf.s1_intent)],
         ['F1 completed at', bf => dt(bf.stage1_completed_at)],
         ['Result accuracy', bf => answerLabel('result_accuracy', bf.result_accuracy)], ['Would recommend', bf => answerLabel('would_recommend', bf.would_recommend)], ['Would pay (beta form)', bf => answerLabel('would_pay', bf.would_pay)],
         ['F2 completed at', bf => dt(bf.result_stage_completed_at)],
@@ -4694,7 +4701,7 @@ export default function AdminPage() {
               const clarityAvg = average(stage1Responses.map(bf => bf.s1_clarity))
               const feelingAvg = average(stage1Responses.map(bf => bf.s1_feeling))
               const understoodAvg = average(stage1Responses.map(bf => bf.s1_understood))
-              const confidenceAvg = average(stage1Responses.map(bf => bf.s1_confidence))
+              // const confidenceAvg = average(stage1Responses.map(bf => bf.s1_confidence))   // question removed from F1
               const stage1IntentAnswered = answered(stage1Responses, bf => bf.s1_intent)
               const stage1LengthAnswered = answered(stage1Responses, bf => bf.s1_length)
               // Launch F2 asks these two on the results page; the beta form asked them in the follow-up, so they
@@ -4819,7 +4826,7 @@ export default function AdminPage() {
                   [],
                   [`F1 Pre-Result Short (${stage1Total} respondents)`],
                   ['Felt understood — average (1-5)', understoodAvg != null ? understoodAvg.toFixed(1) : ''],
-                  ['Confidence in direction — average (1-5)', confidenceAvg != null ? confidenceAvg.toFixed(1) : ''],
+                  // ['Confidence in direction — average (1-5)', confidenceAvg != null ? confidenceAvg.toFixed(1) : ''],   // question removed from F1
                   [],
                   ...breakdownRows(STAGE1_INTENT_ORDER, STAGE1_INTENT_LABEL, countBy(stage1IntentAnswered, bf => bf.s1_intent), stage1IntentAnswered.length, formQuestion('s1_intent')),
                   [],
@@ -5120,14 +5127,14 @@ export default function AdminPage() {
                       <p className="text-slate-400 text-xs text-center py-6">Select F1, F2 or F3 (all, Free form or Paid form) above to see that form's feedback charts.</p>
                     ) : betaDemographicsFilter === 'stage1' ? (
                       <>
-                        <p className="text-xs text-slate-400 mb-3">{stage1Total} respondent{stage1Total !== 1 ? 's' : ''} · the four quick taps while the report loads</p>
+                        <p className="text-xs text-slate-400 mb-3">{stage1Total} respondent{stage1Total !== 1 ? 's' : ''} · the three quick taps while the report loads</p>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <BetaAverageChart
                             title="Before the results (average, 1–5)"
                             max={5}
                             rows={[
                               { label: 'Felt understood', avg: understoodAvg, n: answered(stage1Responses, bf => bf.s1_understood).length, people: answered(stage1Responses, bf => bf.s1_understood) },
-                              { label: 'Confidence in direction', avg: confidenceAvg, n: answered(stage1Responses, bf => bf.s1_confidence).length, people: answered(stage1Responses, bf => bf.s1_confidence) },
+                              // { label: 'Confidence in direction', avg: confidenceAvg, n: answered(stage1Responses, bf => bf.s1_confidence).length, people: answered(stage1Responses, bf => bf.s1_confidence) },   // question removed from F1
                               // Beta-form taps (dropped from the launch form): only listed when the cohort has them.
                               ...(clarityAvg != null ? [{ label: 'Clarity of questions (beta)', avg: clarityAvg, n: answered(stage1Responses, bf => bf.s1_clarity).length, people: answered(stage1Responses, bf => bf.s1_clarity) }] : []),
                               ...(feelingAvg != null ? [{ label: 'Feeling during assessment (beta)', avg: feelingAvg, n: answered(stage1Responses, bf => bf.s1_feeling).length, people: answered(stage1Responses, bf => bf.s1_feeling) }] : []),
@@ -5822,7 +5829,7 @@ export default function AdminPage() {
                 const rows: (string | number | null)[][] = [
                   [
                     'Name', 'Email', 'Country', 'Nationality', 'Age', 'Experience', 'Current stage', 'Cohort', 'Feedback stage', 'Locale',
-                    'S1: clarity (1-5, beta)', 'S1: feeling (1-5, beta)', 'S1: understood (1-5)', 'S1: wants from results', 'S1: confidence (1-5)', 'S1: assessment length', 'F1 Pre-Result Short completed at',
+                    'S1: clarity (1-5, beta)', 'S1: feeling (1-5, beta)', 'S1: understood (1-5)', 'S1: wants from results', 'S1: assessment length', 'F1 Pre-Result Short completed at',
                     'Accuracy (result_accuracy)', 'Would recommend', 'Would pay (beta form)', 'F2 Result Page Short completed at',
                     'Language used', 'Device', 'Understood after (1-5)', 'Felt like coach', 'Careers seriously considered',
                     'Understood why suggested', 'Most useful part', 'Least useful part', 'First action (text)',
@@ -5848,7 +5855,7 @@ export default function AdminPage() {
                     bf.assessment_responses?.experience_level ? (EXPERIENCE_LEVEL_LABEL[bf.assessment_responses.experience_level] || bf.assessment_responses.experience_level) : '',
                     bf.assessment_responses?.current_stage || '', cohortLabel({ created_at: bf.created_at, cohort_override: bf.assessment_responses?.cohort_override }),
                     BETA_FEEDBACK_STAGE_LABELS[betaFeedbackStageOf(bf)], bf.locale || '',
-                    bf.s1_clarity, bf.s1_feeling, bf.s1_understood, answerLabel('s1_intent', bf.s1_intent), bf.s1_confidence, answerLabel('s1_length', bf.s1_length),
+                    bf.s1_clarity, bf.s1_feeling, bf.s1_understood, answerLabel('s1_intent', bf.s1_intent), answerLabel('s1_length', bf.s1_length),
                     bf.stage1_completed_at ? new Date(bf.stage1_completed_at).toLocaleString() : '',
                     // would_recommend/would_pay are single columns asked both on the
                     // Result Stage and again in Stage 2 — one answer, not two independent

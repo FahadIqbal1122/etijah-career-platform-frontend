@@ -67,8 +67,8 @@ export interface QuickQuestion {
 // ---------------------------------------------------------------------------
 
 export const stage1Intro: Bi = {
-  en: 'Building your report… while you wait, four quick taps:',
-  ar: 'جارٍ إعداد تقريرك… وأنت تنتظر، أربع نقرات سريعة:',
+  en: 'Building your report… while you wait, three quick taps:',
+  ar: 'جارٍ إعداد تقريرك… وأنت تنتظر، ثلاث نقرات سريعة:',
 }
 
 export const stage1Thanks: Bi = {
@@ -90,10 +90,11 @@ export const stage1Questions: QuickQuestion[] = [
       { value: 'get_job_faster', label: { en: 'Get a job faster', ar: 'الحصول على وظيفة بشكل أسرع' } },
       { value: 'understand_ai_impact', label: { en: 'Understand how AI affects my field', ar: 'فهم تأثير الذكاء الاصطناعي على مجالي' } },
     ] },
-  // A baseline to compare with how people feel after the follow-up.
-  { key: 's1_confidence', type: 'faces',
-    label: { en: 'How confident do you feel about your career direction right now?', ar: 'ما مدى ثقتك باتجاهك المهني في الوقت الحالي؟' },
-    low: { en: 'Not at all confident', ar: 'لست واثقًا إطلاقًا' }, high: { en: 'Very confident', ar: 'واثق جدًا' } },
+  // Removed from F1 on request (14 Oct 2026). Old answers stay in the database.
+  // // A baseline to compare with how people feel after the follow-up.
+  // { key: 's1_confidence', type: 'faces',
+  //   label: { en: 'How confident do you feel about your career direction right now?', ar: 'ما مدى ثقتك باتجاهك المهني في الوقت الحالي؟' },
+  //   low: { en: 'Not at all confident', ar: 'لست واثقًا إطلاقًا' }, high: { en: 'Very confident', ar: 'واثق جدًا' } },
   { key: 's1_length', type: 'options',
     label: { en: 'How did the length of the assessment feel?', ar: 'كيف وجدت طول التقييم؟' },
     options: [
