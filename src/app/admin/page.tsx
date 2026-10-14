@@ -916,7 +916,7 @@ function TelemetryBehaviorView({
               ) : drilldown.rows.map(({ session, note }) => (
                 <div key={session.session_id} className="w-full flex items-center justify-between gap-3 px-5 py-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-800 truncate">{session.full_name || (session.completed ? 'Unknown' : 'Abandoned attempt')}</p>
+                    <p className="text-sm font-medium text-slate-800 truncate">{session.full_name || (session.completed ? 'Unknown' : 'Dropped-off attempt')}</p>
                     <p className="text-xs text-slate-400 truncate">{session.email || '—'} · <span className="capitalize">{session.device_type || 'unknown device'}</span></p>
                   </div>
                   <span className="shrink-0 text-xs font-medium text-primary bg-lightblue px-2 py-1 rounded-full max-w-[45%] truncate">{note}</span>
@@ -3691,8 +3691,11 @@ export default function AdminPage() {
   const isPaidSale = (t: SaleEntry) => !!t.paid_at || ['paid', 'captured', 'succeeded', 'success', 'completed'].includes((t.status || '').toLowerCase())
   // Every payment before 8 Oct 2026 was a test, and so are PATHFINDER_TEST_AMOUNT charges (0.1 BHD) at any time:
   // both are hidden from Sales.
+  // Individual test orders made after go-live (matched by buyer email), also hidden.
+  const TEST_SALE_EMAILS = ['parental.newt.xvyt@hidingpost.com'] // "testing final", 13 Oct 2026
   const isTestSale = (t: SaleEntry) =>
     new Date(t.paid_at || t.created_at) < SALES_REAL_FROM || (t.currency === 'BHD' && Number(t.amount) <= 0.1)
+    || TEST_SALE_EMAILS.includes((t.email || '').trim().toLowerCase())
   const realSales = salesList.filter(t => !isTestSale(t))
   const hiddenTestSalesCount = salesList.length - realSales.length
   const livePaidSales = realSales.filter(isPaidSale)
@@ -3739,8 +3742,14 @@ export default function AdminPage() {
   const dashExplorerCount = dashSubmissions.filter(s => s.completed && !livePaidEmails.has(emailKey(s.email))).length
   const dashRevenueByCurrency = new Map<string, number>()
   for (const t of dashPaidSales) dashRevenueByCurrency.set(t.currency, (dashRevenueByCurrency.get(t.currency) || 0) + Number(t.amount || 0))
-  const dashRevenueLabel = dashRevenueByCurrency.size === 0 ? '0'
-    : Array.from(dashRevenueByCurrency.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ')
+  // const dashRevenueLabel = dashRevenueByCurrency.size === 0 ? '0'
+  //   : Array.from(dashRevenueByCurrency.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ')
+  // One BHD figure excluding 10% VAT (stored amounts are VAT-inclusive; SAR→BHD via USD pegs 0.376 / 3.75)
+  const dashNetRevenueBhd = dashPaidSales.reduce((sum, t) => {
+    const amt = Number(t.amount || 0)
+    return sum + (t.currency === 'SAR' ? amt * 0.1003 : amt)
+  }, 0) / 1.10
+  const dashRevenueLabel = `${dashNetRevenueBhd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BHD`
   // Behavior sessions link to a submission through response_id; sessions that never reached a submission
   // (no response_id) can't be matched to demographics, so they drop out while a filter is active.
   const dashSessionIds = new Set(telemetrySessions
@@ -3864,8 +3873,8 @@ export default function AdminPage() {
       const filterNotes: string[] = []
       if (dashFiltersActive) filterNotes.push('Filters are active: every sheet only contains the matching people.')
       filterNotes.push('Sales are matched to the filtered people by email; the date range applies to the payment date.')
-      if (demoFilterOn) filterNotes.push('Country / nationality / age filters are active, so sheets with no demographics (abandoned, coaching log) are left out.')
-      else filterNotes.push('Abandoned and coaching log only use the date range (they carry no demographics).')
+      if (demoFilterOn) filterNotes.push('Country / nationality / age filters are active, so sheets with no demographics (dropped off, coaching log) are left out.')
+      else filterNotes.push('Dropped-off and coaching log only use the date range (they carry no demographics).')
 
       const summary: SummaryBlock[] = [
         { title: 'Report', headers: ['', ''], rows: [
@@ -4055,7 +4064,7 @@ export default function AdminPage() {
 
       if (!demoFilterOn) {
         sheets.push({
-          name: 'Abandoned',
+          name: 'Dropped off',
           note: 'People who gave an email and started but did not finish the assessment (date filter uses last activity).',
           headers: ['Name', 'Email', 'Language', 'Progress %', 'Questions answered', 'Total questions', 'Last activity', 'Reminder sent', 'Source'],
           rows: abandonedList.filter(a => inDashDateRange(a.last_activity_at)).map(a => [
@@ -4304,7 +4313,7 @@ export default function AdminPage() {
                 { key: 'liveDashboard', label: 'Dashboard', color: 'bg-sky-700' },
                 { key: 'liveSubmissions', label: 'Submissions', color: 'bg-sky-600', badge: liveSubmissions.length > 0 ? liveSubmissions.length : undefined },
                 { key: 'liveCareerRecs', label: 'Career Recs', color: 'bg-teal-600', badge: liveCareerRecsGenerated.length > 0 ? liveCareerRecsGenerated.length : undefined },
-                { key: 'abandoned', label: 'Abandoned', color: 'bg-amber-600', badge: abandonedList.length > 0 ? abandonedList.length : undefined, onSelect: fetchAbandoned },
+                { key: 'abandoned', label: 'Dropped off', color: 'bg-amber-600', badge: abandonedList.length > 0 ? abandonedList.length : undefined, onSelect: fetchAbandoned },
                 { key: 'liveFeedback', label: 'Feedback', color: 'bg-sky-500', badge: liveFeedbackList.length > 0 ? liveFeedbackList.length : undefined },
                 { key: 'liveBehavior', label: 'Behavior', color: 'bg-purple-600', badge: liveTelemetrySummary.sessionCount > 0 ? liveTelemetrySummary.sessionCount : undefined },
                 { key: 'liveSales', label: 'Sales', color: 'bg-emerald-600', badge: livePaidSales.length > 0 ? livePaidSales.length : undefined },
@@ -4612,11 +4621,12 @@ export default function AdminPage() {
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">At a glance · since {LIVE_START.toLocaleDateString()}</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   <BetaStatTile label="Number of sales" accent="#1baf7a" spark={salesTrend.map(p => p.value)} value={String(dashPaidSales.length)} sublabel="Transactions (paid orders)" onClick={() => setActiveTab('liveSales')} />
-                  <BetaStatTile label="Total revenue" accent="#1baf7a" value={dashRevenueLabel} sublabel="From paid orders" onClick={() => setActiveTab('liveSales')} />
+                  <BetaStatTile label="Total revenue" accent="#1baf7a" value={dashRevenueLabel} sublabel="Excl. 10% VAT · paid orders" onClick={() => setActiveTab('liveSales')} />
                   <BetaStatTile label="Free reports (Explorer)" accent="#2a78d6" value={String(dashExplorerCount)} sublabel="Completed, no purchase" onClick={() => setActiveTab('liveSubmissions')} />
                   <BetaStatTile label="Pathfinder plans sold" accent="#eb6834" value={String(dashPaidSales.length - dashCoachingSales.length)} sublabel="Paid report" onClick={() => setActiveTab('liveSales')} />
                   <BetaStatTile label="Launchpad plans sold" accent="#6250d6" value={String(dashCoachingSales.length)} sublabel="Report + 1:1 coaching" onClick={() => setActiveTab('liveCoaching')} />
                   <BetaStatTile label="Assessments submitted" accent="#2a78d6" spark={submissionsTrend.map(p => p.value)} value={String(dashSubmissions.length)} sublabel={`${dashSubmissions.filter(sub => sub.completed).length} completed`} onClick={() => setActiveTab('liveSubmissions')} />
+                  <BetaStatTile label="Dropped off" accent="#eda100" value={String(abandonedList.filter(a => inDashDateRange(a.last_activity_at)).length)} sublabel="Started the assessment, never finished" onClick={() => { fetchAbandoned(); setActiveTab('abandoned') }} />
                   {/* Moved under "Who's testing" and now shows careers rejected ("Not for me") instead of careers recommended:
                   <BetaStatTile label="Careers recommended" accent="#e87ba4" value={String(dashCareerRecs.length)} sublabel="Users who received career matches" onClick={() => setActiveTab('liveCareerRecs')} />
                   */}
@@ -6006,6 +6016,14 @@ export default function AdminPage() {
         {activeTab === 'liveSales' && (() => {
           const revenueByCurrency = new Map<string, number>()
           for (const t of dashPaidSales) revenueByCurrency.set(t.currency, (revenueByCurrency.get(t.currency) || 0) + Number(t.amount || 0))
+          // Revenue shown as one BHD figure, excluding 10% VAT (stored amounts are VAT-inclusive)
+          const SAR_TO_BHD = 0.1003 // both pegged to USD: 0.376 / 3.75
+          const VAT_RATE = 0.10
+          const grossBhd = dashPaidSales.reduce((sum, t) => {
+            const amt = Number(t.amount || 0)
+            return sum + (t.currency === 'SAR' ? amt * SAR_TO_BHD : amt)
+          }, 0)
+          const netRevenueBhd = grossBhd / (1 + VAT_RATE)
           const coachingOwed = dashPaidSales.filter(t => t.coaching_included)
           const exportSales = () => downloadCSV(`sales_${new Date().toISOString().slice(0, 10)}.csv`, [
             ['Date', 'Name', 'Email', 'Country', 'Plan', 'Amount', 'Currency', 'Status', 'Paid at', 'Coaching session included', 'Order ref'],
@@ -6025,8 +6043,9 @@ export default function AdminPage() {
                     <BetaStatTile label="Paid orders" value={String(dashPaidSales.length)} sublabel={`${dashRealSales.length} total incl. unpaid`} />
                     <BetaStatTile
                       label="Revenue"
-                      value={revenueByCurrency.size === 0 ? '0' : Array.from(revenueByCurrency.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ')}
-                      sublabel="Paid orders only"
+                      // value={revenueByCurrency.size === 0 ? '0' : Array.from(revenueByCurrency.entries()).map(([c, v]) => `${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${c}`).join(' · ')}
+                      value={`${netRevenueBhd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BHD`}
+                      sublabel="Excl. 10% VAT · paid orders only"
                     />
                     <BetaStatTile label="Coaching sold" value={String(coachingOwed.length)} sublabel="Launchpad orders" onClick={() => setActiveTab('liveCoaching')} />
                     <BetaStatTile label="Pathfinder only" value={String(dashPaidSales.length - coachingOwed.length)} />
@@ -6451,7 +6470,7 @@ export default function AdminPage() {
 
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                   <p className="text-sm text-slate-400">Showing {abandonedShown.length} of {abandonedInRange.length} {abandonedInRange.length === 1 ? 'person' : 'people'}</p>
-                  <DownloadCSVButton onClick={() => downloadCSV(`abandoned_assessments_${new Date().toISOString().slice(0, 10)}.csv`, [
+                  <DownloadCSVButton onClick={() => downloadCSV(`dropped_off_assessments_${new Date().toISOString().slice(0, 10)}.csv`, [
                     ['Name', 'Email', 'Locale', 'Stopped at question', 'Section', 'Question text', 'Progress %', 'Questions answered', 'Total questions', 'Last activity', 'Reminder sent', 'Source'],
                     ...abandonedShown.map(a => {
                       const st = abandonedStop(a)
@@ -6509,7 +6528,7 @@ export default function AdminPage() {
                       })}
                       {abandonedShown.length === 0 && (
                         <tr>
-                          <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No abandoned assessments for these filters</td>
+                          <td colSpan={7} className="px-4 py-12 text-center text-slate-400">No dropped-off assessments for these filters</td>
                         </tr>
                       )}
                     </tbody>
