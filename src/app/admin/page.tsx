@@ -70,6 +70,7 @@ type Submission = {
   phone: string
   country: string
   nationality: string
+  nationality_other?: string | null // what they typed when they picked "Other"
   age: number | null
   age_bracket: string | null // legacy bracket field, still populated on rows submitted before the exact-age question shipped
   experience_level: string | null
@@ -4141,7 +4142,7 @@ export default function AdminPage() {
         ...list.map(sub => {
           const session = telemetryByResponseId.get(sub.id)
           return [
-            sub.full_name || '', sub.email || '', sub.phone || '', sub.country || '', sub.nationality || '',
+            sub.full_name || '', sub.email || '', sub.phone || '', sub.country || '', (sub.nationality === 'other' && sub.nationality_other?.trim()) || sub.nationality || '',
             sub.age ?? (sub.age_bracket ? AGE_BRACKET_LABEL[sub.age_bracket] || sub.age_bracket : '') ?? '',
             sub.experience_level ? (EXPERIENCE_LEVEL_LABEL[sub.experience_level] || sub.experience_level) : '',
             (sub.education_field || []).join('; '),
@@ -4212,7 +4213,7 @@ export default function AdminPage() {
                       {sub.phone && <div className="text-slate-400 text-xs">{sub.phone}</div>}
                     </td>
                     <td className="px-3 py-3 text-slate-500">{sub.country || '—'}</td>
-                    <td className="px-3 py-3 text-slate-500">{sub.nationality || '—'}</td>
+                    <td className="px-3 py-3 text-slate-500">{(sub.nationality === 'other' && sub.nationality_other?.trim()) || sub.nationality || '—'}</td>
                     <td className="px-3 py-3 text-slate-500">{sub.age ?? (sub.age_bracket ? AGE_BRACKET_LABEL[sub.age_bracket] || sub.age_bracket : null) ?? '—'}</td>
                     <td className="px-3 py-3 text-slate-500">{sub.experience_level ? (EXPERIENCE_LEVEL_LABEL[sub.experience_level] || sub.experience_level) : '—'}</td>
                     <td className="px-3 py-3 text-slate-500 capitalize">{(sub.education_field || []).map(f => f.replace(/_/g, ' ')).join(', ') || '—'}</td>
