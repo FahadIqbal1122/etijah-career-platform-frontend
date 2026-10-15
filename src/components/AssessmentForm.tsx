@@ -489,13 +489,17 @@ export default function AssessmentForm() {
   const mid = q?.msgId ?? q?.id
   const qTextStr = q ? tQ(`${mid}.text`, dynField ? { field: tQ(`QO5.options.${dynField}`) } : undefined) : ''
 
-  // Tag Manager: the assessment has begun once question 1 first renders.
-  // Keyed by the telemetry session id so a retake (fresh session) counts again
-  // but a re-render or a back-and-forth within one attempt does not.
+  // Tag Manager: the page was seen (fires on every load of the assessment).
+  // assessment_start now fires from doAdvance() when question 1 is actually answered.
   useEffect(() => {
-    if (phase !== 'question' || !q) return
-    trackOnce(`assessment_start:${getTelemetrySessionId()}`, 'assessment_start', { lang: locale })
-  }, [phase, q])
+    track('assessment_view', { lang: locale })
+  }, [])
+
+  // Old behaviour — fired on render of question 1, so it counted page visits as starts:
+  // useEffect(() => {
+  //   if (phase !== 'question' || !q) return
+  //   trackOnce(`assessment_start:${getTelemetrySessionId()}`, 'assessment_start', { lang: locale })
+  // }, [phase, q])
 
   // Per-question pacing — the cleanup fires exactly when `q.id`/`phase`
   // changes (next question, back, a reveal takeover, finish) or on unmount
@@ -591,6 +595,12 @@ export default function AssessmentForm() {
   }
 
   function doAdvance() {
+    // Tag Manager funnel events. Keyed by the telemetry session id so Back/forward doesn't double-fire.
+    const sid = getTelemetrySessionId()
+    // Real start: question 1 (name) answered and Next clicked.
+    if (q?.id === 'QD1') trackOnce(`assessment_start:${sid}`, 'assessment_start', { lang: locale })
+    // Name + email + phone step submitted (QD3 is the last details question).
+    if (q?.id === 'QD3') trackOnce(`assessment_details_submitted:${sid}`, 'assessment_details_submitted')
     const next = index + 1
     const done = next >= total
     // Every advance pulses the constellation's current star, not just the
@@ -752,6 +762,11 @@ export default function AssessmentForm() {
     const next = pendingRef.current
     if (next >= total) setPhase('finish')
     else {
+      // revealMsg.chapter is the chapter just finished (0-based), so +2 = the chapter now starting (2..5).
+      if (revealMsg) {
+        const chapter = revealMsg.chapter + 2
+        trackOnce(`assessment_chapter_${chapter}:${getTelemetrySessionId()}`, 'assessment_chapter', { chapter })
+      }
       setIndex(next)
       setMaxIndex(m => Math.max(m, next))
       setPhase('question')
