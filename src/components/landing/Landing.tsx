@@ -13,6 +13,7 @@ import LandingConstellation from '@/components/brand/LandingConstellation'
 import { supabase } from '@/lib/supabase'
 import { startCheckout, apiAuthGet, apiAuthPost, type PlanCode } from '@/lib/api'
 import PartnerModal from '@/components/shared/PartnerModal'
+import DemoReportsButton from '@/components/shared/DemoReportsButton'
 import EmailLink from '@/components/shared/EmailLink'
 import { LANDING_VARIANTS, type VariantSlug } from '@/data/landingVariants'
 import { setLandingVariant } from '@/lib/analytics'
@@ -245,8 +246,9 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             </h2>
             <div className="mt-6 flex flex-wrap items-center gap-4">
               {/* opens the real sample report (a PDF, in the page language) in a new tab; it used to only scroll down the page */}
-              <a href={locale === 'ar' ? '/demo-report-ar.pdf' : '/demo-report-en.pdf'} target="_blank" rel="noopener noreferrer"
-                data-track="landing_hero_sample_report" className="cta cta-outline cta-sm">{c.hero.secondary}</a>
+              {/* <a href={locale === 'ar' ? '/demo-report-ar.pdf' : '/demo-report-en.pdf'} target="_blank" rel="noopener noreferrer"
+                data-track="landing_hero_sample_report" className="cta cta-outline cta-sm">{c.hero.secondary}</a> */}
+              <DemoReportsButton locale={locale} source="landing_hero" track="landing_hero_sample_report" className="cta cta-outline cta-sm">{c.hero.secondary}</DemoReportsButton>
               <a href="#pricing" data-track="landing_hero_view_packages" className="cta cta-teal cta-sm">{c.hero.viewPackages}</a>
             </div>
           </Reveal>
@@ -370,14 +372,15 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           </ul>
         </Reveal>
         <Reveal className="mt-8 flex justify-center">
-          <a
+          {/* <a
             href={locale === 'ar' ? '/demo-report-ar.pdf' : '/demo-report-en.pdf'}
             target="_blank"
             rel="noopener noreferrer"
             className="cta cta-outline"
           >
             {c.insideReport.cta}
-          </a>
+          </a> */}
+          <DemoReportsButton locale={locale} source="landing_inside_report" className="cta cta-outline">{c.insideReport.cta}</DemoReportsButton>
         </Reveal>
       </Section>
 

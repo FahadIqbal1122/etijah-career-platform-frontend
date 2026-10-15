@@ -17,6 +17,7 @@ import { LockedSection } from '@/components/shared/LockedSection'
 import { BlurGate } from '@/components/shared/BlurGate'
 import BetaFeedbackStage1 from '@/components/beta-feedback/BetaFeedbackStage1'
 import BreakPanel from '@/components/BreakPanel'
+import DemoReportsButton from '@/components/shared/DemoReportsButton'
 // import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
 import CoachWidget from '@/components/CoachWidget'
 import { roamPool } from '@/data/coachMessages'
@@ -2159,7 +2160,7 @@ export default function ResultsPage() {
               <p className="rp-h text-charcoal">{t('freeUnlock.sampleTitle')}</p>
               <p className="rp-sub mt-0.5">{t('freeUnlock.sampleBody')}</p>
             </div>
-            <a
+            {/* <a
               href={`/demo-report-${locale === 'ar' ? 'ar' : 'en'}.pdf`}
               target="_blank"
               rel="noopener noreferrer"
@@ -2167,7 +2168,15 @@ export default function ResultsPage() {
               className="inline-flex items-center gap-2 rounded-full border-2 border-primary px-5 py-2.5 text-sm font-bold text-primary hover:bg-primary/5 whitespace-nowrap"
             >
               {t('freeUnlock.sampleCta')} <span aria-hidden="true">↗</span>
-            </a>
+            </a> */}
+            <DemoReportsButton
+              locale={locale}
+              source="results_page"
+              track="results_sample_report"
+              className="inline-flex items-center gap-2 rounded-full border-2 border-primary px-5 py-2.5 text-sm font-bold text-primary hover:bg-primary/5 whitespace-nowrap"
+            >
+              {t('freeUnlock.sampleCta')} <span aria-hidden="true">↗</span>
+            </DemoReportsButton>
           </div>
         </div>
       </>),
