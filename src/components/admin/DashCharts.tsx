@@ -76,10 +76,12 @@ export function DonutChart({ items, total, centerLabel = 'responses', onSelect }
             onMouseEnter={() => setHover(s.key)}
             onMouseLeave={() => setHover(null)}
             onClick={() => { if (s.key !== '__rest') onSelect?.(s.key) }}
-            className={`flex items-center gap-2 text-xs rounded-md px-1.5 py-0.5 transition-colors ${onSelect && s.key !== '__rest' ? 'cursor-pointer' : ''} ${hover === s.key ? 'bg-slate-50' : ''}`}
+            // className={`flex items-center gap-2 text-xs rounded-md px-1.5 py-0.5 transition-colors ${onSelect && s.key !== '__rest' ? 'cursor-pointer' : ''} ${hover === s.key ? 'bg-slate-50' : ''}`}
+            className={`flex items-start gap-2 text-xs rounded-md px-1.5 py-0.5 transition-colors ${onSelect && s.key !== '__rest' ? 'cursor-pointer' : ''} ${hover === s.key ? 'bg-slate-50' : ''}`}
           >
-            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: s.color || '#2a78d6' }} />
-            <span className="text-slate-600 flex-1 truncate" title={s.label}>{s.label}</span>
+            <span className="w-2.5 h-2.5 rounded-sm shrink-0 mt-[3px]" style={{ background: s.color || '#2a78d6' }} />
+            {/* <span className="text-slate-600 flex-1 truncate" title={s.label}>{s.label}</span> */}
+            <span className="text-slate-600 flex-1 min-w-0 break-words leading-snug" title={s.label}>{s.label}</span>
             <span className="font-semibold text-slate-800 tabular-nums">{pctOf(s.value, denom)}%</span>
             <span className="text-slate-400 tabular-nums w-8 text-right">{s.value}</span>
           </li>
