@@ -71,6 +71,7 @@ type Submission = {
   country: string
   nationality: string
   nationality_other?: string | null // what they typed when they picked "Other"
+  country_other?: string | null // what they typed when they picked "Other" as country
   age: number | null
   age_bracket: string | null // legacy bracket field, still populated on rows submitted before the exact-age question shipped
   experience_level: string | null
@@ -4142,7 +4143,7 @@ export default function AdminPage() {
         ...list.map(sub => {
           const session = telemetryByResponseId.get(sub.id)
           return [
-            sub.full_name || '', sub.email || '', sub.phone || '', sub.country || '', (sub.nationality === 'other' && sub.nationality_other?.trim()) || sub.nationality || '',
+            sub.full_name || '', sub.email || '', sub.phone || '', (sub.country === 'other' && sub.country_other?.trim()) || sub.country || '', (sub.nationality === 'other' && sub.nationality_other?.trim()) || sub.nationality || '',
             sub.age ?? (sub.age_bracket ? AGE_BRACKET_LABEL[sub.age_bracket] || sub.age_bracket : '') ?? '',
             sub.experience_level ? (EXPERIENCE_LEVEL_LABEL[sub.experience_level] || sub.experience_level) : '',
             (sub.education_field || []).join('; '),
@@ -4212,7 +4213,7 @@ export default function AdminPage() {
                       <div className="text-slate-500">{sub.email || '—'}</div>
                       {sub.phone && <div className="text-slate-400 text-xs">{sub.phone}</div>}
                     </td>
-                    <td className="px-3 py-3 text-slate-500">{sub.country || '—'}</td>
+                    <td className="px-3 py-3 text-slate-500">{(sub.country === 'other' && sub.country_other?.trim()) || sub.country || '—'}</td>
                     <td className="px-3 py-3 text-slate-500">{(sub.nationality === 'other' && sub.nationality_other?.trim()) || sub.nationality || '—'}</td>
                     <td className="px-3 py-3 text-slate-500">{sub.age ?? (sub.age_bracket ? AGE_BRACKET_LABEL[sub.age_bracket] || sub.age_bracket : null) ?? '—'}</td>
                     <td className="px-3 py-3 text-slate-500">{sub.experience_level ? (EXPERIENCE_LEVEL_LABEL[sub.experience_level] || sub.experience_level) : '—'}</td>
@@ -5496,8 +5497,9 @@ export default function AdminPage() {
                                 {demoDrilldown.people.map((p, i) => (
                                   <tr key={p.sub?.id ?? p.bf?.id ?? i}>
                                     <td className="px-4 py-2.5 font-medium text-slate-800">{p.name || 'Unknown'}</td>
-                                    <td className="px-3 py-2.5 text-slate-600">{p.country ? (COUNTRY_LABEL[p.country] || formatUnderscored(p.country)) : '—'}</td>
-                                    <td className="px-3 py-2.5 text-slate-600">{p.nationality ? (NATIONALITY_LABEL[p.nationality] || formatUnderscored(p.nationality)) : '—'}</td>
+                                    <td className="px-3 py-2.5 text-slate-600">{(p.country === 'other' && p.sub?.country_other?.trim()) || (p.country ? (COUNTRY_LABEL[p.country] || formatUnderscored(p.country)) : '—')}</td>
+                                    {/* <td className="px-3 py-2.5 text-slate-600">{p.nationality ? (NATIONALITY_LABEL[p.nationality] || formatUnderscored(p.nationality)) : '—'}</td> */}
+                                    <td className="px-3 py-2.5 text-slate-600">{(p.nationality === 'other' && p.sub?.nationality_other?.trim()) || (p.nationality ? (NATIONALITY_LABEL[p.nationality] || formatUnderscored(p.nationality)) : '—')}</td>
                                     <td className="px-3 py-2.5 text-slate-600">{p.age_bracket ? (AGE_BRACKET_LABEL[p.age_bracket] || p.age_bracket) : '—'}</td>
                                     <td className="px-3 py-2.5 text-slate-600">{p.current_stage ? (CURRENT_STAGE_LABEL[p.current_stage] || formatUnderscored(p.current_stage)) : '—'}</td>
                                     <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap"><DateTimeCell iso={p.at} /></td>
