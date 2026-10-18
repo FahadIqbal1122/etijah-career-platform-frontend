@@ -10,7 +10,7 @@ import EmailSchedulerTab from '@/components/admin/EmailSchedulerTab'
 import SmtpSettingsTab from '@/components/admin/SmtpSettingsTab'
 import ReportTemplatesTab from '@/components/admin/ReportTemplatesTab'
 import { questions, BEHAVIORAL_SCALE, type Question } from '@/data/questions'
-import { stage1Questions, resultStageQuestions, resultStageNoteLabel, followUpSections } from '@/components/beta-feedback/content'
+import { stage1Questions, resultStageQuestions, resultStageQuestionsFree, resultStageNoteLabel, followUpSections } from '@/components/beta-feedback/content'
 import { buildWorkbook, saveBlob, type SheetSpec, type SummaryBlock } from '@/lib/adminExcel'
 
 const levelToWidth: Record<string, string> = {
@@ -395,6 +395,7 @@ const FORM_FIELDS: Record<string, FormField> = (() => {
   }
   stage1Questions.forEach(q => add(q.key, q.label.en, q.options))
   resultStageQuestions.forEach(q => add(q.key, q.label.en, q.options))
+  resultStageQuestionsFree.forEach(q => add(q.key, q.label.en, q.options))   // free snapshot form (self_understanding, unlock_intent)
   ;(['paid', 'free'] as const).forEach(t => followUpSections(t).forEach(sec => sec.fields.forEach(f => add(f.key, f.label.en, f.options))))
   return out
 })()
@@ -1198,6 +1199,8 @@ type BetaFeedbackEntry = {
   felt_like_mentor: string | null
   careers_seriously_considered: string | null
   career_explained: string | null
+  self_understanding: string | null   // free snapshot form (v5_free_snapshot)
+  unlock_intent: string | null
   most_useful_part: string | null
   least_useful_part: string | null
   first_action_text: string | null
@@ -3334,8 +3337,10 @@ export default function AdminPage() {
             ]
             const f2: FeedbackRow[] = [
               choice('result_accuracy', bf.result_accuracy),
-              choice('career_explained', bf.career_explained),
-              choice('careers_seriously_considered', bf.careers_seriously_considered),
+              choice('career_explained', bf.career_explained, undefined, true),   // each form shows only the questions it asked
+              choice('careers_seriously_considered', bf.careers_seriously_considered, undefined, true),
+              choice('self_understanding', bf.self_understanding, undefined, true),
+              choice('unlock_intent', bf.unlock_intent, undefined, true),
               note(resultStageNoteLabel.en, bf.other_text),
               choice('would_pay', bf.would_pay, 'Would pay for the full report? (beta form)', true),
             ]

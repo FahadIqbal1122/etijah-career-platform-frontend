@@ -1052,6 +1052,47 @@
       "about": "Covers what generative AI is, how it works, the different types of AI models and real-world applications.",
       "rating": "4.7/5 from 12,500+ reviews · 1.6 million+ learners",
       "cta": "Start the free course"
+    },
+    "freeSnapshot": {
+      "eyebrow": "Your results are ready",
+      "stoodOut": "Here is what stood out most in your answers.",
+      "interests": "Your interests",
+      "values": "Your values",
+      "strength": "Your strongest strength",
+      "selfReported": "self-reported",
+      "and": " & ",
+      "questionEyebrow": "The question these results raise",
+      "question": "What careers could bring these qualities together?",
+      "questionBody": "Your responses point to several directions worth exploring. Your full report reveals the career recommendations, explains the reasoning, and helps you understand what pursuing them could involve.",
+      "buy": "Unlock my career recommendations — {price}",
+      "buyFine": "One-time payment. Your assessment is already complete.",
+      "buyLead": "You can see the patterns in your profile. Now discover the career paths they could connect to.",
+      "continue": "Continue to explore your free profile",
+      "profileEyebrow": "Your free profile",
+      "profileTitle": "What your answers say about you",
+      "cardInterests": "Your interests",
+      "cardInterestsSub": "The kinds of work you enjoy most",
+      "cardValues": "What matters to you",
+      "cardValuesSub": "What you want from work and life",
+      "cardStrengths": "What you are good at",
+      "cardStrengthsSub": "Your natural strengths",
+      "cardPersonality": "How you think and act",
+      "cardPersonalitySub": "Your personality, using the Big Five traits",
+      "means": "What this means:",
+      "includes": "Your full report adds: suggested careers and why they fit · qualification gaps and learning · AI implications · a personalised 90-day plan.",
+      "disclaimer": "This profile reflects self-reported preferences, not a test of ability or a guarantee of career fit.",
+      "headline": "You like {a}—and {b}.",
+      "phrase": {
+        "realistic": "making things work",
+        "investigative": "understanding how things work",
+        "artistic": "creating and expressing ideas",
+        "social": "helping people",
+        "enterprising": "influencing what happens next",
+        "conventional": "keeping things clear and organised"
+      },
+      "eyebrowNamed": "Your results are ready, {name}",
+      "download": "Download your free snapshot (PDF)",
+      "downloading": "Preparing your PDF…"
     }
   }
 }

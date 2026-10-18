@@ -5,6 +5,8 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // Dev only: lets the dev server be opened as 127.0.0.1 as well as localhost (otherwise the page does not hydrate)
+  allowedDevOrigins: ['127.0.0.1'],
   // The shop hub sends buyers back to {return_url}?order_ref=…&status=paid|failed, and the backend's
   // return_url is /account/billing, which has no page — send them to the dashboard, where billing lives.
   // Query values (order_ref, status) pass through to the destination. The locale-prefixed source is

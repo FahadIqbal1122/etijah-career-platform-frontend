@@ -139,6 +139,27 @@ export const resultStageQuestions: QuickQuestion[] = [
     ] },
 ]
 
+// Free plan (the results "snapshot" page shows no suggested careers): the accuracy question, then these two in place
+// of the career pair. Sent with the form version below so the backend knows which answers complete the form.
+export const RESULT_STAGE_FORM_VERSION_FREE = 'v5_free_snapshot'
+export const resultStageQuestionsFree: QuickQuestion[] = [
+  resultStageQuestions[0],
+  { key: 'self_understanding', type: 'options',
+    label: { en: 'Did this help you understand yourself better?', ar: 'هل ساعدتك هذه النتائج على فهم نفسك بشكل أفضل؟' },
+    options: [
+      { value: 'a_lot', label: { en: 'A lot', ar: 'كثيرًا' } },
+      { value: 'a_little', label: { en: 'A little', ar: 'قليلًا' } },
+      { value: 'not_really', label: { en: 'Not really', ar: 'ليس حقًا' } },
+    ] },
+  { key: 'unlock_intent', type: 'options',
+    label: { en: 'How likely are you to unlock your career recommendations?', ar: 'ما مدى احتمال أن تفتح توصياتك المهنية؟' },
+    options: [
+      { value: 'very_likely', label: { en: 'Very likely', ar: 'محتمل جدًا' } },
+      { value: 'maybe', label: { en: 'Maybe', ar: 'ربما' } },
+      { value: 'not_likely', label: { en: 'Not likely', ar: 'غير محتمل' } },
+    ] },
+]
+
 // Q8 — optional free text, saved to other_text.
 export const resultStageNoteLabel: Bi = {
   en: 'What felt off, or what was missing from your results? (optional)',

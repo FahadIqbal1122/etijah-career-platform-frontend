@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { apiAuthPost } from '@/lib/api'
-import { RESULT_STAGE_FORM_VERSION, resultStageIntro, resultStageNoteLabel, resultStageQuestions, type Locale } from './content'
+import { RESULT_STAGE_FORM_VERSION, RESULT_STAGE_FORM_VERSION_FREE, resultStageIntro, resultStageNoteLabel, resultStageQuestions, resultStageQuestionsFree, type Locale } from './content'
 import { PillSelect } from './shared'
 
 type Answers = Record<string, string>
@@ -13,14 +13,18 @@ function resultStageDoneKey(responseId: string) {
 
 const DONE_LABEL: { en: string; ar: string } = { en: 'Done', ar: 'تم' }
 
-export default function BetaFeedbackResultStage({ responseId, locale, initiallyDone }: {
+export default function BetaFeedbackResultStage({ responseId, locale, initiallyDone, free }: {
   responseId: string
   locale: Locale
+  // Free plan: the snapshot page shows no careers, so it gets the accuracy question plus two about the snapshot
+  free?: boolean
   // Server-truth flag from /beta-feedback/{id}/status — covers a cleared/
   // private-mode browser where the client-side "done" marker below wouldn't
   // otherwise be seen, same reasoning as BetaFeedbackStage1.
   initiallyDone?: boolean
 }) {
+  const questions = free ? resultStageQuestionsFree : resultStageQuestions
+  const formVersion = free ? RESULT_STAGE_FORM_VERSION_FREE : RESULT_STAGE_FORM_VERSION
   const [answers, setAnswers] = useState<Answers>({})
   const [note, setNote] = useState('')
   // Chains saves so an earlier blur's request always reaches the server
@@ -47,8 +51,8 @@ export default function BetaFeedbackResultStage({ responseId, locale, initiallyD
   function answer(key: string, value: string) {
     const next = { ...answers, [key]: value }
     setAnswers(next)
-    const save = apiAuthPost('/beta-feedback/result-stage', { response_id: responseId, locale, result_stage_form_version: RESULT_STAGE_FORM_VERSION, ...next })
-    const isLast = Object.keys(next).length >= resultStageQuestions.length
+    const save = apiAuthPost('/beta-feedback/result-stage', { response_id: responseId, locale, result_stage_form_version: formVersion, ...next })
+    const isLast = Object.keys(next).length >= questions.length
     if (isLast) {
       save.finally(() => setPillsDone(true))
     } else {
@@ -68,7 +72,7 @@ export default function BetaFeedbackResultStage({ responseId, locale, initiallyD
     if (!text.trim() || text === lastSavedNote.current) return
     lastSavedNote.current = text
     noteSaveChain.current = noteSaveChain.current.then(async () => {
-      await apiAuthPost('/beta-feedback/result-stage', { response_id: responseId, locale, result_stage_form_version: RESULT_STAGE_FORM_VERSION, other_text: text }).catch(() => {})
+      await apiAuthPost('/beta-feedback/result-stage', { response_id: responseId, locale, result_stage_form_version: formVersion, other_text: text }).catch(() => {})
     })
   }
 
@@ -85,7 +89,7 @@ export default function BetaFeedbackResultStage({ responseId, locale, initiallyD
       <p className="text-sm font-bold text-charcoal mb-3">{resultStageIntro[locale]}</p>
       {!pillsDone && (
         <div>
-          {resultStageQuestions.map(q => (
+          {questions.map(q => (
             <PillSelect
               key={q.key}
               label={q.label[locale]}

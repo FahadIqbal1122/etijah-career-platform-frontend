@@ -23,6 +23,7 @@ import CoachWidget from '@/components/CoachWidget'
 import { roamPool } from '@/data/coachMessages'
 import CoachSummon from '@/components/CoachSummon'
 import { useUpgradeHref } from '@/components/useUpgradeHref'
+import FreeSnapshot from '@/components/FreeSnapshot'
 import { useCoachRoam, useCoachHidden, useCoachDock } from '@/components/useCoachRoam'
 import BetaFeedbackResultStage from '@/components/beta-feedback/BetaFeedbackResultStage'
 
@@ -356,6 +357,9 @@ export default function ResultsPage() {
   const [aiImpact, setAiImpact] = useState<any>(null)
   const [jobListings, setJobListings] = useState<any[]>([])
   const [isStillEnrolled, setIsStillEnrolled] = useState(false)
+  // Free reports made since the snapshot went live get the two-part snapshot; earlier free reports keep their layout
+  const [snapshotOn, setSnapshotOn] = useState(false)
+  const [firstName, setFirstName] = useState<string | null>(null)
   const [route, setRoute] = useState<string>('')
   const [sectionOrder, setSectionOrder] = useState<string[] | null>(null)
   // Sections the reader has folded away (all open by default).
@@ -412,6 +416,8 @@ export default function ResultsPage() {
           setEmail(data.email || '')
           if (data.tier === 'free' || data.tier === 'pathfinder' || data.tier === 'launchpad') setTier(data.tier)
           setIsStillEnrolled(!!data.is_still_enrolled)
+          setSnapshotOn(!!data.free_snapshot)
+          setFirstName(typeof data.first_name === 'string' && data.first_name ? data.first_name : null)
           if (typeof data.route === 'string') setRoute(data.route)
           if (Array.isArray(data.section_order)) setSectionOrder(data.section_order)
           if (data.locale === 'ar' || data.locale === 'en') { setReportLocale(data.locale); setReportLocaleKnown(true) }
@@ -587,7 +593,10 @@ export default function ResultsPage() {
     )
   }
 
-  const allLoaded = !!summary && templateKnown && !jobsSuggestionsLoading && !aiLoading && !jobsLoading && !companiesLoading && !coursesLoading
+  // New free reports are the two-part snapshot (FreeSnapshot); older ones keep their layout.
+  const freeSnapshot = tier === 'free' && snapshotOn
+  // The snapshot shows no careers, impact, jobs or courses, so it does not wait for them (only its short notes come late)
+  const allLoaded = !!summary && templateKnown && (freeSnapshot || (!jobsSuggestionsLoading && !aiLoading && !jobsLoading && !companiesLoading && !coursesLoading))
 
   // On a fresh completion (justCompleted), hold the report back until the
   // user has answered the stage-1 feedback survey, even after the data
@@ -2378,16 +2387,39 @@ export default function ResultsPage() {
   // the free plan also the careers and the unlock card (the template has its own). Paid plans keep the detailed
   // careers (next steps, AI panels) and the profile narratives below the template.
   const TEMPLATE_COVERS = tier === 'free' ? ['summary', 'careers', 'profile', 'unlock'] : ['summary']
-  const shownKeys = tplData ? orderedKeys.filter(k => !TEMPLATE_COVERS.includes(k)) : orderedKeys
+  // const shownKeys = tplData ? orderedKeys.filter(k => !TEMPLATE_COVERS.includes(k)) : orderedKeys   // previous
+  // The free plan is the two-part snapshot (FreeSnapshot) whatever template is live, so it has no sections below it.
+  const shownKeys = freeSnapshot ? [] : (tplData ? orderedKeys.filter(k => !TEMPLATE_COVERS.includes(k)) : orderedKeys)
 
   return (
     <div className={`min-h-screen brand-surface page-fade-in${useTemplate ? ` rt-${reportTemplate}${tier === 'free' ? ' rt-free' : ''}` : ''}`}>
 
+      {/* Free plan: personal insight + first purchase button, then the explained profile + the same button again */}
+      {freeSnapshot && (
+        <FreeSnapshot
+          locale={locale}
+          interestTypes={summary.riasec?.top_types || []}
+          firstName={firstName}
+          onDownload={() => downloadReport()}
+          downloading={downloadingReport}
+          downloadError={downloadError}
+          notesLoading={jobsSuggestionsLoading}
+          riasec={['realistic', 'investigative', 'artistic', 'social', 'enterprising', 'conventional']
+            .map(k => ({ key: k, label: riasecLabel(k), score: scoreOf(k) }))}
+          interests={(summary.riasec?.top_types || []).slice(0, 2).map((k: string) => riasecLabel(k))}
+          values={(summary.values?.top_values || []).slice(0, 3).map((v: string) => ({ label: valueLabel(v), score: scoreOf(v) }))}
+          strengths={(summary.strengths?.top_strengths || []).slice(0, 3).map((v: string) => ({ label: strengthLabel(v), score: scoreOf(v) }))}
+          personality={Object.entries(summary.big_five || {}).map(([k, level]: [string, unknown]) => ({ label: traitLabel(k), level: levelLabel(String(level)) }))}
+          notes={profileDetails?.overview || {}}
+          upgradeHref={upgradeHref}
+        />
+      )}
+
       {/* Report template (replaces the default hero below) */}
-      {tplData && <ReportTemplateView id={reportTemplate} data={tplData} />}
+      {tplData && !freeSnapshot && <ReportTemplateView id={reportTemplate} data={tplData} />}
 
       {/* Hero */}
-      {!tplData && (
+      {!tplData && !freeSnapshot && (
       <div className="brand-hero px-4 pt-10 pb-16 text-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute top-4 left-8 w-32 h-32 rounded-full bg-white" />
@@ -2408,7 +2440,7 @@ export default function ResultsPage() {
           </div>
           <div className="flex flex-col items-center gap-2 mt-6">
             <div className="flex flex-wrap items-center justify-center gap-2">
-              {tier === 'free' ? (
+              {(tier as string) === 'free' ? (   /* free now shows FreeSnapshot instead of this hero; kept in case the snapshot is switched off */
                 <Link
                   href={upgradeHref}
                   className="inline-flex items-center gap-2 bg-white/10 border border-white/25 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-white/20 transition-colors"
@@ -2467,7 +2499,7 @@ export default function ResultsPage() {
         )}
 
         {/* Every section can be folded away; all start open. A section with nothing to show hides its bar too. */}
-        <div className="flex justify-end gap-3 text-xs text-charcoal/70">
+        <div className={`flex justify-end gap-3 text-xs text-charcoal/70${freeSnapshot ? ' hidden' : ''}`}>
           <button type="button" className="underline" onClick={() => setCollapsedSections({})}>{t('sections.expandAll')}</button>
           <button type="button" className="underline" onClick={() => setCollapsedSections(Object.fromEntries(shownKeys.map(k => [k, true])))}>{t('sections.collapseAll')}</button>
         </div>
@@ -2533,7 +2565,7 @@ export default function ResultsPage() {
 
         {/* Result Stage feedback — non-blocking, at the end of the report (moved from the top 1 Oct 2026); shows on every visit until answered */}
         {!COACH_FEEDBACK && (
-          <BetaFeedbackResultStage responseId={id} locale={locale} initiallyDone={resultStageDone} />
+          <BetaFeedbackResultStage responseId={id} locale={locale} initiallyDone={resultStageDone} free={freeSnapshot} />
         )}
         <div ref={feedbackAnchorRef} aria-hidden="true" style={{ height: 1 }} />
 
