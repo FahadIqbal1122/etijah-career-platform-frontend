@@ -547,7 +547,7 @@ export default function ResultsPage() {
   const feedbackPending = COACH_FEEDBACK && !resultStageDone && !resultMarker && !resultFeedbackDone
   const [coachHidden, hideCoach, showCoach] = useCoachHidden()
   const [coachDock, setCoachDock] = useCoachDock()
-  const roam = useCoachRoam({ pool: roamLines, enabled: !!summary && !coachHidden && !coachDock, paused: feedbackPending && resultFeedbackReached })
+  const roam = useCoachRoam({ pool: roamLines, enabled: COACH_FEEDBACK && !!summary && !coachHidden && !coachDock, paused: feedbackPending && resultFeedbackReached })
 
   // Assessment taken in Arabic: one language only. Pin the page to Arabic (hide the header
   // language switch, and move anyone who opened the English URL over to Arabic).
@@ -2539,11 +2539,11 @@ export default function ResultsPage() {
 
       </div>
       {/* <CoachBubble locale={locale as 'en' | 'ar'} message={coachMsg} onDismiss={dismissCoach} autoHideMs={14000} /> */}
-      {coachHidden && <CoachSummon locale={locale as 'en' | 'ar'} onShow={showCoach} />}
+      {COACH_FEEDBACK && coachHidden && <CoachSummon locale={locale as 'en' | 'ar'} onShow={showCoach} />}
       {/* Not rendered until she has a first section to arrive at; at the end of the report she goes to the feedback question. */}
       {(() => {
         const at = feedbackPending && resultFeedbackReached && feedbackEl ? feedbackEl : roam.target
-        return (at || (coachDock && summary)) && !coachHidden && (
+        return COACH_FEEDBACK && (at || (coachDock && summary)) && !coachHidden && (
           <CoachWidget
             locale={locale as 'en' | 'ar'} mode="results" responseId={id} onHide={hideCoach} dock={coachDock} onDock={setCoachDock}
             spots={at ? { wide: [at], narrow: [at] } : undefined}

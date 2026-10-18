@@ -21,6 +21,7 @@ import CoachWidget from '@/components/CoachWidget'
 import { LANDING_SUGGESTIONS, LANDING_ROAM, PLAN_CHOICES } from '@/data/coachMessages'
 import CoachSummon from '@/components/CoachSummon'
 import { useCoachRoam, useCoachHidden, useCoachDock } from '@/components/useCoachRoam'
+import { useCoachSwitches } from '@/lib/useCoachEnabled'
 import { getTelemetrySessionId } from '@/lib/telemetry'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
@@ -129,9 +130,10 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
   const fillPrice = (x: string) => x.replace(/\{price\}/g, launchPrice)
   // Sarah moves down the page, a short line per section (random order and wording); at the plans she offers to
   // help choose one. The cross sends her away for good (remembered in this browser).
+  const { coach: coachEnabled } = useCoachSwitches()   // admin Coach switch: off = no coach on the landing page
   const [coachHidden, hideCoach, showCoach] = useCoachHidden()
   const [coachDock, setCoachDock] = useCoachDock()
-  const roam = useCoachRoam({ pool: LANDING_ROAM, enabled: !coachHidden && !coachDock, paused: false, firstDelay: 6000, gap: LANDING_GAP })
+  const roam = useCoachRoam({ pool: LANDING_ROAM, enabled: coachEnabled && !coachHidden && !coachDock, paused: false, firstDelay: 6000, gap: LANDING_GAP })
 
   async function handlePlanCta(planCode: PlanCode) {
     // Re-check the session fresh at click time rather than trusting `loggedIn`
@@ -657,8 +659,8 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           <div className="max-w-6xl mx-auto px-5 py-4 text-xs text-white/45">{c.footer.copyright}</div>
         </div>
       </footer>
-      {coachHidden && <CoachSummon locale={locale as 'en' | 'ar'} onShow={showCoach} />}
-      {!coachHidden && (roam.target || coachDock) && (
+      {coachEnabled && coachHidden && <CoachSummon locale={locale as 'en' | 'ar'} onShow={showCoach} />}
+      {coachEnabled && !coachHidden && (roam.target || coachDock) && (
         <CoachWidget
           locale={locale as 'en' | 'ar'} mode="landing" sessionId={getTelemetrySessionId}
           spots={roam.target ? { wide: [roam.target], narrow: [roam.target] } : undefined} onHide={hideCoach} dock={coachDock} onDock={setCoachDock}
