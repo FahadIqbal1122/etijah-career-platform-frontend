@@ -1090,6 +1090,32 @@
         "enterprising": "influencing what happens next",
         "conventional": "keeping things clear and organised"
       },
+      "foundMatches": "We found 8 ranked career matches for this profile, across these fields:",
+      "fields": {
+        "realistic": ["Engineering & technical work", "Hands-on operations"],
+        "investigative": ["Research & analysis", "Science & technology"],
+        "artistic": ["Design & creative work", "Media & communication"],
+        "social": ["Education & training", "Health & community services"],
+        "enterprising": ["Business leadership", "Strategy & policy"],
+        "conventional": ["Finance & administration", "Planning & operations"]
+      },
+      "lockedTitle": "Your full report includes",
+      "locked": "Locked",
+      "lockedItems": ["Your career matches", "Why each career fits you", "Your career in the age of AI", "Your personal career action plan", "Compare your career options"],
+      "tensionTitle": "An interesting combination.",
+      "tension": {
+        "enterprisingLowExtraversion": "You want influence but prefer to exercise it quietly. That points some roles toward you and others away. Your full report shows which.",
+        "artisticHighConscientiousness": "You combine creative drive with discipline. That is a less common mix and it favours some roles over others. Your full report shows which.",
+        "socialLowAgreeableness": "You care about people but you are direct about your views. That suits some roles better than others. Your full report shows which."
+      },
+      "elseTitle": "What else you get in your full report",
+      "elseItems": [
+        { "title": "Your career matches", "text": "Eight ranked careers, and why each fits you" },
+        { "title": "Why each career fits you", "text": "How your profile relates to each career" },
+        { "title": "Your career in the age of AI", "text": "How AI may change the tasks in each career" },
+        { "title": "Your personal career action plan", "text": "Skills to build and next steps to take" },
+        { "title": "Compare your career options", "text": "A side-by-side look at your matches: the work, the fit and the skills needed" }
+      ],
       "eyebrowNamed": "Your results are ready, {name}",
       "download": "Download your free snapshot (PDF)",
       "downloading": "Preparing your PDF…"

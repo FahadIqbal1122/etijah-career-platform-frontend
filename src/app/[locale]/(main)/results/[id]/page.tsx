@@ -2409,6 +2409,7 @@ export default function ResultsPage() {
           interests={(summary.riasec?.top_types || []).slice(0, 2).map((k: string) => riasecLabel(k))}
           values={(summary.values?.top_values || []).slice(0, 3).map((v: string) => ({ label: valueLabel(v), score: scoreOf(v) }))}
           strengths={(summary.strengths?.top_strengths || []).slice(0, 3).map((v: string) => ({ label: strengthLabel(v), score: scoreOf(v) }))}
+          bigFive={summary.big_five || {}}
           personality={Object.entries(summary.big_five || {}).map(([k, level]: [string, unknown]) => ({ label: traitLabel(k), level: levelLabel(String(level)) }))}
           notes={profileDetails?.overview || {}}
           upgradeHref={upgradeHref}

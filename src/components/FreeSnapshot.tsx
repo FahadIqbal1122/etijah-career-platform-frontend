@@ -21,6 +21,7 @@ export interface FreeSnapshotProps {
   values: TemplateScore[]          // top 3
   strengths: TemplateScore[]       // top 3
   personality: { label: string; level: string }[]
+  bigFive?: Record<string, string>   // raw levels ('low' | 'medium' | 'high') by trait, for the one-line observation
   notes: { riasec?: string; values?: string; strengths?: string; big_five?: string }
   upgradeHref: string
   onDownload?: () => void          // the free 2-page PDF
@@ -30,6 +31,15 @@ export interface FreeSnapshotProps {
 }
 
 const TYPES = ['realistic', 'investigative', 'artistic', 'social', 'enterprising', 'conventional']
+
+// One observation drawn from the person's own scores (no AI): the first rule that matches, or none
+function tensionKey(types: string[], bf: Record<string, string>): string | null {
+  const top2 = types.slice(0, 2)
+  if (top2.includes('enterprising') && bf.extraversion === 'low') return 'enterprisingLowExtraversion'
+  if (top2.includes('artistic') && bf.conscientiousness === 'high') return 'artisticHighConscientiousness'
+  if (top2.includes('social') && bf.agreeableness === 'low') return 'socialLowAgreeableness'
+  return null
+}
 
 function Scores({ items }: { items: TemplateScore[] }) {
   return (
@@ -91,6 +101,12 @@ export default function FreeSnapshot(p: FreeSnapshotProps) {
   const headline = t('headline', { a: t(`phrase.${ta}`), b: t(`phrase.${tb === ta ? (ta === 'investigative' ? 'enterprising' : 'investigative') : tb}`) })
   const hexData = { riasec: p.riasec } as ReportTemplateData
   const join = (xs: string[]) => xs.filter(Boolean).slice(0, 2).join(t('and'))
+  // Broad fields (not careers) for the top two interest types: both of the first type's, one of the second's
+  const fieldsOf = (k: string) => (t.raw(`fields.${k}`) as string[]) || []
+  const fields = [...fieldsOf(ta), ...(tb !== ta ? fieldsOf(tb).slice(0, 1) : fieldsOf(ta).slice(2))].slice(0, 3)
+  const tKey = tensionKey(p.interestTypes, p.bigFive || {})
+  const lockedItems = t.raw('lockedItems') as string[]
+  const elseItems = t.raw('elseItems') as { title: string; text: string }[]
 
   return (
     <div className="max-w-5xl mx-auto px-6 pt-10 space-y-6">
@@ -108,6 +124,28 @@ export default function FreeSnapshot(p: FreeSnapshotProps) {
           <p className="eyebrow">{t('questionEyebrow')}</p>
           <h2 className="text-xl sm:text-2xl font-extrabold text-charcoal">{t('question')}</h2>
           <p className="rp-sub text-charcoal/90">{t('questionBody')}</p>
+          <div className="pt-3 border-t border-dashed border-[var(--line)] space-y-3">
+            <p className="text-sm text-charcoal">{t('foundMatches')}</p>
+            <div className="flex flex-wrap gap-2">
+              {fields.map(f => <span key={f} className="rp-pill rp-blue">{f}</span>)}
+            </div>
+            <div className="rounded-xl border border-dashed border-[var(--line-strong)] bg-white px-4 py-2">
+              <p className="eyebrow">{t('lockedTitle')}</p>
+              <ul>
+                {lockedItems.map(x => (
+                  <li key={x} className="flex items-center justify-between gap-3 py-1.5 border-t first:border-t-0 border-[var(--line)] text-sm font-bold text-charcoal">
+                    <span>{x}</span>
+                    <span className="rp-pill shrink-0 text-xs font-normal">{t('locked')}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {tKey && (
+              <p className="text-sm border-s-4 border-[#c8962e] bg-[#fdf8ec] rounded-e-lg px-3 py-2">
+                <b>{t('tensionTitle')}</b> {t(`tension.${tKey}`)}
+              </p>
+            )}
+          </div>
           <BuyButton href={p.upgradeHref} price={price} track="results_snapshot_unlock_top" />
         </div>
         <div className="text-center">
@@ -141,7 +179,16 @@ export default function FreeSnapshot(p: FreeSnapshotProps) {
         </div>
         <div className="card p-6 space-y-3">
           <BuyButton href={p.upgradeHref} price={price} lead={t('buyLead')} track="results_snapshot_unlock_bottom" />
-          <p className="rp-sub text-center">{t('includes')}</p>
+          <p className="rp-h text-center text-charcoal">{t('elseTitle')}</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {elseItems.map((x, i) => (
+              <div key={x.title} className={`rounded-lg border border-[var(--line)] bg-white px-3 py-2${i === elseItems.length - 1 ? ' sm:col-span-2 bg-[#f2f8fd]' : ''}`}>
+                <p className="text-sm font-bold text-primary">{x.title}</p>
+                <p className="rp-sub">{x.text}</p>
+              </div>
+            ))}
+          </div>
+          {/* <p className="rp-sub text-center">{t('includes')}</p>   previous one-line version */}
         </div>
         {p.onDownload && (
           <div className="text-center space-y-1">
