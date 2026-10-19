@@ -127,6 +127,27 @@ export const L = {
         { tag: 'High School Students (16–18)', head: 'The biggest decision of your life so far — made clearer.', body: 'Choosing a major at 17 shouldn’t be a guess, especially when AI is already changing what these fields look like. Etijahi helps you understand your strengths and interests, and how each path is shifting right now, so the decision is made with clarity, not pressure. And for parents: a report you can look through together, so the conversation starts from understanding.' },
       ],
     },
+    audiences: {
+      label: 'Choose your path',
+      headline: 'Two journeys. One clear direction.',
+      hl: 'One clear direction.',
+      students: {
+        tag: 'For students',
+        head: 'Choosing a major? Don’t guess.',
+        body: 'Answer questions about what you enjoy, what matters to you and where you are strong. See the fields and careers that fit, and small ways to try them before you commit.',
+        bullets: ['Majors that match your interests and strengths', 'Careers they lead to, and how each field is changing', 'A report you can read together with your parents'],
+        meta: '≈ 15 minutes',
+        cta: 'Start as a student',
+      },
+      adults: {
+        tag: 'For working adults',
+        head: 'Ready for a different path?',
+        body: 'Wanting something different is a good reason to look closely. See which strengths and values you can take with you, which fields fit them, and what is worth building first.',
+        bullets: ['Skills you already have, mapped to new paths', 'Fields that fit your values and work style', 'Evidence for your next step, not a gut feeling'],
+        meta: '≈ 15 minutes',
+        cta: 'Start as an adult',
+      },
+    },
     // ── SECTION 9 — SOCIAL PROOF / HERITAGE ───────────────────────────
     heritage: {
       label: 'The proof is in the people',
@@ -396,6 +417,27 @@ export const L = {
         { tag: 'طلاب الجامعة', head: 'في منتصف دراستك، وشيء ما لا يبدو صحيحاً.', body: 'اتجاهي يساعدك على فهم ما إذا كانت المشكلة في التخصص، أم في المسار الذي يقود إليه، أم أنها مجرد حيرة طبيعية يمر بها الجميع — وهل ما زال لهذا المسار مستقبل في ظل إعادة تشكيل الذكاء الاصطناعي لمجالك. وإذا كان التغيير منطقياً، تريك اتجاهي بالضبط كيف تخطوه.' },
         { tag: 'طلاب الثانوية (١٦–١٨)', head: 'أكبر قرار في حياتك حتى الآن — أصبح أوضح.', body: 'اختيار التخصص في السابعة عشرة لا ينبغي أن يكون تخميناً، خاصة والذكاء الاصطناعي يعيد اليوم تشكيل ملامح هذه المجالات. اتجاهي يساعدك على فهم نقاط قوتك واهتماماتك، وإدراك كيف يتغيّر كل مسار الآن، لتتخذ القرار بوضوح بعيداً عن الضغوطات. ولأولياء الأمور: نقدم لكم تقريراً شاملاً تطلعون عليه معاً، لتتحول مناقشاتكم العائلية إلى حوارٍ يملؤه التفاهم.' },
       ],
+    },
+    audiences: {
+      label: 'اختر مسارك',
+      headline: 'رحلتان. اتجاه واحد واضح.',
+      hl: 'اتجاه واحد واضح.',
+      students: {
+        tag: 'للطلاب',
+        head: 'تختار تخصصاً؟ لا تعتمد على التخمين.',
+        body: 'أجب عن أسئلة حول ما تستمتع به وما يهمك وأين تكمن قوتك. اطّلع على المجالات والمهن التي تناسبك، وعلى طرق صغيرة لتجربتها قبل أن تلتزم.',
+        bullets: ['تخصصات تناسب اهتماماتك ونقاط قوتك', 'المهن التي تقود إليها وكيف يتغيّر كل مجال', 'تقرير تقرؤونه معاً أنت وأولياء أمرك'],
+        meta: '≈ ١٥ دقيقة',
+        cta: 'ابدأ كطالب',
+      },
+      adults: {
+        tag: 'للبالغين العاملين',
+        head: 'مستعد لمسار مختلف؟',
+        body: 'الرغبة في شيء مختلف سبب جيد لتدقيق النظر. اعرف أي نقاط القوة والقيم يمكنك أن تأخذها معك، وأي المجالات تناسبها، وما يستحق أن تبنيه أولاً.',
+        bullets: ['مهاراتك الحالية مرتبطة بمسارات جديدة', 'مجالات تناسب قيمك وأسلوب عملك', 'أدلة لخطوتك التالية بدل الشعور وحده'],
+        meta: '≈ ١٥ دقيقة',
+        cta: 'ابدأ كبالغ',
+      },
     },
     heritage: {
       label: 'الدليل في الناس',

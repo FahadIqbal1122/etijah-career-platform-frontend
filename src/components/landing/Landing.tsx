@@ -292,6 +292,72 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
         </Reveal>
       </header>
 
+      {/* ── CHOOSE YOUR PATH: students / adults ──────────────────────── */}
+      <Section id="paths" eyebrow={c.audiences.label} center>
+        <Reveal><h2 className="section-h max-w-3xl mx-auto"><Highlight text={c.audiences.headline} hl={c.audiences.hl} /></h2></Reveal>
+        <div className="mt-10 grid md:grid-cols-2 gap-6 max-w-5xl mx-auto text-start">
+
+          {/* Students: light card, teal accent */}
+          <Reveal className="card card-hover relative overflow-hidden p-8 flex flex-col">
+            <div className="absolute -top-16 -end-16 w-48 h-48 rounded-full bg-teal/10 pointer-events-none" />
+            <div className="relative flex items-center gap-3">
+              <span className="w-12 h-12 rounded-2xl bg-teal/10 text-teal flex items-center justify-center [&_svg]:w-6 [&_svg]:h-6">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 9l10-5 10 5-10 5L2 9z" /><path d="M6 11.5V16c0 1.4 2.7 3 6 3s6-1.6 6-3v-4.5" /><path d="M22 9v6" />
+                </svg>
+              </span>
+              <span className="chip chip-teal">{c.audiences.students.tag}</span>
+            </div>
+            <h3 className="relative mt-5 text-2xl font-extrabold text-charcoal leading-snug">{c.audiences.students.head}</h3>
+            <p className="relative mt-3 text-sm text-charcoal/65 leading-relaxed">{c.audiences.students.body}</p>
+            <ul className="relative mt-6 space-y-3 flex-1">
+              {c.audiences.students.bullets.map((b: string) => (
+                <li key={b} className="flex items-start gap-2.5 text-sm text-charcoal">
+                  <span className="flex-none w-5 h-5 rounded-full bg-teal/15 text-teal text-[11px] font-black flex items-center justify-center mt-0.5">✓</span>{b}
+                </li>
+              ))}
+            </ul>
+            <div className="relative mt-8 flex items-center justify-between gap-3 flex-wrap">
+              <Link href="/assessment" data-track="landing_path_students" className="cta">
+                <span>{c.audiences.students.cta}</span><span className="cta-arrow">{arrow}</span>
+              </Link>
+              <span className="font-mono text-xs text-charcoal/45">{c.audiences.students.meta}</span>
+            </div>
+          </Reveal>
+
+          {/* Adults: deep blue card for contrast */}
+          <Reveal
+            className="relative overflow-hidden rounded-[26px] p-8 flex flex-col text-white shadow-[0_24px_60px_-24px_rgba(7,82,136,0.6)] transition-transform duration-300 hover:-translate-y-1 bg-[radial-gradient(120%_80%_at_50%_-10%,#188BDC_0%,var(--primary)_45%,var(--primary-deep)_100%)]"
+            style={{ transitionDelay: '90ms' }}
+          >
+            <div className="absolute -bottom-20 -start-16 w-56 h-56 rounded-full bg-teal/20 blur-2xl pointer-events-none" />
+            <div className="relative flex items-center gap-3">
+              <span className="w-12 h-12 rounded-2xl bg-white/15 text-teal flex items-center justify-center [&_svg]:w-6 [&_svg]:h-6">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="7" width="18" height="13" rx="2" /><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2" /><path d="M3 13h18" />
+                </svg>
+              </span>
+              <span className="chip chip-onteal">{c.audiences.adults.tag}</span>
+            </div>
+            <h3 className="relative mt-5 text-2xl font-extrabold leading-snug">{c.audiences.adults.head}</h3>
+            <p className="relative mt-3 text-sm text-white/80 leading-relaxed">{c.audiences.adults.body}</p>
+            <ul className="relative mt-6 space-y-3 flex-1">
+              {c.audiences.adults.bullets.map((b: string) => (
+                <li key={b} className="flex items-start gap-2.5 text-sm text-white/90">
+                  <span className="flex-none w-5 h-5 rounded-full bg-teal/25 text-teal text-[11px] font-black flex items-center justify-center mt-0.5">✓</span>{b}
+                </li>
+              ))}
+            </ul>
+            <div className="relative mt-8 flex items-center justify-between gap-3 flex-wrap">
+              <Link href="/assessment" data-track="landing_path_adults" className="cta cta-teal">
+                <span>{c.audiences.adults.cta}</span><span className="cta-arrow">{arrow}</span>
+              </Link>
+              <span className="font-mono text-xs text-white/60">{c.audiences.adults.meta}</span>
+            </div>
+          </Reveal>
+        </div>
+      </Section>
+
       {/* ── WHAT IS ETIJAHI? ─────────────────────────────────────────── */}
       <Section id="what" eyebrow={c.whatIsIt.label}>
         <div className="grid md:grid-cols-3 gap-5">
