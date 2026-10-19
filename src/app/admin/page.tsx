@@ -1484,7 +1484,7 @@ export default function AdminPage() {
   const [abandonedLoading, setAbandonedLoading] = useState(false)
   const [abandonedError, setAbandonedError] = useState('')
   const [autoReminder, setAutoReminder] = useState(false)
-  const [abandonedDays, setAbandonedDays] = useState<'7' | '30' | 'all'>('30')
+  const [abandonedDays, setAbandonedDays] = useState<'1' | '3' | '7' | '30' | 'all'>('30')
   const [abandonedRemind, setAbandonedRemind] = useState<'all' | 'sent' | 'unsent'>('all')
   const [abandonedSection, setAbandonedSection] = useState<string | null>(null)
   const [autoReminderSaving, setAutoReminderSaving] = useState(false)
@@ -6412,7 +6412,7 @@ export default function AdminPage() {
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mb-4">
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs text-slate-400 mr-1">Last activity</span>
-                    {([['7', 'Last 7 days'], ['30', 'Last 30 days'], ['all', 'All']] as const).map(([k, l]) => (
+                    {([['1', 'Last 24 hours'], ['3', 'Last 3 days'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['all', 'All']] as const).map(([k, l]) => (
                       <button key={k} onClick={() => setAbandonedDays(k)}
                         className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${abandonedDays === k ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{l}</button>
                     ))}
