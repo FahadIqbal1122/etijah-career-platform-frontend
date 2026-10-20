@@ -98,10 +98,10 @@ export const stage1Questions: QuickQuestion[] = [
   { key: 's1_length', type: 'options',
     label: { en: 'How did the length of the assessment feel?', ar: 'كيف وجدت طول التقييم؟' },
     options: [
-      { value: 'too_short', label: { en: 'Too short', ar: 'قصير جدًا' } },
+      // { value: 'too_short', label: { en: 'Too short', ar: 'قصير جدًا' } },
       { value: 'about_right', label: { en: 'About right', ar: 'مناسب' } },
       { value: 'a_bit_long', label: { en: 'A bit long', ar: 'طويل قليلًا' } },
-      { value: 'too_long', label: { en: 'Too long', ar: 'طويل جدًا' } },
+      // { value: 'too_long', label: { en: 'Too long', ar: 'طويل جدًا' } },
     ] },
 ]
 

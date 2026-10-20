@@ -486,7 +486,10 @@ export default function AssessmentForm() {
     if (!rawQ?.dynamic) return rawQ
     return { ...rawQ, options: (SPECIALISMS[dynField ?? ''] ?? []).map(k => ({ value: `${dynField}_${k}`, label: k })) }
   }, [rawQ, dynField])
-  const mid = q?.msgId ?? q?.id
+  // High-school students see plainer school-level wording (messages: `<id>_HS`) where one exists. Only the
+  // translation lookup changes; answers are still stored and scored under q.id.
+  const hsId = q && answers['QO4'] === 'high_school' && tQ.has(`${q.id}_HS.text`) ? `${q.id}_HS` : null
+  const mid = hsId ?? q?.msgId ?? q?.id
   const qTextStr = q ? tQ(`${mid}.text`, dynField ? { field: tQ(`QO5.options.${dynField}`) } : undefined) : ''
 
   // Tag Manager: the page was seen (fires on every load of the assessment).

@@ -81,7 +81,7 @@ const T = {
     downloadAr: 'Download Arabic PDF', downloadEn: 'Download English PDF',
     noReportHead: 'You haven’t taken the assessment yet', noReportSub: 'It takes about 15 minutes and it’s free.',
     startAssessment: 'Start the assessment',
-    statCompleted: 'Assessment completed', statMatch: 'Top career match', statRetake: 'Recommended retake',
+    statCompleted: 'Assessment completed', statMatch: 'Top career match', statType: 'Strongest interest type', statRetake: 'Recommended retake',
     jobsHead: 'Job Matches', jobsLockedHead: 'Daily job matching is coming', notBuilt: 'Not available yet',
     jobsLockedBody: 'Soon Etijahi will match you to live GCC openings every day and review your CV against each one.',
     jobsBullets: ['Daily job matching from real openings', 'CV analysis against every role', 'Interview prep tied to your profile'],
@@ -112,7 +112,7 @@ const T = {
     downloadAr: 'تحميل النسخة العربية PDF', downloadEn: 'تحميل النسخة الإنجليزية PDF',
     noReportHead: 'لم تُجرِ التقييم بعد', noReportSub: 'يستغرق حوالي ١٥ دقيقة وهو مجاني.',
     startAssessment: 'ابدأ التقييم',
-    statCompleted: 'اكتمل التقييم', statMatch: 'أفضل مسار مهني', statRetake: 'إعادة التقييم المقترحة',
+    statCompleted: 'اكتمل التقييم', statMatch: 'أفضل مسار مهني', statType: 'أقوى نوع اهتمام', statRetake: 'إعادة التقييم المقترحة',
     jobsHead: 'الوظائف المطابقة', jobsLockedHead: 'المطابقة اليومية للوظائف قادمة', notBuilt: 'غير متاحة بعد',
     jobsLockedBody: 'قريباً ستطابقك إتجاهي مع الوظائف المتاحة في الخليج يومياً وتراجع سيرتك الذاتية مع كل وظيفة.',
     jobsBullets: ['مطابقة يومية من فرص حقيقية', 'تحليل سيرتك مع كل وظيفة', 'تحضير للمقابلات مرتبط بملفّك'],
@@ -299,16 +299,17 @@ export default function UserDashboard() {
         .then(list => {
           const sorted = [...list].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
           setAssessments(sorted)
-          const latest = sorted[0]
-          if (latest) {
-            apiAuthGet<any>(`/assessment/${latest.id}/career-suggestions`)
-              .then(d => setTopMatch(d.suggestions?.[0]?.title ?? null)).catch(() => {})
-            // In Arabic, show the same career title the (Arabic) report uses, when that report exists.
-            if (locale === 'ar') {
-              apiAuthGet<any>(`/assessment/${latest.id}/career-recommendations?locale=ar`)
-                .then(d => { const tt = d.career_recommendations?.[0]?.title; if (tt) setTopMatch(tt) }).catch(() => {})
-            }
-          }
+          // previous: the top career match was fetched here, before the plan was known, so free users got a career name:
+          // const latest = sorted[0]
+          // if (latest) {
+          //   apiAuthGet<any>(`/assessment/${latest.id}/career-suggestions`)
+          //     .then(d => setTopMatch(d.suggestions?.[0]?.title ?? null)).catch(() => {})
+          //   // In Arabic, show the same career title the (Arabic) report uses, when that report exists.
+          //   if (locale === 'ar') {
+          //     apiAuthGet<any>(`/assessment/${latest.id}/career-recommendations?locale=ar`)
+          //       .then(d => { const tt = d.career_recommendations?.[0]?.title; if (tt) setTopMatch(tt) }).catch(() => {})
+          //   }
+          // }
         })
         .catch(() => {})
         .finally(() => setAssessmentsLoading(false))
@@ -386,6 +387,21 @@ export default function UserDashboard() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, assessmentsLoading])
+
+  // Top career match: career names are part of the paid reports, so it is only fetched (and shown) once the plan is known to
+  // be paid. A free user sees their interest type instead, and no career request is made for them.
+  const latestAssessmentId = assessments[0]?.id
+  const careerNamesAllowed = !!plan && plan.tier !== 'free'
+  useEffect(() => {
+    if (!careerNamesAllowed || !latestAssessmentId) return
+    apiAuthGet<any>(`/assessment/${latestAssessmentId}/career-suggestions`)
+      .then(d => setTopMatch(d.suggestions?.[0]?.title ?? null)).catch(() => {})
+    // In Arabic, show the same career title the (Arabic) report uses, when that report exists.
+    if (locale === 'ar') {
+      apiAuthGet<any>(`/assessment/${latestAssessmentId}/career-recommendations?locale=ar`)
+        .then(d => { const tt = d.career_recommendations?.[0]?.title; if (tt) setTopMatch(tt) }).catch(() => {})
+    }
+  }, [careerNamesAllowed, latestAssessmentId, locale])
 
   // ?plans=1: wait until the plan card has loaded, scroll to it, mark it for a few seconds, then clean the address
   // (the address is cleaned inside the timer, so changing it does not cancel the scroll).
@@ -473,7 +489,10 @@ export default function UserDashboard() {
 
   const stats = [
     { icon: 'check', label: t.statCompleted, value: completedDate ? dateFmt(completedDate) : '—' },
-    { icon: 'target', label: t.statMatch, value: topMatch || (topType ? typeLabel(topType) : '—'), accent: true },
+    // paid plans: the top career; free plans (and while the plan is still loading): the interest type, never a career name
+    careerNamesAllowed
+      ? { icon: 'target', label: t.statMatch, value: topMatch || (topType ? typeLabel(topType) : '—'), accent: true }
+      : { icon: 'target', label: t.statType, value: topType ? typeLabel(topType) : '—', accent: true },
     { icon: 'refresh', label: t.statRetake, value: retakeDays != null ? (locale === 'ar' ? `بعد ${Math.max(0, retakeDays)} يوماً` : `in ${Math.max(0, retakeDays)} days`) : '—' },
   ]
 

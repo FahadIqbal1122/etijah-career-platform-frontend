@@ -3817,6 +3817,11 @@ export default function AdminPage() {
   const shortDay = (k: string) => new Date(`${k}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
   const submissionsTrend = trendDays120.map(k => ({ label: shortDay(k), value: subsPerDay.get(k) || 0 }))
   const salesTrend = trendDays120.map(k => ({ label: shortDay(k), value: salesPerDay.get(k) || 0 }))
+  // Hour-of-day distribution (viewer's local time), respects the dashboard filters
+  const hourLabel = (h: number) => `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? ' AM' : ' PM'}`
+  const subsPerHour = Array.from({ length: 24 }, () => 0)
+  for (const s of dashSubmissions) subsPerHour[new Date(s.created_at).getHours()]++
+  const hourlyTrend = subsPerHour.map((v, h) => ({ label: hourLabel(h), value: v }))
   const subByIdAll = new Map(submissions.map(s => [s.id, s]))
   const fbByResponseAll = new Map(betaFeedbackList.map(b => [b.response_id, b]))
   const personFromSub = (s: Submission): DemoPerson => ({
@@ -4673,6 +4678,15 @@ export default function AdminPage() {
                           return sub ? { ...personFromSub(sub), at: t.paid_at || t.created_at } : { at: t.paid_at || t.created_at, name: t.full_name || t.email || 'Unknown', age_bracket: null, experience_level: null, current_stage: null, country: t.country, nationality: null, sub: null, bf: null }
                         }),
                       })
+                    }} />
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <div className="flex items-baseline justify-between mb-2">
+                      <p className="text-sm font-semibold text-slate-700">Assessments by time of day</p>
+                      <p className="text-xs text-slate-400">{dashSubmissions.length} total</p>
+                    </div>
+                    <TrendChart points={hourlyTrend} kind="line" color="#6250d6" unit="assessments" onSelect={h => {
+                      setDemoDrilldown({ title: `Assessments at ${hourlyTrend[h].label}`, people: dashSubmissions.filter(s => new Date(s.created_at).getHours() === h).map(personFromSub) })
                     }} />
                   </div>
                 </div>

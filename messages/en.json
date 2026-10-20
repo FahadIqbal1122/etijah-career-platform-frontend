@@ -359,6 +359,13 @@
         "B": "A structured role with clear processes, defined outputs, and predictable rhythm."
       }
     },
+    "Q6_HS": {
+      "text": "Imagine spending a year in one of two settings. Which would you choose?",
+      "options": {
+        "A": "A creative setting with freedom to experiment and few rules.",
+        "B": "A structured setting with clear steps, clear goals and a predictable routine."
+      }
+    },
     "Q7": {
       "text": "I find it genuinely satisfying to help others solve their personal or professional challenges."
     },
@@ -384,10 +391,24 @@
         "B": "Research what is causing it and understand the root problem."
       }
     },
+    "QFC_RI_HS": {
+      "text": "You notice something at school or in a club is broken or not working well. Which feels more natural to you?",
+      "options": {
+        "A": "Roll up my sleeves and try to fix or build it myself.",
+        "B": "Research what is causing it and understand the root problem."
+      }
+    },
     "QFC_SE": {
       "text": "You are leading a team toward a tight deadline. Which feels more like you?",
       "options": {
         "A": "I focus on keeping the team motivated, supported, and working well together.",
+        "B": "I focus on the goal — driving performance, making decisions, and winning."
+      }
+    },
+    "QFC_SE_HS": {
+      "text": "You are leading a group project with a tight deadline. Which feels more like you?",
+      "options": {
+        "A": "I focus on keeping the group motivated, supported, and working well together.",
         "B": "I focus on the goal — driving performance, making decisions, and winning."
       }
     },
@@ -412,6 +433,9 @@
     },
     "Q18": {
       "text": "In a group meeting or discussion, I tend to speak up early and share my views rather than listen first."
+    },
+    "Q18_HS": {
+      "text": "In class discussions or group work, I tend to speak up early and share my views rather than listen first."
     },
     "Q19": {
       "text": "I tend to put other people's needs ahead of my own, even when I am already stretched."
@@ -471,6 +495,13 @@
         "B": "I would stay where I am fulfilled — money matters but is not the deciding factor."
       }
     },
+    "Q36_HS": {
+      "text": "Imagine a future career you would really enjoy, and another that pays much more but interests you less. Which is most like you?",
+      "options": {
+        "A": "I would pick the higher pay — financial security and growth come first.",
+        "B": "I would pick the one I enjoy — money matters but is not the deciding factor."
+      }
+    },
     "Q37": {
       "text": "I want my work to be part of building my country's future — not only advancing my own career."
     },
@@ -481,6 +512,13 @@
         "B": "A role with a global multinational that gives international exposure and faster external career growth."
       }
     },
+    "Q38_HS": {
+      "text": "Imagine two equally good career options after you finish studying. Which feels more like you?",
+      "options": {
+        "A": "Working for a local organization that contributes directly to a major national project.",
+        "B": "Working for a global company that gives international experience and faster growth abroad."
+      }
+    },
     "Q39": {
       "text": "How my family, friends, and community see me professionally matters deeply — I want to be someone they can speak well of."
     },
@@ -489,6 +527,13 @@
       "options": {
         "A": "A respected, well-known organization everyone in your community recognizes by name.",
         "B": "A lesser-known but highly innovative organization where you would have more impact and growth, but less external recognition."
+      }
+    },
+    "Q40_HS": {
+      "text": "Imagine two careers with similar pay. Which would you choose?",
+      "options": {
+        "A": "A respected, well-known organization everyone in your community recognizes by name.",
+        "B": "A lesser-known but highly innovative organization where you would have more impact and room to grow, but less recognition from others."
       }
     },
     "Q41": {
@@ -505,6 +550,9 @@
     },
     "Q45": {
       "text": "I invest significant time and energy in building deep, long-term relationships with the people I work with."
+    },
+    "Q45_HS": {
+      "text": "I invest significant time and energy in building deep, long-term relationships with the people around me, like classmates and teammates."
     },
     "Q46": {
       "text": "I am genuinely curious about the people I meet — their stories, motivations, what makes them who they are."
@@ -584,6 +632,13 @@
         "B": "Steady, well-paced environment with clear priorities and predictable rhythms."
       }
     },
+    "Q65_HS": {
+      "text": "Imagine two kinds of future workplace. Which feels more like you?",
+      "options": {
+        "A": "Fast-changing and busy, where plans change every week and you often have to figure things out as you go.",
+        "B": "Calm and steady, with clear plans and a predictable routine."
+      }
+    },
     "Q66": {
       "text": "Which work environment would you enjoy more?",
       "options": {
@@ -591,11 +646,25 @@
         "B": "A small, fast-moving organization where everyone does a bit of everything and you help shape how things work."
       }
     },
+    "Q66_HS": {
+      "text": "Which kind of workplace would you enjoy more?",
+      "options": {
+        "A": "A large, well-known organization with a clear structure and set rules.",
+        "B": "A small, fast-moving organization where everyone does a bit of everything and you help shape how things are done."
+      }
+    },
     "Q67": {
       "text": "If you had to pick the work setting that genuinely fits you best, which one?",
       "options": {
         "A": "A government or government-linked organization, with the stability and national-mission framing that comes with it.",
         "B": "A private-sector company — corporate, startup, or family business — with more variability and direct market exposure."
+      }
+    },
+    "Q67_HS": {
+      "text": "Imagine your future career. Which kind of workplace fits you best?",
+      "options": {
+        "A": "A government or government-linked organization, with the stability and national mission that come with it.",
+        "B": "A private company — big, a startup, or a family business — with more variety and direct contact with the market."
       }
     },
     "Q68": {
