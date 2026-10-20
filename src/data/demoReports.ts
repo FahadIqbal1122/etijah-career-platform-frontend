@@ -3,7 +3,7 @@
 // which writes public/demo-reports/<key>-<en|ar>.pdf — keep the keys in sync).
 // "general" is the original single sample (public/demo-report-<locale>.pdf).
 export type DemoReportKey =
-  | 'general' | 'school_majors' | 'university_student' | 'recent_graduate'
+  | 'free' | 'general' | 'school_majors' | 'university_student' | 'recent_graduate'
   | 'stay_in_field' | 'change_field' | 'not_sure'
 
 export const DEMO_REPORTS: {
@@ -11,6 +11,10 @@ export const DEMO_REPORTS: {
   title: { en: string; ar: string }
   body: { en: string; ar: string }
 }[] = [
+  // the free report is the two-page snapshot (public/demo-reports/free-<en|ar>.pdf), built from the backend's free_snapshot_pdf.py
+  { key: 'free',
+    title: { en: 'Free report', ar: 'التقرير المجاني' },
+    body: { en: 'What you get free: your interests, values, strengths and personality, in two pages.', ar: 'ما تحصل عليه مجاناً: اهتماماتك وقيمك ونقاط قوتك وشخصيتك، في صفحتين.' } },
   { key: 'general',
     title: { en: 'Full sample report', ar: 'نموذج التقرير الكامل' },
     body: { en: 'The complete report, every section.', ar: 'التقرير الكامل بكل أقسامه.' } },

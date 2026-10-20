@@ -157,6 +157,16 @@ export default function ReportTemplatesTab() {
           The default template is the report page exactly as it runs today, so it is not drawn from sample data here.
           Paste a report id above and open it to see it, or make this template live to return every visitor to it.
         </div>
+      ) : plan === 'free' ? (
+        // The free plan is the two-part snapshot whatever template is live, so there is no template to preview for it
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 text-sm text-slate-600">
+          The free plan is the same two-part snapshot in every template (interests, values, strengths and personality, each with a
+          short explanation, and no career names). Sample free report:{' '}
+          <a href="/demo-reports/free-en.pdf" target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-800 underline">English PDF</a>
+          {' · '}
+          <a href="/demo-reports/free-ar.pdf" target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-800 underline">Arabic PDF</a>.
+          Switch to the paid plan to compare the templates.
+        </div>
       ) : (
         <div className="rounded-2xl border border-slate-200 bg-slate-100 p-3 sm:p-4">
           <div
