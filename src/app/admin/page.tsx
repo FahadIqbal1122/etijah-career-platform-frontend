@@ -1499,6 +1499,9 @@ export default function AdminPage() {
   const [abandonedError, setAbandonedError] = useState('')
   const [autoReminder, setAutoReminder] = useState(false)
   const [abandonedDays, setAbandonedDays] = useState<'1' | '3' | '7' | '30' | 'all'>('30')
+  // Custom date range (yyyy-mm-dd); when either is set it replaces the quick chips
+  const [abandonedFrom, setAbandonedFrom] = useState('')
+  const [abandonedTo, setAbandonedTo] = useState('')
   const [abandonedRemind, setAbandonedRemind] = useState<'all' | 'sent' | 'unsent'>('all')
   const [abandonedSection, setAbandonedSection] = useState<string | null>(null)
   const [autoReminderSaving, setAutoReminderSaving] = useState(false)
@@ -3792,8 +3795,16 @@ export default function AdminPage() {
     const q = questions[i]
     return q ? { n: i + 1, id: q.id, section: q.section, text: q.text } : null
   }
-  const abandonedCutoff = abandonedDays === 'all' ? 0 : Date.now() - Number(abandonedDays) * 86400000
-  const abandonedInRange = abandonedList.filter(a => !a.last_activity_at || new Date(a.last_activity_at).getTime() >= abandonedCutoff)
+  const abandonedCustom = !!abandonedFrom || !!abandonedTo
+  const abandonedCutoff = abandonedCustom ? (abandonedFrom ? new Date(`${abandonedFrom}T00:00:00`).getTime() : 0)
+    : abandonedDays === 'all' ? 0 : Date.now() - Number(abandonedDays) * 86400000
+  const abandonedEnd = abandonedTo ? new Date(`${abandonedTo}T23:59:59.999`).getTime() : Infinity
+  // const abandonedInRange = abandonedList.filter(a => !a.last_activity_at || new Date(a.last_activity_at).getTime() >= abandonedCutoff)
+  const abandonedInRange = abandonedList.filter(a => {
+    if (!a.last_activity_at) return !abandonedCustom
+    const t = new Date(a.last_activity_at).getTime()
+    return t >= abandonedCutoff && t <= abandonedEnd
+  })
   const abandonedShown = abandonedInRange
     .filter(a => abandonedRemind === 'all' || (abandonedRemind === 'sent' ? !!a.reminder_sent_at : !a.reminder_sent_at))
     .filter(a => !abandonedSection || abandonedStop(a)?.section === abandonedSection)
@@ -4706,8 +4717,40 @@ export default function AdminPage() {
                         }),
                       })
                     }} />
+                    {/* Funnel: where people drop between taking the assessment and paying (follows the dashboard filters) */}
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                      <div className="flex items-baseline justify-between mb-3">
+                        <p className="text-sm font-semibold text-slate-700">Assessment to purchase</p>
+                        <p className="text-xs text-slate-400">{dashSubmissions.length > 0 ? `${((dashPaidSales.length / dashSubmissions.length) * 100).toFixed(1)}% buy` : '—'}</p>
+                      </div>
+                      <div className="space-y-3">
+                        {[
+                          { label: 'Assessments submitted', value: dashSubmissions.length, color: '#86b6ef' },
+                          { label: 'Completed', value: dashSubmissions.filter(s => s.completed).length, color: '#2a78d6' },
+                          { label: 'Paid orders', value: dashPaidSales.length, color: '#1baf7a' },
+                          { label: 'Paid with coaching', value: dashCoachingSales.length, color: '#184f95' },
+                        ].map((step, i, all) => {
+                          const top = Math.max(1, all[0].value)
+                          const prev = i > 0 ? all[i - 1].value : 0
+                          return (
+                            <div key={step.label}>
+                              <div className="flex items-baseline justify-between text-xs mb-1">
+                                <span className="text-slate-600">{step.label}</span>
+                                <span className="tabular-nums">
+                                  <b className="text-slate-800">{step.value}</b>
+                                  {i > 0 && <span className="text-slate-400 ms-2">{prev > 0 ? `${Math.round((step.value / prev) * 100)}% of previous` : '—'}</span>}
+                                </span>
+                              </div>
+                              <div className="h-2.5 rounded-full bg-slate-100">
+                                <div className="h-2.5 rounded-full" style={{ width: `${step.value > 0 ? Math.max(2, (step.value / top) * 100) : 0}%`, background: step.color }} />
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
-                  {/* Separate "Assessments by time of day" card, now merged into the toggle above:
+                  {/* Separate "Assessments by time of day" card, now merged into the per-day card above:
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
                     <div className="flex items-baseline justify-between mb-2">
                       <p className="text-sm font-semibold text-slate-700">Assessments by time of day</p>
@@ -6456,9 +6499,15 @@ export default function AdminPage() {
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs text-slate-400 mr-1">Last activity</span>
                     {([['1', 'Last 24 hours'], ['3', 'Last 3 days'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['all', 'All']] as const).map(([k, l]) => (
-                      <button key={k} onClick={() => setAbandonedDays(k)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${abandonedDays === k ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{l}</button>
+                      <button key={k} onClick={() => { setAbandonedDays(k); setAbandonedFrom(''); setAbandonedTo('') }}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${abandonedDays === k && !abandonedCustom ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{l}</button>
                     ))}
+                    <span className="text-xs text-slate-400 ml-2">From</span>
+                    <input type="date" value={abandonedFrom} max={abandonedTo || undefined} onChange={e => setAbandonedFrom(e.target.value)}
+                      className={`text-xs text-slate-700 border rounded-lg px-2 py-1 ${abandonedFrom ? 'border-amber-600' : 'border-slate-200'}`} />
+                    <span className="text-xs text-slate-400">To</span>
+                    <input type="date" value={abandonedTo} min={abandonedFrom || undefined} onChange={e => setAbandonedTo(e.target.value)}
+                      className={`text-xs text-slate-700 border rounded-lg px-2 py-1 ${abandonedTo ? 'border-amber-600' : 'border-slate-200'}`} />
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs text-slate-400 mr-1">Reminder</span>
