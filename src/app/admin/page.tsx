@@ -9,6 +9,7 @@ import EmailTemplatesTab from '@/components/admin/EmailTemplatesTab'
 import EmailSchedulerTab from '@/components/admin/EmailSchedulerTab'
 import SmtpSettingsTab from '@/components/admin/SmtpSettingsTab'
 import ReportTemplatesTab from '@/components/admin/ReportTemplatesTab'
+import AbandonedInsights from '@/components/admin/AbandonedInsights'
 import { questions, BEHAVIORAL_SCALE, type Question } from '@/data/questions'
 import { stage1Questions, resultStageQuestions, resultStageQuestionsFree, resultStageNoteLabel, followUpSections } from '@/components/beta-feedback/content'
 import { buildWorkbook, saveBlob, type SheetSpec, type SummaryBlock } from '@/lib/adminExcel'
@@ -1124,6 +1125,16 @@ type AbandonedAssessment = {
   progress_pct: number | null
   last_activity_at: string | null
   reminder_sent_at: string | null
+  // who they are, from their autosaved answers (null = they had not reached that question)
+  phone?: string | null
+  country?: string | null
+  country_other?: string | null
+  nationality?: string | null
+  nationality_other?: string | null
+  age?: number | null
+  age_bracket?: string | null
+  experience_level?: string | null
+  current_stage?: string | null
 }
 
 function downloadCSV(filename: string, rows: (string | number | null | undefined)[][]) {
@@ -1444,6 +1455,9 @@ export default function AdminPage() {
   const [betaFeedbackError, setBetaFeedbackError] = useState('')
   const [selectedBetaFeedback, setSelectedBetaFeedback] = useState<BetaFeedbackEntry | null>(null)
   const [demoDrilldown, setDemoDrilldown] = useState<{ title: string; people: DemoPerson[] } | null>(null)
+  // Assessments card: per-day line, or hour-of-day line (optionally for one day, reached by clicking a day)
+  // const [subsView, setSubsView] = useState<'day' | 'hour'>('day')   // toggle replaced by one card showing both charts
+  const [subsHourDay, setSubsHourDay] = useState<string | null>(null)
   const [betaStatDrilldown, setBetaStatDrilldown] = useState<{ title: string; rows: { bf: BetaFeedbackEntry; note: string }[] } | null>(null)
   const [betaFeedbackStageFilter, setBetaFeedbackStageFilter] = useState<'all' | BetaFeedbackStage>('all')
   const [betaFeedbackStatusFilter, setBetaFeedbackStatusFilter] = useState('all')
@@ -3819,9 +3833,11 @@ export default function AdminPage() {
   const salesTrend = trendDays120.map(k => ({ label: shortDay(k), value: salesPerDay.get(k) || 0 }))
   // Hour-of-day distribution (viewer's local time), respects the dashboard filters
   const hourLabel = (h: number) => `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? ' AM' : ' PM'}`
-  const subsPerHour = Array.from({ length: 24 }, () => 0)
-  for (const s of dashSubmissions) subsPerHour[new Date(s.created_at).getHours()]++
-  const hourlyTrend = subsPerHour.map((v, h) => ({ label: hourLabel(h), value: v }))
+  const hourSubs = subsHourDay ? dashSubmissions.filter(s => dayKey(s.created_at) === subsHourDay) : dashSubmissions
+  // 3-hour windows: 12–3 AM, 3–6 AM, ... 9 PM–12 AM
+  const subsPerWindow = Array.from({ length: 8 }, () => 0)
+  for (const s of hourSubs) subsPerWindow[Math.floor(new Date(s.created_at).getHours() / 3)]++
+  const hourlyTrend = subsPerWindow.map((v, w) => ({ label: `${hourLabel(w * 3)} – ${hourLabel((w * 3 + 3) % 24)}`, value: v }))
   const subByIdAll = new Map(submissions.map(s => [s.id, s]))
   const fbByResponseAll = new Map(betaFeedbackList.map(b => [b.response_id, b]))
   const personFromSub = (s: Submission): DemoPerson => ({
@@ -4658,10 +4674,21 @@ export default function AdminPage() {
                       <p className="text-sm font-semibold text-slate-700">Assessments per day</p>
                       <p className="text-xs text-slate-400">{dashSubmissions.length} total</p>
                     </div>
-                    <TrendChart points={submissionsTrend} kind="line" color="#2a78d6" unit="assessments" onSelect={i => {
-                      const day = trendDays120[i]
-                      setDemoDrilldown({ title: `Assessments on ${submissionsTrend[i].label}`, people: dashSubmissions.filter(s => dayKey(s.created_at) === day).map(personFromSub) })
-                    }} />
+                    <TrendChart points={submissionsTrend} kind="line" color="#2a78d6" unit="assessments" onSelect={i => setSubsHourDay(trendDays120[i])} />
+                    <p className="text-[11px] text-slate-400 mt-1">Click a day to see what time of day it came in.</p>
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                      <div className="flex items-baseline justify-between mb-2">
+                        <p className="text-sm font-semibold text-slate-700">Time of day <span className="font-normal text-slate-400">· 3-hour windows</span></p>
+                        <p className="text-xs text-slate-400">{hourSubs.length} total</p>
+                      </div>
+                      <div className="mb-1 flex items-center gap-2 text-xs text-slate-500">
+                        <span>{subsHourDay ? `Showing ${shortDay(subsHourDay)}` : 'Showing all days'}</span>
+                        {subsHourDay && <button type="button" onClick={() => setSubsHourDay(null)} className="text-primary font-semibold hover:underline">All days ✕</button>}
+                      </div>
+                      <TrendChart points={hourlyTrend} kind="line" color="#6250d6" unit="assessments" onSelect={w => {
+                        setDemoDrilldown({ title: `Assessments ${hourlyTrend[w].label}${subsHourDay ? ` on ${shortDay(subsHourDay)}` : ''}`, people: hourSubs.filter(s => Math.floor(new Date(s.created_at).getHours() / 3) === w).map(personFromSub) })
+                      }} />
+                    </div>
                   </div>
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
                     <div className="flex items-baseline justify-between mb-2">
@@ -4680,6 +4707,7 @@ export default function AdminPage() {
                       })
                     }} />
                   </div>
+                  {/* Separate "Assessments by time of day" card, now merged into the toggle above:
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
                     <div className="flex items-baseline justify-between mb-2">
                       <p className="text-sm font-semibold text-slate-700">Assessments by time of day</p>
@@ -4689,6 +4717,7 @@ export default function AdminPage() {
                       setDemoDrilldown({ title: `Assessments at ${hourlyTrend[h].label}`, people: dashSubmissions.filter(s => new Date(s.created_at).getHours() === h).map(personFromSub) })
                     }} />
                   </div>
+                  */}
                 </div>
               </div>
             )}
@@ -6453,6 +6482,20 @@ export default function AdminPage() {
                   <BetaStatTile label="Position known" accent="#6250d6" value={String(abandonedWithPosition)} sublabel="autosaved, so we know the question" />
                 </div>
 
+                {/* who they are: the same kind of charts as the main dashboard; click anything to list those people */}
+                <AbandonedInsights
+                  people={abandonedInRange}
+                  cats={{
+                    age: { order: AGE_BRACKET_ORDER, label: AGE_BRACKET_LABEL },
+                    country: { order: COUNTRY_ORDER, label: COUNTRY_LABEL },
+                    nationality: { order: NATIONALITY_ORDER, label: NATIONALITY_LABEL },
+                    stage: { order: CURRENT_STAGE_ORDER, label: CURRENT_STAGE_LABEL },
+                    experience: { order: EXPERIENCE_LEVEL_ORDER, label: EXPERIENCE_LEVEL_LABEL },
+                  }}
+                  ageToBracket={ageToBracket}
+                  stopOf={abandonedStop}
+                />
+
                 {/* where they stopped */}
                 {abandonedWithPosition > 0 && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
@@ -6500,13 +6543,17 @@ export default function AdminPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                   <p className="text-sm text-slate-400">Showing {abandonedShown.length} of {abandonedInRange.length} {abandonedInRange.length === 1 ? 'person' : 'people'}</p>
                   <DownloadCSVButton onClick={() => downloadCSV(`dropped_off_assessments_${new Date().toISOString().slice(0, 10)}.csv`, [
-                    ['Name', 'Email', 'Locale', 'Stopped at question', 'Section', 'Question text', 'Progress %', 'Questions answered', 'Total questions', 'Last activity', 'Reminder sent', 'Source'],
+                    ['Name', 'Email', 'Locale', 'Stopped at question', 'Section', 'Question text', 'Progress %', 'Questions answered', 'Total questions', 'Last activity', 'Reminder sent', 'Source', 'Phone', 'Country', 'Nationality', 'Age', 'Current stage', 'Experience'],
                     ...abandonedShown.map(a => {
                       const st = abandonedStop(a)
                       return [
                         a.full_name, a.email, a.locale, st ? `Q${st.n}` : '', st?.section || '', st?.text || '', a.progress_pct, a.current_index, a.total_questions,
                         a.last_activity_at ? new Date(a.last_activity_at).toLocaleString() : '',
                         a.reminder_sent_at ? new Date(a.reminder_sent_at).toLocaleString() : '', a.source,
+                        a.phone, a.country ? (a.country === 'other' && a.country_other ? `Other: ${a.country_other}` : COUNTRY_LABEL[a.country] || a.country) : '',
+                        a.nationality ? (a.nationality === 'other' && a.nationality_other ? `Other: ${a.nationality_other}` : NATIONALITY_LABEL[a.nationality] || a.nationality) : '',
+                        a.age ?? (a.age_bracket ? AGE_BRACKET_LABEL[a.age_bracket] || a.age_bracket : ''),
+                        a.current_stage ? CURRENT_STAGE_LABEL[a.current_stage] || a.current_stage : '', a.experience_level ? EXPERIENCE_LEVEL_LABEL[a.experience_level] || a.experience_level : '',
                       ]
                     }),
                   ])} />
