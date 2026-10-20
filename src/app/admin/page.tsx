@@ -4725,7 +4725,10 @@ export default function AdminPage() {
                       </div>
                       <div className="space-y-3">
                         {[
-                          { label: 'Assessments submitted', value: dashSubmissions.length, color: '#86b6ef' },
+                          // { label: 'Assessments submitted', value: dashSubmissions.length, color: '#86b6ef' },
+                          // Started = finished + dropped off (people who gave an email, started and never finished).
+                          // Drop-offs carry no demographics, so with a country/nationality/age filter on we can only count submissions.
+                          { label: 'Started', value: dashSubmissions.filter(s => s.completed).length + (demoFilterOn ? dashSubmissions.filter(s => !s.completed).length : abandonedList.filter(a => inDashDateRange(a.last_activity_at)).length), color: '#86b6ef' },
                           { label: 'Completed', value: dashSubmissions.filter(s => s.completed).length, color: '#2a78d6' },
                           { label: 'Paid orders', value: dashPaidSales.length, color: '#1baf7a' },
                           { label: 'Paid with coaching', value: dashCoachingSales.length, color: '#184f95' },
