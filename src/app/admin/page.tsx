@@ -1384,7 +1384,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'liveCoaching' | 'abandoned' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider' | 'reportTemplates' | 'coach'>('liveDashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'liveCoaching' | 'abandoned' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'orgaccess' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider' | 'reportTemplates' | 'coach'>('liveDashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -1571,6 +1571,16 @@ export default function AdminPage() {
   const [testModeLoading, setTestModeLoading] = useState(false)
   const [testModeSaving, setTestModeSaving] = useState(false)
   const [testModeError, setTestModeError] = useState('')
+
+  // Organization access: free report seats per email domain (backend org_domains / org_domain_grants).
+  type OrgGrant = { domain_id: string; user_id: string; email: string; granted_at: string; revoked_at: string | null }
+  type OrgDomain = { id: string; domain: string; org_name: string | null; plan_code: string; seat_limit: number; seats_used: number; expires_at: string | null; active: boolean; grants: OrgGrant[] }
+  const [orgDomains, setOrgDomains] = useState<OrgDomain[]>([])
+  const [orgLoading, setOrgLoading] = useState(false)
+  const [orgSaving, setOrgSaving] = useState(false)
+  const [orgError, setOrgError] = useState('')
+  const [orgOpen, setOrgOpen] = useState<string | null>(null)
+  const [orgForm, setOrgForm] = useState({ domain: '', org_name: '', plan_code: 'pathfinder', seat_limit: '5', expires_at: '', active: true })
 
   const [homepageMode, setHomepageMode] = useState<'landing' | 'waitlist'>('landing')
   const [multiCurrency, setMultiCurrency] = useState(false)
@@ -1936,6 +1946,55 @@ export default function AdminPage() {
       setTestModeLoading(false)
     }
   }, [])
+
+  const fetchOrgDomains = useCallback(async () => {
+    setOrgLoading(true)
+    setOrgError('')
+    try {
+      const res = await fetch('/api/admin/org-domains')
+      if (!res.ok) throw new Error('Failed to load organizations')
+      setOrgDomains(await res.json())
+    } catch (err: any) {
+      setOrgError(err.message)
+    } finally {
+      setOrgLoading(false)
+    }
+  }, [])
+
+  async function saveOrgDomain(payload: { domain: string; org_name: string; plan_code: string; seat_limit: number; expires_at: string | null; active: boolean }) {
+    setOrgSaving(true)
+    setOrgError('')
+    try {
+      const res = await fetch('/api/admin/org-domains', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => null)
+        throw new Error(d?.detail || d?.error || 'Failed to save organization')
+      }
+      await fetchOrgDomains()
+      return true
+    } catch (err: any) {
+      setOrgError(err.message)
+      return false
+    } finally {
+      setOrgSaving(false)
+    }
+  }
+
+  async function revokeOrgGrant(domainId: string, userId: string, email: string) {
+    if (!window.confirm(`Take back the free access from ${email}? Their paid report locks again (unless they bought a plan themselves), the seat is freed, and this person cannot claim a seat again.`)) return
+    setOrgError('')
+    try {
+      const res = await fetch(`/api/admin/org-domains/${domainId}/grants/${userId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to revoke access')
+      await fetchOrgDomains()
+    } catch (err: any) {
+      setOrgError(err.message)
+    }
+  }
 
   async function toggleTestMode(enabled: boolean) {
     setTestModeSaving(true)
@@ -4404,6 +4463,7 @@ export default function AdminPage() {
               key: 'settings', label: 'Settings', color: 'bg-cyan-600',
               tabs: [
                 { key: 'testmode', label: 'Test Mode', color: 'bg-cyan-600', badge: testModeEnabled ? 'ON' : undefined, onSelect: fetchTestMode },
+                { key: 'orgaccess', label: 'Organization Access', color: 'bg-sky-600', onSelect: fetchOrgDomains },
                 { key: 'homepage', label: 'Homepage', color: 'bg-fuchsia-600', badge: homepageMode, onSelect: fetchHomepageMode },
                 { key: 'currency', label: 'Currency', color: 'bg-emerald-600', badge: multiCurrency ? 'ON' : undefined, onSelect: fetchMultiCurrency },
                 { key: 'betaclosed', label: 'Beta Access', color: 'bg-red-600', badge: betaClosed ? 'CLOSED' : undefined, onSelect: fetchBetaClosed },
@@ -7587,6 +7647,99 @@ export default function AdminPage() {
               </button>
             </div>
             {testModeError && <p className="text-xs text-red-500 mt-3">{testModeError}</p>}
+          </div>
+        </div>
+      )}
+
+      {/* ── Organization Access Tab ── */}
+      {activeTab === 'orgaccess' && (
+        <div className="max-w-3xl mx-auto px-4 py-8">
+          <h2 className="text-xl font-bold text-slate-800 mb-1">Organization Access</h2>
+          <p className="text-sm text-slate-400 mb-6">
+            Give the first N people with a verified email at a company domain the paid report for free: no code and no checkout.
+            When they sign up or log in with that email, the report unlocks by itself. Once all seats are taken, the next person
+            sees the normal free experience. Public providers (gmail.com, outlook.com…) are not accepted.
+          </p>
+
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
+            <p className="font-semibold text-slate-800 mb-3">Add or update a domain</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input value={orgForm.domain} onChange={e => setOrgForm({ ...orgForm, domain: e.target.value })} placeholder="company.com" className="border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+              <input value={orgForm.org_name} onChange={e => setOrgForm({ ...orgForm, org_name: e.target.value })} placeholder="Organization name (shown to users)" className="border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+              <input type="number" min={1} value={orgForm.seat_limit} onChange={e => setOrgForm({ ...orgForm, seat_limit: e.target.value })} placeholder="Free seats" className="border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+              <select value={orgForm.plan_code} onChange={e => setOrgForm({ ...orgForm, plan_code: e.target.value })} className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+                <option value="pathfinder">Pathfinder (full report)</option>
+                <option value="launchpad_monthly">Launchpad (report + coaching session)</option>
+              </select>
+              <label className="text-xs text-slate-500 sm:col-span-2">
+                Offer ends (optional, blank = no end date)
+                <input type="date" value={orgForm.expires_at} onChange={e => setOrgForm({ ...orgForm, expires_at: e.target.value })} className="block mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+              </label>
+            </div>
+            <button
+              disabled={orgSaving || !orgForm.domain.trim() || !(parseInt(orgForm.seat_limit, 10) >= 1)}
+              onClick={async () => {
+                const ok = await saveOrgDomain({
+                  domain: orgForm.domain, org_name: orgForm.org_name, plan_code: orgForm.plan_code,
+                  seat_limit: parseInt(orgForm.seat_limit, 10), active: orgForm.active,
+                  expires_at: orgForm.expires_at ? new Date(orgForm.expires_at + 'T23:59:59Z').toISOString() : null,
+                })
+                if (ok) setOrgForm({ domain: '', org_name: '', plan_code: 'pathfinder', seat_limit: '5', expires_at: '', active: true })
+              }}
+              className="mt-4 bg-sky-600 text-white text-sm font-semibold rounded-lg px-4 py-2 disabled:opacity-50"
+            >
+              {orgSaving ? 'Saving…' : 'Save domain'}
+            </button>
+            {orgError && <p className="text-xs text-red-500 mt-3">{orgError}</p>}
+          </div>
+
+          {orgLoading && <p className="text-sm text-slate-400">Loading…</p>}
+          {!orgLoading && orgDomains.length === 0 && <p className="text-sm text-slate-400">No organizations yet.</p>}
+          <div className="space-y-3">
+            {orgDomains.map(d => {
+              const expired = !!d.expires_at && new Date(d.expires_at) <= new Date()
+              return (
+                <div key={d.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-800">
+                        @{d.domain} {d.org_name && <span className="text-slate-400 font-normal">· {d.org_name}</span>}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {d.plan_code === 'launchpad_monthly' ? 'Launchpad' : 'Pathfinder'} · {d.seats_used}/{d.seat_limit} seats used
+                        {d.expires_at && <> · {expired ? 'expired' : 'ends'} {new Date(d.expires_at).toLocaleDateString()}</>}
+                        {!d.active && ' · switched off'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => setOrgForm({ domain: d.domain, org_name: d.org_name || '', plan_code: d.plan_code, seat_limit: String(d.seat_limit), expires_at: d.expires_at ? d.expires_at.slice(0, 10) : '', active: d.active })}
+                        className="text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50"
+                      >Edit</button>
+                      <button
+                        disabled={orgSaving}
+                        onClick={() => saveOrgDomain({ domain: d.domain, org_name: d.org_name || '', plan_code: d.plan_code, seat_limit: d.seat_limit, expires_at: d.expires_at, active: !d.active })}
+                        className="text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50 disabled:opacity-50"
+                      >{d.active ? 'Switch off' : 'Switch on'}</button>
+                      <button onClick={() => setOrgOpen(orgOpen === d.id ? null : d.id)} className="text-xs font-semibold text-sky-700 border border-sky-200 rounded-lg px-3 py-1.5 hover:bg-sky-50">
+                        {orgOpen === d.id ? 'Hide' : 'People'} ({d.grants.filter(g => !g.revoked_at).length})
+                      </button>
+                    </div>
+                  </div>
+                  {orgOpen === d.id && (
+                    <div className="mt-4 border-t border-slate-100 pt-3 space-y-2">
+                      {d.grants.length === 0 && <p className="text-xs text-slate-400">Nobody has used a seat yet.</p>}
+                      {d.grants.map(g => (
+                        <div key={g.user_id} className="flex items-center justify-between gap-3 text-sm">
+                          <span className={`truncate ${g.revoked_at ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{g.email} <span className="text-xs text-slate-400">· {new Date(g.granted_at).toLocaleDateString()}{g.revoked_at ? ' · revoked' : ''}</span></span>
+                          {!g.revoked_at && <button onClick={() => revokeOrgGrant(d.id, g.user_id, g.email)} className="text-xs font-semibold text-red-600 hover:underline shrink-0">Revoke</button>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

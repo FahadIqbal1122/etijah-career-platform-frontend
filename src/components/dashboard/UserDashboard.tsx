@@ -258,6 +258,9 @@ export default function UserDashboard() {
   const [downloadingReport, setDownloadingReport] = useState(false)
   const [downloadError, setDownloadError] = useState('')
   const [justVerified, setJustVerified] = useState(false)
+  // Free access given because the user's company email domain has an offer (backend /billing/org-access).
+  const [orgAccess, setOrgAccess] = useState<{ org_granted: boolean; org_name: string | null } | null>(null)
+  const [orgBannerHidden, setOrgBannerHidden] = useState(false)
   // Opened from an "Unlock" button on a report (?plans=1): scroll to the plans card and mark it for a few seconds.
   const [plansFocus, setPlansFocus] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
@@ -295,6 +298,14 @@ export default function UserDashboard() {
     // "login" step happens) needs its own linking too, or that user's
     // pre-signup assessment never surfaces.
     apiAuthPost('/assessment/link-by-email', {}).catch(() => {}).finally(() => {
+      // After linking (the full-report build needs the assessment to belong to this account): apply a company-domain
+      // free-seat offer if there is one, then reload the plan so the report shows as unlocked straight away.
+      apiAuthPost<{ status: string; org_granted: boolean; org_name: string | null }>('/billing/org-access', {})
+        .then(r => {
+          if (r.org_granted) setOrgAccess({ org_granted: true, org_name: r.org_name })
+          if (r.status === 'granted') apiAuthGet<Plan>('/billing/plan').then(setPlan).catch(() => {})
+        })
+        .catch(() => {})
       apiAuthGet<AssessmentSummary[]>('/assessment/my-assessments')
         .then(list => {
           const sorted = [...list].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
@@ -521,6 +532,17 @@ export default function UserDashboard() {
             <div className="rounded-xl bg-teal/10 border border-teal/30 text-teal px-4 py-3 text-sm flex items-center justify-between">
               <span>{locale === 'ar' ? 'تم تأكيد بريدك الإلكتروني بنجاح!' : 'Your email has been verified!'}</span>
               <button onClick={() => setJustVerified(false)} className="opacity-60 hover:opacity-100">✕</button>
+            </div>
+          )}
+
+          {orgAccess?.org_granted && !orgBannerHidden && (
+            <div className="rounded-xl bg-teal/10 border border-teal/30 text-teal px-4 py-3 text-sm flex items-center justify-between gap-3">
+              <span>
+                {locale === 'ar'
+                  ? `تم فتح تقريرك الكامل مجاناً${orgAccess.org_name ? ` بدعم من ${orgAccess.org_name}` : ''}.`
+                  : `Your full report is unlocked${orgAccess.org_name ? `, courtesy of ${orgAccess.org_name}` : ''}.`}
+              </span>
+              <button onClick={() => setOrgBannerHidden(true)} className="opacity-60 hover:opacity-100">✕</button>
             </div>
           )}
 
