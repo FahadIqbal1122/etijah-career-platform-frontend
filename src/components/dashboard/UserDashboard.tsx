@@ -37,6 +37,7 @@ type Plan = {
   subscription_status: string | null
   subscription_current_period_end: string | null
   booking_url?: string | null
+  can_retake?: boolean   // false once the plan's one full report is used
 }
 // Hub transaction statuses that mean money was received — confirm against the values the shop actually sends.
 const PAID_STATUSES = ['paid', 'captured', 'succeeded', 'success', 'completed']
@@ -885,9 +886,11 @@ export default function UserDashboard() {
                 </div>
               </div>
             </div>
+            {plan?.can_retake !== false && (
             <Link href="/assessment" className="inline-flex items-center gap-1.5 mt-4 text-sm font-medium text-primary hover:underline">
               {t.retake}<span>{dir === 'rtl' ? '←' : '→'}</span>
             </Link>
+            )}
           </section>
 
           {/* contact */}

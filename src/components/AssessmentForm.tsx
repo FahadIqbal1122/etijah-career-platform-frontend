@@ -12,7 +12,7 @@ import { questions, BEHAVIORAL_SCALE, Question } from '@/data/questions'
 import { SPECIALISMS } from '@/data/specialisms'
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
-import { apiAuthPost, apiGet, apiPost } from '@/lib/api'
+import { apiAuthGet, apiAuthPost, apiGet, apiPost } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import Logomark from '@/components/brand/Logomark'
 // import Constellation, { CHAPTER_CONSTELLATION } from '@/components/brand/Constellation'   // replaced by ChapterStars
@@ -195,6 +195,8 @@ const CHROME: Record<string, Record<string, string>> = {
     saveExit: 'Save & exit',
     welcomeTitle: 'Welcome back!',
     welcomeBody: 'We found a previous assessment linked to your details. View those results, or retake the assessment?',
+    welcomeBodyBlocked: 'Your plan includes one full report, and it is ready. Open your results to view it.',
+    retakeNotIncluded: 'Your plan includes one full report, which you have already used. Open your results from your dashboard.',
     viewPrevious: 'View previous results',
     retake: 'Retake the assessment',
     draftTitle: 'Pick up where you left off?',
@@ -225,6 +227,8 @@ const CHROME: Record<string, Record<string, string>> = {
     saveExit: 'احفظ واخرج',
     welcomeTitle: 'أهلاً بعودتك!',
     welcomeBody: 'وجدنا تقييماً سابقاً مرتبطاً ببياناتك. اعرض تلك النتائج، أو أعد التقييم؟',
+    welcomeBodyBlocked: 'تتضمن خطتك تقريراً كاملاً واحداً، وهو جاهز. افتح نتائجك لعرضه.',
+    retakeNotIncluded: 'تتضمن خطتك تقريراً كاملاً واحداً وقد استخدمته. افتح نتائجك من لوحة التحكم.',
     viewPrevious: 'عرض النتائج السابقة',
     retake: 'إعادة التقييم',
     draftTitle: 'أتريد إكمال ما بدأته؟',
@@ -325,6 +329,8 @@ export default function AssessmentForm() {
   const [error, setError] = useState('')
   const [showExistingModal, setShowExistingModal] = useState(false)
   const [existingResultId, setExistingResultId] = useState<string | null>(null)
+  // A paid account that has used its one full report: the returning-user modal offers no retake.
+  const [retakeBlocked, setRetakeBlocked] = useState(false)
   const [showClaimedModal, setShowClaimedModal] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
   const [ageTyping, setAgeTyping] = useState(false) // age question: typed box instead of the wheel
@@ -404,6 +410,21 @@ export default function AssessmentForm() {
       })
       .catch(() => { if (!cancelled && local) setDraft(local) })
       .finally(() => { try { window.history.replaceState(null, '', window.location.pathname) } catch { /* ignore */ } })
+    return () => { cancelled = true }
+  }, [])
+
+  // A paid account that has used its one full report is told now, before any question, and pointed to that report.
+  useEffect(() => {
+    let cancelled = false
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session || cancelled) return
+      return apiAuthGet<{ blocked: boolean; latest_response_id: string | null }>('/assessment/allowance').then(a => {
+        if (cancelled || !a.blocked || !a.latest_response_id) return
+        setExistingResultId(a.latest_response_id)
+        setRetakeBlocked(true)
+        setShowExistingModal(true)
+      })
+    }).catch(() => {})
     return () => { cancelled = true }
   }, [])
 
@@ -587,7 +608,7 @@ export default function AssessmentForm() {
     // Authenticated so the backend can tell "someone else's claimed account"
     // apart from "the logged-in user's own prior response" — see main.py's
     // check_existing.
-    return apiAuthPost<{ id: string | null; claimed?: boolean } | null>('/assessment/check-existing', { email, phone })
+    return apiAuthPost<{ id: string | null; claimed?: boolean; retake_blocked?: boolean } | null>('/assessment/check-existing', { email, phone })
   }
 
   // single source of truth for answers — keep the ref in sync so reveals can
@@ -677,6 +698,7 @@ export default function AssessmentForm() {
         }
         if (existing?.id) {
           setExistingResultId(existing.id)
+          setRetakeBlocked(!!existing.retake_blocked)
           setShowExistingModal(true)
           return
         }
@@ -853,7 +875,7 @@ export default function AssessmentForm() {
       after(520, () => router.push(`/results/${result.response_id}`))
     } catch (err: any) {
       console.error('Submission error:', err)
-      setError(err?.message || tForm('error'))
+      setError(err?.message === 'retake_not_included' ? chrome.retakeNotIncluded : (err?.message || tForm('error')))
       setSubmitting(false)
     }
   }
@@ -1228,11 +1250,12 @@ export default function AssessmentForm() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" dir={dir}>
           <div className="card w-full max-w-sm p-8 space-y-4">
             <h3 className="text-lg font-extrabold text-charcoal">{chrome.welcomeTitle}</h3>
-            <p className="text-sm text-charcoal/60">{chrome.welcomeBody}</p>
+            <p className="text-sm text-charcoal/60">{retakeBlocked ? chrome.welcomeBodyBlocked : chrome.welcomeBody}</p>
             <div className="flex flex-col gap-3 pt-2">
               <button className="cta" data-track="assessment_view_previous_result" style={{ width: '100%' }} onClick={() => router.push(`/results/${existingResultId}`)}>
                 {chrome.viewPrevious}
               </button>
+              {!retakeBlocked && (
               <button
                 className="w-full py-3 rounded-2xl border border-[var(--line-strong)] text-charcoal/70 font-medium hover:bg-lightblue transition-colors"
                 onClick={() => {
@@ -1242,6 +1265,7 @@ export default function AssessmentForm() {
               >
                 {chrome.retake}
               </button>
+              )}
             </div>
           </div>
         </div>
@@ -1272,7 +1296,7 @@ export default function AssessmentForm() {
       )}
 
       {/* ── resume-draft modal ───────────────────────────────────────────── */}
-      {draft && (
+      {draft && !retakeBlocked && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" dir={dir}>
           <div className="card w-full max-w-sm p-8 space-y-4">
             <h3 className="text-lg font-extrabold text-charcoal">{chrome.draftTitle}</h3>
