@@ -380,6 +380,8 @@ export default function ResultsPage() {
   const [saveError, setSaveError] = useState('')
   const [email, setEmail] = useState('')
   const [loggedIn, setLoggedIn] = useState(false)
+  // The reader's email domain has a free-report offer (company seats): sign up with that email and the full report unlocks.
+  const [orgOffer, setOrgOffer] = useState<{ org_name: string | null; domain: string } | null>(null)
   const upgradeHref = useUpgradeHref()   // anonymous readers sign up (and save this report) before the plans
   const [reassessing, setReassessing] = useState(false)
   const [reassessError, setReassessError] = useState('')
@@ -415,6 +417,7 @@ export default function ResultsPage() {
           setScoreMap(Object.fromEntries((data.results || []).map((r: any) => [r.dimension, Math.round(Number(r.normalized_score) || 0)])))
           setEmail(data.email || '')
           if (data.tier === 'free' || data.tier === 'pathfinder' || data.tier === 'launchpad') setTier(data.tier)
+          setOrgOffer(data.org_offer && typeof data.org_offer.domain === 'string' ? data.org_offer : null)
           setIsStillEnrolled(!!data.is_still_enrolled)
           setSnapshotOn(!!data.free_snapshot)
           setFirstName(typeof data.first_name === 'string' && data.first_name ? data.first_name : null)
@@ -2393,6 +2396,28 @@ export default function ResultsPage() {
 
   return (
     <div className={`min-h-screen brand-surface page-fade-in${useTemplate ? ` rt-${reportTemplate}${tier === 'free' ? ' rt-free' : ''}` : ''}`}>
+
+      {/* Company seat offer: the reader's email domain gets the full report free once they sign up with that email */}
+      {tier === 'free' && orgOffer && (
+        <div dir={locale === 'ar' ? 'rtl' : 'ltr'} className="max-w-3xl mx-auto px-4 pt-4">
+          <div className="rounded-xl bg-teal/10 border border-teal/30 text-charcoal px-4 py-3 text-sm flex items-center justify-between gap-3 flex-wrap">
+            <p>
+              {locale === 'ar'
+                ? <>✦ <strong>{orgOffer.org_name || orgOffer.domain}</strong> يمنحك التقرير الكامل مجاناً. {loggedIn
+                    ? <>أكّد بريدك <span dir="ltr">@{orgOffer.domain}</span> أو سجّل الدخول به، وسيُفتح تقريرك الكامل تلقائياً.</>
+                    : <>أنشئ حساباً ببريدك <span dir="ltr">@{orgOffer.domain}</span> وأكّده، وسيُفتح تقريرك الكامل تلقائياً دون أي دفع.</>}</>
+                : <>✦ <strong>{orgOffer.org_name || orgOffer.domain}</strong> gives you the full report for free. {loggedIn
+                    ? <>Confirm your @{orgOffer.domain} email, or sign in with it, and your full report unlocks automatically.</>
+                    : <>Create your account with your @{orgOffer.domain} email and confirm it. Your full report unlocks automatically, with no payment.</>}</>}
+            </p>
+            {!loggedIn && (
+              <Link href={`/signup?claim=${encodeURIComponent(id)}`} className="shrink-0 rounded-full bg-teal text-charcoal font-semibold px-4 py-2 text-sm hover:opacity-90">
+                {locale === 'ar' ? 'إنشاء حساب' : 'Create account'}
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Free plan: personal insight + first purchase button, then the explained profile + the same button again */}
       {freeSnapshot && (

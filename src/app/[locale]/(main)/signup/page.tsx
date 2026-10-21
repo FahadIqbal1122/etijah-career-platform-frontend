@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { supabase } from '@/lib/supabase'
@@ -8,6 +8,11 @@ import Logomark from '@/components/brand/Logomark'
 
 const field =
   'w-full border border-[var(--line-strong)] rounded-xl px-3.5 py-2.5 text-sm bg-lightblue text-charcoal placeholder-charcoal/40 focus:outline-none focus:border-accent focus:ring-2 focus:ring-teal/20 transition-colors'
+
+function readClaimEmail(id: string | null) {
+  if (!id) return ''
+  try { return window.localStorage.getItem(`claimEmail:${id}`) || '' } catch { return '' }
+}
 
 function readClaimToken(id: string) {
   try { return window.localStorage.getItem(`claim:${id}`) || '' } catch { return '' }
@@ -28,6 +33,11 @@ export default function SignupPage() {
   const claimId = searchParams.get('claim')
   // Coming from an "Unlock" button: after the email is confirmed the dashboard opens at the plans.
   const wantsPlans = searchParams.get('plans') === '1'
+  // Pre-fill the email typed in the assessment (read after mount: it lives in this browser's storage).
+  useEffect(() => {
+    const saved = readClaimEmail(claimId)
+    if (saved) setEmail(cur => cur || saved)
+  }, [claimId])
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
@@ -44,6 +54,11 @@ export default function SignupPage() {
     if (error) {
       setError(error.message)
       setLoading(false)
+      return
+    }
+    // Email confirmation switched off: Supabase signs the user in straight away, so go on instead of asking them to check email.
+    if (data.session) {
+      window.location.href = `/${locale}/dashboard?verified=1${wantsPlans ? '&plans=1' : ''}`
       return
     }
     setDone(true)
@@ -83,8 +98,8 @@ export default function SignupPage() {
         {claimId && (
           <p className="mb-5 rounded-xl bg-primary/5 border border-primary/15 px-3.5 py-3 text-sm text-charcoal/80 leading-relaxed">
             {locale === 'ar'
-              ? 'أنشئ حساباً مجانياً لنحفظ تقريرك وتقدّمك، ثم اختر خطتك.'
-              : 'Create a free account so your report and progress are saved, then choose your plan.'}
+              ? 'أنشئ حساباً مجانياً لنحفظ تقريرك وتقدّمك، ثم اختر خطتك. استخدم نفس البريد الإلكتروني الذي استخدمته في التقييم.'
+              : 'Create a free account so your report and progress are saved, then choose your plan. Use the same email you used for the assessment.'}
           </p>
         )}
         <form onSubmit={handleSignup} className="space-y-4">

@@ -835,6 +835,8 @@ export default function AssessmentForm() {
       })
       // Proof that this browser took the assessment: lets the report be saved to the account created later.
       try { if (result.claim_token) window.localStorage.setItem(`claim:${result.response_id}`, result.claim_token) } catch {}
+      // The email typed here, so the sign-up page can pre-fill it (an account with this email also picks the report up by email).
+      try { window.localStorage.setItem(`claimEmail:${result.response_id}`, String(answers['QD2'] || '').trim()) } catch {}
       track('assessment_complete', { lang: locale })
       clearDraft()
       // this attempt is done — flush what's queued so it isn't lost, then

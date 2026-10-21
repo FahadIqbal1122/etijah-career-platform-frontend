@@ -360,6 +360,8 @@ export default function UserDashboard() {
   const [confirmPlan, setConfirmPlan] = useState<PlanCode | null>(null)
   const [agreed, setAgreed] = useState(false)
   function handleBuyPlan(planCode: PlanCode) {
+    // Still linking/fetching their report: do nothing yet, so a quick click is never mistaken for "no assessment".
+    if (assessmentsLoading) return
     // The paid report is built from an assessment — send people who have none to take it first.
     if (!assessments.length) { navRouter.push(`/${locale}/assessment`); return }
     setAgreed(false)
@@ -601,7 +603,7 @@ export default function UserDashboard() {
                     {downloadingReport ? t.downloading : t.downloadAr}
                   </button>}
                   </>) : (
-                    <button data-track="dashboard_download_locked" onClick={() => handleBuyPlan('pathfinder')} disabled={buying}
+                    <button data-track="dashboard_download_locked" onClick={() => handleBuyPlan('pathfinder')} disabled={buying || assessmentsLoading}
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--line-strong)] text-charcoal/70 text-sm font-medium hover:bg-lightblue transition-colors disabled:opacity-50">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>{b.downloadLocked}
                     </button>
@@ -781,6 +783,13 @@ export default function UserDashboard() {
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary text-primary text-sm font-medium">
                       {b.takeAssessment}
                     </Link>
+                  )}
+                  {plan?.tier === 'free' && !assessmentsLoading && !assessments.length && (
+                    <p className="basis-full text-xs text-charcoal/60">
+                      {lang === 'ar'
+                        ? 'لا نجد تقريراً مرتبطاً بهذا الحساب. إذا أجريت التقييم من قبل، سجّل الدخول بنفس البريد الإلكتروني الذي استخدمته فيه، أو راسلنا وسنربطه لك.'
+                        : 'We can\'t find a report linked to this account. If you already took the assessment, sign in with the same email you used for it, or contact us and we will link it for you.'}
+                    </p>
                   )}
                   {plan?.tier === 'free' && assessments.length > 0 && (
                     <button data-track="dashboard_unlock_pathfinder" onClick={() => handleBuyPlan('pathfinder')} disabled={buying}
