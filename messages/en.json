@@ -1137,8 +1137,8 @@
       "buy": "Unlock my career recommendations — {price}",
       "buyFine": "One-time payment. Your assessment is already complete.",
       "buyLead": "You can see the patterns in your profile. Now discover the career paths they could connect to.",
-      "continue": "Continue to explore your free profile",
-      "profileEyebrow": "Your free profile",
+      "continue": "Continue to explore your profile preview",
+      "profileEyebrow": "Your profile preview",
       "profileTitle": "What your answers say about you",
       "cardInterests": "Your interests",
       "cardInterestsSub": "The kinds of work you enjoy most",
@@ -1162,6 +1162,7 @@
       },
       "foundMatches": "We found 8 ranked career matches for this profile. Unlock your full report to see them.",
       "lockedSection": "Unlock your full report to see this part of your profile.",
+      "lockedShort": "Included in your full report",
       "lockedSectionCta": "Unlock Full Report",
       "fields": {
         "realistic": ["Engineering & technical work", "Hands-on operations"],
@@ -1189,7 +1190,7 @@
         { "title": "Compare your career options", "text": "A side-by-side look at your matches: the work, the fit and the skills needed" }
       ],
       "eyebrowNamed": "Your results are ready, {name}",
-      "download": "Download your free snapshot (PDF)",
+      "download": "Download your results preview (PDF)",
       "downloading": "Preparing your PDF…"
     }
   }

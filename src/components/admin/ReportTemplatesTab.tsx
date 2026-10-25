@@ -160,8 +160,8 @@ export default function ReportTemplatesTab() {
       ) : plan === 'free' ? (
         // The free plan is the two-part snapshot whatever template is live, so there is no template to preview for it
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 text-sm text-slate-600">
-          The free plan is the same two-part snapshot in every template (interests, values, strengths and personality, each with a
-          short explanation, and no career names). Sample free report:{' '}
+          The free plan is the same two-part snapshot in every template (the interests profile with a short explanation; values,
+          strengths and personality show their headings only, locked, and there are no career names). Sample free report:{' '}
           <a href="/demo-reports/free-en.pdf" target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-800 underline">English PDF</a>
           {' · '}
           <a href="/demo-reports/free-ar.pdf" target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-800 underline">Arabic PDF</a>.

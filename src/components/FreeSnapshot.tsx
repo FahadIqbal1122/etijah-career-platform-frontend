@@ -132,8 +132,12 @@ export default function FreeSnapshot(p: FreeSnapshotProps) {
         <p className="rp-sub">{t('stoodOut')}</p>
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="card p-4"><p className="eyebrow">{t('interests')}</p><p className="rp-h mt-1">{join(p.interests)}</p></div>
+          {/* values and strength are part of the full report: heading only, content hidden
           <div className="card p-4"><p className="eyebrow">{t('values')}</p><p className="rp-h mt-1">{join(p.values.map(v => v.label))}</p></div>
           <div className="card p-4"><p className="eyebrow">{t('strength')}</p><p className="rp-h mt-1">{p.strengths[0]?.label}</p><p className="rp-sub">{t('selfReported')}</p></div>
+          */}
+          <div className="card p-4"><p className="eyebrow">{t('values')}</p><p className="rp-sub mt-1">{t('lockedShort')}</p></div>
+          <div className="card p-4"><p className="eyebrow">{t('strength')}</p><p className="rp-sub mt-1">{t('lockedShort')}</p></div>
         </div>
         <div className="rounded-2xl bg-[#f2f8fd] p-5 sm:p-6 space-y-3">
           <p className="eyebrow">{t('questionEyebrow')}</p>

@@ -13,8 +13,10 @@ export const DEMO_REPORTS: {
 }[] = [
   // the free report is the two-page snapshot (public/demo-reports/free-<en|ar>.pdf), built from the backend's free_snapshot_pdf.py
   { key: 'free',
-    title: { en: 'Free report', ar: 'التقرير المجاني' },
-    body: { en: 'What you get free: your interests, values, strengths and personality, in two pages.', ar: 'ما تحصل عليه مجاناً: اهتماماتك وقيمك ونقاط قوتك وشخصيتك، في صفحتين.' } },
+    // title: { en: 'Free report', ar: 'التقرير المجاني' },
+    // body: { en: 'What you get free: your interests, values, strengths and personality, in two pages.', ar: 'ما تحصل عليه مجاناً: اهتماماتك وقيمك ونقاط قوتك وشخصيتك، في صفحتين.' } },
+    title: { en: 'Results preview', ar: 'معاينة النتائج' },
+    body: { en: 'A first look at your results: your interests, in two pages.', ar: 'نظرة أولى على نتائجك: اهتماماتك، في صفحتين.' } },
   { key: 'general',
     title: { en: 'Full sample report', ar: 'نموذج التقرير الكامل' },
     body: { en: 'The complete report, every section.', ar: 'التقرير الكامل بكل أقسامه.' } },
