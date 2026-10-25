@@ -4839,13 +4839,15 @@ export default function AdminPage() {
                 {/* Company licences: organisations given free seats to test the paid report (Settings -> Organization Access) */}
                 {(() => {
                   const now = new Date()
+                  // Our own company is a test account for the team, not a customer: left out of this card (it stays in Organization Access)
+                  const cardOrgs = orgDomains.filter(o => o.domain !== 'etijahcoaching.com')
                   const isLive = (o: OrgDomain) => o.active && !(o.expires_at && new Date(o.expires_at) <= now)
-                  const liveOrgs = orgDomains.filter(isLive)
-                  const seatsGiven = orgDomains.reduce((n, o) => n + o.seat_limit, 0)
-                  const seatsUsed = orgDomains.reduce((n, o) => n + o.seats_used, 0)
+                  const liveOrgs = cardOrgs.filter(isLive)
+                  const seatsGiven = cardOrgs.reduce((n, o) => n + o.seat_limit, 0)
+                  const seatsUsed = cardOrgs.reduce((n, o) => n + o.seats_used, 0)
                   const seatsLeft = liveOrgs.reduce((n, o) => n + Math.max(0, o.seat_limit - o.seats_used), 0)
-                  const orgsWithUse = orgDomains.filter(o => o.seats_used > 0).length
-                  const seatsCompleted = orgDomains.reduce((n, o) => n + (o.seats_completed || 0), 0)
+                  const orgsWithUse = cardOrgs.filter(o => o.seats_used > 0).length
+                  const seatsCompleted = cardOrgs.reduce((n, o) => n + (o.seats_completed || 0), 0)
                   return (
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mt-4">
                       <div className="flex items-baseline justify-between mb-3 gap-3 flex-wrap">
@@ -4857,19 +4859,19 @@ export default function AdminPage() {
                       </div>
                       {orgLoading && orgDomains.length === 0 ? (
                         <p className="text-sm text-slate-400">Loading…</p>
-                      ) : orgDomains.length === 0 ? (
+                      ) : cardOrgs.length === 0 ? (
                         <p className="text-sm text-slate-400">No company has been given free seats yet.</p>
                       ) : (
                         <>
                           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                            <div><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Companies</p><p className="text-2xl font-bold text-slate-800 tabular-nums">{orgDomains.length}</p><p className="text-xs text-slate-400">{liveOrgs.length} offer{liveOrgs.length === 1 ? '' : 's'} open · {orgsWithUse} used</p></div>
+                            <div><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Companies</p><p className="text-2xl font-bold text-slate-800 tabular-nums">{cardOrgs.length}</p><p className="text-xs text-slate-400">{liveOrgs.length} offer{liveOrgs.length === 1 ? '' : 's'} open · {orgsWithUse} used</p></div>
                             <div><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Seats given</p><p className="text-2xl font-bold text-slate-800 tabular-nums">{seatsGiven}</p><p className="text-xs text-slate-400">Free paid-report licences</p></div>
                             <div><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Seats used</p><p className="text-2xl font-bold text-slate-800 tabular-nums">{seatsUsed}</p><p className="text-xs text-slate-400">{seatsGiven > 0 ? `${Math.round((seatsUsed / seatsGiven) * 100)}% of seats given` : '—'}</p></div>
                             <div><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Finished a report</p><p className="text-2xl font-bold text-slate-800 tabular-nums">{seatsCompleted}</p><p className="text-xs text-slate-400">{seatsUsed > 0 ? `${Math.round((seatsCompleted / seatsUsed) * 100)}% of seats used` : '—'}</p></div>
                             <div><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Seats still free</p><p className="text-2xl font-bold text-slate-800 tabular-nums">{seatsLeft}</p><p className="text-xs text-slate-400">On open offers only</p></div>
                           </div>
                           <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
-                            {orgDomains.map(o => {
+                            {cardOrgs.map(o => {
                               const expired = !!o.expires_at && new Date(o.expires_at) <= now
                               const pct = o.seat_limit > 0 ? Math.min(100, Math.round((o.seats_used / o.seat_limit) * 100)) : 0
                               return (
