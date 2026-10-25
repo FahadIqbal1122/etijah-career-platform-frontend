@@ -606,7 +606,8 @@ export default function ResultsPage() {
   // itself is ready — this is the only time the survey shows, so it's also
   // the only time we gate on it. A later revisit (justCompleted false)
   // always falls straight through to the report once loaded.
-  const awaitingStage1 = betaMode && justCompleted && !stage1Done && !(COACH_FEEDBACK && stage1Marker)
+  // const awaitingStage1 = betaMode && justCompleted && !stage1Done && !(COACH_FEEDBACK && stage1Marker)
+  const awaitingStage1 = justCompleted && !stage1Done && !(COACH_FEEDBACK && stage1Marker)
 
   // Listings are titled "Internships" only when every listing is an internship. Final-year students and recent
   // graduates get internships and entry-level jobs together, which is titled "Live Job Postings" with an
