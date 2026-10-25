@@ -174,6 +174,7 @@ const CONFIRM_MS = 560
 const CHROME: Record<string, Record<string, string>> = {
   en: {
     asideEyebrow: 'Discovering you', // ambient label on the desktop split panel
+    unlockNote: 'At the end you’ll see a first look at your profile, and you can unlock your full report when you’re ready.',
     revealCta: 'Keep going',
     finishHead: 'Your map is taking shape.',
     finishBody: 'You’ve lit the path. This is the start of your Etijahi profile — the full reading is next.',
@@ -206,6 +207,7 @@ const CHROME: Record<string, Record<string, string>> = {
   },
   ar: {
     asideEyebrow: 'نكتشفك', // ambient label on the desktop split panel
+    unlockNote: 'في النهاية ستحصل على لمحة أولى عن ملفك، ويمكنك فتح تقريرك الكامل متى كنت جاهزاً.',
     revealCta: 'أكمل',
     finishHead: 'خريطتك تتشكّل.',
     finishBody: 'لقد أضأت الطريق. هذه بداية ملفك في إتجاهي — والقراءة الكاملة تنتظرك.',
@@ -1097,6 +1099,9 @@ export default function AssessmentForm() {
                 />
                 {q.id === 'QD2' && (
                   <p style={{ margin: '10px 4px 0', fontSize: 13, lineHeight: 1.5, opacity: 0.7 }}>{tForm('emailConsent')}</p>
+                )}
+                {q.id === 'QD1' && (
+                  <p style={{ margin: '10px 4px 0', fontSize: 13, lineHeight: 1.5, opacity: 0.7 }}>{chrome.unlockNote}</p>
                 )}
               </>
             )}

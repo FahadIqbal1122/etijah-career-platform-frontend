@@ -26,7 +26,8 @@ export const L = {
       sub: 'That hesitation isn’t a weakness. It’s the right question, and it deserves more than a personality quiz. We put 15 years of real career guidance from across the Gulf in your hands, grounded in the customs and traditions of the region, with the clarity to see which paths will still be standing as AI reshapes the world of work. You won’t figure it out alone.',
       trust: '15 years of coaching, now in your hands. · Etijahi — by Etijah Coaching & Consulting',
       cta: 'Find My Direction',
-      microcopy: 'Free assessment and initial results. Full report available at the {price} launch price. No card needed to start.',
+// previous: microcopy: 'Free assessment and initial results. Full report available at the {price} launch price. No card needed to start.',
+      microcopy: 'Take the assessment in about 15 minutes. Full report at the {price} launch price. No card needed to start.',
       secondary: 'See a sample report ↗',
       viewPackages: 'View packages',
       preview: {
@@ -180,8 +181,10 @@ export const L = {
     },
     // ── SECTION 10 — PRICING ──────────────────────────────────────────
     pricing: {
-      label: 'Start at no cost. Go further when you’re ready.',
-      headline: 'Every Etijahi journey starts the same way — nothing to pay, everything to gain',
+// previous: label: 'Start at no cost. Go further when you’re ready.',
+      label: 'Two ways to go further.',
+// previous: headline: 'Every Etijahi journey starts the same way — nothing to pay, everything to gain',
+      headline: 'Choose the plan that fits where you are, with everything to gain',
       hl: 'everything to gain',
       free: {
         code: null,
@@ -214,7 +217,8 @@ export const L = {
         for: 'Understand your career options and choose your next step.',
         // bullets (previous): Everything in Explorer; full AI-impact deep dive; 1–3 year outlook; courses and certifications; live job listings
         bullets: [
-          'Everything in your free results, plus:',
+// previous: 'Everything in your free results, plus:',
+          'Your full personal profile, plus:',
           'A deeper explanation of your suggested career paths and why they relate to your responses',
           'Skills you can develop as you explore those paths',
           'How AI may change tasks in your suggested careers, and what you can learn to prepare',
@@ -255,7 +259,8 @@ export const L = {
         title: 'Coaching is optional and priced separately.',
         body: 'To interpret your results, pressure-test a decision, or plan your move — because sometimes you just want a person in the room.',
       },
-      reassure: 'Not sure which tier is right? Begin with Explorer — no cost, no card, no commitment. Your results will make the next step obvious.',
+// previous: reassure: 'Not sure which tier is right? Begin with Explorer — no cost, no card, no commitment. Your results will make the next step obvious.',
+      reassure: 'Not sure which plan is right? Pathfinder gives you the full report. Launchpad adds a one-to-one coaching session on top of it.',
     },
     // ── SECTION 11 — FOR INSTITUTIONS ─────────────────────────────────
     institutions: {
@@ -284,7 +289,8 @@ export const L = {
     // ── SECTION 13 — FINAL CTA ────────────────────────────────────────
     finalCta: {
       headline: 'Your direction is closer than you think',
-      sub: 'Free assessment and initial results, in fifteen minutes. Full report at the {price} launch price.',
+// previous: sub: 'Free assessment and initial results, in fifteen minutes. Full report at the {price} launch price.',
+      sub: 'Take the assessment in fifteen minutes. Full report at the {price} launch price.',
       cta: 'Find My Direction',
       arrow: '→',
       trust: 'Etijahi — by Etijah Coaching & Consulting · 15 years of real coaching impact · Your data stays in the Gulf',
@@ -336,7 +342,8 @@ export const L = {
       sub: 'حيرتك ليست ضعفاً، بل هو السؤال الصحيح الذي تبحث عنه، وهو سؤال يستحق إجابة أعمق بكثير من مجرد "اختبار شخصية" عابر. لقد وضعنا بين يديك خلاصة ١٥ عاماً من التوجيه المهني الحقيقي والمبني على واقع منطقتنا الخليجية بعاداتها وتقاليدها، لنمنحك رؤية واضحة تُمكّنك من معرفة المسارات المهنية التي ستظل صامدة ومزدهرة في ظل تشكيل الذكاء الاصطناعي لملامح سوق العمل المستقبلي. لن تخوض هذه الرحلة بمفردك.',
       trust: '١٥ عاماً من الخبرة، بين يديك. · اتجاهي — من اتجاه للإرشاد والاستشارات',
       cta: 'اكتشف اتجاهي',
-      microcopy: 'التقييم والنتائج الأولية مجاناً. التقرير الكامل بسعر الإطلاق {price}. لا تحتاج إلى بطاقة دفع للبدء.',
+// previous: microcopy: 'التقييم والنتائج الأولية مجاناً. التقرير الكامل بسعر الإطلاق {price}. لا تحتاج إلى بطاقة دفع للبدء.',
+      microcopy: 'أكمل التقييم في نحو ١٥ دقيقة. التقرير الكامل بسعر الإطلاق {price}. لا تحتاج إلى بطاقة دفع للبدء.',
       secondary: 'اطّلع على نموذج التقرير ↗',
       viewPackages: 'عرض الباقات',
       preview: {
@@ -481,8 +488,10 @@ export const L = {
       ],
     },
     pricing: {
-      label: 'ابدأ دون رسوم. وتقدَّم حين تكون جاهزاً.',
-      headline: 'كل رحلة في اتجاهي تبدأ بالطريقة نفسها — لا شيء تدفعه، والكثير لتكسبه',
+// previous: label: 'ابدأ دون رسوم. وتقدَّم حين تكون جاهزاً.',
+      label: 'طريقان لتتقدّم أكثر.',
+// previous: headline: 'كل رحلة في اتجاهي تبدأ بالطريقة نفسها — لا شيء تدفعه، والكثير لتكسبه',
+      headline: 'اختر الباقة التي تناسب مرحلتك — والكثير لتكسبه',
       hl: 'والكثير لتكسبه',
       free: {
         code: null,
@@ -515,7 +524,8 @@ export const L = {
         for: 'افهم خياراتك المهنية، وحدّد خطوتك القادمة.',
         // bullets (previous): كل ما في «مستكشف»؛ التحليل الكامل لتأثير الذكاء الاصطناعي؛ توقعات ١–٣ سنوات؛ دورات وشهادات؛ وظائف حالية
         bullets: [
-          'يشمل كل ما في النتائج المجانية، بالإضافة إلى:',
+// previous: 'يشمل كل ما في النتائج المجانية، بالإضافة إلى:',
+          'ملفك الشخصي الكامل، بالإضافة إلى:',
           'شرح أعمق لمساراتك المهنية المقترحة وأسباب ملاءمتها لإجاباتك',
           'المهارات التي يمكنك تطويرها لاستكشاف هذه المسارات',
           'كيف قد يغيّر الذكاء الاصطناعي المهام في المهن المقترحة، وما يمكنك تعلّمه استعداداً لذلك',
@@ -556,7 +566,8 @@ export const L = {
         title: 'جلسة الكوتشينج اختيارية وتُسعَّر بشكل منفصل.',
         body: 'لتحليل نتائجك بدقة، أو اختبار مدى صحة قرار مصيري، أو التخطيط لخطوتك القادمة — لأننا نعرف أنه في بعض الأحيان، كل ما تحتاجه هو وجود شخص حقيقي ينصت إليك ويوجهك.',
       },
-      reassure: 'لست متأكداً من الباقة المناسبة؟ ابدأ بباقة «مستكشف» — دون رسوم، ودون بطاقة، ودون التزام. ونتائجك ستجعل الخطوة التالية واضحة.',
+// previous: reassure: 'لست متأكداً من الباقة المناسبة؟ ابدأ بباقة «مستكشف» — دون رسوم، ودون بطاقة، ودون التزام. ونتائجك ستجعل الخطوة التالية واضحة.',
+      reassure: 'لست متأكداً من الباقة المناسبة؟ باقة التقرير الكامل تمنحك التقرير كاملاً، وباقة «منصة الانطلاق» تضيف إليه جلسة توجيه فردية.',
     },
     institutions: {
       label: 'للمؤسسات',
@@ -582,7 +593,8 @@ export const L = {
     },
     finalCta: {
       headline: 'اتجاهك أقرب مما تظن',
-      sub: 'التقييم والنتائج الأولية مجاناً، في خمس عشرة دقيقة. التقرير الكامل بسعر الإطلاق {price}.',
+// previous: sub: 'التقييم والنتائج الأولية مجاناً، في خمس عشرة دقيقة. التقرير الكامل بسعر الإطلاق {price}.',
+      sub: 'أكمل التقييم في خمس عشرة دقيقة. التقرير الكامل بسعر الإطلاق {price}.',
       cta: 'اكتشف اتجاهي',
       arrow: '←',
       trust: 'اتجاهي — من اتجاه للإرشاد والاستشارات · ١٥ عاماً من الأثر الحقيقي للإرشاد المهني · بياناتك تبقى في الخليج',

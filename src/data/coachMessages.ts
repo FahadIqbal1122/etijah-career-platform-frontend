@@ -49,7 +49,7 @@ export function resultsAdvice(p: {
 // Landing page: quick questions shown as chips in Sarah's panel, and the one-time nudge in her bubble.
 export const LANDING_SUGGESTIONS: Bi[] = [
   { en: 'How long does it take?', ar: 'كم يستغرق التقييم؟' },
-  { en: 'What do I get for free?', ar: 'ماذا أحصل عليه مجاناً؟' },
+  // { en: 'What do I get for free?', ar: 'ماذا أحصل عليه مجاناً؟' },
   { en: 'What do the plans cost?', ar: 'كم تكلفة الباقات؟' },
   { en: 'Is my data private?', ar: 'هل بياناتي خاصة؟' },
 ]
@@ -171,7 +171,8 @@ export const LANDING_ROAM: Record<string, Bi[]> = {
   ],
   pricing: [
     { en: 'Not sure which plan is right for you? Tell me a bit about what you need.', ar: 'لست متأكداً أي باقة تناسبك؟ أخبرني قليلاً عما تحتاجه.' },
-    { en: 'Explorer is free, and the paid plans are one-time payments. Want help choosing?', ar: 'Explorer مجانية، والباقات المدفوعة دفعة واحدة. تريد مساعدة في الاختيار؟' },
+    // { en: 'Explorer is free, and the paid plans are one-time payments. Want help choosing?', ar: 'Explorer مجانية، والباقات المدفوعة دفعة واحدة. تريد مساعدة في الاختيار؟' },
+    { en: 'The plans are one-time payments, with no subscription. Want help choosing?', ar: 'الباقات دفعة واحدة دون اشتراك. تريد مساعدة في الاختيار؟' },
     { en: 'Choosing a plan? I can help you pick in two taps.', ar: 'تختار باقة؟ أستطيع مساعدتك في الاختيار بنقرتين.' },
   ],
 }

@@ -81,6 +81,21 @@ function Card({ title, sub, note, loading, children }: { title: string; sub: str
   )
 }
 
+// Heading and subtitle stay; the content is replaced by a pay-to-unlock note. Grows to share the column height evenly.
+function LockedCard({ title, sub, href }: { title: string; sub: string; href: string }) {
+  const t = useTranslations('results.freeSnapshot')
+  return (
+    <div className="card p-5 flex-1 flex flex-col">
+      <p className="rp-h text-charcoal">{title}</p>
+      <p className="rp-sub mb-3">{sub}</p>
+      <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center rounded-xl border border-dashed border-[var(--line-strong)] bg-[#f2f8fd] px-4 py-5">
+        <p className="rp-sub text-charcoal/90">{t('lockedSection')}</p>
+        <Link href={href} data-track="results_snapshot_unlock_section" className="text-primary font-bold text-sm underline">{t('lockedSectionCta')}</Link>
+      </div>
+    </div>
+  )
+}
+
 function BuyButton({ href, price, lead, track }: { href: string; price: string; lead?: string; track: string }) {
   const t = useTranslations('results.freeSnapshot')
   return (
@@ -126,9 +141,9 @@ export default function FreeSnapshot(p: FreeSnapshotProps) {
           <p className="rp-sub text-charcoal/90">{t('questionBody')}</p>
           <div className="pt-3 border-t border-dashed border-[var(--line)] space-y-3">
             <p className="text-sm text-charcoal">{t('foundMatches')}</p>
-            <div className="flex flex-wrap gap-2">
+            {/* <div className="flex flex-wrap gap-2">
               {fields.map(f => <span key={f} className="rp-pill rp-blue">{f}</span>)}
-            </div>
+            </div> */}
             <div className="rounded-xl border border-dashed border-[var(--line-strong)] bg-white px-4 py-2">
               <p className="eyebrow">{t('lockedTitle')}</p>
               <ul>
@@ -162,11 +177,12 @@ export default function FreeSnapshot(p: FreeSnapshotProps) {
           <p className="eyebrow">{t('profileEyebrow')}</p>
           <h2 className="text-2xl font-extrabold text-charcoal">{t('profileTitle')}</h2>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 items-start">
+        <div className="grid gap-4 md:grid-cols-2 items-stretch">
           <Card title={t('cardInterests')} sub={t('cardInterestsSub')} note={p.notes.riasec} loading={p.notesLoading}>
             <Hexagon data={hexData} />
             <div className="mt-3"><Scores items={p.riasec.slice().sort((a, b) => (b.score ?? 0) - (a.score ?? 0))} /></div>
           </Card>
+          {/* previous version showed the values, strengths and personality content:
           <div className="space-y-4">
             <Card title={t('cardValues')} sub={t('cardValuesSub')} note={p.notes.values} loading={p.notesLoading}><Scores items={p.values} /></Card>
             <Card title={t('cardStrengths')} sub={t('cardStrengthsSub')} note={p.notes.strengths} loading={p.notesLoading}><Scores items={p.strengths} /></Card>
@@ -175,6 +191,13 @@ export default function FreeSnapshot(p: FreeSnapshotProps) {
                 {p.personality.map(x => <span key={x.label} className="rp-pill">{x.label}: <b>{x.level}</b></span>)}
               </div>
             </Card>
+          </div>
+          */}
+          {/* Right column: the same height as the interests card, split evenly between the three locked sections */}
+          <div className="flex flex-col gap-4">
+            <LockedCard title={t('cardValues')} sub={t('cardValuesSub')} href={p.upgradeHref} />
+            <LockedCard title={t('cardStrengths')} sub={t('cardStrengthsSub')} href={p.upgradeHref} />
+            <LockedCard title={t('cardPersonality')} sub={t('cardPersonalitySub')} href={p.upgradeHref} />
           </div>
         </div>
         <div className="card p-6 space-y-3">

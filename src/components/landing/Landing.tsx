@@ -107,6 +107,9 @@ const Chevron = () => (
 )
 
 // a slower pace than the results page: this is a first impression, not a tour
+// The free Explorer card in the pricing section is hidden: the landing pages only offer Pathfinder and Launchpad.
+const SHOW_FREE_PLAN = false
+
 const LANDING_GAP: [number, number] = [20000, 32000]
 
 export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
@@ -532,7 +535,9 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
       {/* ── PRICING ──────────────────────────────────────────────────── */}
       <Section id="pricing" eyebrow={c.pricing.label} tint center>
         <Reveal><h2 className="section-h max-w-3xl mx-auto">{<Highlight text={c.pricing.headline} hl={c.pricing.hl} />}</h2></Reveal>
-        <div className="mt-10 grid md:grid-cols-3 gap-6 max-w-6xl mx-auto items-start text-start">
+        {/* previous (three plans): <div className="mt-10 grid md:grid-cols-3 gap-6 max-w-6xl mx-auto items-start text-start"> */}
+        <div className={`mt-10 grid gap-6 mx-auto items-start text-start ${SHOW_FREE_PLAN ? 'md:grid-cols-3 max-w-6xl' : 'md:grid-cols-2 max-w-4xl'}`}>
+          {SHOW_FREE_PLAN && (
           <Reveal className="card p-7 relative">
             <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.free.label}</p>
             {/*
@@ -554,6 +559,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             </ul>
             <Link href="/assessment" data-track="landing_pricing_free" className="cta cta-outline mt-7 w-full">{c.pricing.free.cta}</Link>
           </Reveal>
+          )}
           <Reveal className="pcard-paid rounded-[26px] p-7 relative" style={{ transitionDelay: '90ms' }}>
             <span className="pcard-badge absolute -top-3.5 start-1/2 -translate-x-1/2 rtl:translate-x-1/2">{c.pricing.paid.badge}</span>
             <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.paid.label}</p>

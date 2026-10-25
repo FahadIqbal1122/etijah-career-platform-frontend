@@ -768,6 +768,7 @@ export default function ResultsPage() {
                 )}
                 {/* <p className="text-white/75 text-sm leading-relaxed max-w-sm">{t('loading.leaveNote')}</p> */}
                 <p className="report-loading-note">{t('loading.leaveNote')}</p>
+                {showFeedbackCol && tier === 'free' && <p className="report-loading-note">{t('loading.unlockNote')}</p>}
               </>
             )}
             {showFeedbackCol && (

@@ -709,6 +709,7 @@
       },
       "recentCompletions": "{count, plural, one {# person} other {# people}} completed their assessment in the last hour",
       "leaveNote": "We are working on your results and report. You can wait here until they are ready, or you can leave. We will email you a link to your results once they are ready.",
+      "unlockNote": "Your first look at your profile comes first. You can unlock your full report when you’re ready.",
       "scrollForFeedback": "Scroll down to answer 3 quick questions and unlock your report"
     },
     "error": {
@@ -1159,7 +1160,9 @@
         "enterprising": "influencing what happens next",
         "conventional": "keeping things clear and organised"
       },
-      "foundMatches": "We found 8 ranked career matches for this profile, across these fields:",
+      "foundMatches": "We found 8 ranked career matches for this profile. Unlock your full report to see them.",
+      "lockedSection": "Unlock your full report to see this part of your profile.",
+      "lockedSectionCta": "Unlock Full Report",
       "fields": {
         "realistic": ["Engineering & technical work", "Hands-on operations"],
         "investigative": ["Research & analysis", "Science & technology"],
