@@ -4839,8 +4839,7 @@ export default function AdminPage() {
                 {/* Company licences: organisations given free seats to test the paid report (Settings -> Organization Access) */}
                 {(() => {
                   const now = new Date()
-                  // Our own company is a test account for the team, not a customer: left out of this card (it stays in Organization Access)
-                  const cardOrgs = orgDomains.filter(o => o.domain !== 'etijahcoaching.com')
+                  const cardOrgs = orgDomains   // every offer in Organization Access; nothing is hard-coded here
                   const isLive = (o: OrgDomain) => o.active && !(o.expires_at && new Date(o.expires_at) <= now)
                   const liveOrgs = cardOrgs.filter(isLive)
                   const seatsGiven = cardOrgs.reduce((n, o) => n + o.seat_limit, 0)
