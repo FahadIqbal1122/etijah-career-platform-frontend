@@ -1573,8 +1573,8 @@ export default function AdminPage() {
   const [testModeError, setTestModeError] = useState('')
 
   // Organization access: free report seats per email domain (backend org_domains / org_domain_grants).
-  type OrgGrant = { domain_id: string; user_id: string; email: string; granted_at: string; revoked_at: string | null }
-  type OrgDomain = { id: string; domain: string; org_name: string | null; plan_code: string; seat_limit: number; seats_used: number; expires_at: string | null; active: boolean; grants: OrgGrant[] }
+  type OrgGrant = { domain_id: string; user_id: string; email: string; granted_at: string; revoked_at: string | null; completed?: boolean }
+  type OrgDomain = { id: string; domain: string; org_name: string | null; plan_code: string; seat_limit: number; seats_used: number; seats_completed?: number; expires_at: string | null; active: boolean; grants: OrgGrant[] }
   const [orgDomains, setOrgDomains] = useState<OrgDomain[]>([])
   const [orgLoading, setOrgLoading] = useState(false)
   const [orgSaving, setOrgSaving] = useState(false)
@@ -1974,6 +1974,11 @@ export default function AdminPage() {
       setOrgLoading(false)
     }
   }, [])
+
+  // The dashboard's company-licences card reads the same list as the Organization Access tab
+  useEffect(() => {
+    if (authed && activeTab === 'liveDashboard') fetchOrgDomains()
+  }, [authed, activeTab, fetchOrgDomains])
 
   async function saveOrgDomain(payload: { domain: string; org_name: string; plan_code: string; seat_limit: number; expires_at: string | null; active: boolean }) {
     setOrgSaving(true)
@@ -4831,6 +4836,60 @@ export default function AdminPage() {
                   <BetaStatTile label="Feedback responses" accent="#eda100" value={String(dashFeedback.length)} sublabel={`F1 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage1').length} · F2 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'result').length} · F3 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage2').length} · Incomplete ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'started').length}`} onClick={() => setActiveTab('liveFeedback')} />
                   <BetaStatTile label="Conversion rate" accent="#008300" value={dashSubmissions.length > 0 ? `${Math.round((dashPaidSales.length / dashSubmissions.length) * 100)}%` : '—'} sublabel="Paid orders ÷ assessments submitted" />
                 </div>
+                {/* Company licences: organisations given free seats to test the paid report (Settings -> Organization Access) */}
+                {(() => {
+                  const now = new Date()
+                  const isLive = (o: OrgDomain) => o.active && !(o.expires_at && new Date(o.expires_at) <= now)
+                  const liveOrgs = orgDomains.filter(isLive)
+                  const seatsGiven = orgDomains.reduce((n, o) => n + o.seat_limit, 0)
+                  const seatsUsed = orgDomains.reduce((n, o) => n + o.seats_used, 0)
+                  const seatsLeft = liveOrgs.reduce((n, o) => n + Math.max(0, o.seat_limit - o.seats_used), 0)
+                  const orgsWithUse = orgDomains.filter(o => o.seats_used > 0).length
+                  const seatsCompleted = orgDomains.reduce((n, o) => n + (o.seats_completed || 0), 0)
+                  return (
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mt-4">
+                      <div className="flex items-baseline justify-between mb-3 gap-3 flex-wrap">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-700">Company licences</p>
+                          <p className="text-xs text-slate-400">Organisations given free seats to test the paid report</p>
+                        </div>
+                        <button type="button" onClick={() => { setActiveTab('orgaccess'); fetchOrgDomains() }} className="text-xs font-semibold text-sky-700 hover:underline">Manage ↗</button>
+                      </div>
+                      {orgLoading && orgDomains.length === 0 ? (
+                        <p className="text-sm text-slate-400">Loading…</p>
+                      ) : orgDomains.length === 0 ? (
+                        <p className="text-sm text-slate-400">No company has been given free seats yet.</p>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                            <div><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Companies</p><p className="text-2xl font-bold text-slate-800 tabular-nums">{orgDomains.length}</p><p className="text-xs text-slate-400">{liveOrgs.length} offer{liveOrgs.length === 1 ? '' : 's'} open · {orgsWithUse} used</p></div>
+                            <div><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Seats given</p><p className="text-2xl font-bold text-slate-800 tabular-nums">{seatsGiven}</p><p className="text-xs text-slate-400">Free paid-report licences</p></div>
+                            <div><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Seats used</p><p className="text-2xl font-bold text-slate-800 tabular-nums">{seatsUsed}</p><p className="text-xs text-slate-400">{seatsGiven > 0 ? `${Math.round((seatsUsed / seatsGiven) * 100)}% of seats given` : '—'}</p></div>
+                            <div><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Finished a report</p><p className="text-2xl font-bold text-slate-800 tabular-nums">{seatsCompleted}</p><p className="text-xs text-slate-400">{seatsUsed > 0 ? `${Math.round((seatsCompleted / seatsUsed) * 100)}% of seats used` : '—'}</p></div>
+                            <div><p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Seats still free</p><p className="text-2xl font-bold text-slate-800 tabular-nums">{seatsLeft}</p><p className="text-xs text-slate-400">On open offers only</p></div>
+                          </div>
+                          <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+                            {orgDomains.map(o => {
+                              const expired = !!o.expires_at && new Date(o.expires_at) <= now
+                              const pct = o.seat_limit > 0 ? Math.min(100, Math.round((o.seats_used / o.seat_limit) * 100)) : 0
+                              return (
+                                <div key={o.id}>
+                                  <div className="flex items-baseline justify-between gap-3 text-sm">
+                                    <span className="font-medium text-slate-700 truncate">{o.org_name || o.domain} <span className="text-xs text-slate-400 font-normal">@{o.domain} · {o.plan_code === 'launchpad_monthly' ? 'Launchpad' : 'Pathfinder'}</span></span>
+                                    <span className="text-xs text-slate-500 tabular-nums shrink-0">{o.seats_used}/{o.seat_limit} used · {o.seats_completed || 0} finished{expired ? ' · expired' : !o.active ? ' · off' : o.expires_at ? ` · ends ${new Date(o.expires_at).toLocaleDateString()}` : ''}</span>
+                                  </div>
+                                  <div className="h-1.5 rounded-full bg-slate-100 mt-1">
+                                    <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, background: expired || !o.active ? '#cbd5e1' : '#2a78d6' }} />
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )
+                })()}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
                     <div className="flex items-baseline justify-between mb-2">
@@ -7924,7 +7983,7 @@ export default function AdminPage() {
                       {d.grants.length === 0 && <p className="text-xs text-slate-400">Nobody has used a seat yet.</p>}
                       {d.grants.map(g => (
                         <div key={g.user_id} className="flex items-center justify-between gap-3 text-sm">
-                          <span className={`truncate ${g.revoked_at ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{g.email} <span className="text-xs text-slate-400">· {new Date(g.granted_at).toLocaleDateString()}{g.revoked_at ? ' · revoked' : ''}</span></span>
+                          <span className={`truncate ${g.revoked_at ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{g.email} {!g.revoked_at && <span className={`text-xs ${g.completed ? 'text-emerald-600' : 'text-slate-400'}`}>· {g.completed ? 'finished' : 'not finished yet'}</span>} <span className="text-xs text-slate-400">· {new Date(g.granted_at).toLocaleDateString()}{g.revoked_at ? ' · revoked' : ''}</span></span>
                           {!g.revoked_at && <button onClick={() => revokeOrgGrant(d.id, g.user_id, g.email)} className="text-xs font-semibold text-red-600 hover:underline shrink-0">Revoke</button>}
                         </div>
                       ))}
