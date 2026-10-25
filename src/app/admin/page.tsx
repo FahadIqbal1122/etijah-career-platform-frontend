@@ -1384,7 +1384,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'liveCoaching' | 'abandoned' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'orgaccess' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider' | 'reportTemplates' | 'coach'>('liveDashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'liveCoaching' | 'abandoned' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'orgaccess' | 'discounts' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider' | 'reportTemplates' | 'coach'>('liveDashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -1581,6 +1581,20 @@ export default function AdminPage() {
   const [orgError, setOrgError] = useState('')
   const [orgOpen, setOrgOpen] = useState<string | null>(null)
   const [orgForm, setOrgForm] = useState({ domain: '', org_name: '', plan_code: 'pathfinder', seat_limit: '5', expires_at: '', active: true })
+
+  // Discount codes (backend discount_codes / discount_redemptions).
+  type DiscountCode = { id: string; code: string; description: string | null; discount_type: 'percent' | 'fixed'; percent_off: number | null; fixed_off_sar: number | null
+    plan_codes: string[] | null; max_redemptions: number | null; max_per_user: number; starts_at: string | null; expires_at: string | null
+    active: boolean; redeemed_count: number; pending_count: number }
+  type DiscountUse = { email: string | null; plan_code: string; currency: string | null; original_amount: number | null; discount_amount: number | null; final_amount: number | null; status: string; created_at: string }
+  const EMPTY_DISCOUNT = { id: '', code: '', description: '', discount_type: 'percent' as 'percent' | 'fixed', value: '', plan: 'all', max_redemptions: '', max_per_user: '1', starts_at: '', expires_at: '', active: true }
+  const [discounts, setDiscounts] = useState<DiscountCode[]>([])
+  const [discountForm, setDiscountForm] = useState(EMPTY_DISCOUNT)
+  const [discountLoading, setDiscountLoading] = useState(false)
+  const [discountSaving, setDiscountSaving] = useState(false)
+  const [discountError, setDiscountError] = useState('')
+  const [discountOpen, setDiscountOpen] = useState<string | null>(null)
+  const [discountUses, setDiscountUses] = useState<DiscountUse[]>([])
 
   const [homepageMode, setHomepageMode] = useState<'landing' | 'waitlist'>('landing')
   const [multiCurrency, setMultiCurrency] = useState(false)
@@ -1982,6 +1996,83 @@ export default function AdminPage() {
     } finally {
       setOrgSaving(false)
     }
+  }
+
+  const fetchDiscounts = useCallback(async () => {
+    setDiscountLoading(true)
+    try {
+      const res = await fetch('/api/admin/discount-codes')
+      if (res.ok) setDiscounts(await res.json())
+    } finally { setDiscountLoading(false) }
+  }, [])
+
+  async function saveDiscount(d: typeof EMPTY_DISCOUNT): Promise<boolean> {
+    setDiscountSaving(true)
+    setDiscountError('')
+    try {
+      const res = await fetch('/api/admin/discount-codes', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: d.id || null, code: d.code, description: d.description || null, discount_type: d.discount_type,
+          percent_off: d.discount_type === 'percent' ? Number(d.value) : null,
+          fixed_off_sar: d.discount_type === 'fixed' ? Number(d.value) : null,
+          plan_codes: d.plan === 'all' ? null : [d.plan],
+          max_redemptions: d.max_redemptions ? parseInt(d.max_redemptions, 10) : null,
+          max_per_user: parseInt(d.max_per_user, 10) || 1,
+          starts_at: d.starts_at ? new Date(d.starts_at + 'T00:00:00Z').toISOString() : null,
+          expires_at: d.expires_at ? new Date(d.expires_at + 'T23:59:59Z').toISOString() : null,
+          active: d.active,
+        }),
+      })
+      if (!res.ok) {
+        const e = await res.json().catch(() => null)
+        throw new Error(e?.detail || e?.error || 'Could not save the code')
+      }
+      await fetchDiscounts()
+      return true
+    } catch (err: any) {
+      setDiscountError(err.message)
+      return false
+    } finally { setDiscountSaving(false) }
+  }
+
+  async function toggleDiscountUses(id: string) {
+    if (discountOpen === id) { setDiscountOpen(null); return }
+    setDiscountOpen(id)
+    setDiscountUses([])
+    const res = await fetch(`/api/admin/discount-codes/${id}/redemptions`)
+    if (res.ok) setDiscountUses(await res.json())
+  }
+
+  async function deleteDiscount(d: DiscountCode) {
+    if (!window.confirm(`Delete ${d.code}?`)) return
+    setDiscountError('')
+    const res = await fetch(`/api/admin/discount-codes/${d.id}`, { method: 'DELETE' })
+    if (!res.ok) { setDiscountError((await res.json().catch(() => null))?.detail || 'Could not delete'); return }
+    await fetchDiscounts()
+  }
+
+  function randomDiscountCode() {   // no 0/O/1/I/L so codes can be read out over the phone
+    const a = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+    return Array.from(crypto.getRandomValues(new Uint8Array(8)), n => a[n % a.length]).join('')
+  }
+
+  function discountToForm(d: DiscountCode, active = d.active): typeof EMPTY_DISCOUNT {
+    return {
+      id: d.id, code: d.code, description: d.description || '', discount_type: d.discount_type,
+      value: String(d.discount_type === 'percent' ? d.percent_off : d.fixed_off_sar), plan: d.plan_codes?.[0] || 'all',
+      max_redemptions: d.max_redemptions !== null ? String(d.max_redemptions) : '', max_per_user: String(d.max_per_user),
+      starts_at: d.starts_at ? d.starts_at.slice(0, 10) : '', expires_at: d.expires_at ? d.expires_at.slice(0, 10) : '', active,
+    }
+  }
+
+  function discountStatus(d: DiscountCode): [string, string] {
+    const now = new Date()
+    if (!d.active) return ['Off', 'bg-slate-100 text-slate-500']
+    if (d.expires_at && new Date(d.expires_at) <= now) return ['Expired', 'bg-red-50 text-red-600']
+    if (d.starts_at && new Date(d.starts_at) > now) return ['Scheduled', 'bg-blue-50 text-blue-600']
+    if (d.max_redemptions !== null && d.redeemed_count + d.pending_count >= d.max_redemptions) return ['Used up', 'bg-orange-50 text-orange-600']
+    return ['Live', 'bg-emerald-50 text-emerald-700']
   }
 
   async function revokeOrgGrant(domainId: string, userId: string, email: string) {
@@ -4464,6 +4555,7 @@ export default function AdminPage() {
               tabs: [
                 { key: 'testmode', label: 'Test Mode', color: 'bg-cyan-600', badge: testModeEnabled ? 'ON' : undefined, onSelect: fetchTestMode },
                 { key: 'orgaccess', label: 'Organization Access', color: 'bg-sky-600', onSelect: fetchOrgDomains },
+                { key: 'discounts', label: 'Discount Codes', color: 'bg-amber-600', onSelect: fetchDiscounts },
                 { key: 'homepage', label: 'Homepage', color: 'bg-fuchsia-600', badge: homepageMode, onSelect: fetchHomepageMode },
                 { key: 'currency', label: 'Currency', color: 'bg-emerald-600', badge: multiCurrency ? 'ON' : undefined, onSelect: fetchMultiCurrency },
                 { key: 'betaclosed', label: 'Beta Access', color: 'bg-red-600', badge: betaClosed ? 'CLOSED' : undefined, onSelect: fetchBetaClosed },
@@ -7647,6 +7739,107 @@ export default function AdminPage() {
               </button>
             </div>
             {testModeError && <p className="text-xs text-red-500 mt-3">{testModeError}</p>}
+          </div>
+        </div>
+      )}
+
+      {/* ── Discount Codes Tab ── */}
+      {activeTab === 'discounts' && (
+        <div className="max-w-3xl mx-auto px-4 py-8">
+          <h2 className="text-xl font-bold text-slate-800 mb-1">Discount Codes</h2>
+          <p className="text-sm text-slate-400 mb-6">
+            Buyers enter a code before paying. The price is always recalculated on the server. Fixed amounts are SAR off the plan&apos;s SAR price
+            (other currencies get the same proportion). Percent is capped at 95%; for free access use Organization Access.
+          </p>
+
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
+            <p className="font-semibold text-slate-800 mb-3">{discountForm.id ? 'Edit code' : 'New code'}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex gap-2">
+                <input value={discountForm.code} onChange={e => setDiscountForm({ ...discountForm, code: e.target.value.toUpperCase() })} placeholder="LAUNCH20" maxLength={32} className="flex-1 min-w-0 border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono" />
+                <button type="button" onClick={() => setDiscountForm({ ...discountForm, code: randomDiscountCode() })} className="text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg px-3 hover:bg-slate-50">Generate</button>
+              </div>
+              <input value={discountForm.description} onChange={e => setDiscountForm({ ...discountForm, description: e.target.value })} placeholder="Note for yourself (e.g. Instagram campaign)" maxLength={200} className="border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+              <select value={discountForm.discount_type} onChange={e => setDiscountForm({ ...discountForm, discount_type: e.target.value as 'percent' | 'fixed', value: '' })} className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+                <option value="percent">Percent off</option>
+                <option value="fixed">Fixed amount off (SAR)</option>
+              </select>
+              <input type="number" min={0} step="0.01" max={discountForm.discount_type === 'percent' ? 95 : undefined} value={discountForm.value} onChange={e => setDiscountForm({ ...discountForm, value: e.target.value })} placeholder={discountForm.discount_type === 'percent' ? 'Percent (1–95)' : 'Amount in SAR'} className="border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+              <select value={discountForm.plan} onChange={e => setDiscountForm({ ...discountForm, plan: e.target.value })} className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+                <option value="all">All plans</option>
+                <option value="pathfinder">Pathfinder only</option>
+                <option value="launchpad_monthly">Launchpad only</option>
+              </select>
+              <input type="number" min={1} value={discountForm.max_redemptions} onChange={e => setDiscountForm({ ...discountForm, max_redemptions: e.target.value })} placeholder="Total uses (blank = unlimited)" className="border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+              <label className="text-xs text-slate-500">Uses per person
+                <input type="number" min={1} value={discountForm.max_per_user} onChange={e => setDiscountForm({ ...discountForm, max_per_user: e.target.value })} className="block mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="text-xs text-slate-500">Starts (optional)
+                  <input type="date" value={discountForm.starts_at} onChange={e => setDiscountForm({ ...discountForm, starts_at: e.target.value })} className="block mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+                </label>
+                <label className="text-xs text-slate-500">Ends (optional)
+                  <input type="date" value={discountForm.expires_at} onChange={e => setDiscountForm({ ...discountForm, expires_at: e.target.value })} className="block mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+                </label>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                disabled={discountSaving || !discountForm.code.trim() || !(Number(discountForm.value) > 0)}
+                onClick={async () => { if (await saveDiscount(discountForm)) setDiscountForm(EMPTY_DISCOUNT) }}
+                className="bg-amber-600 text-white text-sm font-semibold rounded-lg px-4 py-2 disabled:opacity-50"
+              >{discountSaving ? 'Saving…' : discountForm.id ? 'Update code' : 'Create code'}</button>
+              {discountForm.id && <button onClick={() => setDiscountForm(EMPTY_DISCOUNT)} className="text-sm text-slate-500 px-3">Cancel edit</button>}
+            </div>
+            {discountError && <p className="text-xs text-red-500 mt-3">{discountError}</p>}
+          </div>
+
+          {discountLoading && <p className="text-sm text-slate-400">Loading…</p>}
+          {!discountLoading && discounts.length === 0 && <p className="text-sm text-slate-400">No discount codes yet.</p>}
+          <div className="space-y-3">
+            {discounts.map(d => {
+              const [label, cls] = discountStatus(d)
+              return (
+                <div key={d.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-800">
+                        <span className="font-mono">{d.code}</span>{' '}
+                        <span className={`text-[11px] font-semibold rounded-full px-2 py-0.5 ${cls}`}>{label}</span>
+                        {d.description && <span className="text-slate-400 font-normal"> · {d.description}</span>}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {d.discount_type === 'percent' ? `${d.percent_off}% off` : `${d.fixed_off_sar} SAR off`}
+                        {' · '}{!d.plan_codes ? 'all plans' : d.plan_codes.map(p => p === 'pathfinder' ? 'Pathfinder' : 'Launchpad').join(', ')}
+                        {' · '}{d.redeemed_count}{d.max_redemptions !== null ? ` / ${d.max_redemptions}` : ''} used{d.pending_count > 0 && ` (+${d.pending_count} in checkout)`}
+                        {' · '}{d.max_per_user}× per person
+                        {d.starts_at && <> · from {new Date(d.starts_at).toLocaleDateString()}</>}
+                        {d.expires_at && <> · until {new Date(d.expires_at).toLocaleDateString()}</>}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button onClick={() => { setDiscountError(''); setDiscountForm(discountToForm(d)) }}
+                        className="text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50">Edit</button>
+                      <button disabled={discountSaving} onClick={() => saveDiscount(discountToForm(d, !d.active))}
+                        className="text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50 disabled:opacity-50">{d.active ? 'Switch off' : 'Switch on'}</button>
+                      <button onClick={() => toggleDiscountUses(d.id)} className="text-xs font-semibold text-amber-700 border border-amber-200 rounded-lg px-3 py-1.5 hover:bg-amber-50">{discountOpen === d.id ? 'Hide' : 'Uses'}</button>
+                      {d.redeemed_count === 0 && d.pending_count === 0 && <button onClick={() => deleteDiscount(d)} className="text-xs font-semibold text-red-600 hover:underline">Delete</button>}
+                    </div>
+                  </div>
+                  {discountOpen === d.id && (
+                    <div className="mt-4 border-t border-slate-100 pt-3 space-y-1.5">
+                      {discountUses.length === 0 && <p className="text-xs text-slate-400">No uses yet.</p>}
+                      {discountUses.map((u, i) => (
+                        <p key={i} className="text-sm text-slate-700 flex justify-between gap-3">
+                          <span className="truncate">{u.email} <span className="text-xs text-slate-400">· {new Date(u.created_at).toLocaleDateString()} · {u.status === 'redeemed' ? 'paid' : 'in checkout'}</span></span>
+                          <span className="text-xs text-slate-500 shrink-0">{u.original_amount ?? '?'} → {u.final_amount ?? '?'} {u.currency}</span>
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

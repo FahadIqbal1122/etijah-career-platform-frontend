@@ -126,15 +126,23 @@ function readCookie(name: string): string | undefined {
     } catch { return undefined }
 }
 
-export async function startCheckout(planCode: PlanCode): Promise<{ checkout_url: string }> {
+export async function startCheckout(planCode: PlanCode, discountCode?: string): Promise<{ checkout_url: string }> {
     return apiAuthPost<{ checkout_url: string }>('/billing/checkout', {
         plan_code: planCode,
+        ...(discountCode ? { discount_code: discountCode } : {}),
         fbp: readCookie('_fbp'),
         fbc: readCookie('_fbc'),
         // so the shop sends the buyer back to the page in the language they were using
         locale: typeof window !== 'undefined' && /^\/ar(\/|$)/.test(window.location.pathname) ? 'ar' : 'en',
         // the currency the buyer was shown; the backend only uses it while the admin multi-currency switch is on
         currency: readCurrencyCookie() ?? 'SAR',
+    })
+}
+
+export type DiscountPreview = { original: number; discount: number; final: number; currency: string }
+export function previewDiscount(planCode: PlanCode, code: string): Promise<DiscountPreview> {
+    return apiAuthPost<DiscountPreview>('/billing/discount/preview', {
+        plan_code: planCode, code, currency: readCurrencyCookie() ?? 'SAR',
     })
 }
 

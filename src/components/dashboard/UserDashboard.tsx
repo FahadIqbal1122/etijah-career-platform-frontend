@@ -12,7 +12,7 @@ import { useRouter as useNavRouter, useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useRouter, usePathname, Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
-import { apiAuthGet, apiAuthGetBlob, apiAuthPost, apiAuthPatch, apiAuthDelete, startCheckout, type PlanCode } from '@/lib/api'
+import { apiAuthGet, apiAuthGetBlob, apiAuthPost, apiAuthPatch, apiAuthDelete, startCheckout, previewDiscount, type DiscountPreview, type PlanCode } from '@/lib/api'
 import { trackOnce } from '@/lib/analytics'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
@@ -146,6 +146,13 @@ const B = {
     coachContact: 'To book your session, message us on WhatsApp or email and we will find a time that suits you. We have also been notified of your purchase.',
     history: 'Payment history', typeWord: 'type',
     agreeHead: 'Before you pay', agreeTax: 'The price you see includes tax.', agreeText: 'I have read and agree to the', agreeTerms: 'Terms and Conditions', agreeAnd: 'and the', agreePrivacy: 'Privacy Policy', agreeContinue: 'Continue to payment', agreeCancel: 'Cancel',
+    codePlaceholder: 'Discount code', codeApply: 'Apply', codeApplied: 'Code applied:',
+    codeErrors: {
+      discount_invalid: "This code isn't valid.", discount_expired: 'This code has expired.', discount_not_started: "This code isn't active yet.",
+      discount_used_up: 'This code has reached its limit.', discount_already_used: "You've already used this code.",
+      discount_wrong_plan: "This code doesn't apply to this plan.", discount_rate_limited: 'Too many attempts. Please try again later.',
+      discount_unavailable: 'Codes are unavailable right now. Please try again.',
+    } as Record<string, string>,
   },
   ar: {
     plan: { launchpad: 'منصة الانطلاق', pathfinder: 'مرشد المسار' },
@@ -158,6 +165,13 @@ const B = {
     coachContact: 'لحجز جلستك، راسلنا عبر واتساب أو البريد الإلكتروني وسنحدد وقتاً يناسبك. وقد وصلنا إشعار بعملية الشراء.',
     history: 'سجل المدفوعات', typeWord: '',
     agreeHead: 'قبل الدفع', agreeTax: 'السعر المعروض شامل الضريبة.', agreeText: 'لقد قرأت وأوافق على', agreeTerms: 'الشروط والأحكام', agreeAnd: 'و', agreePrivacy: 'سياسة الخصوصية', agreeContinue: 'المتابعة إلى الدفع', agreeCancel: 'إلغاء',
+    codePlaceholder: 'كود الخصم', codeApply: 'تطبيق', codeApplied: 'تم تطبيق الكود:',
+    codeErrors: {
+      discount_invalid: 'هذا الكود غير صالح.', discount_expired: 'انتهت صلاحية هذا الكود.', discount_not_started: 'هذا الكود غير مفعّل بعد.',
+      discount_used_up: 'تم استنفاد عدد مرات استخدام هذا الكود.', discount_already_used: 'لقد استخدمت هذا الكود من قبل.',
+      discount_wrong_plan: 'هذا الكود لا ينطبق على هذه الباقة.', discount_rate_limited: 'محاولات كثيرة. حاول لاحقاً.',
+      discount_unavailable: 'الأكواد غير متاحة حالياً. حاول مرة أخرى.',
+    } as Record<string, string>,
   },
 } as const
 const RIASEC_AR: Record<string, string> = { realistic: 'الباني', investigative: 'المحلل', artistic: 'المبدع', social: 'المُعين', enterprising: 'القائد', conventional: 'المنظّم' }
@@ -360,24 +374,48 @@ export default function UserDashboard() {
   // Before the payment page the buyer must tick that they agree to the terms and privacy policy.
   const [confirmPlan, setConfirmPlan] = useState<PlanCode | null>(null)
   const [agreed, setAgreed] = useState(false)
+  const [codeInput, setCodeInput] = useState('')
+  const [appliedCode, setAppliedCode] = useState<{ code: string; preview: DiscountPreview } | null>(null)
+  const [codeError, setCodeError] = useState('')
+  const [codeBusy, setCodeBusy] = useState(false)
+  function resetCode() { setCodeInput(''); setAppliedCode(null); setCodeError('') }
   function handleBuyPlan(planCode: PlanCode) {
     // Still linking/fetching their report: do nothing yet, so a quick click is never mistaken for "no assessment".
     if (assessmentsLoading) return
     // The paid report is built from an assessment — send people who have none to take it first.
     if (!assessments.length) { navRouter.push(`/${locale}/assessment`); return }
     setAgreed(false)
+    resetCode()
     setConfirmPlan(planCode)
+  }
+  async function applyCode() {
+    if (!confirmPlan || !codeInput.trim()) return
+    setCodeBusy(true)
+    setCodeError('')
+    try {
+      const code = codeInput.trim().toUpperCase()
+      setAppliedCode({ code, preview: await previewDiscount(confirmPlan, code) })
+    } catch (e: unknown) {
+      setAppliedCode(null)
+      setCodeError(b.codeErrors[e instanceof Error ? e.message : ''] ?? b.codeErrors.discount_invalid)
+    } finally { setCodeBusy(false) }
   }
   async function proceedToPayment() {
     if (!confirmPlan || !agreed) return
     setBuying(true)
     try {
-      const { checkout_url } = await startCheckout(confirmPlan)
+      const { checkout_url } = await startCheckout(confirmPlan, appliedCode?.code)
       window.location.href = checkout_url
     } catch (e: unknown) {
       setBuying(false)
+      const msg = e instanceof Error ? e.message : ''
+      if (msg.startsWith('discount_')) {   // the code stopped being valid since it was applied: stay on the dialog
+        setAppliedCode(null)
+        setCodeError(b.codeErrors[msg] ?? b.codeErrors.discount_invalid)
+        return
+      }
       setConfirmPlan(null)
-      setError(e instanceof Error ? e.message : 'Could not start checkout')
+      setError(msg || 'Could not start checkout')
     }
   }
 
@@ -910,6 +948,22 @@ export default function UserDashboard() {
           <div className="card p-6 max-w-md w-full" dir={dir}>
             <h3 className="font-bold text-charcoal text-lg">{b.agreeHead}</h3>
             <p className="mt-1 text-sm text-charcoal/60">{b.agreeTax}</p>
+            <div className="mt-4">
+              <div className="flex gap-2">
+                <input value={codeInput} onChange={e => { setCodeInput(e.target.value.toUpperCase()); setAppliedCode(null); setCodeError('') }}
+                  placeholder={b.codePlaceholder} maxLength={32} dir="ltr" disabled={buying}
+                  className="flex-1 min-w-0 border border-[var(--line-strong)] rounded-xl px-3 py-2 text-sm font-mono" />
+                <button onClick={applyCode} disabled={codeBusy || buying || !codeInput.trim()}
+                  className="px-4 py-2 rounded-xl border border-[var(--line-strong)] text-sm font-medium disabled:opacity-40">{codeBusy ? '…' : b.codeApply}</button>
+              </div>
+              {codeError && <p className="text-xs text-red-500 mt-1.5">{codeError}</p>}
+              {appliedCode && (
+                <p className="text-sm text-emerald-700 mt-1.5">
+                  {b.codeApplied} <span className="line-through opacity-60">{appliedCode.preview.original} {appliedCode.preview.currency}</span>{' '}
+                  <strong>{appliedCode.preview.final} {appliedCode.preview.currency}</strong>
+                </p>
+              )}
+            </div>
             <label className="flex items-start gap-3 mt-4 cursor-pointer">
               <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} className="mt-1 w-4 h-4 shrink-0" />
               <span className="text-sm text-charcoal/80 leading-relaxed">
@@ -920,7 +974,7 @@ export default function UserDashboard() {
               </span>
             </label>
             <div className="flex gap-3 mt-5 justify-end">
-              <button onClick={() => setConfirmPlan(null)} disabled={buying}
+              <button onClick={() => { setConfirmPlan(null); resetCode() }} disabled={buying}
                 className="px-4 py-2.5 rounded-xl border border-[var(--line-strong)] text-charcoal/70 text-sm font-medium disabled:opacity-50">{b.agreeCancel}</button>
               <button data-track="dashboard_confirm_payment" onClick={proceedToPayment} disabled={!agreed || buying}
                 className="px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-40">{buying ? '…' : b.agreeContinue}</button>
