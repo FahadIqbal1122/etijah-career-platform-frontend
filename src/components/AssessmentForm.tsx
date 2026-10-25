@@ -1101,7 +1101,7 @@ export default function AssessmentForm() {
                   <p style={{ margin: '10px 4px 0', fontSize: 13, lineHeight: 1.5, opacity: 0.7 }}>{tForm('emailConsent')}</p>
                 )}
                 {q.id === 'QD1' && (
-                  <p style={{ margin: '10px 4px 0', fontSize: 13, lineHeight: 1.5, opacity: 0.7 }}>{chrome.unlockNote}</p>
+                  <p style={{ margin: '12px 4px 0', fontSize: 15, fontWeight: 500, lineHeight: 1.55, opacity: 0.85 }}>{chrome.unlockNote}</p>
                 )}
               </>
             )}
