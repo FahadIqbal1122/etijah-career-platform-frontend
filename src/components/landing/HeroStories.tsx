@@ -36,7 +36,9 @@ export default function HeroStories({ copy, dir, eyebrow, headline, about, child
   const [paused, setPaused] = useState(false)
   const [reduced, setReduced] = useState(false)
   const [h0, setH0] = useState(200) // height of the front card = its own content
+  const [hMax, setHMax] = useState(260) // tallest front card of all reviews: reserves a fixed height so the page never moves
   const inner = useRef<(HTMLDivElement | null)[]>([])
+  const meas = useRef<(HTMLDivElement | null)[]>([])
   const [back, fwd] = dir === 'rtl' ? ['→', '←'] : ['←', '→']
 
   useEffect(() => {
@@ -58,6 +60,15 @@ export default function HeroStories({ copy, dir, eyebrow, headline, about, child
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
   }, [i])
+
+  // measure every review once (hidden copies, full quote) so the stack always reserves room for the tallest one;
+  // otherwise the banner changes height with each review and everything below it jumps
+  useLayoutEffect(() => {
+    const measure = () => setHMax(Math.max(120, ...meas.current.map((el) => (el ? el.offsetHeight : 0))) + PAD)
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [n])
 
   const go = (d: number) => setI((x) => (x + d + n) % n)
 
@@ -82,7 +93,18 @@ export default function HeroStories({ copy, dir, eyebrow, headline, about, child
           </div>
 
           {/* every card stays mounted and slides between slots (data-pos), so changes animate instead of re-appearing */}
-          <div className="hx-list" aria-live="off" style={{ height: h0 + GAP + SMALL + GAP + SMALL }}>
+          <div className="hx-list" aria-live="off" style={{ height: Math.max(hMax, h0) + GAP + SMALL + GAP + SMALL }}>
+            {/* hidden copies used only to measure the tallest review */}
+            <div className="hx-measure" aria-hidden="true">
+              {items.map((s, k) => (
+                <div key={k} className="hx-m">
+                  <div ref={(el) => { meas.current[k] = el }}>
+                    <div className="hx-card-top"><span className="hx-av" /><div className="hx-card-who"><p className="hx-name">{s.name}</p><p className="hx-meta">{s.meta}</p></div></div>
+                    <p className="hx-quote">{s.quote}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
             {items.map((s, idx) => {
               const rel = (idx - i + n) % n
               const pos = rel < SHOWN ? String(rel) : rel === n - 1 ? 'out' : 'wait'

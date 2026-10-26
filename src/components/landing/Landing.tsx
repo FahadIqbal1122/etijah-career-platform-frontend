@@ -13,6 +13,7 @@ import LandingConstellation from '@/components/brand/LandingConstellation'
 import WallOfDirection from '@/components/landing/WallOfDirection'
 import HeroStories from '@/components/landing/HeroStories'
 import HeroField from '@/components/landing/HeroField'
+import CountUp from '@/components/landing/CountUp'
 import { supabase } from '@/lib/supabase'
 import { startCheckout, apiAuthGet, apiAuthPost, type PlanCode } from '@/lib/api'
 import PartnerModal from '@/components/shared/PartnerModal'
@@ -103,6 +104,21 @@ const IconAct = () => (
 )
 const STEP_ICONS = [IconWho, IconBuild, IconAct]
 
+const svgp = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' } as const
+const GulfIcons = [
+  () => <svg {...svgp}><path d="M12 21s7-6.2 7-11.5A7 7 0 005 9.5C5 14.8 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.4" /></svg>,
+  () => <svg {...svgp}><path d="M3 17l6-6 4 4 8-8" /><path d="M15 7h6v6" /></svg>,
+  () => <svg {...svgp}><path d="M5 21V4" /><path d="M5 4h12l-2 4 2 4H5" /></svg>,
+  () => <svg {...svgp}><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3c2.6 2.6 3.9 5.6 3.9 9S14.6 18.4 12 21c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z" /></svg>,
+]
+const WhoIcons = [
+  () => <svg {...svgp}><path d="M2 9l10-5 10 5-10 5L2 9z" /><path d="M6 11.5V16c0 1.4 2.7 3 6 3s6-1.6 6-3v-4.5" /></svg>,
+  () => <svg {...svgp}><path d="M16 3h5v5" /><path d="M4 20L21 3" /><path d="M21 16v5h-5" /><path d="M15 15l6 6" /><path d="M4 4l5 5" /></svg>,
+  () => <svg {...svgp}><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2V5z" /><path d="M8 7h7" /></svg>,
+  () => <svg {...svgp}><path d="M12 3l9 5-9 5-9-5 9-5z" /><path d="M7 12v5c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-5" /></svg>,
+]
+const WHO_ACCENTS = ['#00C9A7', '#0770BA', '#075288', '#414142']
+
 const Chevron = () => (
   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
     <path d="M6 9l6 6 6-6" />
@@ -140,6 +156,33 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
   const { coach: coachEnabled } = useCoachSwitches()   // admin Coach switch: off = no coach on the landing page
   const [coachHidden, hideCoach, showCoach] = useCoachHidden()
   const [coachDock, setCoachDock] = useCoachDock()
+  // nav highlights the section being read; a thin bar shows how far down the page you are
+  const [activeSec, setActiveSec] = useState('')
+  const progressRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const els = ['how', 'report', 'who', 'pricing', 'about'].map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[]
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => { if (e.isIntersecting) setActiveSec(e.target.id) }),
+      { rootMargin: '-40% 0px -55% 0px' }
+    )
+    els.forEach((el) => io.observe(el))
+    const onScroll = () => {
+      const h = document.documentElement
+      const p = h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight)
+      if (progressRef.current) progressRef.current.style.transform = `scaleX(${Math.min(1, Math.max(0, p))})`
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => { io.disconnect(); window.removeEventListener('scroll', onScroll) }
+  }, [])
+  // soft teal spotlight that follows the pointer over any card
+  const onCardPointer = (e: React.PointerEvent<HTMLDivElement>) => {
+    const t = (e.target as HTMLElement).closest?.('.card') as HTMLElement | null
+    if (!t) return
+    const b = t.getBoundingClientRect()
+    t.style.setProperty('--mx', `${e.clientX - b.left}px`)
+    t.style.setProperty('--my', `${e.clientY - b.top}px`)
+  }
   const roam = useCoachRoam({ pool: LANDING_ROAM, enabled: coachEnabled && !coachHidden && !coachDock, paused: false, firstDelay: 6000, gap: LANDING_GAP })
 
   async function handlePlanCta(planCode: PlanCode) {
@@ -176,7 +219,8 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
   }
 
   return (
-    <div className="brand-surface text-charcoal" dir={dir}>
+    <div className="brand-surface landing-root text-charcoal" dir={dir} onPointerMove={onCardPointer}>
+      <div ref={progressRef} className="scroll-progress" aria-hidden="true" />
 
       {/* beta announcement bar removed for launch
       { /* ── BETA ANNOUNCEMENT BAR ───────────────────────────────────── * /}
@@ -194,12 +238,13 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
       <nav className="sticky top-0 z-30 bg-white border-b border-[var(--line)]">
         <div className="site-wrap h-16 flex items-center justify-between gap-4">
           <Wordmark size={30} />
-          <div className="hidden md:flex items-center gap-7 text-sm font-medium text-charcoal/70">
+          <div className="hidden md:flex items-center gap-7 text-sm font-medium text-charcoal/80">
             {c.nav.links.map((l: string, i: number) => {
               const href = ['#how', '#report', '#who', '#pricing', '#about'][i] ?? '#'
+              const on = href === `#${activeSec}`
               return href.startsWith('/')
                 ? <Link key={l} href={href} className="hover:text-teal">{l}</Link>
-                : <a key={l} href={href} className="hover:text-teal">{l}</a>
+                : <a key={l} href={href} className={`nav-link hover:text-teal ${on ? 'on' : ''}`}>{l}</a>
             })}
           </div>
           <div className="flex items-center gap-2">
@@ -236,7 +281,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
                 <DemoReportsButton locale={locale} source="landing_hero" track="landing_hero_sample_report" className="cta cta-outline cta-sm">{c.hero.secondary}</DemoReportsButton>
                 <a href="#pricing" data-track="landing_hero_view_packages" className="cta cta-teal cta-sm">{c.hero.viewPackages}</a>
               </div>
-              <p className="mt-3 text-sm text-charcoal/65">{fillPrice(c.hero.microcopy)}</p>
+              <p className="mt-3 text-sm text-charcoal/80">{fillPrice(c.hero.microcopy)}</p>
             </HeroStories>
           </Reveal>
         </div>
@@ -251,8 +296,8 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               <Highlight text={c.hero.headline[1]} hl={c.hero.hl} />
             </h1>
             {/* previous layout (CTA below the trust line):
-            <p className="mt-6 text-lg text-charcoal/70 leading-relaxed max-w-xl">{c.hero.sub}</p>
-            <h2 className="mt-4 text-sm font-normal text-charcoal/55 flex items-center gap-2">
+            <p className="mt-6 text-lg text-charcoal/80 leading-relaxed max-w-xl">{c.hero.sub}</p>
+            <h2 className="mt-4 text-sm font-normal text-charcoal/70 flex items-center gap-2">
               <span className="text-teal">✦</span>{c.hero.trust}
             </h2>
             <div className="mt-8 flex flex-wrap items-center gap-4">
@@ -265,17 +310,17 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               {/* <a href="#pricing" data-track="landing_hero_view_packages" className="text-sm font-semibold text-charcoal hover:text-teal">{c.hero.viewPackages}</a> * /}
               <a href="#pricing" data-track="landing_hero_view_packages" className="cta cta-outline cta-sm">{c.hero.viewPackages}</a>
             </div>
-            <p className="mt-3 text-sm text-charcoal/65">{fillPrice(c.hero.microcopy)}</p>
+            <p className="mt-3 text-sm text-charcoal/80">{fillPrice(c.hero.microcopy)}</p>
             */}
             <div className="mt-6">
               <Link href="/assessment" data-track="landing_hero_start" className="cta">
                 <span>{c.hero.cta}</span>
                 <span className="cta-arrow">{arrow}</span>
               </Link>
-              <p className="mt-3 text-sm text-charcoal/65">{fillPrice(c.hero.microcopy)}</p>
+              <p className="mt-3 text-sm text-charcoal/80">{fillPrice(c.hero.microcopy)}</p>
             </div>
-            <p className="mt-6 text-lg text-charcoal/70 leading-relaxed max-w-xl">{c.hero.sub}</p>
-            <h2 className="mt-4 text-sm font-normal text-charcoal/55 flex items-center gap-2">
+            <p className="mt-6 text-lg text-charcoal/80 leading-relaxed max-w-xl">{c.hero.sub}</p>
+            <h2 className="mt-4 text-sm font-normal text-charcoal/70 flex items-center gap-2">
               <span className="text-teal">✦</span>{c.hero.trust}
             </h2>
             <div className="mt-6 flex flex-wrap items-center gap-4">
@@ -295,7 +340,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             <div className="hero-product-float card p-6 max-w-sm mx-auto relative z-10">
               <div className="flex items-center justify-between gap-3 mb-3.5">
                 <span className="eyebrow !mb-0">{c.hero.preview.eyebrow}</span>
-                <span className="font-mono text-[11px] text-charcoal/45 whitespace-nowrap">{c.hero.preview.progress}</span>
+                <span className="font-mono text-[11px] text-charcoal/65 whitespace-nowrap">{c.hero.preview.progress}</span>
               </div>
               <div className="hp-bar"><div className="hp-bar-fill" /></div>
               <div className="qcard !mb-4 !p-5"><p className="qtext !text-lg">{c.hero.preview.question}</p></div>
@@ -317,7 +362,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           <div className="hero-stats-strip grid grid-cols-1 sm:grid-cols-3">
             {c.hero.stats.map((s: any) => (
               <div key={s.label} className="hero-stat text-center px-3">
-                <p className={`font-extrabold text-teal leading-none ${s.num.length > 5 ? 'text-2xl' : 'text-3xl'}`}>{s.num}</p>
+                <p className={`font-extrabold text-teal leading-none ${s.num.length > 5 ? 'text-2xl' : 'text-3xl'}`}><CountUp value={s.num} /></p>
                 <p className="text-sm text-charcoal/60 mt-2.5">{s.label}</p>
               </div>
             ))}
@@ -342,7 +387,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               <span className="chip chip-teal">{c.audiences.students.tag}</span>
             </div>
             <h3 className="relative mt-5 text-2xl font-extrabold text-charcoal leading-snug">{c.audiences.students.head}</h3>
-            <p className="relative mt-3 text-sm text-charcoal/65 leading-relaxed">{c.audiences.students.body}</p>
+            <p className="relative mt-3 text-sm text-charcoal/80 leading-relaxed">{c.audiences.students.body}</p>
             <ul className="relative mt-6 space-y-3 flex-1">
               {c.audiences.students.bullets.map((b: string) => (
                 <li key={b} className="flex items-start gap-2.5 text-sm text-charcoal">
@@ -354,7 +399,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               <Link href="/assessment" data-track="landing_path_students" className="cta">
                 <span>{c.audiences.students.cta}</span><span className="cta-arrow">{arrow}</span>
               </Link>
-              <span className="font-mono text-xs text-charcoal/45">{c.audiences.students.meta}</span>
+              <span className="font-mono text-xs text-charcoal/65">{c.audiences.students.meta}</span>
             </div>
           </Reveal>
 
@@ -397,7 +442,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           {c.whatIsIt.blocks.map((b: any, i: number) => (
             <Reveal key={b.head} className="card p-6" style={{ transitionDelay: `${i * 90}ms` }}>
               <h3 className="font-extrabold text-charcoal text-lg">{b.head}</h3>
-              <p className="mt-2 text-sm text-charcoal/65 leading-relaxed">{b.body}</p>
+              <p className="mt-2 text-sm text-charcoal/80 leading-relaxed">{b.body}</p>
             </Reveal>
           ))}
         </div>
@@ -405,30 +450,34 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
 
       {/* ── NOT JUST WHAT PAYS ───────────────────────────────────────── */}
       <section className="bg-white border-y border-[var(--line)]">
-        <div className="site-wrap py-14">
+        <div className="site-wrap py-16 sm:py-20 split">
           <Reveal>
-            <h2 className="section-h">
+            <h2 className="section-h split-h">
               {c.notJustWhatPays.headline[0]}<br />
               <Highlight text={c.notJustWhatPays.headline[1]} hl={c.notJustWhatPays.hl} />
             </h2>
-            <p className="mt-4 text-charcoal/70 leading-relaxed">{c.notJustWhatPays.body}</p>
+          </Reveal>
+          <Reveal style={{ transitionDelay: '120ms' }}>
+            <p className="split-lead text-charcoal/80">{c.notJustWhatPays.body}</p>
           </Reveal>
         </div>
       </section>
 
       {/* ── PROBLEM ──────────────────────────────────────────────────── */}
       <Section eyebrow={c.problem.label}>
-        <Reveal>
-          <h2 className="section-h">
-            {c.problem.headline[0]}<br />
-            <Highlight text={c.problem.headline[1]} hl={c.problem.hl} />
-          </h2>
-        </Reveal>
-        <Reveal className="mt-7 flex flex-col gap-5">
-          <p className="text-lg font-bold text-charcoal">{c.problem.body[0]}</p>
-          <p className="text-charcoal/70 leading-relaxed">{c.problem.body[1]}</p>
-          <p className="payoff font-semibold text-charcoal leading-relaxed">{c.problem.body[2]}</p>
-        </Reveal>
+        <div className="split">
+          <Reveal>
+            <h2 className="section-h split-h">
+              {c.problem.headline[0]}<br />
+              <Highlight text={c.problem.headline[1]} hl={c.problem.hl} />
+            </h2>
+          </Reveal>
+          <Reveal className="flex flex-col gap-5" style={{ transitionDelay: '120ms' }}>
+            <p className="text-lg font-bold text-charcoal">{c.problem.body[0]}</p>
+            <p className="text-charcoal/80 leading-relaxed">{c.problem.body[1]}</p>
+            <p className="payoff font-semibold text-charcoal leading-relaxed">{c.problem.body[2]}</p>
+          </Reveal>
+        </div>
       </Section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────── */}
@@ -438,13 +487,14 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           {c.how.steps.map((st: any, i: number) => {
             const Icon = STEP_ICONS[i]
             return (
-              <Reveal key={st.n} className="card p-6" style={{ transitionDelay: `${i * 90}ms` }}>
+              <Reveal key={st.n} className="card how-step p-6" style={{ transitionDelay: `${i * 90}ms`, ['--d' as any]: `${0.3 + i * 0.5}s` }}>
+                <span className="how-bar" />
                 <div className="w-12 h-12 rounded-2xl bg-teal/10 text-teal flex items-center justify-center mb-4 [&_svg]:w-6 [&_svg]:h-6">
                   <Icon />
                 </div>
                 <div className="text-teal font-mono font-medium text-xs tracking-[0.2em] mb-2">{st.n}</div>
                 <h3 className="font-extrabold text-charcoal text-lg">{st.title}</h3>
-                <p className="mt-2 text-sm text-charcoal/65 leading-relaxed">{st.body}</p>
+                <p className="mt-2 text-sm text-charcoal/80 leading-relaxed">{st.body}</p>
               </Reveal>
             )
           })}
@@ -456,48 +506,58 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
 
       {/* ── INSIDE YOUR REPORT ───────────────────────────────────────── */}
       <Section id="report" eyebrow={c.insideReport.label} tint>
-        <Reveal>
-          <h2 className="section-h">
-            <Highlight text={c.insideReport.headline} hl={c.insideReport.hl} />
-          </h2>
-          <p className="mt-4 text-charcoal/70 leading-relaxed">{c.insideReport.intro}</p>
-        </Reveal>
-        <Reveal>
-          <ul className="mt-8 grid sm:grid-cols-2 gap-3.5">
-            {c.insideReport.items.map((it: string) => (
-              <li key={it} className="flex items-start gap-2.5 card p-5 text-sm text-charcoal">
-                <span className="flex-none w-5 h-5 rounded-full bg-teal/15 text-teal text-[11px] font-black flex items-center justify-center mt-0.5">✓</span>
-                {it}
-              </li>
+        <div className="report-split">
+          <div>
+            <Reveal>
+              <h2 className="section-h">
+                <Highlight text={c.insideReport.headline} hl={c.insideReport.hl} />
+              </h2>
+              <p className="mt-4 text-charcoal/80 leading-relaxed">{c.insideReport.intro}</p>
+            </Reveal>
+            <Reveal>
+              <ul className="mt-8 grid sm:grid-cols-2 gap-x-6 gap-y-3.5">
+                {c.insideReport.items.map((it: string) => (
+                  <li key={it} className="flex items-start gap-2.5 text-sm text-charcoal">
+                    <span className="flex-none w-5 h-5 rounded-full bg-teal/15 text-teal text-[11px] font-black flex items-center justify-center mt-0.5">✓</span>
+                    {it}
+                  </li>
+                ))}
+              </ul>
+            </Reveal>
+            <Reveal className="mt-8 flex justify-start">
+              <DemoReportsButton locale={locale} source="landing_inside_report" className="cta cta-outline">{c.insideReport.cta}</DemoReportsButton>
+            </Reveal>
+          </div>
+          {/* fanned report pages: built from the real list of what the report contains (no sample data) */}
+          <Reveal className="rp-stage" aria-hidden="true">
+            {c.insideReport.items.slice(0, 3).map((it: string, i: number) => (
+              <div key={it} className={`rp-page rp-${i}`}>
+                <div className="rp-head"><Logomark size={22} /><span>{it}</span></div>
+                <div className="rp-bars"><i /><i /><i /><i /></div>
+                <div className="rp-chips"><b /><b /><b /></div>
+              </div>
             ))}
-          </ul>
-        </Reveal>
-        <Reveal className="mt-8 flex justify-start">
-          {/* <a
-            href={locale === 'ar' ? '/demo-report-ar.pdf' : '/demo-report-en.pdf'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="cta cta-outline"
-          >
-            {c.insideReport.cta}
-          </a> */}
-          <DemoReportsButton locale={locale} source="landing_inside_report" className="cta cta-outline">{c.insideReport.cta}</DemoReportsButton>
-        </Reveal>
+          </Reveal>
+        </div>
       </Section>
 
       {/* ── BUILT FOR THE GULF ───────────────────────────────────────── */}
       <Section id="gulf" eyebrow={c.builtForGulf.label} tint>
         <Reveal>
           <h2 className="section-h">{c.builtForGulf.headline}</h2>
-          <p className="mt-3 text-charcoal/70 leading-relaxed">{c.builtForGulf.localisationLine}</p>
+          <p className="mt-3 text-charcoal/80 leading-relaxed">{c.builtForGulf.localisationLine}</p>
         </Reveal>
-        <div className="mt-8 grid sm:grid-cols-2 gap-5">
-          {c.builtForGulf.pillars.map((p: any, i: number) => (
-            <Reveal key={p.title} className="card p-6" style={{ transitionDelay: `${(i % 2) * 90}ms` }}>
+        <div className="mt-8 grid sm:grid-cols-2 xl:grid-cols-4 gap-5">
+          {c.builtForGulf.pillars.map((p: any, i: number) => {
+            const GIcon = GulfIcons[i % GulfIcons.length]
+            return (
+            <Reveal key={p.title} className="card card-hover p-6" style={{ transitionDelay: `${i * 90}ms` }}>
+              <span className="w-11 h-11 rounded-2xl bg-teal/10 text-teal flex items-center justify-center mb-4 [&_svg]:w-5 [&_svg]:h-5"><GIcon /></span>
               <h3 className="font-extrabold text-charcoal text-base">{p.title}</h3>
-              <p className="mt-2 text-sm text-charcoal/65 leading-relaxed">{p.body}</p>
+              <p className="mt-2 text-sm text-charcoal/80 leading-relaxed">{p.body}</p>
             </Reveal>
-          ))}
+            )
+          })}
         </div>
       </Section>
 
@@ -505,37 +565,46 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
       <Section id="who" eyebrow={c.who.label}>
         <Reveal><h2 className="section-h"><Highlight text={c.who.headline} hl={c.who.hl} /></h2></Reveal>
         <div className="mt-8 grid md:grid-cols-2 gap-5">
-          {c.who.cards.map((card: any, i: number) => (
-            <Reveal key={card.tag} className="card card-hover p-6" style={{ transitionDelay: `${(i % 2) * 90}ms` }}>
+          {c.who.cards.map((card: any, i: number) => {
+            const WIcon = WhoIcons[i % WhoIcons.length]
+            const accent = WHO_ACCENTS[i % WHO_ACCENTS.length]
+            return (
+            <Reveal key={card.tag} className="card card-hover who-card p-6" style={{ transitionDelay: `${(i % 2) * 90}ms`, ['--accent' as any]: accent }}>
+              <span className="who-ico [&_svg]:w-5 [&_svg]:h-5"><WIcon /></span>
               <span className="chip chip-teal">{card.tag}</span>
               <h3 className="mt-4 font-extrabold text-charcoal text-lg leading-snug">{card.head}</h3>
-              <p className="mt-2 text-sm text-charcoal/65 leading-relaxed">{card.body}</p>
+              <p className="mt-2 text-sm text-charcoal/80 leading-relaxed">{card.body}</p>
             </Reveal>
-          ))}
+            )
+          })}
         </div>
       </Section>
 
       {/* ── HERITAGE / PROOF (dark charcoal) ─────────────────────────── */}
       <section id="about" className="sec-charcoal scroll-mt-20">
-        <div className="site-wrap py-16">
-          <Reveal>
-            <p className="eyebrow landing-eyebrow !text-white/70">{c.heritage.label}</p>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-extrabold leading-tight">
-              {c.heritage.headline[0]}<br />
-              <span className="text-teal">{c.heritage.headline[1]}</span>
-            </h2>
-          </Reveal>
-          <Reveal className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-            {c.heritage.stats.map((s: any) => (
-              <div key={s.label} className="text-center">
-                <p className="text-2xl sm:text-3xl font-extrabold text-teal">{s.num}</p>
-                <p className="text-xs text-white/70 mt-1.5">{s.label}</p>
-              </div>
-            ))}
-          </Reveal>
-          <div className="mt-8 space-y-3 text-white/80 leading-relaxed">
-            {c.heritage.body.map((p: string) => <p key={p.slice(0, 24)}>{p}</p>)}
+        <div className="site-wrap py-16 sm:py-20 split">
+          <div>
+            <Reveal>
+              <p className="eyebrow landing-eyebrow !text-white/70">{c.heritage.label}</p>
+              <h2 className="mt-3 text-3xl sm:text-4xl font-extrabold leading-tight">
+                {c.heritage.headline[0]}<br />
+                <span className="text-teal">{c.heritage.headline[1]}</span>
+              </h2>
+            </Reveal>
+            {/* the 15+ / 88,500+ figures already sit under the hero, so only the new ones are listed here */}
+            <Reveal className="mt-8 grid grid-cols-2 gap-6">
+              {c.heritage.stats.filter((s: any) => !['15+', '88,500+', '+15', '+88,500'].includes(s.num)).map((s: any) => (
+                <div key={s.label}>
+                  <p className="text-3xl sm:text-4xl font-extrabold text-teal"><CountUp value={s.num} /></p>
+                  <p className="text-xs text-white/70 mt-1.5">{s.label}</p>
+                </div>
+              ))}
+            </Reveal>
           </div>
+          <div>
+            <div className="space-y-4 text-white/85 leading-relaxed text-[1.05rem]">
+              {c.heritage.body.map((p: string) => <p key={p.slice(0, 24)}>{p}</p>)}
+            </div>
           {c.heritage.founder?.credentials && (
             <Reveal className="mt-8 flex flex-wrap gap-2.5">
               {c.heritage.founder.credentials.map((cr: string) => (
@@ -559,6 +628,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             ))}
           </div>
           */}
+          </div>
         </div>
       </section>
 
@@ -573,11 +643,11 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             {/*
             <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-extrabold text-charcoal">{c.pricing.free.price}</span>
-              <span className="text-xs text-charcoal/45">{c.pricing.free.priceSub}</span>
+              <span className="text-xs text-charcoal/65">{c.pricing.free.priceSub}</span>
             </div>
             */}
             <p className="mt-3 text-lg font-bold text-charcoal">{c.pricing.free.priceNote}</p>
-            <p className="mt-3 text-sm text-charcoal/65 leading-relaxed">{c.pricing.free.for}</p>
+            <p className="mt-3 text-sm text-charcoal/80 leading-relaxed">{c.pricing.free.for}</p>
             <div className="h-px bg-[var(--line)] my-6" />
             <ul className="space-y-3.5 flex-1">
               {c.pricing.free.bullets.map((b: string) => (
@@ -637,24 +707,24 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.subscription.label}</p>
             {/* <div className="mt-3 flex items-baseline gap-2 flex-wrap">
               <span className="text-3xl font-extrabold text-charcoal">{formatPrice('launchpad', currency, locale)}</span>
-              <span className="text-xs text-charcoal/45">{c.pricing.subscription.priceSub}</span>
+              <span className="text-xs text-charcoal/65">{c.pricing.subscription.priceSub}</span>
             </div> */}
             {/* offer price: crossed-out standard price + launch price */}
             <div className="mt-3 flex items-center gap-3 flex-wrap">
-              <span className="text-xl font-semibold text-charcoal/45 line-through decoration-2 decoration-charcoal/50">{formatPrice('launchpad_standard', currency, locale)}</span>
+              <span className="text-xl font-semibold text-charcoal/65 line-through decoration-2 decoration-charcoal/50">{formatPrice('launchpad_standard', currency, locale)}</span>
               <span className="text-4xl font-extrabold text-charcoal leading-none">{formatPrice('launchpad', currency, locale)}</span>
             </div>
             <span className="mt-3 inline-block rounded-full bg-teal/10 border border-teal/40 px-3 py-1 text-xs font-bold text-teal">
               {locale === 'ar' ? 'سعر الإطلاق' : 'Launch price'}
             </span>
-            <p className="mt-3 text-xs text-charcoal/45">{c.pricing.subscription.priceSub}</p>
+            <p className="mt-3 text-xs text-charcoal/65">{c.pricing.subscription.priceSub}</p>
             {/* package price vs adding coaching later to Pathfinder */}
             <p className="mt-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs leading-relaxed text-charcoal/75">
               {locale === 'ar'
                 ? `سعر الإطلاق هو سعر الباقة عند شراء التقرير والتدريب معاً. إذا اشتريت مرشد المسار أولاً ثم أضفت منصة الانطلاق لاحقاً، يكون السعر ${formatPrice('launchpad_upgrade', currency, locale)}.`
                 : `The launch price is the package price, for buying the report and coaching together. If you buy Pathfinder first and add Launchpad later, it costs ${formatPrice('launchpad_upgrade', currency, locale)}.`}
             </p>
-            <p className="mt-3 text-sm text-charcoal/65 leading-relaxed">{c.pricing.subscription.for}</p>
+            <p className="mt-3 text-sm text-charcoal/80 leading-relaxed">{c.pricing.subscription.for}</p>
             <div className="h-px bg-[var(--line)] my-6" />
             <ul className="space-y-3.5 flex-1">
               {c.pricing.subscription.bullets.map((b: string) => (
@@ -676,18 +746,20 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
         </div>
         <Reveal className="mt-8 max-w-2xl mx-auto text-center card p-6">
           <p className="font-bold text-charcoal">{c.pricing.addOn.title}</p>
-          <p className="mt-2 text-sm text-charcoal/65 leading-relaxed">{c.pricing.addOn.body}</p>
+          <p className="mt-2 text-sm text-charcoal/80 leading-relaxed">{c.pricing.addOn.body}</p>
         </Reveal>
-        <Reveal className="mt-8 text-sm text-charcoal/55 max-w-xl mx-auto text-center">{c.pricing.reassure}</Reveal>
+        <Reveal className="mt-8 text-sm text-charcoal/70 max-w-xl mx-auto text-center">{c.pricing.reassure}</Reveal>
       </Section>
 
       {/* ── FOR INSTITUTIONS (compact band) ──────────────────────────── */}
       <section className="bg-white border-y border-[var(--line)]">
-        <div className="site-wrap py-14">
+        <div className="site-wrap py-16 sm:py-20 split">
           <Reveal>
             <p className="eyebrow landing-eyebrow mb-3">{c.institutions.label}</p>
-            <h2 className="section-h">{c.institutions.headline}</h2>
-            <p className="mt-4 text-charcoal/70 leading-relaxed">{c.institutions.body}</p>
+            <h2 className="section-h split-h">{c.institutions.headline}</h2>
+          </Reveal>
+          <Reveal style={{ transitionDelay: '120ms' }}>
+            <p className="text-charcoal/80 leading-relaxed text-[1.05rem]">{c.institutions.body}</p>
             <button data-track="landing_institutions_partner" onClick={() => setShowPartnerModal(true)} className="cta cta-outline mt-7 inline-flex">{c.institutions.cta}</button>
           </Reveal>
         </div>
@@ -703,20 +775,33 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
       <PartnerModal open={showPartnerModal} onClose={() => setShowPartnerModal(false)} locale={locale} source="landing_page" />
 
       {/* ── FAQ ──────────────────────────────────────────────────────── */}
-      <Section eyebrow={locale === 'ar' ? 'الأسئلة الشائعة' : 'FAQ'}>
-        <Reveal><h2 className="section-h"><Highlight text={c.faq.headline} hl={c.faq.hl} /></h2></Reveal>
-        <Reveal className="mt-8 border-t border-[var(--line)]">
-          <FaqList items={c.faq.items.map((it: { q: string; a: string }) => ({ ...it, q: fillPrice(it.q), a: fillPrice(it.a) }))} />
-        </Reveal>
-      </Section>
+      <section id="faq" className="bg-white border-y border-[var(--line)] scroll-mt-20">
+        <div className="site-wrap py-16 sm:py-20 faq-split">
+          <div className="faq-side">
+            <Reveal>
+              <p className="eyebrow landing-eyebrow mb-3">{locale === 'ar' ? 'الأسئلة الشائعة' : 'FAQ'}</p>
+              <h2 className="section-h"><Highlight text={c.faq.headline} hl={c.faq.hl} /></h2>
+              <p className="mt-5 text-charcoal/80 leading-relaxed">{locale === 'ar' ? 'ما زال لديك سؤال؟ اكتب لنا وسنرد عليك.' : 'Still have a question? Message us and a real person will reply.'}</p>
+              <a href={c.footer.social[2]?.href} target="_blank" rel="noopener noreferrer" data-track="landing_faq_whatsapp" className="cta cta-teal cta-sm mt-6 inline-flex">
+                {locale === 'ar' ? 'راسلنا على واتساب' : 'Chat on WhatsApp'}
+              </a>
+            </Reveal>
+          </div>
+          <Reveal className="border-t border-[var(--line)]">
+            <FaqList items={c.faq.items.map((it: { q: string; a: string }) => ({ ...it, q: fillPrice(it.q), a: fillPrice(it.a) }))} />
+          </Reveal>
+        </div>
+      </section>
 
       {/* ── FINAL CTA (teal, glowing constellation) ───────────────────── */}
       <section className="sec-teal relative overflow-hidden text-center py-20 sm:py-28">
+        <HeroField tone="onteal" fadeMode="center" />
+        {/* previous static constellation:
         <div className="absolute inset-0 z-0 opacity-50 pointer-events-none flex items-center justify-center">
           <div className="w-[min(900px,120%)] h-full">
             <LandingConstellation lit={1} theme="onblue" pulse />
           </div>
-        </div>
+        </div> */}
         <div className="relative z-10 max-w-2xl mx-auto px-5">
           <Reveal className="flex justify-center mb-6"><Logomark size={48} tone="dark" glow /></Reveal>
           <Reveal><h2 className="text-3xl sm:text-4xl font-extrabold leading-tight">{c.finalCta.headline}</h2></Reveal>
@@ -749,7 +834,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           <FooterCol head={c.footer.colCompany.head} links={c.footer.colCompany.links} hrefs={['#about', 'https://etijahcoaching.com', 'mailto:info@myetijahi.com']} />
           <div>
             <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-teal mb-2">{c.footer.colLegal.head}</p>
-            <p className="text-sm text-white/85 font-semibold mb-2">{c.footer.copyright}</p>
+            {/* <p className="text-sm text-white/85 font-semibold mb-2">{c.footer.copyright}</p> (duplicate of the bottom bar) */}
             {/* <p className="text-xs text-white/55 leading-relaxed mb-2">{c.footer.legalLinks}</p> */}
             <div className="flex flex-wrap gap-x-3 gap-y-1 mb-2">
               {c.footer.legal.map((l: { label: string; href: string }) => (
@@ -825,7 +910,7 @@ function FaqList({ items }: { items: { q: string; a: string }[] }) {
           </button>
           <div className="faq-a-wrap">
             <div className="faq-a-inner">
-              <p className="pb-5 text-sm text-charcoal/65 leading-relaxed">{it.a}</p>
+              <p className="pb-5 text-sm text-charcoal/80 leading-relaxed">{it.a}</p>
             </div>
           </div>
         </div>

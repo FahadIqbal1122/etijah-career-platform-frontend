@@ -17,10 +17,8 @@ const LINKS: [number, number][] = [
   [7, 8], [8, 9], [8, 10], [10, 11], [2, 4], [5, 7], [9, 11],
 ]
 
-const BLUE = '7,112,186'
-const TEAL = '0,201,167'
 const REACH = 190 // cursor influence radius, px
-const LINK_DIST = 150 // ambient star-to-star link distance, px
+const LINK_DIST_WIDE = 150 // ambient star-to-star link distance, px (phones use a shorter one)
 
 interface Star {
   hx: number // home position
@@ -36,7 +34,9 @@ interface Star {
   glow: number // 0..1 cursor glow
 }
 
-export default function HeroField() {
+// tone 'light': blue on a light background (the hero). 'onteal': white on the teal final banner.
+// fadeMode: where the field is quieter so text stays readable: 'left' (hero text) or 'center' (centred banner text).
+export default function HeroField({ tone = 'light', fadeMode = 'left' }: { tone?: 'light' | 'onteal'; fadeMode?: 'left' | 'center' }) {
   const ref = useRef<HTMLCanvasElement | null>(null)
 
   useEffect(() => {
@@ -46,9 +46,11 @@ export default function HeroField() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    const BLUE = tone === 'onteal' ? '255,255,255' : '7,112,186'
+    const TEAL = tone === 'onteal' ? '255,255,255' : '0,201,167'
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches
-    let w = 0, h = 0, dpr = 1, raf = 0, visible = true
+    let w = 0, h = 0, dpr = 1, raf = 0, visible = true, linkDist = LINK_DIST_WIDE
     let stars: Star[] = []
     const mouse = { x: -9999, y: -9999, on: false }
 
@@ -62,16 +64,21 @@ export default function HeroField() {
       dpr = Math.min(window.devicePixelRatio || 1, 2)
       canvas!.width = Math.round(w * dpr); canvas!.height = Math.round(h * dpr)
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0)
+      linkDist = w < 700 ? 95 : LINK_DIST_WIDE
       seed = 7
       stars = []
-      // the asterism fills the banner: left edge to right edge, bottom to top
-      const padX = w * 0.03, padTop = h * 0.1, padBot = h * 0.1
+      // the asterism spans the banner from left edge to right edge. On a narrow (phone) banner, which is much taller than
+      // wide, it keeps its proportions in a band of its own instead of being squeezed into the full height.
+      const narrow = w < 700
+      const bandH = narrow ? Math.min(h * 0.8, w * 1.05) : h
+      const bandTop = narrow ? h * 0.22 : 0
+      const padX = w * 0.03, padTop = bandTop + bandH * 0.1, padBot = h - (bandTop + bandH) + bandH * 0.1
       NODES.forEach(([nx, ny], i) => {
         const x = padX + ((nx - 40) / (482 - 40)) * (w - padX * 2)
         const y = padTop + ((ny - 30) / (300 - 30)) * (h - padTop - padBot)
         stars.push({ hx: x, hy: y, x, y, r: i === NODES.length - 1 ? 5.4 : 3.6, main: true, north: i === NODES.length - 1, ph: rnd() * 6.28, sp: 0.25 + rnd() * 0.2, amp: 4, glow: 0 })
       })
-      const ambient = Math.max(26, Math.min(80, Math.round((w * h) / 17000)))
+      const ambient = narrow ? 16 : Math.max(26, Math.min(80, Math.round((w * h) / 17000)))
       for (let k = 0; k < ambient; k++) {
         const x = rnd() * w, y = rnd() * h
         stars.push({ hx: x, hy: y, x, y, r: 1.2 + rnd() * 1.6, main: false, north: false, ph: rnd() * 6.28, sp: 0.2 + rnd() * 0.35, amp: 6 + rnd() * 8, glow: 0 })
@@ -80,7 +87,8 @@ export default function HeroField() {
 
     // quieter over the intro text on the left, full strength behind the reviews; the cursor always brings it back
     const fade = (x: number) => {
-      const k = Math.min(1, Math.max(0, (x - w * 0.25) / (w * 0.35)))
+      const d = fadeMode === 'center' ? Math.abs(x - w / 2) - w * 0.12 : x - w * 0.25
+      const k = Math.min(1, Math.max(0, d / (w * (fadeMode === 'center' ? 0.28 : 0.35))))
       return 0.28 + 0.72 * (k * k * (3 - 2 * k))
     }
 
@@ -123,9 +131,9 @@ export default function HeroField() {
         for (let j = i + 1; j < stars.length; j++) {
           const B = stars[j]
           const d = Math.hypot(A.x - B.x, A.y - B.y)
-          if (d > LINK_DIST) continue
+          if (d > linkDist) continue
           const g = Math.max(A.glow, B.glow)
-          const a = (1 - d / LINK_DIST) * (0.2 + g * 0.5) * Math.max(fade((A.x + B.x) / 2), g)
+          const a = (1 - d / linkDist) * (0.2 + g * 0.5) * Math.max(fade((A.x + B.x) / 2), g)
           ctx!.strokeStyle = g > 0.05 ? `rgba(${TEAL},${a})` : `rgba(${BLUE},${a})`
           ctx!.beginPath(); ctx!.moveTo(A.x, A.y); ctx!.lineTo(B.x, B.y); ctx!.stroke()
         }
@@ -214,7 +222,7 @@ export default function HeroField() {
       window.removeEventListener('pointermove', onMove)
       document.removeEventListener('pointerleave', onLeave)
     }
-  }, [])
+  }, [tone, fadeMode])
 
   return <canvas ref={ref} aria-hidden="true" className="hero-field" />
 }

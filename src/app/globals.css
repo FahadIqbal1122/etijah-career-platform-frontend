@@ -1344,9 +1344,12 @@ html { scroll-behavior: smooth; }
 .hero-field { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 /* no outer box: the badge, each review card and the controls float separately over the constellation */
 .hx-panel { position: relative; z-index: 1; max-width: 560px; margin-inline: auto; }
-.hx-badge { box-shadow: 0 14px 30px -14px rgba(7, 112, 186, .6); display: inline-flex; align-items: center; gap: 10px; padding: 9px 18px; border-radius: 12px; background: var(--primary); color: #fff; font-weight: 800; font-size: 14px; }
+.hx-badge { display: inline-flex; align-items: center; gap: 10px; padding: 0 2px; font-family: var(--font-mono, monospace); font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--primary-deep); }
+.hx-badge::after { content: ''; width: 36px; height: 1px; background: var(--line-strong); }
 .hx-badge-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--teal); }
-.hx-list { position: relative; margin-top: 16px; transition: height .8s cubic-bezier(.22,.8,.26,1); }
+.hx-list { position: relative; margin-top: 16px; }
+.hx-measure { position: absolute; inset-inline: 0; top: 0; visibility: hidden; pointer-events: none; }
+.hx-m { padding: 18px 20px; border: 1px solid transparent; }
 .hx-card { position: absolute; top: 0; overflow: hidden; width: 100%; inset-inline-start: 0;
   transition: transform .8s cubic-bezier(.22,.8,.26,1), opacity .8s ease, height .8s cubic-bezier(.22,.8,.26,1), width .8s cubic-bezier(.22,.8,.26,1), inset-inline-start .8s cubic-bezier(.22,.8,.26,1), box-shadow .8s ease; will-change: transform, opacity; }
 .hx-card[data-pos="0"] { opacity: 1; z-index: 3; }
@@ -1378,3 +1381,64 @@ html { scroll-behavior: smooth; }
 .hx-arrows { display: inline-flex; gap: 8px; }
 .hx-arrows .hs-arrow { width: 38px; height: 38px; font-size: 15px; }
 @media (prefers-reduced-motion: reduce) { .hx-card, .hx-report { transition: none; } }
+
+
+/* ── landing: page-wide polish ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+.scroll-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 60; background: linear-gradient(90deg, var(--primary), var(--teal)); transform-origin: left; transform: scaleX(0); pointer-events: none; }
+[dir="rtl"] .scroll-progress { transform-origin: right; }
+.nav-link { position: relative; transition: color .2s; }
+.nav-link::after { content: ''; position: absolute; inset-inline: 0; bottom: -6px; height: 2px; border-radius: 2px; background: var(--teal); transform: scaleX(0); transition: transform .3s; }
+.nav-link.on { color: var(--teal); }
+.nav-link.on::after { transform: scaleX(1); }
+
+/* cards: soft teal spotlight that follows the pointer (position set from Landing.tsx) */
+.landing-root .card { position: relative; overflow: hidden; }
+.landing-root .card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .25s;
+  background: radial-gradient(280px circle at var(--mx, 50%) var(--my, 50%), rgba(0, 201, 167, .12), transparent 62%); }
+.landing-root .card:hover::after { opacity: 1; }
+
+/* text sections: headline left, copy right, instead of one very long line */
+.split { display: grid; gap: 28px; align-items: start; }
+@media (min-width: 1024px) { .split { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 72px; } }
+.split-h { font-size: clamp(1.9rem, 3.6vw, 3rem); }
+.split-lead { font-size: 1.2rem; line-height: 1.7; }
+
+/* how it works: a teal bar fills along the top of each step, one after another */
+.how-bar { position: absolute; top: 0; inset-inline: 0; height: 4px; background: linear-gradient(90deg, var(--teal), var(--primary)); transform: scaleX(0); transform-origin: left; }
+[dir="rtl"] .how-bar { transform-origin: right; }
+.reveal-up.in .how-bar { transform: scaleX(1); transition: transform .9s cubic-bezier(.2,.7,.3,1) var(--d, .3s); }
+@media (prefers-reduced-motion: reduce) { .how-bar { transform: scaleX(1); } }
+
+/* report: three pages fan out */
+.report-split { display: grid; gap: 48px; align-items: center; }
+@media (min-width: 1024px) { .report-split { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 72px; } }
+.rp-stage { position: relative; height: 420px; max-width: 440px; width: 100%; margin-inline: auto; }
+.rp-page { position: absolute; top: 18px; inset-inline: 24px; height: 340px; padding: 22px; border-radius: 20px; background: #fff; border: 1px solid var(--line);
+  box-shadow: 0 30px 60px -30px rgba(0, 40, 100, .45); transition: transform 1s cubic-bezier(.2,.7,.3,1), opacity .8s ease; opacity: 0; transform: translateY(30px) rotate(0deg); }
+.reveal-up.in .rp-0 { opacity: 1; transform: translateX(-62px) rotate(-9deg); transition-delay: .1s; }
+.reveal-up.in .rp-1 { opacity: 1; transform: translateX(62px) rotate(8deg); transition-delay: .25s; }
+.reveal-up.in .rp-2 { opacity: 1; transform: translateY(-6px) rotate(0deg); transition-delay: .4s; animation: rpFloat 7s ease-in-out 1.6s infinite; }
+@keyframes rpFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
+.rp-head { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 14px; color: var(--charcoal); line-height: 1.3; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.rp-head span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rp-bars { display: grid; gap: 10px; margin-top: 20px; }
+.rp-bars i { display: block; height: 9px; border-radius: 99px; background: rgba(65, 65, 66, .12); }
+.rp-bars i:nth-child(1) { width: 92%; } .rp-bars i:nth-child(2) { width: 78%; } .rp-bars i:nth-child(3) { width: 85%; } .rp-bars i:nth-child(4) { width: 55%; }
+.rp-chips { display: flex; gap: 8px; margin-top: 26px; }
+.rp-chips b { display: block; height: 26px; width: 30%; border-radius: 10px; background: color-mix(in srgb, var(--teal) 18%, #fff); }
+.rp-chips b:nth-child(2) { background: rgba(7, 112, 186, .14); }
+@media (prefers-reduced-motion: reduce) { .rp-page { opacity: 1 !important; transition: none; animation: none !important; } .rp-0 { transform: translateX(-62px) rotate(-9deg); } .rp-1 { transform: translateX(62px) rotate(8deg); } .rp-2 { transform: none; } }
+
+/* who it's for: coloured edge and icon per audience */
+.who-card { border-top: 4px solid var(--accent, var(--teal)); }
+.who-ico { position: absolute; top: 20px; inset-inline-end: 20px; width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, #fff); }
+
+/* faq: heading on the left (sticks while you read), questions on the right */
+.faq-split { display: grid; gap: 36px; align-items: start; }
+@media (min-width: 1024px) { .faq-split { grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 72px; } .faq-side { position: sticky; top: 110px; } }
+
+/* pricing: a soft ring pings out of the recommended card */
+.pcard-paid::after { content: ''; position: absolute; inset: -4px; border-radius: 30px; border: 2px solid rgba(0, 201, 167, .6); opacity: 0; pointer-events: none; animation: pRing 3.4s ease-out 1.2s infinite; }
+@keyframes pRing { 0% { opacity: .75; transform: scale(1); } 100% { opacity: 0; transform: scale(1.045); } }
+@media (prefers-reduced-motion: reduce) { .pcard-paid::after { animation: none; } }
