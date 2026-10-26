@@ -41,7 +41,7 @@ function Card({ x, dir, order, shown }: { x: WallItem; dir: string; order: numbe
         dir={dir}
         style={{ transitionDelay: shown ? `${order * 120}ms` : '0ms' }}
       >
-        {x.kind === 'quote' && <span className="wd-qmark"><Quotes /></span>}
+        {x.kind !== 'plain' && <span className="wd-qmark"><Quotes /></span>}
         {x.kind === 'plain' && <p className="wd-tag">{x.tag}</p>}
         <p className={x.kind === 'plain' ? 'wd-text' : 'wd-big'}>{x.text}</p>
         {x.kind === 'plain' ? (
@@ -60,8 +60,8 @@ function Card({ x, dir, order, shown }: { x: WallItem; dir: string; order: numbe
   )
 }
 
-export default function WallOfDirection({ copy, dir }: { copy: any; dir: string }) {
-  const items: WallItem[] = copy.items
+export default function WallOfDirection({ copy, dir }: { copy: { eyebrow: string; headline: string[]; items: WallItem[] }; dir: string }) {
+  const items = copy.items
   const cols = useColumns()
   const lanes: { x: WallItem; order: number }[][] = Array.from({ length: cols }, () => [])
   items.forEach((x, i) => lanes[i % cols].push({ x, order: i }))
@@ -72,7 +72,7 @@ export default function WallOfDirection({ copy, dir }: { copy: any; dir: string 
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    if (!('IntersectionObserver' in window)) { setShown(true); return }
+    if (!('IntersectionObserver' in window)) { const t = requestAnimationFrame(() => setShown(true)); return () => cancelAnimationFrame(t) }
     const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setShown(true); io.disconnect() } }, { threshold: 0.15 })
     io.observe(el)
     return () => io.disconnect()
