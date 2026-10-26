@@ -1,8 +1,11 @@
 'use client'
 
-// WallOfDirection — a slow, staggered carousel of user stories near the end of the landing page, so visitors who
-// skipped the hero reviews can read them again. Copy comes from L[locale].wall (src/data/landing.ts).
-// The cards drift sideways on their own (pauses on hover/focus); reduced-motion users get a plain swipeable row.
+// WallOfDirection — uneven masonry of user stories near the end of the landing page, so visitors who skipped the
+// hero reviews can read them again. Copy comes from L[locale].wall (src/data/landing.ts).
+// Cards are dealt out one per column and keep their own height. They rise in one after another when the section
+// scrolls into view, then float gently and lift on hover (all off for reduced-motion users).
+
+import { useEffect, useRef, useState } from 'react'
 
 interface WallItem {
   kind: 'feature' | 'quote' | 'plain'
@@ -18,48 +21,76 @@ const Quotes = () => (
   </svg>
 )
 
-// each card sits at its own height; indexed by position so the second (looping) copy lines up with the first
-const STAGGER = [0, 64, 18, 82, 36, 100, 8, 56]
+// column count follows the viewport (matches the breakpoints in globals.css); 3 on the server
+function useColumns() {
+  const [n, setN] = useState(3)
+  useEffect(() => {
+    const calc = () => setN(window.innerWidth >= 1000 ? 3 : window.innerWidth >= 640 ? 2 : 1)
+    calc()
+    window.addEventListener('resize', calc)
+    return () => window.removeEventListener('resize', calc)
+  }, [])
+  return n
+}
 
-function Card({ x, i, dir, hidden }: { x: WallItem; i: number; dir: string; hidden?: boolean }) {
+function Card({ x, dir, order, shown }: { x: WallItem; dir: string; order: number; shown: boolean }) {
   return (
-    <article className={`wd-card wd-${x.kind}`} dir={dir} aria-hidden={hidden || undefined} style={{ marginTop: STAGGER[i % STAGGER.length] }}>
-      {x.kind === 'quote' && <span className="wd-qmark"><Quotes /></span>}
-      {x.kind === 'plain' && <p className="wd-tag">{x.tag}</p>}
-      <p className={x.kind === 'plain' ? 'wd-text' : 'wd-big'}>{x.text}</p>
-      {x.kind === 'plain' ? (
-        <div className="wd-who">
-          <span className="wd-av">{x.name.replace(/[[\]]/g, '').charAt(0)}</span>
-          <div><p className="wd-name"><bdi>{x.name}</bdi></p><p className="wd-place">{x.place}</p></div>
-        </div>
-      ) : (
-        <div className="wd-foot">
-          <p className="wd-name"><bdi>{x.name}</bdi></p>
-          <p className="wd-place">{x.tag}, {x.place}</p>
-        </div>
-      )}
-    </article>
+    <div className="wd-bob" style={{ animationDelay: `${(order % 5) * -1.3}s`, animationDuration: `${6 + (order % 3)}s` }}>
+      <article
+        className={`wd-card wd-${x.kind} ${shown ? 'in' : ''}`}
+        dir={dir}
+        style={{ transitionDelay: shown ? `${order * 120}ms` : '0ms' }}
+      >
+        {x.kind === 'quote' && <span className="wd-qmark"><Quotes /></span>}
+        {x.kind === 'plain' && <p className="wd-tag">{x.tag}</p>}
+        <p className={x.kind === 'plain' ? 'wd-text' : 'wd-big'}>{x.text}</p>
+        {x.kind === 'plain' ? (
+          <div className="wd-who">
+            <span className="wd-av">{x.name.replace(/[[\]]/g, '').charAt(0)}</span>
+            <div><p className="wd-name"><bdi>{x.name}</bdi></p><p className="wd-place">{x.place}</p></div>
+          </div>
+        ) : (
+          <div className="wd-foot">
+            <p className="wd-name"><bdi>{x.name}</bdi></p>
+            <p className="wd-place">{x.tag}, {x.place}</p>
+          </div>
+        )}
+      </article>
+    </div>
   )
 }
 
 export default function WallOfDirection({ copy, dir }: { copy: any; dir: string }) {
   const items: WallItem[] = copy.items
+  const cols = useColumns()
+  const lanes: { x: WallItem; order: number }[][] = Array.from({ length: cols }, () => [])
+  items.forEach((x, i) => lanes[i % cols].push({ x, order: i }))
+
+  // reveal once, when the section first scrolls into view
+  const ref = useRef<HTMLDivElement | null>(null)
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (!('IntersectionObserver' in window)) { setShown(true); return }
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setShown(true); io.disconnect() } }, { threshold: 0.15 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
 
   return (
-    <div>
-      <div className="site-wrap">
-        <p className="eyebrow landing-eyebrow wd-eyebrow">{copy.eyebrow}</p>
-        <h2 className="wd-h">
-          {copy.headline[0]}<br /><span className="wd-hl">{copy.headline[1]}</span>
-        </h2>
-      </div>
+    <div className="site-wrap">
+      <p className="eyebrow landing-eyebrow wd-eyebrow">{copy.eyebrow}</p>
+      <h2 className="wd-h">
+        {copy.headline[0]}<br /><span className="wd-hl">{copy.headline[1]}</span>
+      </h2>
 
-      <div className="wd-viewport" tabIndex={0} aria-label={copy.eyebrow}>
-        <div className="wd-track">
-          {items.map((x, i) => <Card key={`a${i}`} x={x} i={i} dir={dir} />)}
-          {/* second copy makes the loop seamless */}
-          {items.map((x, i) => <Card key={`b${i}`} x={x} i={i} dir={dir} hidden />)}
-        </div>
+      <div className="wd-cols" ref={ref}>
+        {lanes.map((lane, li) => (
+          <div key={li} className="wd-lane">
+            {lane.map(({ x, order }) => <Card key={order} x={x} dir={dir} order={order} shown={shown} />)}
+          </div>
+        ))}
       </div>
     </div>
   )

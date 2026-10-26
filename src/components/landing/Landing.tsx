@@ -695,8 +695,8 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
 
       {/* ── WALL OF DIRECTION: the stories again, for visitors who skipped the hero ─────────── */}
       <section id="stories" className="wd-section scroll-mt-20">
-        <div className="pt-16 sm:pt-20">
-          <Reveal><WallOfDirection copy={c.wall} dir={dir} /></Reveal>
+        <div className="py-16 sm:py-20">
+          <WallOfDirection copy={c.wall} dir={dir} />
         </div>
       </section>
 

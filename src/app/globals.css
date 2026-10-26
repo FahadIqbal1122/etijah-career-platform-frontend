@@ -1297,13 +1297,16 @@ html { scroll-behavior: smooth; }
 .wd-h { font-size: clamp(2rem, 4vw, 3.4rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; color: var(--charcoal); }
 [dir="rtl"] .wd-h { letter-spacing: 0; line-height: 1.3; }
 .wd-hl { color: #00957c; }
-.wd-viewport { margin-top: 40px; overflow: hidden; padding-bottom: 96px; outline-offset: -4px;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent); mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent); }
-.wd-track { direction: ltr; display: flex; align-items: flex-start; gap: 22px; width: max-content; animation: wdDrift 70s linear infinite; }
-.wd-viewport:hover .wd-track, .wd-viewport:focus-within .wd-track { animation-play-state: paused; }
-@keyframes wdDrift { from { transform: translateX(0); } to { transform: translateX(calc(-50% - 11px)); } }
-.wd-card { flex: none; width: min(340px, 82vw); border-radius: 26px; padding: 30px; }
-/* staggered, not in rows: each card's own height offset is set inline (STAGGER in WallOfDirection.tsx) */
+.wd-cols { margin-top: 40px; display: flex; gap: 22px; align-items: flex-start; padding-bottom: 24px; }
+.wd-lane { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 22px; }
+@media (min-width: 1000px) { .wd-lane:nth-child(2) { margin-top: 44px; } .wd-lane:nth-child(3) { margin-top: 16px; } }
+/* gentle idle float, each card on its own rhythm */
+.wd-bob { animation: wdBob 7s ease-in-out infinite; }
+@keyframes wdBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+.wd-card { border-radius: 26px; padding: 30px; opacity: 0; transform: translateY(34px) scale(.97);
+  transition: opacity .7s ease, transform .8s cubic-bezier(.2,.7,.3,1), box-shadow .3s ease; }
+.wd-card.in { opacity: 1; transform: none; }
+.wd-card.in:hover { transform: translateY(-4px); box-shadow: 0 26px 50px -26px rgba(0, 40, 100, .45); transition-delay: 0ms !important; }
 .wd-plain { background: #fff; border: 1px solid var(--line); }
 .wd-quote { background: var(--primary); color: #fff; }
 .wd-feature { background: var(--teal); color: var(--charcoal); }
@@ -1320,7 +1323,7 @@ html { scroll-behavior: smooth; }
 .wd-av { width: 40px; height: 40px; border-radius: 999px; background: var(--lightblue); color: var(--primary-deep); font-weight: 800; display: grid; place-items: center; flex: none; }
 .wd-who .wd-name { font-weight: 700; font-size: 14px; color: var(--charcoal); }
 .wd-who .wd-place { font-size: 13px; color: var(--ink-dim); }
-@media (prefers-reduced-motion: reduce) { .wd-viewport { overflow-x: auto; } .wd-track { animation: none; } .wd-card[aria-hidden="true"] { display: none; } }
+@media (prefers-reduced-motion: reduce) { .wd-bob { animation: none; } .wd-card { opacity: 1; transform: none; transition: none; } }
 
 /* ── landing hero v2: Etijahi intro on the left, rotating review stack on the right ── */
 .hx-grid { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "eyebrow" "headline" "about" "right" "ctas"; align-content: center; }
@@ -1338,7 +1341,7 @@ html { scroll-behavior: smooth; }
 @media (max-width: 1023px) { .hx-right { margin-top: 32px; } .hx-ctas { margin-top: 32px; } }
 
 .hx-right { grid-area: right; position: relative; align-self: center; min-width: 0; }
-.hero-field { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.hero-field { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 /* no outer box: the badge, each review card and the controls float separately over the constellation */
 .hx-panel { position: relative; z-index: 1; max-width: 560px; margin-inline: auto; }
 .hx-badge { box-shadow: 0 14px 30px -14px rgba(7, 112, 186, .6); display: inline-flex; align-items: center; gap: 10px; padding: 9px 18px; border-radius: 12px; background: var(--primary); color: #fff; font-weight: 800; font-size: 14px; }
@@ -1349,7 +1352,7 @@ html { scroll-behavior: smooth; }
 .hx-card[data-pos="0"] { opacity: 1; z-index: 3; }
 .hx-card[data-pos="1"] { inset-inline-start: 40px; width: calc(100% - 40px); opacity: .95; z-index: 2; }
 .hx-card[data-pos="2"] { inset-inline-start: 80px; width: calc(100% - 80px); opacity: .85; z-index: 1; }
-.hx-card[data-pos="out"] { opacity: 0; z-index: 4; pointer-events: none; }
+.hx-card[data-pos="out"] { opacity: 0; z-index: 4; pointer-events: none; transition-duration: .8s, .35s, .8s, .8s, .8s, .8s; }
 .hx-card[data-pos="wait"] { inset-inline-start: 80px; width: calc(100% - 80px); opacity: 0; pointer-events: none; }
 .hx-card:not([data-pos="0"]) .hx-report { opacity: 0; }
 .hx-report { transition: opacity .6s ease; }

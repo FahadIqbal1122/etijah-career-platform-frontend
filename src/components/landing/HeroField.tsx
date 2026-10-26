@@ -61,7 +61,6 @@ export default function HeroField() {
       w = r.width; h = r.height
       dpr = Math.min(window.devicePixelRatio || 1, 2)
       canvas!.width = Math.round(w * dpr); canvas!.height = Math.round(h * dpr)
-      canvas!.style.width = w + 'px'; canvas!.style.height = h + 'px'
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0)
       seed = 7
       stars = []
@@ -85,7 +84,7 @@ export default function HeroField() {
       return 0.28 + 0.72 * (k * k * (3 - 2 * k))
     }
 
-    function frame(t: number) {
+    function draw(t: number) {
       const time = t / 1000
       ctx!.clearRect(0, 0, w, h)
 
@@ -164,6 +163,10 @@ export default function HeroField() {
         ctx!.fill()
       }
 
+    }
+
+    function frame(t: number) {
+      draw(t)
       if (visible && !reduced) raf = requestAnimationFrame(frame)
     }
 
@@ -175,7 +178,14 @@ export default function HeroField() {
 
     build(); start()
 
-    const onResize = () => { build(); if (reduced) start() }
+    // The review stack below changes the banner's height a little on every slide. Only rebuild for a real resize, and
+    // redraw straight away: resizing a canvas clears it, and waiting for the next frame left it blank for a moment.
+    const onResize = () => {
+      const r = host.getBoundingClientRect()
+      if (Math.abs(r.width - w) < 1 && Math.abs(r.height - h) < 48) return
+      build(); draw(performance.now())
+      if (reduced) start()
+    }
     const onMove = (e: PointerEvent) => {
       const r = host.getBoundingClientRect()
       mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top

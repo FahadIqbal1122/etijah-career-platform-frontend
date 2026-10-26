@@ -77,9 +77,9 @@ export const L = {
       hl: 'One clear direction.',
       items: [
       { kind: 'feature', text: 'It honestly felt like a real guidance counselor, customizing every piece of advice to match my exact criteria.', name: 'Hasan', tag: 'Etijahi user', place: 'September 2026' },
-      { kind: 'plain', text: 'The Etijahi assessment was good. It made me clear on my current goals, and on what exactly I am looking for in a job, apart from just being employed.', name: 'Sidra Z.', tag: 'Etijahi user', place: 'September 2026' },
       { kind: 'quote', text: 'The survey was excellent. It made me see my strengths and weaknesses, and I will work on strengthening them.', name: 'Maryam O.', tag: 'Etijahi user', place: 'September 2026' },
       { kind: 'plain', text: 'The Etijahi experience was nice and useful. It helped me learn more about my interests and abilities and identify the fields that suit me. I liked the assessment method and the questions, and the experience was easy and enjoyable. I hope Etijahi keeps developing and becomes even more useful to students in the future. Best of luck to you 💙', name: 'Ahmed A.', tag: 'Etijahi user', place: 'September 2026' },
+      { kind: 'plain', text: 'The Etijahi assessment was good. It made me clear on my current goals, and on what exactly I am looking for in a job, apart from just being employed.', name: 'Sidra Z.', tag: 'Etijahi user', place: 'September 2026' },
       { kind: 'quote', text: 'The program is very nice and useful.', name: 'Shimma A.', tag: 'Etijahi user', place: 'September 2026' },
       ],
     },
@@ -426,9 +426,9 @@ export const L = {
       hl: 'اتجاه واحد واضح.',
       items: [
       { kind: 'feature', text: 'كان الأمر أشبه بمرشد مهني حقيقي، يخصّص كل نصيحة لتناسب معاييري بدقة.', name: 'Hasan', tag: 'مستخدم اتجاهي', place: 'سبتمبر ٢٠٢٦' },
-      { kind: 'plain', text: 'كان تقييم إتجاهي جيداً. أوضح لي أهدافي الحالية، وما الذي أبحث عنه تحديداً في وظيفة، بعيداً عن مجرد الحصول على عمل.', name: 'Sidra Z.', tag: 'مستخدم اتجاهي', place: 'سبتمبر ٢٠٢٦' },
       { kind: 'quote', text: 'كان الاستبيان ممتازاً. جعلني أرى نقاط قوتي وضعفي، وسأعمل على تعزيزها.', name: 'Maryam O.', tag: 'مستخدم اتجاهي', place: 'سبتمبر ٢٠٢٦' },
       { kind: 'plain', text: 'كانت تجربة إتجاهي جميلة ومفيدة، وساعدتني على التعرف أكثر على اهتماماتي وقدراتي وتحديد المجالات التي تناسبني. أعجبتني طريقة التقييم والأسئلة، وكانت التجربة سهلة وممتعة. أتمنى أن يستمر تطوير إتجاهي ويصبح أكثر فائدة للطلاب في المستقبل. بالتوفيق لكم 💙', name: 'Ahmed A.', tag: 'مستخدم اتجاهي', place: 'سبتمبر ٢٠٢٦' },
+      { kind: 'plain', text: 'كان تقييم إتجاهي جيداً. أوضح لي أهدافي الحالية، وما الذي أبحث عنه تحديداً في وظيفة، بعيداً عن مجرد الحصول على عمل.', name: 'Sidra Z.', tag: 'مستخدم اتجاهي', place: 'سبتمبر ٢٠٢٦' },
       { kind: 'quote', text: 'البرنامج جداً جميل ومفيد', name: 'Shimma A.', tag: 'مستخدم اتجاهي', place: 'سبتمبر ٢٠٢٦' },
       ],
     },
