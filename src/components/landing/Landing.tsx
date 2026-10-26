@@ -10,6 +10,9 @@ import { Link, useRouter, usePathname } from '@/i18n/navigation'
 import { L } from '@/data/landing'
 import Logomark, { Wordmark } from '@/components/brand/Logomark'
 import LandingConstellation from '@/components/brand/LandingConstellation'
+import WallOfDirection from '@/components/landing/WallOfDirection'
+import HeroStories from '@/components/landing/HeroStories'
+import HeroField from '@/components/landing/HeroField'
 import { supabase } from '@/lib/supabase'
 import { startCheckout, apiAuthGet, apiAuthPost, type PlanCode } from '@/lib/api'
 import PartnerModal from '@/components/shared/PartnerModal'
@@ -112,6 +115,7 @@ const SHOW_FREE_PLAN = false
 
 const LANDING_GAP: [number, number] = [20000, 32000]
 
+
 export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
   const locale = useLocale()
   const dir = locale === 'ar' ? 'rtl' : 'ltr'
@@ -188,7 +192,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
 
       {/* ── NAV ──────────────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-30 bg-white border-b border-[var(--line)]">
-        <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between gap-4">
+        <div className="site-wrap h-16 flex items-center justify-between gap-4">
           <Wordmark size={30} />
           <div className="hidden md:flex items-center gap-7 text-sm font-medium text-charcoal/70">
             {c.nav.links.map((l: string, i: number) => {
@@ -214,7 +218,32 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
       <header className="relative overflow-hidden" data-coach="hero">
-        <div className="max-w-6xl mx-auto px-5 pt-16 pb-14 grid lg:grid-cols-2 gap-12 items-center">
+        <HeroField />
+        <div className="site-wrap relative z-10 pt-12 pb-14">
+          <Reveal>
+            <HeroStories
+              copy={c.hero.stories}
+              dir={dir}
+              eyebrow={c.hero.eyebrow}
+              headline={<>{c.hero.headline[0]}<br /><Highlight text={c.hero.headline[1]} hl={c.hero.hl} /></>}
+              about={variant ? c.hero.sub : c.hero.about}
+            >
+              <div className="flex flex-wrap items-center gap-4">
+                <Link href="/assessment" data-track="landing_hero_start" className="cta">
+                  <span>{c.hero.cta}</span>
+                  <span className="cta-arrow">{arrow}</span>
+                </Link>
+                <DemoReportsButton locale={locale} source="landing_hero" track="landing_hero_sample_report" className="cta cta-outline cta-sm">{c.hero.secondary}</DemoReportsButton>
+                <a href="#pricing" data-track="landing_hero_view_packages" className="cta cta-teal cta-sm">{c.hero.viewPackages}</a>
+              </div>
+              <p className="mt-3 text-sm text-charcoal/65">{fillPrice(c.hero.microcopy)}</p>
+            </HeroStories>
+          </Reveal>
+        </div>
+
+        {/* previous hero (headline, paragraph, "discovering you" preview card): replaced by the hero above, not rendered. */}
+        {false && (
+        <div className="site-wrap pt-16 pb-14 grid lg:grid-cols-2 gap-12 items-center">
           <Reveal>
             <p className="eyebrow landing-eyebrow mb-4">{c.hero.eyebrow}</p>
             <h1 className="text-4xl sm:text-5xl font-extrabold leading-[1.1] tracking-tight text-charcoal">
@@ -281,9 +310,10 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             </div>
           </Reveal>
         </div>
+        )}
 
         {/* hero stats — flat divided strip */}
-        <Reveal className="max-w-6xl mx-auto px-5 pb-14">
+        <Reveal className="site-wrap relative z-10 pb-14">
           <div className="hero-stats-strip grid grid-cols-1 sm:grid-cols-3">
             {c.hero.stats.map((s: any) => (
               <div key={s.label} className="hero-stat text-center px-3">
@@ -296,9 +326,9 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
       </header>
 
       {/* ── CHOOSE YOUR PATH: students / adults ──────────────────────── */}
-      <Section id="paths" eyebrow={c.audiences.label} center>
-        <Reveal><h2 className="section-h max-w-3xl mx-auto"><Highlight text={c.audiences.headline} hl={c.audiences.hl} /></h2></Reveal>
-        <div className="mt-10 grid md:grid-cols-2 gap-6 max-w-5xl mx-auto text-start">
+      <Section id="paths" eyebrow={c.audiences.label}>
+        <Reveal><h2 className="section-h"><Highlight text={c.audiences.headline} hl={c.audiences.hl} /></h2></Reveal>
+        <div className="mt-10 grid md:grid-cols-2 gap-6 text-start">
 
           {/* Students: light card, teal accent */}
           <Reveal className="card card-hover relative overflow-hidden p-8 flex flex-col">
@@ -375,7 +405,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
 
       {/* ── NOT JUST WHAT PAYS ───────────────────────────────────────── */}
       <section className="bg-white border-y border-[var(--line)]">
-        <div className="max-w-3xl mx-auto px-5 py-14 text-center">
+        <div className="site-wrap py-14">
           <Reveal>
             <h2 className="section-h">
               {c.notJustWhatPays.headline[0]}<br />
@@ -395,9 +425,9 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           </h2>
         </Reveal>
         <Reveal className="mt-7 flex flex-col gap-5">
-          <p className="text-lg font-bold text-charcoal max-w-2xl">{c.problem.body[0]}</p>
-          <p className="text-charcoal/70 leading-relaxed max-w-2xl">{c.problem.body[1]}</p>
-          <p className="payoff max-w-2xl font-semibold text-charcoal leading-relaxed">{c.problem.body[2]}</p>
+          <p className="text-lg font-bold text-charcoal">{c.problem.body[0]}</p>
+          <p className="text-charcoal/70 leading-relaxed">{c.problem.body[1]}</p>
+          <p className="payoff font-semibold text-charcoal leading-relaxed">{c.problem.body[2]}</p>
         </Reveal>
       </Section>
 
@@ -419,7 +449,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             )
           })}
         </div>
-        <Reveal className="mt-9 flex justify-center">
+        <Reveal className="mt-9 flex justify-start">
           <Link href="/assessment" data-track="landing_how_start" className="cta cta-outline">{c.how.cta}</Link>
         </Reveal>
       </Section>
@@ -427,13 +457,13 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
       {/* ── INSIDE YOUR REPORT ───────────────────────────────────────── */}
       <Section id="report" eyebrow={c.insideReport.label} tint>
         <Reveal>
-          <h2 className="section-h max-w-2xl">
+          <h2 className="section-h">
             <Highlight text={c.insideReport.headline} hl={c.insideReport.hl} />
           </h2>
-          <p className="mt-4 text-charcoal/70 leading-relaxed max-w-xl">{c.insideReport.intro}</p>
+          <p className="mt-4 text-charcoal/70 leading-relaxed">{c.insideReport.intro}</p>
         </Reveal>
         <Reveal>
-          <ul className="mt-8 grid sm:grid-cols-2 gap-3.5 max-w-3xl">
+          <ul className="mt-8 grid sm:grid-cols-2 gap-3.5">
             {c.insideReport.items.map((it: string) => (
               <li key={it} className="flex items-start gap-2.5 card p-5 text-sm text-charcoal">
                 <span className="flex-none w-5 h-5 rounded-full bg-teal/15 text-teal text-[11px] font-black flex items-center justify-center mt-0.5">✓</span>
@@ -442,7 +472,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             ))}
           </ul>
         </Reveal>
-        <Reveal className="mt-8 flex justify-center">
+        <Reveal className="mt-8 flex justify-start">
           {/* <a
             href={locale === 'ar' ? '/demo-report-ar.pdf' : '/demo-report-en.pdf'}
             target="_blank"
@@ -458,8 +488,8 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
       {/* ── BUILT FOR THE GULF ───────────────────────────────────────── */}
       <Section id="gulf" eyebrow={c.builtForGulf.label} tint>
         <Reveal>
-          <h2 className="section-h max-w-2xl">{c.builtForGulf.headline}</h2>
-          <p className="mt-3 text-charcoal/70 leading-relaxed max-w-xl">{c.builtForGulf.localisationLine}</p>
+          <h2 className="section-h">{c.builtForGulf.headline}</h2>
+          <p className="mt-3 text-charcoal/70 leading-relaxed">{c.builtForGulf.localisationLine}</p>
         </Reveal>
         <div className="mt-8 grid sm:grid-cols-2 gap-5">
           {c.builtForGulf.pillars.map((p: any, i: number) => (
@@ -473,7 +503,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
 
       {/* ── WHO IT'S FOR ─────────────────────────────────────────────── */}
       <Section id="who" eyebrow={c.who.label}>
-        <Reveal><h2 className="section-h max-w-3xl"><Highlight text={c.who.headline} hl={c.who.hl} /></h2></Reveal>
+        <Reveal><h2 className="section-h"><Highlight text={c.who.headline} hl={c.who.hl} /></h2></Reveal>
         <div className="mt-8 grid md:grid-cols-2 gap-5">
           {c.who.cards.map((card: any, i: number) => (
             <Reveal key={card.tag} className="card card-hover p-6" style={{ transitionDelay: `${(i % 2) * 90}ms` }}>
@@ -487,10 +517,10 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
 
       {/* ── HERITAGE / PROOF (dark charcoal) ─────────────────────────── */}
       <section id="about" className="sec-charcoal scroll-mt-20">
-        <div className="max-w-6xl mx-auto px-5 py-16">
+        <div className="site-wrap py-16">
           <Reveal>
             <p className="eyebrow landing-eyebrow !text-white/70">{c.heritage.label}</p>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-extrabold leading-tight max-w-2xl">
+            <h2 className="mt-3 text-3xl sm:text-4xl font-extrabold leading-tight">
               {c.heritage.headline[0]}<br />
               <span className="text-teal">{c.heritage.headline[1]}</span>
             </h2>
@@ -503,7 +533,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
               </div>
             ))}
           </Reveal>
-          <div className="mt-8 space-y-3 max-w-3xl text-white/80 leading-relaxed">
+          <div className="mt-8 space-y-3 text-white/80 leading-relaxed">
             {c.heritage.body.map((p: string) => <p key={p.slice(0, 24)}>{p}</p>)}
           </div>
           {c.heritage.founder?.credentials && (
@@ -534,9 +564,9 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
 
       {/* ── PRICING ──────────────────────────────────────────────────── */}
       <Section id="pricing" eyebrow={c.pricing.label} tint center>
-        <Reveal><h2 className="section-h max-w-3xl mx-auto">{<Highlight text={c.pricing.headline} hl={c.pricing.hl} />}</h2></Reveal>
+        <Reveal><h2 className="section-h max-w-3xl mx-auto text-center">{<Highlight text={c.pricing.headline} hl={c.pricing.hl} />}</h2></Reveal>
         {/* previous (three plans): <div className="mt-10 grid md:grid-cols-3 gap-6 max-w-6xl mx-auto items-start text-start"> */}
-        <div className={`mt-10 grid gap-6 mx-auto items-start text-start ${SHOW_FREE_PLAN ? 'md:grid-cols-3 max-w-6xl' : 'md:grid-cols-2 max-w-4xl'}`}>
+        <div className={`mt-10 grid gap-6 items-start text-start ${SHOW_FREE_PLAN ? 'md:grid-cols-3' : 'md:grid-cols-2 max-w-5xl'} mx-auto`}>
           {SHOW_FREE_PLAN && (
           <Reveal className="card p-7 relative">
             <p className="font-mono text-xs uppercase tracking-widest text-teal">{c.pricing.free.label}</p>
@@ -653,22 +683,29 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
 
       {/* ── FOR INSTITUTIONS (compact band) ──────────────────────────── */}
       <section className="bg-white border-y border-[var(--line)]">
-        <div className="max-w-4xl mx-auto px-5 py-14 text-center">
+        <div className="site-wrap py-14">
           <Reveal>
             <p className="eyebrow landing-eyebrow mb-3">{c.institutions.label}</p>
-            <h2 className="section-h max-w-2xl mx-auto">{c.institutions.headline}</h2>
-            <p className="mt-4 text-charcoal/70 leading-relaxed max-w-2xl mx-auto">{c.institutions.body}</p>
+            <h2 className="section-h">{c.institutions.headline}</h2>
+            <p className="mt-4 text-charcoal/70 leading-relaxed">{c.institutions.body}</p>
             <button data-track="landing_institutions_partner" onClick={() => setShowPartnerModal(true)} className="cta cta-outline mt-7 inline-flex">{c.institutions.cta}</button>
           </Reveal>
+        </div>
+      </section>
+
+      {/* ── WALL OF DIRECTION: the stories again, for visitors who skipped the hero ─────────── */}
+      <section id="stories" className="wd-section scroll-mt-20">
+        <div className="pt-16 sm:pt-20">
+          <Reveal><WallOfDirection copy={c.wall} dir={dir} /></Reveal>
         </div>
       </section>
 
       <PartnerModal open={showPartnerModal} onClose={() => setShowPartnerModal(false)} locale={locale} source="landing_page" />
 
       {/* ── FAQ ──────────────────────────────────────────────────────── */}
-      <Section eyebrow={locale === 'ar' ? 'الأسئلة الشائعة' : 'FAQ'} center>
+      <Section eyebrow={locale === 'ar' ? 'الأسئلة الشائعة' : 'FAQ'}>
         <Reveal><h2 className="section-h"><Highlight text={c.faq.headline} hl={c.faq.hl} /></h2></Reveal>
-        <Reveal className="mt-8 max-w-3xl mx-auto border-t border-[var(--line)]">
+        <Reveal className="mt-8 border-t border-[var(--line)]">
           <FaqList items={c.faq.items.map((it: { q: string; a: string }) => ({ ...it, q: fillPrice(it.q), a: fillPrice(it.a) }))} />
         </Reveal>
       </Section>
@@ -696,7 +733,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
 
       {/* ── FOOTER (dark charcoal) ──────────────────────────────────── */}
       <footer className="bg-charcoal text-white/70">
-        <div className="max-w-6xl mx-auto px-5 py-14 grid sm:grid-cols-2 md:grid-cols-4 gap-10">
+        <div className="site-wrap py-14 grid sm:grid-cols-2 md:grid-cols-4 gap-10">
           <div>
             <Wordmark size={30} tone="dark" />
             <p className="mt-3 text-xs text-white/60 leading-relaxed">{c.footer.brandTagline}</p>
@@ -728,7 +765,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
           </div>
         </div>
         <div className="border-t border-white/10">
-          <div className="max-w-6xl mx-auto px-5 py-4 text-xs text-white/45">{c.footer.copyright}</div>
+          <div className="site-wrap py-4 text-xs text-white/45">{c.footer.copyright}</div>
         </div>
       </footer>
       {coachEnabled && coachHidden && <CoachSummon locale={locale as 'en' | 'ar'} onShow={showCoach} />}
@@ -760,7 +797,7 @@ function Section({
 }) {
   return (
     <section id={id} data-coach={id} className={`scroll-mt-20 ${tint ? 'bg-white' : ''}`}>
-      <div className="max-w-6xl mx-auto px-5 py-16 sm:py-20">
+      <div className="site-wrap py-16 sm:py-20">
         <div className={center ? 'text-center' : ''}>
           <p className="eyebrow landing-eyebrow mb-3">{eyebrow}</p>
         </div>

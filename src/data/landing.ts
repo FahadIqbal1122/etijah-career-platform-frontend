@@ -24,6 +24,8 @@ export const L = {
       headline: ['You don’t need another test', 'You need a direction'],
       hl: 'direction',
       sub: 'That hesitation isn’t a weakness. It’s the right question, and it deserves more than a personality quiz. We put 15 years of real career guidance from across the Gulf in your hands, grounded in the customs and traditions of the region, with the clarity to see which paths will still be standing as AI reshapes the world of work. You won’t figure it out alone.',
+      // short intro shown beside the rotating reviews in the hero (the long `sub` above is kept for the campaign pages)
+      about: 'Etijahi is your personal career guide, from the team at Etijah Coaching & Consulting. Answer honest questions for about 15 minutes, then get a plain-language report on the careers that fit you and how AI is changing each one.',
       trust: '15 years of coaching, now in your hands. · Etijahi — by Etijah Coaching & Consulting',
       cta: 'Find My Direction',
 // previous: microcopy: 'Free assessment and initial results. Full report available at the {price} launch price. No card needed to start.',
@@ -46,6 +48,39 @@ export const L = {
         { num: '15+', label: 'Years of GCC Coaching' },
         { num: '88,500+', label: 'Lives Impacted' },
         { num: 'GCC', label: 'Built for the Gulf, by people from it' },
+      ],
+      // Hero reviews: real testimonials from the 'Etijahi Testimonials' sheet (Drive), shown as first name + initial.
+      // `rating` stays null (nobody gave a score) so no rating is shown; no stars, no "From their report" box (rows empty).
+      stories: {
+        eyebrow: 'In their words — Etijahi users',
+        story: 'Story',
+        fromReport: 'From their report',
+        verified: '✓ Real Etijahi feedback',
+        prev: 'Previous review',
+        next: 'Next review',
+        reviewsFrom: 'reviews',
+        rating: null as null | { score: string; count: string },
+        items: [
+          { quote: 'It honestly felt like a real guidance counselor, customizing every piece of advice to match my exact criteria.', name: 'Hasan', meta: 'Etijahi user · September 2026', initial: 'H', rows: [] as string[][] },
+          { quote: 'The Etijahi experience was nice and useful. It helped me learn more about my interests and abilities and identify the fields that suit me. I liked the assessment method and the questions, and the experience was easy and enjoyable. I hope Etijahi keeps developing and becomes even more useful to students in the future. Best of luck to you 💙', name: 'Ahmed A.', meta: 'Etijahi user · September 2026', initial: 'A', rows: [] as string[][] },
+          { quote: 'The survey was excellent. It made me see my strengths and weaknesses, and I will work on strengthening them.', name: 'Maryam O.', meta: 'Etijahi user · September 2026', initial: 'M', rows: [] as string[][] },
+          { quote: 'The Etijahi assessment was good. It made me clear on my current goals, and on what exactly I am looking for in a job, apart from just being employed.', name: 'Sidra Z.', meta: 'Etijahi user · September 2026', initial: 'S', rows: [] as string[][] },
+          { quote: 'The program is very nice and useful.', name: 'Shimma A.', meta: 'Etijahi user · September 2026', initial: 'S', rows: [] as string[][] },
+        ],
+      },
+    },
+    // ── Wall of Direction: the same real testimonials as the hero (Etijahi Testimonials sheet). kind: 'feature' (teal) and
+    // 'quote' (blue) show `text` as a big headline; 'plain' is a normal card. Duplicate sheet row 4 (same person/text as row 3) left out.
+    wall: {
+      eyebrow: 'Wall of direction',
+      headline: ['Different starting points.', 'One clear direction.'],
+      hl: 'One clear direction.',
+      items: [
+      { kind: 'feature', text: 'It honestly felt like a real guidance counselor, customizing every piece of advice to match my exact criteria.', name: 'Hasan', tag: 'Etijahi user', place: 'September 2026' },
+      { kind: 'plain', text: 'The Etijahi assessment was good. It made me clear on my current goals, and on what exactly I am looking for in a job, apart from just being employed.', name: 'Sidra Z.', tag: 'Etijahi user', place: 'September 2026' },
+      { kind: 'quote', text: 'The survey was excellent. It made me see my strengths and weaknesses, and I will work on strengthening them.', name: 'Maryam O.', tag: 'Etijahi user', place: 'September 2026' },
+      { kind: 'plain', text: 'The Etijahi experience was nice and useful. It helped me learn more about my interests and abilities and identify the fields that suit me. I liked the assessment method and the questions, and the experience was easy and enjoyable. I hope Etijahi keeps developing and becomes even more useful to students in the future. Best of luck to you 💙', name: 'Ahmed A.', tag: 'Etijahi user', place: 'September 2026' },
+      { kind: 'quote', text: 'The program is very nice and useful.', name: 'Shimma A.', tag: 'Etijahi user', place: 'September 2026' },
       ],
     },
     // ── SECTION 3 — WHAT IS ETIJAHI? ──────────────────────────────────
@@ -340,6 +375,8 @@ export const L = {
       headline: ['لست بحاجة إلى اختبار آخر', 'أنت بحاجة إلى اتجاه'],
       hl: 'اتجاه',
       sub: 'حيرتك ليست ضعفاً، بل هو السؤال الصحيح الذي تبحث عنه، وهو سؤال يستحق إجابة أعمق بكثير من مجرد "اختبار شخصية" عابر. لقد وضعنا بين يديك خلاصة ١٥ عاماً من التوجيه المهني الحقيقي والمبني على واقع منطقتنا الخليجية بعاداتها وتقاليدها، لنمنحك رؤية واضحة تُمكّنك من معرفة المسارات المهنية التي ستظل صامدة ومزدهرة في ظل تشكيل الذكاء الاصطناعي لملامح سوق العمل المستقبلي. لن تخوض هذه الرحلة بمفردك.',
+      // مقدمة قصيرة تظهر بجانب التقييمات المتبدلة في أعلى الصفحة
+      about: 'اتجاهي مرشدك المهني الشخصي، من فريق اتجاه للإرشاد والاستشارات. أجب عن أسئلة صريحة في نحو ١٥ دقيقة، ثم احصل على تقرير بلغة بسيطة عن المهن التي تناسبك وكيف يغيّر الذكاء الاصطناعي كل واحدة منها.',
       trust: '١٥ عاماً من الخبرة، بين يديك. · اتجاهي — من اتجاه للإرشاد والاستشارات',
       cta: 'اكتشف اتجاهي',
 // previous: microcopy: 'التقييم والنتائج الأولية مجاناً. التقرير الكامل بسعر الإطلاق {price}. لا تحتاج إلى بطاقة دفع للبدء.',
@@ -362,6 +399,37 @@ export const L = {
         { num: '+15', label: 'عاماً من الإرشاد في الخليج' },
         { num: '+88,500', label: 'حياة تأثرت' },
         { num: 'الخليج', label: 'صُنِع للمنطقة، بأيدي خبراء من أبنائها' },
+      ],
+      // Arabic hero reviews. Arabic originals are verbatim; English-submitted ones are translated (needs native review).
+      stories: {
+        eyebrow: 'بكلماتهم — مستخدمو اتجاهي',
+        story: 'تقييم',
+        fromReport: 'من تقريرهم',
+        verified: '✓ آراء حقيقية من مستخدمي اتجاهي',
+        prev: 'التقييم السابق',
+        next: 'التقييم التالي',
+        reviewsFrom: 'تقييماً',
+        rating: null as null | { score: string; count: string },
+        items: [
+          { quote: 'كان الأمر أشبه بمرشد مهني حقيقي، يخصّص كل نصيحة لتناسب معاييري بدقة.', name: 'Hasan', meta: 'مستخدم اتجاهي · سبتمبر ٢٠٢٦', initial: 'H', rows: [] as string[][] },
+          { quote: 'كانت تجربة إتجاهي جميلة ومفيدة، وساعدتني على التعرف أكثر على اهتماماتي وقدراتي وتحديد المجالات التي تناسبني. أعجبتني طريقة التقييم والأسئلة، وكانت التجربة سهلة وممتعة. أتمنى أن يستمر تطوير إتجاهي ويصبح أكثر فائدة للطلاب في المستقبل. بالتوفيق لكم 💙', name: 'Ahmed A.', meta: 'مستخدم اتجاهي · سبتمبر ٢٠٢٦', initial: 'A', rows: [] as string[][] },
+          { quote: 'كان الاستبيان ممتازاً. جعلني أرى نقاط قوتي وضعفي، وسأعمل على تعزيزها.', name: 'Maryam O.', meta: 'مستخدم اتجاهي · سبتمبر ٢٠٢٦', initial: 'M', rows: [] as string[][] },
+          { quote: 'كان تقييم إتجاهي جيداً. أوضح لي أهدافي الحالية، وما الذي أبحث عنه تحديداً في وظيفة، بعيداً عن مجرد الحصول على عمل.', name: 'Sidra Z.', meta: 'مستخدم اتجاهي · سبتمبر ٢٠٢٦', initial: 'S', rows: [] as string[][] },
+          { quote: 'البرنامج جداً جميل ومفيد', name: 'Shimma A.', meta: 'مستخدم اتجاهي · سبتمبر ٢٠٢٦', initial: 'S', rows: [] as string[][] },
+        ],
+      },
+    },
+    // لوحة الاتجاه: نفس التقييمات الحقيقية. الأصل العربي كما هو، والمترجَم من الإنجليزية يحتاج مراجعة متحدث أصلي.
+    wall: {
+      eyebrow: 'لوحة الاتجاه',
+      headline: ['نقاط بداية مختلفة.', 'اتجاه واحد واضح.'],
+      hl: 'اتجاه واحد واضح.',
+      items: [
+      { kind: 'feature', text: 'كان الأمر أشبه بمرشد مهني حقيقي، يخصّص كل نصيحة لتناسب معاييري بدقة.', name: 'Hasan', tag: 'مستخدم اتجاهي', place: 'سبتمبر ٢٠٢٦' },
+      { kind: 'plain', text: 'كان تقييم إتجاهي جيداً. أوضح لي أهدافي الحالية، وما الذي أبحث عنه تحديداً في وظيفة، بعيداً عن مجرد الحصول على عمل.', name: 'Sidra Z.', tag: 'مستخدم اتجاهي', place: 'سبتمبر ٢٠٢٦' },
+      { kind: 'quote', text: 'كان الاستبيان ممتازاً. جعلني أرى نقاط قوتي وضعفي، وسأعمل على تعزيزها.', name: 'Maryam O.', tag: 'مستخدم اتجاهي', place: 'سبتمبر ٢٠٢٦' },
+      { kind: 'plain', text: 'كانت تجربة إتجاهي جميلة ومفيدة، وساعدتني على التعرف أكثر على اهتماماتي وقدراتي وتحديد المجالات التي تناسبني. أعجبتني طريقة التقييم والأسئلة، وكانت التجربة سهلة وممتعة. أتمنى أن يستمر تطوير إتجاهي ويصبح أكثر فائدة للطلاب في المستقبل. بالتوفيق لكم 💙', name: 'Ahmed A.', tag: 'مستخدم اتجاهي', place: 'سبتمبر ٢٠٢٦' },
+      { kind: 'quote', text: 'البرنامج جداً جميل ومفيد', name: 'Shimma A.', tag: 'مستخدم اتجاهي', place: 'سبتمبر ٢٠٢٦' },
       ],
     },
     whatIsIt: {
