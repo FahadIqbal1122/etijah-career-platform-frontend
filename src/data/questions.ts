@@ -39,7 +39,7 @@ export const BEHAVIORAL_SCALE = [
   { value: 1, label: 'Sounds nothing like me' },
 ]
 
-export const questions: Question[] = [
+const allQuestions: Question[] = [
   // ─── SECTION: YOUR DETAILS ───────────────────────────
   {
     id: 'QD1',
@@ -976,4 +976,17 @@ export const questions: Question[] = [
     type: 'text_input',
     optional: true,
   },
+]
+
+// Order people see them in. These "about you" questions come after the scored chapters instead of before them;
+// the rest keep their place. The order inside each group is unchanged, so every skip rule that depends on an
+// earlier answer still works (QO4 and QOYR stay near the start; QO5A -> QO5B and QO9 -> QOTC stay in order).
+// QOFIELD (optional, "a field you have in mind") stays the very last screen.
+const MOVED_TO_END = ['QO3B', 'QO5', 'QOFS', 'QO5D1', 'QO5D2', 'QO5A', 'QO5B', 'QO6', 'QO7', 'QO8', 'QO9', 'QOTC']
+export const MOVED_TO_END_IDS: string[] = MOVED_TO_END
+const lastQuestion = allQuestions.find(q => q.id === 'QOFIELD')!
+export const questions: Question[] = [
+  ...allQuestions.filter(q => !MOVED_TO_END.includes(q.id) && q.id !== 'QOFIELD'),
+  ...MOVED_TO_END.map(id => allQuestions.find(q => q.id === id)!),
+  lastQuestion,
 ]

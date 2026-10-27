@@ -61,7 +61,12 @@ export const CHAPTER_COUNT = CHAPTERS.length
 
 // The optional "field you have in mind" question sits at the very end with section 'Onboarding'; by position it
 // belongs to the last chapter, not the first.
-const ID_OVERRIDES: Record<string, number> = { QOFIELD: CHAPTERS.length - 1 }
+// The "about you" questions that now come after the scored chapters (see MOVED_TO_END in questions.ts) are in the same place.
+const LAST = CHAPTERS.length - 1
+const ID_OVERRIDES: Record<string, number> = {
+  QOFIELD: LAST, QO3B: LAST, QO5: LAST, QOFS: LAST, QO5D1: LAST, QO5D2: LAST, QO5A: LAST, QO5B: LAST,
+  QO6: LAST, QO7: LAST, QO8: LAST, QO9: LAST, QOTC: LAST,
+}
 
 // 0-based chapter index for a question.
 export function chapterIndexOf(id: string, section: string): number {

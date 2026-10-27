@@ -51,6 +51,8 @@ const SKIP_RULES: { condition: (a: Record<string, any>) => boolean; ids: Record<
   // The old two-step field-of-study questions (QO5, then QO5D1/QO5D2) are replaced by the single QOFS list; they
   // stay defined in questions.ts but are never shown. (Must come before the high-school rule, which sets QO5.)
   { condition: () => true, ids: { QO5: [], QO5D1: '', QO5D2: '' } },
+  // The phone number is no longer asked (the question stays defined in questions.ts, and old answers keep their QD3).
+  { condition: () => true, ids: { QD3: '' } },
   { condition: a => a['QO4'] === 'high_school', ids: { QO5: ['not_applicable'], QOFS: [], QO5A: '', QO5B: '', QO5C: '' } },
   { condition: a => !['still_deciding', 'not_chosen'].includes(a['QO5A']), ids: { QO5B: '' } },
   // Year of study is only asked of university students; the high-school goal question only of high-school users.
@@ -143,7 +145,7 @@ const DRAFT_TOKEN_KEY = 'ufuq_assessment_draft_token'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 // Nothing is sent to the server until the "Your Details" block is done (that is also when the returning-user
 // check has run), so people who leave on the first screens are never recorded.
-const DETAILS_DONE_INDEX = questions.findIndex(x => x.id === 'QD3')
+const DETAILS_DONE_INDEX = questions.findIndex(x => x.id === 'QD2')   // QD3 (phone) is no longer asked
 
 function getDraftToken(): string | null {
   try { return window.localStorage.getItem(DRAFT_TOKEN_KEY) } catch { return null }
@@ -465,8 +467,14 @@ export default function AssessmentForm() {
     answersRef.current = draft.answers
     revealedRef.current = new Set(draft.revealedFrameworks)
     setAnswers(draft.answers)
-    setIndex(draft.index)
-    setMaxIndex(draft.index)
+    // A draft stores a position in the question order it was saved under. The order has changed since (the "about you"
+    // questions moved to the end), so never resume past a question the draft has no answer for: stop at the first gap.
+    const skippedIds = new Set(Object.keys(getAutoFills(draft.answers)))
+    const unanswered = (v: unknown) => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)
+    const firstGap = questions.filter(x => !skippedIds.has(x.id)).findIndex(x => !x.optional && unanswered(draft.answers[x.id]))
+    const resumeAt = firstGap === -1 ? draft.index : Math.min(draft.index, firstGap)
+    setIndex(resumeAt)
+    setMaxIndex(resumeAt)
     setPhase('question')
     setDraft(null)
   }
@@ -628,8 +636,8 @@ export default function AssessmentForm() {
     const sid = getTelemetrySessionId()
     // Real start: question 1 (name) answered and Next clicked.
     if (q?.id === 'QD1') trackOnce(`assessment_start:${sid}`, 'assessment_start', { lang: locale })
-    // Name + email + phone step submitted (QD3 is the last details question).
-    if (q?.id === 'QD3') trackOnce(`assessment_details_submitted:${sid}`, 'assessment_details_submitted')
+    // Name + email step submitted (QD2 is now the last details question; the phone question is no longer asked).
+    if (q?.id === 'QD2') trackOnce(`assessment_details_submitted:${sid}`, 'assessment_details_submitted')
     const next = index + 1
     const done = next >= total
     // Every advance pulses the constellation's current star, not just the
@@ -692,10 +700,10 @@ export default function AssessmentForm() {
 
   async function handleProceed() {
     // After the last "Your Details" question, check for a returning user.
-    if (q.id === 'QD3') {
+    if (q.id === 'QD2') {
       setChecking(true)
       try {
-        const existing = await checkExistingUser(answers['QD2'], answers['QD3'])
+        const existing = await checkExistingUser(answers['QD2'], answers['QD3'] ?? '')
         setChecking(false)
         if (existing?.claimed) {
           setShowClaimedModal(true)
@@ -839,7 +847,7 @@ export default function AssessmentForm() {
       const result = await apiAuthPost<{ response_id: string; claim_token?: string }>('/assessment/submit', {
         full_name: answers['QD1'],
         email: answers['QD2'],
-        phone: answers['QD3'],
+        phone: answers['QD3'] ?? '',
         country: answers['QO1'],
         nationality: answers['QO2'],
         age: Number(answers['QO3']),
