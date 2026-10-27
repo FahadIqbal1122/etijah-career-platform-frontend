@@ -13,7 +13,7 @@ import { useLocale } from 'next-intl'
 import { useRouter, usePathname, Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
 import { apiAuthGet, apiAuthGetBlob, apiAuthPost, apiAuthPatch, apiAuthDelete, startCheckout, previewDiscount, type DiscountPreview, type PlanCode } from '@/lib/api'
-import { trackOnce } from '@/lib/analytics'
+import { track, trackOnce } from '@/lib/analytics'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
 import Logomark from '@/components/brand/Logomark'
@@ -403,6 +403,8 @@ export default function UserDashboard() {
   async function proceedToPayment() {
     if (!confirmPlan || !agreed) return
     setBuying(true)
+    // Tag Manager: the buyer pressed "go to payment" (report_purchase only fires once a payment is confirmed)
+    track('report_checkout_click', { plan_code: confirmPlan, discount_code: appliedCode?.code ?? undefined })
     try {
       const { checkout_url } = await startCheckout(confirmPlan, appliedCode?.code)
       window.location.href = checkout_url
