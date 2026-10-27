@@ -263,7 +263,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
       <header className="relative overflow-hidden" data-coach="hero">
-        <HeroField />
+        {/* constellation removed from the hero banner: <HeroField /> */}
         <div className="site-wrap relative z-10 pt-12 pb-14">
           <Reveal>
             <HeroStories
