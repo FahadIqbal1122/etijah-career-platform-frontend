@@ -217,7 +217,7 @@ export const followUpHook = (tier: 'free' | 'paid'): Bi => tier === 'paid'
 
 export const stage2CoCreator: Bi = {
   en: 'Your answers help us make Etijahi better. Any question you flag as "off" gets reviewed by our team.',
-  ar: 'إجاباتك تساعدنا على تطوير اتجاهي. أي سؤال تشير إلى أنه «غير دقيق» سيراجعه فريقنا.',
+  ar: 'إجاباتك تساعدنا على تطوير إتجاهي. أي سؤال تشير إلى أنه «غير دقيق» سيراجعه فريقنا.',
 }
 
 export function personalHook(typeLabel: string, locale: Locale): string {

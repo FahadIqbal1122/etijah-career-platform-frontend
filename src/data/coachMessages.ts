@@ -151,7 +151,7 @@ export const LANDING_ROAM: Record<string, Bi[]> = {
     { en: 'No right or wrong answers here. Just be honest.', ar: 'لا توجد إجابات صحيحة أو خاطئة هنا. كن صادقاً فقط.' },
   ],
   what: [
-    { en: 'Etijahi is built by career coaches with 15 years of experience across the GCC.', ar: 'اتجاهي من تصميم مدرّبين مهنيين بخبرة 15 عاماً في دول الخليج.' },
+    { en: 'Etijahi is built by career coaches with 15 years of experience across the GCC.', ar: 'إتجاهي من تصميم مدرّبين مهنيين بخبرة 15 عاماً في دول الخليج.' },
     { en: 'It looks at you from five angles: interests, values, strengths, personality and work style.', ar: 'ينظر إليك من خمس زوايا: الاهتمامات والقيم ونقاط القوة والشخصية وأسلوب العمل.' },
   ],
   how: [

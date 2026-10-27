@@ -48,7 +48,9 @@ export default function HeroField({ tone = 'light', fadeMode = 'left' }: { tone?
 
     const BLUE = tone === 'onteal' ? '255,255,255' : '7,112,186'
     const TEAL = tone === 'onteal' ? '255,255,255' : '0,201,167'
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    // const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const FREEZE_ANIMATION = true // set to false to bring the constellation animation back
+    const reduced = FREEZE_ANIMATION || window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches
     let w = 0, h = 0, dpr = 1, raf = 0, visible = true, linkDist = LINK_DIST_WIDE
     let stars: Star[] = []

@@ -73,7 +73,7 @@ const T = {
   },
   greetLanding: {
     en: 'Hi, I’m Sarah. Ask me anything about Etijahi: how the assessment works, what each plan includes, pricing, or how to get in touch.',
-    ar: 'مرحباً، أنا سارة. اسألني عن اتجاهي: كيف يعمل التقييم، وماذا تتضمن كل باقة، والأسعار، وطرق التواصل.',
+    ar: 'مرحباً، أنا سارة. اسألني عن إتجاهي: كيف يعمل التقييم، وماذا تتضمن كل باقة، والأسعار، وطرق التواصل.',
   },
   placeholder: { en: 'Type your question…', ar: 'اكتب سؤالك…' },
   send: { en: 'Send', ar: 'إرسال' },
