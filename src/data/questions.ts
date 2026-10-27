@@ -982,11 +982,19 @@ const allQuestions: Question[] = [
 // the rest keep their place. The order inside each group is unchanged, so every skip rule that depends on an
 // earlier answer still works (QO4 and QOYR stay near the start; QO5A -> QO5B and QO9 -> QOTC stay in order).
 // QOFIELD (optional, "a field you have in mind") stays the very last screen.
-const MOVED_TO_END = ['QO3B', 'QO5', 'QOFS', 'QO5D1', 'QO5D2', 'QO5A', 'QO5B', 'QO6', 'QO7', 'QO8', 'QO9', 'QOTC']
+// QO7 (career structure) is NOT in the moved group: an employee skips Q69/Q71/Q73, which sit just before it, and a
+// question that hides EARLIER questions after it is answered shifts the whole list (the form jumped past the next
+// three questions). So QO7 sits right before the three questions it hides, and the rest of the group follows them.
+const MOVED_TO_END = ['QO3B', 'QO5', 'QOFS', 'QO5D1', 'QO5D2', 'QO5A', 'QO5B', 'QO6', 'QO8', 'QO9', 'QOTC']
 export const MOVED_TO_END_IDS: string[] = MOVED_TO_END
 const lastQuestion = allQuestions.find(q => q.id === 'QOFIELD')!
+const careerStructure = allQuestions.find(q => q.id === 'QO7')!
+const staying = allQuestions.filter(q => !MOVED_TO_END.includes(q.id) && q.id !== 'QOFIELD' && q.id !== 'QO7')
+const before69 = staying.findIndex(q => q.id === 'Q69')
 export const questions: Question[] = [
-  ...allQuestions.filter(q => !MOVED_TO_END.includes(q.id) && q.id !== 'QOFIELD'),
+  ...staying.slice(0, before69),
+  careerStructure,
+  ...staying.slice(before69),
   ...MOVED_TO_END.map(id => allQuestions.find(q => q.id === id)!),
   lastQuestion,
 ]
