@@ -48,10 +48,11 @@ interface Props {
   // Offer the riddle / mini-games (they play inside her panel). tipOffersGame adds the button to the current tip.
   games?: boolean
   // Quick questions shown as chips until the visitor sends their first message (landing page).
-  suggestions?: Bi[]
+  // A suggestion with an `answer` is answered from that text, with no AI call.
+  suggestions?: (Bi & { answer?: Bi })[]
   tipOffersGame?: boolean
   // Buttons under her tip: each opens the chat and sends `ask` (the landing page's plan chooser).
-  tipChoices?: { label: Bi; ask: Bi }[]
+  tipChoices?: { label: Bi; ask: Bi; answer?: Bi }[]
   // Shows a small cross on her; pressing it sends her away (the page remembers that).
   onHide?: () => void
   dock?: { side: 'l' | 'r'; y: number; peek?: boolean } | null   // where she was dragged to (she stays there)
@@ -263,7 +264,13 @@ export default function CoachWidget({
     if (tip) onTipDismiss?.()
   }
 
-  function askAndOpen(ask: string) {
+  // Shows a ready-made question and answer in the chat without calling the AI (no cost, never fails).
+  function sayLocal(question: string, answer: Bi) {
+    setMsgs(m => [...m, { role: 'user', text: question }, { role: 'coach', text: tr(answer) }])
+  }
+
+  function askAndOpen(ask: string, answer?: Bi) {
+    if (answer) { setOpen(true); onTipDismiss?.(); sayLocal(ask, answer); return }
     setOpen(true)
     onTipDismiss?.()
     void send(ask)
@@ -340,7 +347,7 @@ export default function CoachWidget({
               {suggestions && !msgs.length && (
                 <div className="coach-chips">
                   {suggestions.map(sg => (
-                    <button key={sg.en} type="button" disabled={sending} onClick={() => void send(tr(sg))}>{tr(sg)}</button>
+                    <button key={sg.en} type="button" disabled={sending} onClick={() => (sg.answer ? sayLocal(tr(sg), sg.answer) : void send(tr(sg)))}>{tr(sg)}</button>
                   ))}
                 </div>
               )}
@@ -370,7 +377,7 @@ export default function CoachWidget({
           {tipChoices && tip && !nudge && (
             <div className="coach-tip-choices">
               {tipChoices.map(c => (
-                <button key={c.label.en} type="button" className="coach-tip-action" onClick={() => askAndOpen(tr(c.ask))}>{tr(c.label)}</button>
+                <button key={c.label.en} type="button" className="coach-tip-action" onClick={() => askAndOpen(tr(c.ask), c.answer)}>{tr(c.label)}</button>
               ))}
             </div>
           )}
