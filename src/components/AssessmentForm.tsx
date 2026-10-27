@@ -366,8 +366,9 @@ export default function AssessmentForm() {
     if (!pool.length) return
     const pick = pool[Math.floor(Math.random() * pool.length)]
     coachUsed.current.add(pick.en)
-    setCoachSide(s => (s === 'end' ? 'start' : 'end'))
-    setCoachSpot(1)   // she steps over to the question while she comments on it
+    // she stays where she is now (no hopping between sides or stepping over to the question while she comments)
+    // setCoachSide(s => (s === 'end' ? 'start' : 'end'))
+    // setCoachSpot(1)   // she steps over to the question while she comments on it
     setCoachTipGame(isBreak)   // break tips also offer the riddle / games
     setCoachMsg(pick)
   }, [index, phase])
