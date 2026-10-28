@@ -140,6 +140,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
 
   // Latest props kept in refs so the polling below is not restarted every time the form re-renders.
   const unlockedRef = useRef(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const answersRef = useRef(answers)
   const onUnlockedRef = useRef(onUnlocked)
   useEffect(() => { answersRef.current = answers; onUnlockedRef.current = onUnlocked })
@@ -205,6 +206,9 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on open
   }, [])
+
+  // On a phone the account form is taller than the screen: start each step at the top, not wherever the last one was scrolled to.
+  useEffect(() => { scrollRef.current?.scrollTo({ top: 0 }) }, [step])
 
   // Can this account get a payment link for a parent to pay (under-18 buyers)?
   useEffect(() => {
@@ -301,12 +305,13 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
 
   const reveal = buildReveal(answers, 'riasec', locale)
   const price = (key: 'pathfinder' | 'launchpad') => formatPrice(key, currency, locale)
-  const inputCls = 'w-full rounded-xl border border-[var(--line-strong)] px-3 py-2.5 text-sm text-charcoal bg-white'
+  // 16px text: below that iPhones zoom the page in when a field is tapped.
+  const inputCls = 'w-full min-w-0 rounded-xl border border-[var(--line-strong)] px-3 py-3 text-base text-charcoal bg-white'
 
   return (
-    <div className="fixed inset-0 z-50 brand-surface overflow-y-auto" dir={dir} lang={locale}>
-      <div className="min-h-full flex items-center justify-center px-4 py-8">
-        <div className="card p-6 w-full max-w-md">
+    <div ref={scrollRef} className="fixed inset-0 z-50 brand-surface overflow-y-auto overscroll-contain" dir={dir} lang={locale}>
+      <div className="min-h-full flex items-center justify-center px-4 pt-8 pb-[max(2rem,env(safe-area-inset-bottom))]">
+        <div className="card p-5 sm:p-6 w-full max-w-md">
           <div className="mb-5 flex items-center gap-3">
             <Logomark size={34} />
             <p className="text-xs text-charcoal/40">Etijahi · إتجاهي</p>
@@ -323,7 +328,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
               <div className="flex gap-2 text-sm">
                 {(['signup', 'login'] as const).map(m => (
                   <button key={m} type="button" onClick={() => { setMode(m); setError('') }}
-                    className={`px-3 py-1.5 rounded-lg border ${mode === m ? 'bg-primary text-white border-primary' : 'border-[var(--line-strong)] text-charcoal/70'}`}>
+                    className={`flex-1 min-h-[44px] px-3 rounded-lg border ${mode === m ? 'bg-primary text-white border-primary' : 'border-[var(--line-strong)] text-charcoal/70'}`}>
                     {m === 'signup' ? s.signupTab : s.loginTab}
                   </button>
                 ))}
@@ -415,14 +420,14 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                     <div className="flex gap-2">
                       <input className={inputCls} placeholder={s.code} value={codeInput} onChange={e => setCodeInput(e.target.value)} dir="ltr" />
                       <button type="button" onClick={applyCode} disabled={busy || !codeInput.trim()}
-                        className="px-3 rounded-xl border border-[var(--line-strong)] text-sm font-medium disabled:opacity-40">{s.apply}</button>
+                        className="shrink-0 min-h-[44px] px-4 rounded-xl border border-[var(--line-strong)] text-sm font-medium disabled:opacity-40">{s.apply}</button>
                     </div>
                     {applied && <p className="mt-1 text-xs text-green-700">{s.codeOk}</p>}
                     {codeError && <p className="mt-1 text-xs text-red-600">{codeError}</p>}
                   </div>
 
-                  <label className="flex items-start gap-2 text-xs text-charcoal/70">
-                    <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} className="mt-0.5 w-4 h-4 shrink-0" />
+                  <label className="flex items-start gap-3 py-1 text-sm text-charcoal/70">
+                    <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} className="mt-0.5 w-5 h-5 shrink-0" />
                     <span>
                       {s.agree}{' '}
                       <a href="https://shop.etijahcoaching.com/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">{s.terms}</a>
@@ -446,7 +451,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                           <p className="break-all" dir="ltr">{parentLink}</p>
                         </div>
                       ) : (
-                        <button onClick={askParent} disabled={busy} className="text-sm text-primary underline disabled:opacity-50">{s.parentBtn}</button>
+                        <button onClick={askParent} disabled={busy} className="min-h-[44px] px-2 text-sm text-primary underline disabled:opacity-50">{s.parentBtn}</button>
                       )}
                     </div>
                   )}
