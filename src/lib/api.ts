@@ -126,10 +126,12 @@ function readCookie(name: string): string | undefined {
     } catch { return undefined }
 }
 
-export async function startCheckout(planCode: PlanCode, discountCode?: string): Promise<{ checkout_url: string }> {
+// returnTo 'assessment': the buyer paid from inside the assessment, so the shop sends them back there to carry on.
+export async function startCheckout(planCode: PlanCode, discountCode?: string, returnTo?: 'assessment'): Promise<{ checkout_url: string }> {
     return apiAuthPost<{ checkout_url: string }>('/billing/checkout', {
         plan_code: planCode,
         ...(discountCode ? { discount_code: discountCode } : {}),
+        ...(returnTo ? { return_to: returnTo } : {}),
         fbp: readCookie('_fbp'),
         fbc: readCookie('_fbc'),
         // so the shop sends the buyer back to the page in the language they were using

@@ -1384,7 +1384,7 @@ export default function AdminPage() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'liveCoaching' | 'abandoned' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'orgaccess' | 'discounts' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider' | 'reportTemplates' | 'coach'>('liveDashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'submissions' | 'onet' | 'feedback' | 'telemetry' | 'betaDashboard' | 'betaSubmissions' | 'betaCareerRecs' | 'betaFeedback' | 'betaBehavior' | 'betaBugs' | 'liveDashboard' | 'liveSubmissions' | 'liveCareerRecs' | 'liveFeedback' | 'liveBehavior' | 'liveBugs' | 'liveSales' | 'liveCoaching' | 'abandoned' | 'waitlist' | 'featuredCourse' | 'coaching' | 'country' | 'courses' | 'market' | 'testmode' | 'orgaccess' | 'discounts' | 'homepage' | 'currency' | 'betaclosed' | 'templates' | 'emailScheduler' | 'smtp' | 'aiprovider' | 'reportTemplates' | 'coach' | 'paywall'>('liveDashboard')
 
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(false)
@@ -1603,6 +1603,11 @@ export default function AdminPage() {
   const [multiCurrencyError, setMultiCurrencyError] = useState('')
   // Sarah (coach) switch: off = the original break-panel button and feedback form cards (see Coach tab)
   const [coachOn, setCoachOn] = useState(false)
+  // Pay to continue inside the assessment: share of starters (0-100) who are asked to create an account and pay after chapter 2
+  const [paywallPercent, setPaywallPercent] = useState(0)
+  const [paywallLoading, setPaywallLoading] = useState(false)
+  const [paywallSaving, setPaywallSaving] = useState(false)
+  const [paywallError, setPaywallError] = useState('')
   const [coachLoading, setCoachLoading] = useState(false)
   const [coachSaving, setCoachSaving] = useState(false)
   const [coachError, setCoachError] = useState('')
@@ -2155,6 +2160,38 @@ export default function AdminPage() {
       setMultiCurrencyLoading(false)
     }
   }, [])
+
+  const fetchPaywallPercent = useCallback(async () => {
+    setPaywallLoading(true)
+    setPaywallError('')
+    try {
+      const res = await fetch('/api/admin/paywall-percent')
+      if (!res.ok) throw new Error('Failed to load the setting')
+      setPaywallPercent((await res.json()).percent ?? 0)
+    } catch (err: any) {
+      setPaywallError(err.message)
+    } finally {
+      setPaywallLoading(false)
+    }
+  }, [])
+
+  async function savePaywallPercent(percent: number) {
+    setPaywallSaving(true)
+    setPaywallError('')
+    try {
+      const res = await fetch('/api/admin/paywall-percent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ percent }),
+      })
+      if (!res.ok) throw new Error('Failed to save the setting')
+      setPaywallPercent((await res.json()).percent ?? 0)
+    } catch (err: any) {
+      setPaywallError(err.message)
+    } finally {
+      setPaywallSaving(false)
+    }
+  }
 
   const fetchCoachEnabled = useCallback(async () => {
     setCoachLoading(true)
@@ -4564,6 +4601,7 @@ export default function AdminPage() {
                 { key: 'homepage', label: 'Homepage', color: 'bg-fuchsia-600', badge: homepageMode, onSelect: fetchHomepageMode },
                 { key: 'currency', label: 'Currency', color: 'bg-emerald-600', badge: multiCurrency ? 'ON' : undefined, onSelect: fetchMultiCurrency },
                 { key: 'betaclosed', label: 'Beta Access', color: 'bg-red-600', badge: betaClosed ? 'CLOSED' : undefined, onSelect: fetchBetaClosed },
+                { key: 'paywall', label: 'Pay to Continue', color: 'bg-lime-600', badge: paywallPercent > 0 ? `${paywallPercent}%` : undefined, onSelect: fetchPaywallPercent },
                 { key: 'coach', label: 'Coach', color: 'bg-teal-600', badge: coachOn || gamesOn ? 'ON' : undefined, onSelect: fetchCoachEnabled },
                 { key: 'reportTemplates', label: 'Report Templates', color: 'bg-violet-600' },
                 { key: 'templates', label: 'Email Templates', color: 'bg-pink-600' },
@@ -8038,6 +8076,40 @@ export default function AdminPage() {
               </button>
             </div>
             {homepageModeError && <p className="text-xs text-red-500 mt-3">{homepageModeError}</p>}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'paywall' && (
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <h2 className="text-xl font-bold text-slate-800 mb-1">Pay to continue</h2>
+          <p className="text-sm text-slate-400 mb-6">
+            After the Interests &amp; Personality chapter, people create a free account and pay before the rest of the
+            assessment. This is the share of new starters who are asked to (each browser stays in the same group).
+            <strong> 0</strong>: nobody, the assessment is free to finish as before. <strong>1 to 99</strong>: an A/B test, the
+            others still finish free. <strong>100</strong>: everybody, and finishing without paying is refused by the server.
+            People with a company seat, a paid plan or an admin account are never asked.
+          </p>
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <p className="font-semibold text-slate-800">
+              {paywallPercent}% of starters are asked to pay
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">Takes effect for new visitors within about 10 seconds.</p>
+            <div className="grid grid-cols-4 gap-2 mt-4">
+              {[0, 25, 50, 100].map(v => (
+                <button
+                  key={v}
+                  disabled={paywallLoading || paywallSaving}
+                  onClick={() => savePaywallPercent(v)}
+                  className={`px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+                    paywallPercent === v ? 'bg-lime-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {v === 0 ? 'Off (0)' : v === 100 ? 'Everyone (100)' : `${v}%`}
+                </button>
+              ))}
+            </div>
+            {paywallError && <p className="text-xs text-red-500 mt-3">{paywallError}</p>}
           </div>
         </div>
       )}

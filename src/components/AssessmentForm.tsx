@@ -18,6 +18,7 @@ import Logomark from '@/components/brand/Logomark'
 // import Constellation, { CHAPTER_CONSTELLATION } from '@/components/brand/Constellation'   // replaced by ChapterStars
 import ChapterStars from '@/components/brand/ChapterStars'
 import BreakPanel from '@/components/BreakPanel'
+import AssessmentGate from '@/components/AssessmentGate'
 // import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
 import CoachWidget from '@/components/CoachWidget'
 import { useCoachSwitches } from '@/lib/useCoachEnabled'
@@ -303,6 +304,24 @@ function buildProgressMessage(index: number, total: number, locale: string): str
   return pool[index % pool.length]
 }
 
+// Pay-to-continue is shown to a share of starters (Admin: paywall_percent, 0-100). Each browser keeps one random number
+// from 1 to 100 so it stays in the same group; it sees the step when its number is within the share.
+const PAYWALL_BUCKET_KEY = 'paywall_bucket'
+function getPaywallBucket(): number {
+  const fresh = () => 1 + Math.floor(Math.random() * 100)
+  try {
+    const saved = Number(window.localStorage.getItem(PAYWALL_BUCKET_KEY))
+    if (saved >= 1 && saved <= 100) return saved
+    const v = fresh()
+    window.localStorage.setItem(PAYWALL_BUCKET_KEY, String(v))
+    return v
+  } catch {
+    return fresh()
+  }
+}
+// The gate comes right after this chapter's reveal screen (0-based: About You = 0, Interests & Personality = 1).
+const GATE_AFTER_CHAPTER = 1
+
 const MANUAL_TYPES = new Set(['multi_select', 'text_input', 'number_input', 'email_input', 'phone_input'])
 
 export default function AssessmentForm() {
@@ -322,7 +341,7 @@ export default function AssessmentForm() {
   // furthest position reached — lets a forward arrow reappear after going back
   // without re-answering, instead of just re-triggering auto-advance.
   const [maxIndex, setMaxIndex] = useState(0)
-  const [phase, setPhase] = useState<'question' | 'reveal' | 'finish'>('question')
+  const [phase, setPhase] = useState<'question' | 'reveal' | 'gate' | 'finish'>('question')
   const [picked, setPicked] = useState<any>(null)
   const [confirming, setConfirming] = useState(false)
   const [revealMsg, setRevealMsg] = useState<{ head: string; body: string; chapter: number } | null>(null)
@@ -340,6 +359,15 @@ export default function AssessmentForm() {
   const [showClaimedModal, setShowClaimedModal] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
   const [ageTyping, setAgeTyping] = useState(false) // age question: typed box instead of the wheel
+  // Pay-to-continue: whether this visitor is asked to create an account and pay after chapter 2, and whether this page
+  // load is the buyer coming back from the payment page (?paid=1), which waits for the payment to be confirmed.
+  const [gateRequired, setGateRequired] = useState(false)
+  const [returningPaid, setReturningPaid] = useState(false)
+  const [paymentFailed, setPaymentFailed] = useState(false)
+  const gatePassedRef = useRef(false)
+  // The page was reloaded onto the gate (back from the payment page): the place in the question list is gone, so once the
+  // gate lets the person through they are put on the first question not answered yet.
+  const restoreOnUnlockRef = useRef(false)
 
   // Admin switch (Coach tab): off = no coach in the assessment, the break-panel button is back as it was before her.
   // The riddle / games button is a separate switch (Coach tab): off = no game button anywhere in the assessment.
@@ -397,6 +425,21 @@ export default function AssessmentForm() {
   useEffect(() => {
     let cancelled = false
     const local = loadDraft()
+    // Back from the payment page: no "pick up where you left off" prompt. The gate confirms the payment, then carries on.
+    if (new URLSearchParams(window.location.search).get('paid') === '1') {
+      if (local) {
+        answersRef.current = local.answers
+        revealedRef.current = new Set(local.revealedFrameworks)
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of the page address and browser storage
+        setAnswers(local.answers)
+      }
+      // The shop adds status=paid or status=failed to the address it sends the buyer back to.
+      const failed = new URLSearchParams(window.location.search).get('status') === 'failed'
+      restoreOnUnlockRef.current = true
+      setReturningPaid(!failed); setPaymentFailed(failed); setGateRequired(true); setPhase('gate')
+      try { window.history.replaceState(null, '', window.location.pathname) } catch { /* ignore */ }
+      return
+    }
     const token = new URLSearchParams(window.location.search).get('resume')
     if (!token) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of an external (browser-only) store, not a derived/cascading update
@@ -417,6 +460,36 @@ export default function AssessmentForm() {
       })
       .catch(() => { if (!cancelled && local) setDraft(local) })
       .finally(() => { try { window.history.replaceState(null, '', window.location.pathname) } catch { /* ignore */ } })
+    return () => { cancelled = true }
+  }, [])
+
+  // Someone who paid but has not finished, opening the assessment on a browser with no saved draft (another device, cleared
+  // storage): offer to carry on from the copy saved at the gate. Not offered to people who have not paid, or they would
+  // skip the payment step.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.has('paid') || params.has('resume')) return
+    let cancelled = false
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session || cancelled || loadDraft()) return
+      return apiAuthGet<{ has_access: boolean; answers: Record<string, any> | null }>('/assessment/gate').then(g => {
+        if (cancelled || !g.has_access || !g.answers || Object.keys(g.answers).length === 0) return
+        setDraft({
+          version: DRAFT_VERSION, savedAt: Date.now(), totalQuestions: questions.length, answers: g.answers,
+          index: Math.max(0, questions.length - 1), revealedFrameworks: ['ch0', 'ch1'],
+        })
+      })
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  // Pay-to-continue: is this visitor in the group that is asked to pay after chapter 2? (Admin: paywall_percent.) If the
+  // lookup fails they carry on free; with the paywall on for everybody the submit then sends them back to the gate.
+  useEffect(() => {
+    let cancelled = false
+    apiGet<{ percent: number }>('/paywall-config')
+      .then(r => { if (!cancelled) setGateRequired(getPaywallBucket() <= (r?.percent ?? 0)) })
+      .catch(() => {})
     return () => { cancelled = true }
   }, [])
 
@@ -797,6 +870,39 @@ export default function AssessmentForm() {
   }
 
   function continueFromReveal() {
+    // After the Interests & Personality chapter new people create an account and pay before the rest.
+    if (gateRequired && !gatePassedRef.current && revealMsg?.chapter === GATE_AFTER_CHAPTER) {
+      setPhase('gate')
+      setEnterKey(k => k + 1)
+      return
+    }
+    proceedAfterReveal()
+  }
+
+  // The gate says this account may go on (paid, company seat, admin). Straight after the chapter-2 reveal it simply carries
+  // on; coming back from the payment page it restores the answers (from this browser, or the saved copy on another device)
+  // and goes to the first question not answered yet.
+  function onGateUnlocked(serverAnswers: Record<string, any> | null) {
+    gatePassedRef.current = true
+    const restoring = restoreOnUnlockRef.current || Object.keys(answersRef.current).length === 0
+    if (!restoring) { proceedAfterReveal(); return }
+    restoreOnUnlockRef.current = false
+    if (Object.keys(answersRef.current).length === 0 && serverAnswers) {
+      answersRef.current = serverAnswers
+      setAnswers(serverAnswers)
+    }
+    revealedRef.current.add('ch0'); revealedRef.current.add('ch1')
+    const a = answersRef.current
+    const skippedIds = new Set(Object.keys(getAutoFills(a)))
+    const unanswered = (v: unknown) => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)
+    const firstGap = questions.filter(x => !skippedIds.has(x.id)).findIndex(x => !x.optional && unanswered(a[x.id]))
+    setReturningPaid(false)
+    if (firstGap === -1) setPhase('finish')
+    else { setIndex(firstGap); setMaxIndex(firstGap); setPhase('question') }
+    setEnterKey(k => k + 1)
+  }
+
+  function proceedAfterReveal() {
     const next = pendingRef.current
     if (next >= total) setPhase('finish')
     else {
@@ -888,6 +994,13 @@ export default function AssessmentForm() {
       after(520, () => router.push(`/results/${result.response_id}`))
     } catch (err: any) {
       console.error('Submission error:', err)
+      // Pay-to-continue is on for everybody and this account has not paid (e.g. the setting changed mid-assessment).
+      if (err?.message === 'payment_required') {
+        setGateRequired(true)
+        setSubmitting(false)
+        setPhase('gate')
+        return
+      }
       setError(err?.message === 'retake_not_included' ? chrome.retakeNotIncluded : (err?.message || tForm('error')))
       setSubmitting(false)
     }
@@ -1217,6 +1330,11 @@ export default function AssessmentForm() {
         </div>
       </div>
 
+      {/* ── create an account and pay to continue (full-screen overlay) ──── */}
+      {phase === 'gate' && (
+        <AssessmentGate locale={locale} answers={answers} confirming={returningPaid} paymentFailed={paymentFailed} onUnlocked={onGateUnlocked} />
+      )}
+
       {/* ── reveal takeover (full-screen overlay) ───────────────────────── */}
       {phase === 'reveal' && revealMsg && (
         <div className="reveal" key={`rv-${enterKey}`}>
@@ -1332,7 +1450,7 @@ export default function AssessmentForm() {
         </div>
       )}
       {/* <CoachBubble locale={locale as 'en' | 'ar'} message={phase === 'question' ? coachMsg : null} onDismiss={dismissCoach} /> */}
-      {coachEnabled && <CoachWidget
+      {coachEnabled && phase !== 'gate' && <CoachWidget
         locale={locale as 'en' | 'ar'} mode="assessment" sessionId={getTelemetrySessionId}
         questionIndex={index + 1} questionTotal={total}
         getQuestion={() => {
