@@ -29,7 +29,7 @@ export const L = {
       trust: '15 years of coaching, now in your hands. · Etijahi — by Etijah Coaching & Consulting',
       cta: 'Find My Direction',
 // previous: microcopy: 'Free assessment and initial results. Full report available at the {price} launch price. No card needed to start.',
-      microcopy: 'Take the assessment in about 15 minutes. Full report at the {price} launch price.',
+      microcopy: 'Complete the assessment and receive your full personalised career report for {price}. One-time payment, with no subscription or automatic renewal.',
       secondary: 'See a sample report ↗',
       viewPackages: 'View packages',
       preview: {
@@ -253,7 +253,7 @@ export const L = {
         // bullets (previous): Everything in Explorer; full AI-impact deep dive; 1–3 year outlook; courses and certifications; live job listings
         bullets: [
 // previous: 'Everything in your free results, plus:',
-          'Your full personal profile, plus:',
+          'Your full personalised career report includes:',
           'A deeper explanation of your suggested career paths and why they relate to your responses',
           'Skills you can develop as you explore those paths',
           'How AI may change tasks in your suggested careers, and what you can learn to prepare',
@@ -295,7 +295,7 @@ export const L = {
         body: 'To interpret your results, pressure-test a decision, or plan your move — because sometimes you just want a person in the room.',
       },
 // previous: reassure: 'Not sure which tier is right? Begin with Explorer — no cost, no card, no commitment. Your results will make the next step obvious.',
-      reassure: 'Not sure which plan is right? Pathfinder gives you the full report. Launchpad adds a one-to-one coaching session on top of it.',
+      reassure: 'Not sure which option is right for you? Explore our report and report-plus-coaching packages to find the option that best suits your needs.',
     },
     // ── SECTION 11 — FOR INSTITUTIONS ─────────────────────────────────
     institutions: {
@@ -310,10 +310,10 @@ export const L = {
       hl: 'clarity starts',
       items: [
         { q: 'How long does the assessment take?', a: 'Most people finish in 12–15 minutes. It’s designed to feel like a conversation, not a 200-question HR form.' },
-        { q: 'Is this a subscription?', a: 'No. {price} is a one-time payment for your full personalised report. There is no subscription or automatic renewal.' },
+        { q: 'Is this a subscription?', a: 'No. The {price} payment is a one-time purchase for your full personalised career report. Payment is required to complete the assessment and receive your report. There is no subscription or automatic renewal.' },
         { q: 'Is coaching included in the {price} report?', a: 'No. Coaching is available through the report-plus-coaching package or as a separately booked service.' },
-        { q: 'When and where do I get my report?', a: 'After payment you return to your account, where your full report is prepared. We email you when it is ready. You can read it online and download it as a PDF, in the language you took the assessment in.' },
-        { q: 'Is Etijahi the same as Etijah?', a: 'Etijahi is Etijah’s digital career platform. For 15 years, Etijah has guided organisations, communities, and individuals across the GCC; Etijahi brings that same guidance expertise directly to you — starting with a complimentary assessment.' },
+        { q: 'When and where do I get my report?', a: 'After completing your payment and the assessment, your full report will be prepared in your account. We will email you when it is ready. You can read it online and download it as a PDF in the language you used for the assessment.' },
+        { q: 'Is Etijahi the same as Etijah?', a: 'Etijahi is Etijah’s digital career platform. For 15 years, Etijah has guided organisations, communities, and individuals across the GCC; Etijahi brings that same guidance expertise directly to you — starting with a personalised career assessment and report.' },
         { q: 'Is everything available in Arabic?', a: 'Fully. Etijahi is available in Arabic and English from day one — the platform, the assessment, and your report.' },
         { q: 'Is a real human involved, or is it all AI?', a: 'Both. The platform is designed and supervised by Etijah’s coaches, the frameworks come from 15 years of real coaching, and you can add a 1:1 session with a real coach whenever you want a human in the conversation.' },
         { q: 'Is my data private and secure?', a: 'Yes. Your data is stored securely and is never sold to third parties. Your profile and results belong to you.' },
@@ -325,7 +325,7 @@ export const L = {
     finalCta: {
       headline: 'Your direction is closer than you think',
 // previous: sub: 'Free assessment and initial results, in fifteen minutes. Full report at the {price} launch price.',
-      sub: 'Take the assessment in fifteen minutes. Full report at the {price} launch price.',
+      sub: 'Complete your career assessment in approximately 15 minutes and receive your full personalised report for {price}. One-time payment, with no subscription or automatic renewal.',
       cta: 'Find My Direction',
       arrow: '→',
       trust: 'Etijahi — by Etijah Coaching & Consulting · 15 years of real coaching impact · Your data stays in the Gulf',
@@ -380,7 +380,7 @@ export const L = {
       trust: '١٥ عاماً من الخبرة، بين يديك. · إتجاهي — من اتجاه للإرشاد والاستشارات',
       cta: 'اكتشف إتجاهي',
 // previous: microcopy: 'التقييم والنتائج الأولية مجاناً. التقرير الكامل بسعر الإطلاق {price}. لا تحتاج إلى بطاقة دفع للبدء.',
-      microcopy: 'أكمل التقييم في نحو ١٥ دقيقة. التقرير الكامل بسعر الإطلاق {price}.',
+      microcopy: 'أكمل التقييم واحصل على تقريرك المهني الشخصي الكامل مقابل {price}. دفعة واحدة، دون اشتراك أو تجديد تلقائي.',
       secondary: 'اطّلع على نموذج التقرير ↗',
       viewPackages: 'عرض الباقات',
       preview: {
@@ -593,7 +593,7 @@ export const L = {
         // bullets (previous): كل ما في «مستكشف»؛ التحليل الكامل لتأثير الذكاء الاصطناعي؛ توقعات ١–٣ سنوات؛ دورات وشهادات؛ وظائف حالية
         bullets: [
 // previous: 'يشمل كل ما في النتائج المجانية، بالإضافة إلى:',
-          'ملفك الشخصي الكامل، بالإضافة إلى:',
+          'يشمل تقريرك المهني الشخصي الكامل:',
           'شرح أعمق لمساراتك المهنية المقترحة وأسباب ملاءمتها لإجاباتك',
           'المهارات التي يمكنك تطويرها لاستكشاف هذه المسارات',
           'كيف قد يغيّر الذكاء الاصطناعي المهام في المهن المقترحة، وما يمكنك تعلّمه استعداداً لذلك',
@@ -635,7 +635,7 @@ export const L = {
         body: 'لتحليل نتائجك بدقة، أو اختبار مدى صحة قرار مصيري، أو التخطيط لخطوتك القادمة — لأننا نعرف أنه في بعض الأحيان، كل ما تحتاجه هو وجود شخص حقيقي ينصت إليك ويوجهك.',
       },
 // previous: reassure: 'لست متأكداً من الباقة المناسبة؟ ابدأ بباقة «مستكشف» — دون رسوم، ودون بطاقة، ودون التزام. ونتائجك ستجعل الخطوة التالية واضحة.',
-      reassure: 'لست متأكداً من الباقة المناسبة؟ باقة التقرير الكامل تمنحك التقرير كاملاً، وباقة «منصة الانطلاق» تضيف إليه جلسة توجيه فردية.',
+      reassure: 'لست متأكداً من الخيار المناسب لك؟ تعرّف على باقة التقرير وباقة التقرير مع جلسة التوجيه لتجد الأنسب لاحتياجاتك.',
     },
     institutions: {
       label: 'للمؤسسات',
@@ -648,10 +648,10 @@ export const L = {
       hl: 'يبدأ الوضوح',
       items: [
         { q: 'كم يستغرق التقييم؟', a: 'ينهيه معظم الأشخاص في ١٢–١٥ دقيقة. صُمِّم ليبدو كمحادثة، لا كنموذج موارد بشرية من ٢٠٠ سؤال.' },
-        { q: 'هل هذه خدمة باشتراك؟', a: 'لا. مبلغ {price} هو دفعة واحدة مقابل تقريرك الشخصي الكامل، دون اشتراك أو تجديد تلقائي.' },
+        { q: 'هل هذه خدمة باشتراك؟', a: 'لا. مبلغ {price} هو دفعة واحدة مقابل تقريرك المهني الشخصي الكامل. الدفع مطلوب لإكمال التقييم واستلام تقريرك. ولا يوجد اشتراك أو تجديد تلقائي.' },
         { q: 'هل يشمل التقرير بسعر {price} جلسة كوتشينج؟', a: 'لا. تتوفر جلسة الكوتشينج ضمن باقة التقرير مع الجلسة، أو كخدمة تُحجز بشكل منفصل.' },
-        { q: 'متى وأين أستلم تقريري؟', a: 'بعد الدفع تعود إلى حسابك حيث يُجهَّز تقريرك الكامل، ونرسل لك رسالة بريدية عندما يصبح جاهزاً. يمكنك قراءته عبر الموقع وتنزيله بصيغة PDF، باللغة التي أجريت بها التقييم.' },
-        { q: 'هل إتجاهي هو نفسه اتجاه؟', a: 'إتجاهي هو المنصة المهنية الرقمية من اتجاه. على مدى ١٥ عاماً، قدّمت اتجاه الإرشاد والتوجيه المهني للمؤسسات والمجتمعات والأفراد في الخليج؛ أما إتجاهي فيقدّم هذه الخبرة نفسها مباشرة إليك — بدءاً من تقييم دون رسوم.' },
+        { q: 'متى وأين أستلم تقريري؟', a: 'بعد إتمام الدفع وإكمال التقييم، يُجهَّز تقريرك الكامل في حسابك، ونرسل لك رسالة بريدية عندما يصبح جاهزاً. يمكنك قراءته عبر الموقع وتنزيله بصيغة PDF، باللغة التي أجريت بها التقييم.' },
+        { q: 'هل إتجاهي هو نفسه اتجاه؟', a: 'إتجاهي هو المنصة المهنية الرقمية من اتجاه. على مدى ١٥ عاماً، قدّمت اتجاه الإرشاد والتوجيه المهني للمؤسسات والمجتمعات والأفراد في الخليج؛ أما إتجاهي فيقدّم هذه الخبرة نفسها مباشرة إليك — بدءاً من تقييم مهني وتقرير شخصي.' },
         { q: 'هل كل شيء متاح باللغة العربية؟', a: 'بالكامل. إتجاهي متاح بالعربية والإنجليزية منذ اليوم الأول — المنصة والتقييم وتقريرك، جميعها.' },
         { q: 'هل هناك إنسان حقيقي، أم أن كل شيء ذكاء اصطناعي؟', a: 'الاثنان معاً. المنصة صمَّمها ويشرف عليها مرشدو اتجاه، والأطر العلمية مستمدة من ١٥ عاماً من الإرشاد الحقيقي، ويمكنك إضافة جلسة فردية مع مرشد حقيقي متى أردت إنساناً في الحوار.' },
         { q: 'هل بياناتي خاصة وآمنة؟', a: 'نعم. تُخزَّن بياناتك بأمان ولا تُباع لأي طرف ثالث أبداً. ملفك ونتائجك ملك لك.' },
@@ -662,7 +662,7 @@ export const L = {
     finalCta: {
       headline: 'اتجاهك أقرب مما تظن',
 // previous: sub: 'التقييم والنتائج الأولية مجاناً، في خمس عشرة دقيقة. التقرير الكامل بسعر الإطلاق {price}.',
-      sub: 'أكمل التقييم في خمس عشرة دقيقة. التقرير الكامل بسعر الإطلاق {price}.',
+      sub: 'أكمل تقييمك المهني في نحو ١٥ دقيقة واحصل على تقريرك الشخصي الكامل مقابل {price}. دفعة واحدة، دون اشتراك أو تجديد تلقائي.',
       cta: 'اكتشف إتجاهي',
       arrow: '←',
       trust: 'إتجاهي — من اتجاه للإرشاد والاستشارات · ١٥ عاماً من الأثر الحقيقي للإرشاد المهني · بياناتك تبقى في الخليج',

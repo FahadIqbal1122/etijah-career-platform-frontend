@@ -15,7 +15,7 @@ import HeroStories from '@/components/landing/HeroStories'
 import HeroField from '@/components/landing/HeroField'
 import CountUp from '@/components/landing/CountUp'
 import { supabase } from '@/lib/supabase'
-import { startCheckout, apiAuthGet, apiAuthPost, type PlanCode } from '@/lib/api'
+import { startCheckout, apiGet, apiAuthGet, apiAuthPost, type PlanCode } from '@/lib/api'
 import PartnerModal from '@/components/shared/PartnerModal'
 import DemoReportsButton from '@/components/shared/DemoReportsButton'
 import EmailLink from '@/components/shared/EmailLink'
@@ -32,6 +32,25 @@ import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
 
 // Render a headline, tealing the `hl` phrase inside it. Uses indexOf so text
 // after a repeated phrase is never dropped.
+// How many people have taken the assessment: the real number from the backend, rounded down to the nearest 10 with a "+".
+// Nothing is shown while it loads, if the request fails, or below 50 (a small number reads worse than none).
+function AssessmentCount({ locale }: { locale: string }) {
+  const [n, setN] = useState<number | null>(null)
+  useEffect(() => {
+    let off = false
+    apiGet<{ count: number }>('/stats/assessment-total').then(r => { if (!off && r.count >= 50) setN(Math.floor(r.count / 10) * 10) }).catch(() => {})
+    return () => { off = true }
+  }, [])
+  if (n === null) return null
+  const num = n.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US')
+  return (
+    <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 text-sm font-semibold text-charcoal" data-track="landing_assessment_count">
+      <span className="text-teal">✦</span>
+      {locale === 'ar' ? `أكثر من ${num} شخص أجروا التقييم بالفعل` : `${num}+ people have already taken the assessment`}
+    </p>
+  )
+}
+
 function Highlight({ text, hl }: { text: string; hl?: string }) {
   const i = hl ? text.indexOf(hl) : -1
   if (!hl || i === -1) return <>{text}</>
@@ -282,6 +301,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
                 <a href="#pricing" data-track="landing_hero_view_packages" className="cta cta-teal cta-sm">{c.hero.viewPackages}</a>
               </div>
               <p className="mt-3 text-sm text-charcoal/80">{fillPrice(c.hero.microcopy)}</p>
+              <AssessmentCount locale={locale} />
             </HeroStories>
           </Reveal>
         </div>

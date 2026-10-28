@@ -15,7 +15,7 @@ import {
 import { track, trackOnce } from '@/lib/analytics'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
-import { buildReveal } from '@/data/revealScoring'
+import { buildReveal, computeRanked } from '@/data/revealScoring'
 import Logomark from '@/components/brand/Logomark'
 
 type GateStatus = {
@@ -26,6 +26,25 @@ type GateStatus = {
   answers: Record<string, unknown> | null
   slots_left: number | null
   latest_completed_id: string | null
+}
+
+// The six interest types, named for a first-time reader (the reveal messages use the same dimensions).
+const TYPE_INFO: Record<string, { en: [string, string]; ar: [string, string] }> = {
+  realistic:    { en: ['Hands-on', 'You like practical work and making things work.'], ar: ['عملي', 'تفضّل العمل التطبيقي وجعل الأشياء تعمل.'] },
+  investigative:{ en: ['Analytical', 'You like figuring things out and solving problems.'], ar: ['تحليلي', 'تحب فهم الأمور وحل المشكلات.'] },
+  artistic:     { en: ['Creative', 'You like original ideas and expressing yourself.'], ar: ['إبداعي', 'تحب الأفكار الأصيلة والتعبير عن نفسك.'] },
+  social:       { en: ['People-focused', 'You like helping, teaching and working with people.'], ar: ['اجتماعي', 'تحب المساعدة والتعليم والعمل مع الناس.'] },
+  enterprising: { en: ['Leading', 'You like taking charge and persuading others.'], ar: ['قيادي', 'تحب المبادرة وإقناع الآخرين.'] },
+  conventional: { en: ['Organised', 'You like clear structure, order and detail.'], ar: ['منظّم', 'تحب البنية الواضحة والنظام والتفاصيل.'] },
+}
+
+// The five personality traits (Big Five), in plain words.
+const TRAIT_INFO: Record<string, { en: [string, string]; ar: [string, string] }> = {
+  openness:          { en: ['Curious', 'You enjoy new ideas and experiences.'], ar: ['فضولي', 'تستمتع بالأفكار والتجارب الجديدة.'] },
+  conscientiousness: { en: ['Dependable', 'You plan ahead and follow things through.'], ar: ['منضبط', 'تخطّط مسبقاً وتُتمّ ما تبدأه.'] },
+  extraversion:      { en: ['Outgoing', 'You get energy from being around people.'], ar: ['منفتح', 'تستمد طاقتك من الناس حولك.'] },
+  agreeableness:     { en: ['Cooperative', 'You value harmony and working together.'], ar: ['متعاون', 'تقدّر الانسجام والعمل المشترك.'] },
+  stability:         { en: ['Steady', 'You stay calm when things get stressful.'], ar: ['متزن', 'تحافظ على هدوئك عند الضغط.'] },
 }
 
 type GatePlan = Extract<PlanCode, 'pathfinder' | 'launchpad_monthly'>
@@ -42,6 +61,9 @@ const STR = {
     payHead: 'Unlock the rest of your assessment',
     payBody: 'Your first chapter is saved. Pay once to finish the assessment and get your full report.',
     teaser: 'Your first result',
+    topHead: 'Your top interests so far',
+    personalityHead: 'Your personality so far',
+    lockedLine: 'Your values, strengths, work style and career matches are next.',
     included: 'What you unlock',
     bullets: ['Your values, strengths and work style', 'Your ranked career matches', 'Your full personal report (PDF)'],
     pathfinder: 'Pathfinder', pathfinderLine: 'Full report, yours for life',
@@ -78,6 +100,9 @@ const STR = {
     payHead: 'افتح بقية تقييمك',
     payBody: 'تم حفظ فصلك الأول. ادفع مرة واحدة لتكمل التقييم وتحصل على تقريرك الكامل.',
     teaser: 'نتيجتك الأولى',
+    topHead: 'أبرز ميولك حتى الآن',
+    personalityHead: 'شخصيتك حتى الآن',
+    lockedLine: 'قيمك ونقاط قوتك وأسلوب عملك ومساراتك المهنية في الخطوة التالية.',
     included: 'ما ستفتحه',
     bullets: ['قيمك ونقاط قوتك وأسلوب عملك', 'مسارات مهنية مرتبة حسب توافقها معك', 'تقريرك الشخصي الكامل (PDF)'],
     pathfinder: 'مرشد المسار', pathfinderLine: 'التقرير الكامل، لك مدى الحياة',
@@ -304,6 +329,10 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   }
 
   const reveal = buildReveal(answers, 'riasec', locale)
+  // The three strongest interest types from chapter 1 (scores run 1 to 6), shown as bars.
+  const topTypes = computeRanked(answers, 'riasec').filter(r => TYPE_INFO[r.dimension]).slice(0, 3)
+  const traits = computeRanked(answers, 'big_five').filter(r => TRAIT_INFO[r.dimension]).slice(0, 2)
+  const lang = locale === 'ar' ? 'ar' : 'en'
   const price = (key: 'pathfinder' | 'launchpad') => formatPrice(key, currency, locale)
   // 16px text: below that iPhones zoom the page in when a field is tapped.
   const inputCls = 'w-full min-w-0 rounded-xl border border-[var(--line-strong)] px-3 py-3 text-base text-charcoal bg-white'
@@ -375,16 +404,56 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
               {orgUnverified && <p className="text-sm rounded-xl bg-amber-50 text-amber-800 px-3 py-2">{s.orgUnverified}</p>}
               {paymentFailed && <p className="text-sm rounded-xl bg-amber-50 text-amber-800 px-3 py-2">{s.failedNote}</p>}
 
-              <div className="rounded-xl bg-[var(--surface-2,#f5f7f8)] px-3 py-3">
+              <div className="rounded-2xl border border-primary/30 bg-white px-4 py-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-wide text-charcoal/50">{s.teaser}</p>
-                <p className="mt-1 text-sm font-bold text-charcoal">{reveal.head}</p>
+                <p className="mt-1 text-lg font-extrabold text-charcoal">{reveal.head}</p>
                 <p className="text-sm text-charcoal/70">{reveal.body}</p>
+                {topTypes.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-charcoal/50">{s.topHead}</p>
+                    <ul className="mt-2 space-y-3">
+                      {topTypes.map(t => {
+                        const [name, line] = TYPE_INFO[t.dimension][lang]
+                        const pct = Math.max(8, Math.min(100, Math.round((t.score / 6) * 100)))
+                        return (
+                          <li key={t.dimension}>
+                            <div className="flex items-center justify-between gap-2 text-sm">
+                              <span className="font-bold text-charcoal">{name}</span>
+                              <span className="text-xs font-semibold text-charcoal/60" dir="ltr">{pct}%</span>
+                            </div>
+                            <div className="mt-1 h-2 rounded-full bg-white overflow-hidden" aria-hidden="true">
+                              <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                            </div>
+                            <p className="mt-1 text-xs text-charcoal/60">{line}</p>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                    {traits.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-charcoal/50">{s.personalityHead}</p>
+                        <ul className="mt-2 space-y-2">
+                          {traits.map(t => {
+                            const [name, line] = TRAIT_INFO[t.dimension][lang]
+                            return (
+                              <li key={t.dimension} className="text-sm">
+                                <span className="font-bold text-charcoal">{name}</span>
+                                <span className="text-charcoal/60"> · {line}</span>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      </div>
+                    )}
+                    <p className="mt-4 rounded-lg bg-[var(--surface-2,#f5f7f8)] px-3 py-2 text-xs text-charcoal/70">🔒 {s.lockedLine}</p>
+                  </div>
+                )}
               </div>
 
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-charcoal/50">{s.included}</p>
                 <ul className="mt-1 space-y-1 text-sm text-charcoal/80">
-                  {s.bullets.map(b => <li key={b}>✓ {b}</li>)}
+                  {s.bullets.map(b => <li key={b}>🔒 {b}</li>)}
                 </ul>
               </div>
 

@@ -86,7 +86,7 @@ function scoreAnswer(id: string, raw: any): number {
 type Leaning = { dimension: string; score: number; margin: number }
 
 // Top dimension within one framework, from the answers gathered so far.
-export function computeLeaning(answers: Record<string, any>, framework: FrameworkKey): Leaning | null {
+export function computeRanked(answers: Record<string, any>, framework: FrameworkKey): { dimension: string; score: number }[] {
   const acc: Record<string, { sum: number; n: number }> = {}
   for (const id of Object.keys(answers)) {
     const entry = QUESTION_MAP[id]
@@ -108,6 +108,11 @@ export function computeLeaning(answers: Record<string, any>, framework: Framewor
   const ranked = Object.entries(acc)
     .map(([dimension, { sum, n }]) => ({ dimension, score: sum / n }))
     .sort((a, b) => b.score - a.score)
+  return ranked
+}
+
+export function computeLeaning(answers: Record<string, any>, framework: FrameworkKey): Leaning | null {
+  const ranked = computeRanked(answers, framework)
   if (ranked.length === 0) return null
   const margin = ranked.length > 1 ? ranked[0].score - ranked[1].score : ranked[0].score
   return { dimension: ranked[0].dimension, score: ranked[0].score, margin }

@@ -155,7 +155,7 @@ export function roamPool(c: RoamCtx): Record<string, Bi[]> {
 export const LANDING_ROAM: Record<string, Bi[]> = {
   hero: [
     { en: 'Hi, I’m Sarah. Welcome! Take a look around.', ar: 'مرحباً، أنا سارة. أهلاً بك! تفضل بالتجول.' },
-    { en: 'The assessment takes about 12–15 minutes, and starting is free.', ar: 'التقييم يستغرق نحو 12–15 دقيقة، والبدء مجاني.' },
+    { en: 'The assessment takes about 12–15 minutes.', ar: 'التقييم يستغرق نحو 12–15 دقيقة.' },
     { en: 'No right or wrong answers here. Just be honest.', ar: 'لا توجد إجابات صحيحة أو خاطئة هنا. كن صادقاً فقط.' },
   ],
   what: [
