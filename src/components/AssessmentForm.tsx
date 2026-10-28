@@ -134,6 +134,7 @@ function clearDraft() {
   try {
     window.localStorage.removeItem(DRAFT_KEY)
     window.localStorage.removeItem(DRAFT_TOKEN_KEY)
+    window.localStorage.removeItem('assessment:atGate')
   } catch {
     // ignore
   }
@@ -540,6 +541,14 @@ export default function AssessmentForm() {
     answersRef.current = draft.answers
     revealedRef.current = new Set(draft.revealedFrameworks)
     setAnswers(draft.answers)
+    // Left for the payment page from the gate (browser Back, closed tab): go back to the gate, not into the questions.
+    let wasAtGate = false
+    try { wasAtGate = window.localStorage.getItem('assessment:atGate') === '1' } catch { /* ignore */ }
+    if (wasAtGate && gateRequired) {
+      restoreOnUnlockRef.current = true
+      setPhase('gate'); setEnterKey(k => k + 1); setDraft(null)
+      return
+    }
     // A draft stores a position in the question order it was saved under. The order has changed since (the "about you"
     // questions moved to the end), so never resume past a question the draft has no answer for: stop at the first gap.
     const skippedIds = new Set(Object.keys(getAutoFills(draft.answers)))
@@ -884,6 +893,7 @@ export default function AssessmentForm() {
   // and goes to the first question not answered yet.
   function onGateUnlocked(serverAnswers: Record<string, any> | null) {
     gatePassedRef.current = true
+    try { window.localStorage.removeItem('assessment:atGate') } catch { /* ignore */ }
     const restoring = restoreOnUnlockRef.current || Object.keys(answersRef.current).length === 0
     if (!restoring) { proceedAfterReveal(); return }
     restoreOnUnlockRef.current = false

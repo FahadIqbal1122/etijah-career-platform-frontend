@@ -301,7 +301,22 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     setBusy(true); setError('')
     track('report_checkout_click', { plan_code: plan, discount_code: applied?.code ?? undefined, from: 'assessment_gate' })
     try {
-      const { checkout_url } = await startCheckout(plan, applied?.code, 'assessment')
+      // A code typed but never applied is checked now, so a wrong one stops here instead of being dropped silently.
+      let code = applied?.code
+      const typed = codeInput.trim().toUpperCase()
+      if (typed && typed !== code) {
+        try {
+          setApplied({ code: typed, preview: await previewDiscount(plan, typed) })
+          code = typed
+        } catch (e: unknown) {
+          setApplied(null); setBusy(false)
+          setCodeError(s.codeErrors[e instanceof Error ? e.message : ''] ?? s.codeErrors.discount_invalid)
+          return
+        }
+      } else if (!typed) code = undefined
+      const { checkout_url } = await startCheckout(plan, code, 'assessment')
+      // Remember the buyer left from the gate, so coming back by any route lands on the gate and not mid-assessment.
+      try { window.localStorage.setItem('assessment:atGate', '1') } catch { /* best-effort */ }
       window.location.href = checkout_url
     } catch (e: unknown) {
       setBusy(false)
@@ -487,7 +502,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
 
                   <div>
                     <div className="flex gap-2">
-                      <input className={inputCls} placeholder={s.code} value={codeInput} onChange={e => setCodeInput(e.target.value)} dir="ltr" />
+                      <input className={inputCls} placeholder={s.code} value={codeInput} onChange={e => { setCodeInput(e.target.value); setApplied(null); setCodeError('') }} dir="ltr" />
                       <button type="button" onClick={applyCode} disabled={busy || !codeInput.trim()}
                         className="shrink-0 min-h-[44px] px-4 rounded-xl border border-[var(--line-strong)] text-sm font-medium disabled:opacity-40">{s.apply}</button>
                     </div>
