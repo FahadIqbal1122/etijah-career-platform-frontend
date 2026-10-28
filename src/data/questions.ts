@@ -989,9 +989,14 @@ const MOVED_TO_END = ['QO3B', 'QO5', 'QOFS', 'QO5D1', 'QO5D2', 'QO5A', 'QO5B', '
 export const MOVED_TO_END_IDS: string[] = MOVED_TO_END
 const lastQuestion = allQuestions.find(q => q.id === 'QOFIELD')!
 const careerStructure = allQuestions.find(q => q.id === 'QO7')!
-const staying = allQuestions.filter(q => !MOVED_TO_END.includes(q.id) && q.id !== 'QOFIELD' && q.id !== 'QO7')
+// Three easy questions come before the name and email: where you are now, your country, your age. The form then feels like
+// a conversation before it asks who you are. Drafts saved under the old order still resume correctly (resumeDraft stops at
+// the first unanswered question).
+const BEFORE_DETAILS = ['QO4', 'QO1', 'QO3']
+const staying = allQuestions.filter(q => !MOVED_TO_END.includes(q.id) && !BEFORE_DETAILS.includes(q.id) && q.id !== 'QOFIELD' && q.id !== 'QO7')
 const before69 = staying.findIndex(q => q.id === 'Q69')
 export const questions: Question[] = [
+  ...BEFORE_DETAILS.map(id => allQuestions.find(q => q.id === id)!),
   ...staying.slice(0, before69),
   careerStructure,
   ...staying.slice(before69),

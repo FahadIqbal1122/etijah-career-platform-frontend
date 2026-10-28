@@ -177,7 +177,7 @@ const CONFIRM_MS = 560
 const CHROME: Record<string, Record<string, string>> = {
   en: {
     asideEyebrow: 'Discovering you', // ambient label on the desktop split panel
-    unlockNote: 'At the end you’ll see a first look at your profile, and you can unlock your full report when you’re ready.',
+    unlockNote: 'After the interests and personality questions you’ll see a first look at your profile. To finish the assessment and get your full report, you’ll create an account and pay once.',
     revealCta: 'Keep going',
     finishHead: 'Your map is taking shape.',
     finishBody: 'You’ve lit the path. This is the start of your Etijahi profile — the full reading is next.',
@@ -211,7 +211,7 @@ const CHROME: Record<string, Record<string, string>> = {
   },
   ar: {
     asideEyebrow: 'نكتشفك', // ambient label on the desktop split panel
-    unlockNote: 'في النهاية ستحصل على لمحة أولى عن ملفك، ويمكنك فتح تقريرك الكامل متى كنت جاهزاً.',
+    unlockNote: 'بعد أسئلة الميول والشخصية سترى لمحة أولى عن ملفك. ولإكمال التقييم والحصول على تقريرك الكامل، ستنشئ حساباً وتدفع مرة واحدة.',
     revealCta: 'أكمل',
     finishHead: 'خريطتك تتشكّل.',
     finishBody: 'لقد أضأت الطريق. هذه بداية ملفك في إتجاهي — والقراءة الكاملة تنتظرك.',
@@ -707,8 +707,8 @@ export default function AssessmentForm() {
   function doAdvance() {
     // Tag Manager funnel events. Keyed by the telemetry session id so Back/forward doesn't double-fire.
     const sid = getTelemetrySessionId()
-    // Real start: question 1 (name) answered and Next clicked.
-    if (q?.id === 'QD1') trackOnce(`assessment_start:${sid}`, 'assessment_start', { lang: locale })
+    // Real start: the first question answered and Next clicked.
+    if (index === 0) trackOnce(`assessment_start:${sid}`, 'assessment_start', { lang: locale })
     // Name + email step submitted (QD2 is now the last details question; the phone question is no longer asked).
     if (q?.id === 'QD2') trackOnce(`assessment_details_submitted:${sid}`, 'assessment_details_submitted')
     const next = index + 1
