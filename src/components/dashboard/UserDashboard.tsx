@@ -12,7 +12,7 @@ import { useRouter as useNavRouter, useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useRouter, usePathname, Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
-import { apiAuthGet, apiAuthGetBlob, apiAuthPost, apiAuthPatch, apiAuthDelete, startCheckout, previewDiscount, type DiscountPreview, type PlanCode } from '@/lib/api'
+import { apiAuthGet, apiAuthGetBlob, apiAuthPost, apiAuthPatch, apiAuthDelete, startCheckout, previewDiscount, getParentLinkEligibility, createParentLink, type DiscountPreview, type PlanCode } from '@/lib/api'
 import { track, trackOnce } from '@/lib/analytics'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
@@ -147,6 +147,10 @@ const B = {
     history: 'Payment history', typeWord: 'type',
     agreeHead: 'Before you pay', agreeTax: 'The price you see includes tax.', agreeText: 'I have read and agree to the', agreeTerms: 'Terms and Conditions', agreeAnd: 'and the', agreePrivacy: 'Privacy Policy', agreeContinue: 'Continue to payment', agreeCancel: 'Cancel',
     codePlaceholder: 'Discount code', codeApply: 'Apply', codeApplied: 'Code applied:',
+    parentHead: 'Under 18? Ask a parent to pay', parentSub: 'We make a private link for your parent or guardian. They pay, and your report unlocks on your account.',
+    parentBtn: 'Get a link for my parent', parentShare: 'Share', parentCopy: 'Copy link', parentCopied: 'Link copied. Send it to your parent. It works for 7 days.',
+    parentError: 'Could not create the link. Please try again.',
+    verifyNote: 'Please verify your email so you get your report and receipts.', verifyResend: 'Resend email', verifySent: 'Sent. Check your inbox.',
     codeErrors: {
       discount_invalid: "This code isn't valid.", discount_expired: 'This code has expired.', discount_not_started: "This code isn't active yet.",
       discount_used_up: 'This code has reached its limit.', discount_already_used: "You've already used this code.",
@@ -166,6 +170,10 @@ const B = {
     history: 'سجل المدفوعات', typeWord: '',
     agreeHead: 'قبل الدفع', agreeTax: 'السعر المعروض شامل الضريبة.', agreeText: 'لقد قرأت وأوافق على', agreeTerms: 'الشروط والأحكام', agreeAnd: 'و', agreePrivacy: 'سياسة الخصوصية', agreeContinue: 'المتابعة إلى الدفع', agreeCancel: 'إلغاء',
     codePlaceholder: 'كود الخصم', codeApply: 'تطبيق', codeApplied: 'تم تطبيق الكود:',
+    parentHead: 'أقل من 18 سنة؟ اطلب من أحد والديك الدفع', parentSub: 'ننشئ رابطاً خاصاً لوالدك أو ولي أمرك. يقوم بالدفع ويُفتح تقريرك على حسابك.',
+    parentBtn: 'احصل على رابط لوالدي', parentShare: 'مشاركة', parentCopy: 'نسخ الرابط', parentCopied: 'تم نسخ الرابط. أرسله إلى والدك. صالح لمدة 7 أيام.',
+    parentError: 'تعذّر إنشاء الرابط. حاول مرة أخرى.',
+    verifyNote: 'يرجى تأكيد بريدك الإلكتروني لتصلك التقارير والإيصالات.', verifyResend: 'إعادة الإرسال', verifySent: 'تم الإرسال. تحقق من بريدك.',
     codeErrors: {
       discount_invalid: 'هذا الكود غير صالح.', discount_expired: 'انتهت صلاحية هذا الكود.', discount_not_started: 'هذا الكود غير مفعّل بعد.',
       discount_used_up: 'تم استنفاد عدد مرات استخدام هذا الكود.', discount_already_used: 'لقد استخدمت هذا الكود من قبل.',
@@ -379,6 +387,27 @@ export default function UserDashboard() {
   const [codeError, setCodeError] = useState('')
   const [codeBusy, setCodeBusy] = useState(false)
   function resetCode() { setCodeInput(''); setAppliedCode(null); setCodeError('') }
+  // Under-18 buyers can send a private payment link to a parent (offered in the same dialog as the payment button).
+  const [canAskParent, setCanAskParent] = useState(false)
+  const [parentLink, setParentLink] = useState('')
+  const [parentBusy, setParentBusy] = useState(false)
+  const [parentError, setParentError] = useState('')
+  const [verifySent, setVerifySent] = useState(false)
+  useEffect(() => { getParentLinkEligibility().then(r => setCanAskParent(r.eligible)).catch(() => {}) }, [])
+  async function askParent() {
+    if (!confirmPlan) return
+    setParentBusy(true); setParentError('')
+    try {
+      const { url } = await createParentLink(confirmPlan)
+      setParentLink(url)
+      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+        try { await navigator.share({ url, title: 'Etijahi' }) } catch { /* cancelled: the link is still shown below */ }
+      } else {
+        try { await navigator.clipboard.writeText(url) } catch { /* shown below to copy by hand */ }
+      }
+    } catch { setParentError(b.parentError) }
+    finally { setParentBusy(false) }
+  }
   function handleBuyPlan(planCode: PlanCode) {
     // Still linking/fetching their report: do nothing yet, so a quick click is never mistaken for "no assessment".
     if (assessmentsLoading) return
@@ -386,6 +415,7 @@ export default function UserDashboard() {
     if (!assessments.length) { navRouter.push(`/${locale}/assessment`); return }
     setAgreed(false)
     resetCode()
+    setParentLink(''); setParentError('')
     setConfirmPlan(planCode)
   }
   async function applyCode() {
@@ -570,6 +600,14 @@ export default function UserDashboard() {
       {/* main */}
       <div className="md:ms-64">
         <main ref={mainRef} className="max-w-3xl mx-auto px-4 md:px-8 py-8 pb-28 md:pb-12 space-y-5">
+
+          {user && !user.email_confirmed_at && !justVerified && (
+            <div className="rounded-xl bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 text-sm flex items-center justify-between gap-3">
+              <span>{b.verifyNote}</span>
+              <button disabled={verifySent} onClick={async () => { await supabase.auth.resend({ type: 'signup', email: user.email }); setVerifySent(true) }}
+                className="shrink-0 underline disabled:opacity-60 disabled:no-underline">{verifySent ? b.verifySent : b.verifyResend}</button>
+            </div>
+          )}
 
           {justVerified && (
             <div className="rounded-xl bg-teal/10 border border-teal/30 text-teal px-4 py-3 text-sm flex items-center justify-between">
@@ -975,6 +1013,25 @@ export default function UserDashboard() {
                 <a href="https://shop.etijahcoaching.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">{b.agreePrivacy}</a>.
               </span>
             </label>
+            {canAskParent && (
+              <div className="mt-5 rounded-xl border border-[var(--line)] bg-lightblue px-4 py-3">
+                <p className="text-sm font-semibold text-charcoal">{b.parentHead}</p>
+                <p className="text-xs text-charcoal/60 mt-1 leading-relaxed">{b.parentSub}</p>
+                {parentLink ? (
+                  <div className="mt-2">
+                    <input readOnly value={parentLink} dir="ltr" onFocus={e => e.currentTarget.select()}
+                      className="w-full border border-[var(--line-strong)] rounded-lg px-2.5 py-1.5 text-xs font-mono bg-white" />
+                    <p className="text-xs text-emerald-700 mt-1.5">{b.parentCopied}</p>
+                    <button onClick={() => navigator.clipboard?.writeText(parentLink).catch(() => {})}
+                      className="mt-1.5 text-xs underline text-primary">{b.parentCopy}</button>
+                  </div>
+                ) : (
+                  <button onClick={askParent} disabled={parentBusy || buying}
+                    className="mt-2 px-4 py-2 rounded-xl border border-[var(--line-strong)] bg-white text-sm font-medium disabled:opacity-40">{parentBusy ? '…' : b.parentBtn}</button>
+                )}
+                {parentError && <p className="text-xs text-red-500 mt-1.5">{parentError}</p>}
+              </div>
+            )}
             <div className="flex gap-3 mt-5 justify-end">
               <button onClick={() => { setConfirmPlan(null); resetCode() }} disabled={buying}
                 className="px-4 py-2.5 rounded-xl border border-[var(--line-strong)] text-charcoal/70 text-sm font-medium disabled:opacity-50">{b.agreeCancel}</button>

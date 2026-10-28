@@ -56,9 +56,10 @@ export default function SignupPage() {
       setLoading(false)
       return
     }
-    // Email confirmation switched off: Supabase signs the user in straight away, so go on instead of asking them to check email.
+    // Supabase signed the user in straight away (unverified sign-ins allowed; the confirmation email still goes out and the
+    // dashboard reminds them to verify), so go on to payment instead of asking them to check email first.
     if (data.session) {
-      window.location.href = `/${locale}/dashboard?verified=1${wantsPlans ? '&plans=1' : ''}`
+      window.location.href = `/${locale}/dashboard${wantsPlans ? '?plans=1' : ''}`
       return
     }
     setDone(true)

@@ -146,6 +146,18 @@ export function previewDiscount(planCode: PlanCode, code: string): Promise<Disco
     })
 }
 
+// Share-with-parent payment link (under-18 buyers)
+export type ParentLinkInfo = { plan_name: string; amount: number; currency: string; child_first_name: string; locale: string }
+export const getParentLinkEligibility = () => apiAuthGet<{ eligible: boolean }>('/billing/parent-link/eligible')
+export const createParentLink = (planCode: PlanCode) =>
+    apiAuthPost<{ url: string; expires_in_days: number }>('/billing/parent-link', {
+        plan_code: planCode,
+        locale: typeof window !== 'undefined' && /^\/ar(\/|$)/.test(window.location.pathname) ? 'ar' : 'en',
+        currency: readCurrencyCookie() ?? 'SAR',
+    })
+export const getParentLink = (token: string) => apiGet<ParentLinkInfo>(`/billing/parent-link/${token}`)
+export const payParentLink = (token: string) => apiPost<{ checkout_url: string }>(`/billing/parent-link/${token}/checkout`, {})
+
 export async function apiAuthDelete<T>(path: string): Promise<T> {
     const res = await requestWithRetry(path, { method: 'DELETE' }, authHeader)
     return asJson<T>(res)
