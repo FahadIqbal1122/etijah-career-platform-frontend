@@ -29,7 +29,7 @@ export const L = {
       trust: '15 years of coaching, now in your hands. · Etijahi — by Etijah Coaching & Consulting',
       cta: 'Find My Direction',
 // previous: microcopy: 'Free assessment and initial results. Full report available at the {price} launch price. No card needed to start.',
-      microcopy: 'Take the assessment in about 15 minutes. Full report at the {price} launch price. No card needed to start.',
+      microcopy: 'Take the assessment in about 15 minutes. Full report at the {price} launch price.',
       secondary: 'See a sample report ↗',
       viewPackages: 'View packages',
       preview: {
@@ -380,7 +380,7 @@ export const L = {
       trust: '١٥ عاماً من الخبرة، بين يديك. · إتجاهي — من اتجاه للإرشاد والاستشارات',
       cta: 'اكتشف إتجاهي',
 // previous: microcopy: 'التقييم والنتائج الأولية مجاناً. التقرير الكامل بسعر الإطلاق {price}. لا تحتاج إلى بطاقة دفع للبدء.',
-      microcopy: 'أكمل التقييم في نحو ١٥ دقيقة. التقرير الكامل بسعر الإطلاق {price}. لا تحتاج إلى بطاقة دفع للبدء.',
+      microcopy: 'أكمل التقييم في نحو ١٥ دقيقة. التقرير الكامل بسعر الإطلاق {price}.',
       secondary: 'اطّلع على نموذج التقرير ↗',
       viewPackages: 'عرض الباقات',
       preview: {

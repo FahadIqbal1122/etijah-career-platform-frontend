@@ -55,8 +55,8 @@ export const LANDING_SUGGESTIONS: Suggestion[] = [
               ar: 'يستغرق التقييم عادةً من ١٢ إلى ١٥ دقيقة. يغطي خمسة جوانب: ميولك وقيمك ونقاط قوتك وشخصيتك وأسلوب عملك. لا توجد إجابات صحيحة أو خاطئة، وهو متاح بالعربية والإنجليزية. يمكنك البدء من زر «ابدأ» في هذه الصفحة.' } },
   // { en: 'What do I get for free?', ar: 'ماذا أحصل عليه مجاناً؟' },
   { en: 'What do the plans cost?', ar: 'كم تكلفة الباقات؟',
-    answer: { en: 'Explorer is free, with no card needed. Pathfinder, the full personalised report, is 59 SAR at the launch price (99 SAR standard), a one-time payment with no subscription. Launchpad is 330 SAR at the launch price (440 SAR standard) and adds an individual session with a coach.',
-              ar: 'باقة المستكشف مجانية ولا تحتاج إلى بطاقة. باقة المسار، وهي التقرير الكامل المخصص، بسعر ٥٩ ريالاً سعودياً في عرض الإطلاق (السعر المعتاد ٩٩ ريالاً)، بدفعة واحدة ودون اشتراك. أما باقة الانطلاق فبسعر ٣٣٠ ريالاً في عرض الإطلاق (السعر المعتاد ٤٤٠ ريالاً) وتضيف جلسة فردية مع مدرّب.' } },
+    answer: { en: 'Pathfinder, the full personalised assessment and report, is 59 SAR at the launch price (99 SAR standard), a one-time payment with no subscription. Launchpad is 330 SAR at the launch price (440 SAR standard) and adds an individual session with a coach.',
+              ar: 'باقة المسار، وهي التقييم والتقرير الكامل المخصص، بسعر ٥٩ ريالاً سعودياً في عرض الإطلاق (السعر المعتاد ٩٩ ريالاً)، بدفعة واحدة ودون اشتراك. أما باقة الانطلاق فبسعر ٣٣٠ ريالاً في عرض الإطلاق (السعر المعتاد ٤٤٠ ريالاً) وتضيف جلسة فردية مع مدرّب.' } },
   { en: 'Is my data private?', ar: 'هل بياناتي خاصة؟',
     answer: { en: 'Yes. Your data is stored securely and is never sold to third parties. Your profile and results belong to you.',
               ar: 'نعم. تُحفظ بياناتك بشكل آمن ولا تُباع لأي جهة خارجية. ملفك الشخصي ونتائجك ملك لك.' } },
@@ -163,7 +163,7 @@ export const LANDING_ROAM: Record<string, Bi[]> = {
     { en: 'It looks at you from five angles: interests, values, strengths, personality and work style.', ar: 'ينظر إليك من خمس زوايا: الاهتمامات والقيم ونقاط القوة والشخصية وأسلوب العمل.' },
   ],
   how: [
-    { en: 'Three simple steps. You can do the first one right now, for free.', ar: 'ثلاث خطوات بسيطة. يمكنك البدء بالأولى الآن مجاناً.' },
+    { en: 'Three simple steps. You can start the first one right now.', ar: 'ثلاث خطوات بسيطة. يمكنك البدء بالأولى الآن.' },
     { en: 'It is available in Arabic and English, and so is the report.', ar: 'متوفر بالعربية والإنجليزية، وكذلك التقرير.' },
   ],
   report: [
@@ -187,7 +187,7 @@ export const LANDING_ROAM: Record<string, Bi[]> = {
 
 // Shown as buttons in her bubble when she stops at the plans: each one opens the chat and asks that question.
 export const PLAN_CHOICES: { label: Bi; ask: Bi; answer?: Bi }[] = [
-  { label: { en: 'Just exploring', ar: 'أستكشف فقط' }, ask: { en: 'I’m just exploring. Which plan fits me?', ar: 'أنا أستكشف فقط. أي باقة تناسبني؟' }, answer: { en: 'Then Explorer is the place to start. It is free, with no card needed: the full assessment, your personality profile with strengths and values, your top 3 matched career paths and a preview of how AI may affect them. You can upgrade later if you want more.', ar: 'إذن ابدأ بباقة المستكشف. وهي مجانية دون بطاقة: التقييم الكامل، وملفك الشخصي بنقاط قوتك وقيمك، وأفضل ٣ مسارات مهنية مناسبة لك، ومعاينة لتأثير الذكاء الاصطناعي عليها. ويمكنك الترقية لاحقاً إن أردت المزيد.' } },
+  { label: { en: 'Just exploring', ar: 'أستكشف فقط' }, ask: { en: 'I’m just exploring. Which plan fits me?', ar: 'أنا أستكشف فقط. أي باقة تناسبني؟' }, answer: { en: 'Then start with Pathfinder. You begin the assessment, see your first result, then create an account and unlock the rest. It is 59 SAR at the launch price (99 SAR standard), a one-time payment with no subscription. You get your personality profile with strengths and values, your matched career paths and how AI may affect them.', ar: 'إذن ابدأ بباقة المسار. تبدأ التقييم وترى أول نتيجة، ثم تنشئ حساباً وتفتح بقية التقييم. سعرها ٥٩ ريالاً في عرض الإطلاق (السعر المعتاد ٩٩ ريالاً)، بدفعة واحدة ودون اشتراك. وتحصل على ملفك الشخصي بنقاط قوتك وقيمك، ومساراتك المهنية المناسبة، وكيف قد يؤثر الذكاء الاصطناعي عليها.' } },
   { label: { en: 'I want the full plan', ar: 'أريد الخطة الكاملة' }, ask: { en: 'I want the full plan and live job listings. Which plan fits me?', ar: 'أريد الخطة الكاملة وقوائم الوظائف الحية. أي باقة تناسبني؟' }, answer: { en: 'Pathfinder fits that. It is 59 SAR at the launch price (99 SAR standard), a one-time payment with no subscription. It adds a deeper explanation of your career paths, skills to develop, courses and certifications, and a personalised 90-day plan. Coaching is not included.', ar: 'باقة المسار تناسبك. سعرها ٥٩ ريالاً في عرض الإطلاق (السعر المعتاد ٩٩ ريالاً)، بدفعة واحدة ودون اشتراك. تضيف شرحاً أعمق لمساراتك المهنية، والمهارات التي تنمّيها، والدورات والشهادات، وخطة شخصية لـ٩٠ يوماً. ولا تتضمن جلسة تدريب.' } },
   { label: { en: 'I want a coach', ar: 'أريد مدرّباً' }, ask: { en: 'I want to talk my results through with a coach. Which plan fits me?', ar: 'أريد مناقشة نتائجي مع مدرّب. أي باقة تناسبني؟' }, answer: { en: 'Launchpad fits that. It is 330 SAR at the launch price (440 SAR standard) and includes the full report plus an individual session with a coach to talk your results through. For details about the session, the team can help at info@myetijahi.com.', ar: 'باقة الانطلاق تناسبك. سعرها ٣٣٠ ريالاً في عرض الإطلاق (السعر المعتاد ٤٤٠ ريالاً) وتشمل التقرير الكامل وجلسة فردية مع مدرّب لمناقشة نتائجك. وللاستفسار عن تفاصيل الجلسة يسعد فريقنا بمساعدتك عبر info@myetijahi.com.' } },
 ]

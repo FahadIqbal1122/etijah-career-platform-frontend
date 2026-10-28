@@ -3914,7 +3914,10 @@ export default function AdminPage() {
   // Every payment before 8 Oct 2026 was a test, and so are PATHFINDER_TEST_AMOUNT charges (0.1 BHD) at any time:
   // both are hidden from Sales.
   // Individual test orders made after go-live (matched by buyer email), also hidden.
-  const TEST_SALE_EMAILS = ['parental.newt.xvyt@hidingpost.com'] // "testing final", 13 Oct 2026
+  const TEST_SALE_EMAILS = [
+    'parental.newt.xvyt@hidingpost.com', // "testing final", 13 Oct 2026
+    'fahadiqbalmohammad@gmail.com', // "Test payment", 27 Oct 2026
+  ]
   const isTestSale = (t: SaleEntry) =>
     new Date(t.paid_at || t.created_at) < SALES_REAL_FROM || (t.currency === 'BHD' && Number(t.amount) <= 0.1)
     || TEST_SALE_EMAILS.includes((t.email || '').trim().toLowerCase())

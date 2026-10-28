@@ -70,7 +70,7 @@ const NAV: { id: string; icon: string; en: string; ar: string; locked?: boolean 
 
 const T = {
   en: {
-    welcome: 'Welcome back,', explorer: 'Explorer', preview: 'Preview',
+    welcome: 'Welcome back,', explorer: 'No plan yet', preview: 'Preview',
     reportReadyEyebrow: 'Your report', reportReadyHead: 'Your full report is ready',
     reportReadySub: 'Career matches · AI impact · plan · courses · certifications',
     reportReadyHeadFree: 'Your report is ready', reportReadySubFree: 'Your top career matches and your profile',
@@ -80,7 +80,7 @@ const T = {
     fullReadySub: 'Your plan, courses, certifications and the AI-impact analysis are now unlocked.',
     viewReport: 'View report', download: 'Download PDF', downloading: 'Downloading…',
     downloadAr: 'Download Arabic PDF', downloadEn: 'Download English PDF',
-    noReportHead: 'You haven’t taken the assessment yet', noReportSub: 'It takes about 15 minutes and it’s free.',
+    noReportHead: 'You haven’t taken the assessment yet', noReportSub: 'It takes about 15 minutes.',
     startAssessment: 'Start the assessment',
     statCompleted: 'Assessment completed', statMatch: 'Top career match', statType: 'Strongest interest type', statRetake: 'Recommended retake',
     jobsHead: 'Job Matches', jobsLockedHead: 'Daily job matching is coming', notBuilt: 'Not available yet',
@@ -93,7 +93,7 @@ const T = {
     whatsappHead: 'WhatsApp delivery', whatsappBody: 'Job matches and updates delivered straight to WhatsApp — coming soon.',
     outreachHead: 'Outreach lists', outreachBody: 'Your full target list of 50+ companies with personalised outreach emails — coming soon.',
     interviewHead: 'Interview practice', interviewBody: 'Unlimited mock interviews with role-specific questions and scored feedback — coming soon.',
-    billingHead: 'Subscription & billing', currentPlan: 'Current plan', free: 'Free', always: 'Always',
+    billingHead: 'Subscription & billing', currentPlan: 'Current plan', free: 'Full report not unlocked', always: '',
     upgradeSoon: 'Paid tiers coming soon', paymentLabel: 'Payment methods',
     notifHead: 'Notifications', notifSub: 'Choose what we send you. (Preview — not saved yet.)',
     accountHead: 'Account', fName: 'Name', fEmail: 'Email', fCountry: 'Country', fLang: 'Language',
@@ -101,7 +101,7 @@ const T = {
     signOut: 'Sign out',
   },
   ar: {
-    welcome: 'مرحباً بعودتك،', explorer: 'المُكتشِف', preview: 'معاينة',
+    welcome: 'مرحباً بعودتك،', explorer: 'بدون باقة بعد', preview: 'معاينة',
     reportReadyEyebrow: 'تقريرك', reportReadyHead: 'تقريرك الكامل جاهز',
     reportReadySub: 'مسارات مهنية · أثر الذكاء الاصطناعي · خطة · دورات · شهادات',
     reportReadyHeadFree: 'تقريرك جاهز', reportReadySubFree: 'أفضل مساراتك المهنية وملفّك الشخصي',
@@ -111,7 +111,7 @@ const T = {
     fullReadySub: 'خطتك والدورات والشهادات وتحليل أثر الذكاء الاصطناعي أصبحت متاحة الآن.',
     viewReport: 'عرض التقرير', download: 'تحميل PDF', downloading: 'جاري التحميل…',
     downloadAr: 'تحميل النسخة العربية PDF', downloadEn: 'تحميل النسخة الإنجليزية PDF',
-    noReportHead: 'لم تُجرِ التقييم بعد', noReportSub: 'يستغرق حوالي ١٥ دقيقة وهو مجاني.',
+    noReportHead: 'لم تُجرِ التقييم بعد', noReportSub: 'يستغرق حوالي ١٥ دقيقة.',
     startAssessment: 'ابدأ التقييم',
     statCompleted: 'اكتمل التقييم', statMatch: 'أفضل مسار مهني', statType: 'أقوى نوع اهتمام', statRetake: 'إعادة التقييم المقترحة',
     jobsHead: 'الوظائف المطابقة', jobsLockedHead: 'المطابقة اليومية للوظائف قادمة', notBuilt: 'غير متاحة بعد',
@@ -124,7 +124,7 @@ const T = {
     whatsappHead: 'التسليم عبر واتساب', whatsappBody: 'فرص العمل والتحديثات تصل مباشرة إلى واتساب — قريباً.',
     outreachHead: 'قوائم التواصل', outreachBody: 'قائمتك الكاملة (+٥٠ شركة) مع رسائل تواصل مخصصة — قريباً.',
     interviewHead: 'تدريب المقابلات', interviewBody: 'تدريب غير محدود على المقابلات بأسئلة مخصصة لكل وظيفة وتقييم دقيق — قريباً.',
-    billingHead: 'الاشتراك والفوترة', currentPlan: 'الباقة الحالية', free: 'مجاناً', always: 'دائماً',
+    billingHead: 'الاشتراك والفوترة', currentPlan: 'الباقة الحالية', free: 'التقرير الكامل غير مفعّل', always: '',
     upgradeSoon: 'الباقات المدفوعة قريباً', paymentLabel: 'وسائل الدفع',
     notifHead: 'الإشعارات', notifSub: 'اختر ما نرسله إليك. (معاينة — غير محفوظة بعد.)',
     accountHead: 'الحساب', fName: 'الاسم', fEmail: 'البريد الإلكتروني', fCountry: 'الدولة', fLang: 'اللغة',
