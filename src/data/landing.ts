@@ -20,7 +20,8 @@ export const L = {
     },
     // ── HERO ──────────────────────────────────────────────────────────
     hero: {
-      eyebrow: 'While everyone else seems sure… you’re still asking which way to go?',
+      // previous: eyebrow: 'While everyone else seems sure… you’re still asking which way to go?',
+      eyebrow: 'Unsure which major to choose? Unsure how to get your dream job?',
       headline: ['You don’t need another test', 'You need a direction'],
       hl: 'direction',
       sub: 'That hesitation isn’t a weakness. It’s the right question, and it deserves more than a personality quiz. We put 15 years of real career guidance from across the Gulf in your hands, grounded in the customs and traditions of the region, with the clarity to see which paths will still be standing as AI reshapes the world of work. You won’t figure it out alone.',
@@ -371,7 +372,8 @@ export const L = {
       arrow: '←',
     },
     hero: {
-      eyebrow: 'بينما يبدو الجميع واثقين من خطواتهم… ما زلت تتساءل: إلى أين أتجه؟',
+      // previous: eyebrow: 'بينما يبدو الجميع واثقين من خطواتهم… ما زلت تتساءل: إلى أين أتجه؟',
+      eyebrow: 'لست متأكداً أي تخصص تختار؟ لست متأكداً كيف تصل إلى وظيفة أحلامك؟',
       headline: ['لست بحاجة إلى اختبار آخر', 'أنت بحاجة إلى اتجاه'],
       hl: 'اتجاه',
       sub: 'حيرتك ليست ضعفاً، بل هو السؤال الصحيح الذي تبحث عنه، وهو سؤال يستحق إجابة أعمق بكثير من مجرد "اختبار شخصية" عابر. لقد وضعنا بين يديك خلاصة ١٥ عاماً من التوجيه المهني الحقيقي والمبني على واقع منطقتنا الخليجية بعاداتها وتقاليدها، لنمنحك رؤية واضحة تُمكّنك من معرفة المسارات المهنية التي ستظل صامدة ومزدهرة في ظل تشكيل الذكاء الاصطناعي لملامح سوق العمل المستقبلي. لن تخوض هذه الرحلة بمفردك.',
