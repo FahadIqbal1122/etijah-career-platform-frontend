@@ -295,7 +295,7 @@ export const L = {
         body: 'To interpret your results, pressure-test a decision, or plan your move — because sometimes you just want a person in the room.',
       },
 // previous: reassure: 'Not sure which tier is right? Begin with Explorer — no cost, no card, no commitment. Your results will make the next step obvious.',
-      reassure: 'Not sure which option is right for you? Explore our report and report-plus-coaching packages to find the option that best suits your needs.',
+      reassure: 'Not sure which plan is right? Pathfinder gives you the full report. Launchpad adds a one-to-one coaching session on top of it.',
     },
     // ── SECTION 11 — FOR INSTITUTIONS ─────────────────────────────────
     institutions: {
@@ -635,7 +635,7 @@ export const L = {
         body: 'لتحليل نتائجك بدقة، أو اختبار مدى صحة قرار مصيري، أو التخطيط لخطوتك القادمة — لأننا نعرف أنه في بعض الأحيان، كل ما تحتاجه هو وجود شخص حقيقي ينصت إليك ويوجهك.',
       },
 // previous: reassure: 'لست متأكداً من الباقة المناسبة؟ ابدأ بباقة «مستكشف» — دون رسوم، ودون بطاقة، ودون التزام. ونتائجك ستجعل الخطوة التالية واضحة.',
-      reassure: 'لست متأكداً من الخيار المناسب لك؟ تعرّف على باقة التقرير وباقة التقرير مع جلسة التوجيه لتجد الأنسب لاحتياجاتك.',
+      reassure: 'لست متأكداً من الباقة المناسبة؟ باقة التقرير الكامل تمنحك التقرير كاملاً، وباقة «منصة الانطلاق» تضيف إليه جلسة توجيه فردية.',
     },
     institutions: {
       label: 'للمؤسسات',
