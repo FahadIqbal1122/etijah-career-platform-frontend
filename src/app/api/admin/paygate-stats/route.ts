@@ -5,7 +5,7 @@ const BACKEND = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 export async function GET(req: NextRequest) {
     const token = req.cookies.get('admin_session')?.value
     if (!token) return NextResponse.json({ error: 'Not Authenticated' }, { status: 401 })
-    const res = await fetch(`${BACKEND}/admin/paygate-stats`, {
+    const res = await fetch(`${BACKEND}/admin/paygate-stats${req.nextUrl.search}`, {
         headers: { Authorization: `Bearer ${token}` },
     })
     return backendJsonResponse(res)

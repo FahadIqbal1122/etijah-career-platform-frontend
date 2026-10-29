@@ -1981,9 +1981,16 @@ export default function AdminPage() {
     }
   }, [])
 
+  // Follows the dashboard's From/To dates so it agrees with the tiles beside it.
   const fetchGateStats = useCallback(async () => {
-    try { const r = await fetch('/api/admin/paygate-stats'); if (r.ok) setGateStats(await r.json()) } catch { /* best-effort */ }
-  }, [])
+    try {
+      const qs = new URLSearchParams()
+      if (dashFrom) qs.set('since', new Date(`${dashFrom}T00:00:00`).toISOString())
+      if (dashTo) qs.set('until', new Date(new Date(`${dashTo}T00:00:00`).getTime() + 86400000).toISOString())
+      const r = await fetch(`/api/admin/paygate-stats?${qs}`)
+      if (r.ok) setGateStats(await r.json())
+    } catch { /* best-effort */ }
+  }, [dashFrom, dashTo])
   useEffect(() => {
     if (authed && activeTab === 'liveDashboard') fetchGateStats()
   }, [authed, activeTab, fetchGateStats])
@@ -4884,10 +4891,10 @@ export default function AdminPage() {
                       unfinished rows: answers saved at the pay gate by people who have not paid or finished yet.
                   <BetaStatTile label="Assessments submitted" accent="#2a78d6" spark={submissionsTrend.map(p => p.value)} value={String(dashSubmissions.length)} sublabel={`${dashSubmissions.filter(sub => sub.completed).length} completed`} onClick={() => setActiveTab('liveSubmissions')} />
                   */}
-                  <BetaStatTile label="Assessments completed" accent="#2a78d6" spark={submissionsTrend.map(p => p.value)} value={String(dashSubmissions.filter(sub => sub.completed).length)} sublabel={`+${dashSubmissions.filter(sub => !sub.completed).length} saved at pay gate, not finished`} onClick={() => setActiveTab('liveSubmissions')} />
-                  <BetaStatTile label="Reached pay gate" accent="#0e7490" value={String(gateStats.reached)} sublabel={gateStats.started ? `${Math.round(gateStats.reached / gateStats.started * 100)}% of starters` : 'Hit the paywall after chapter 2'} />
+                  <BetaStatTile label="Assessments completed" accent="#2a78d6" spark={submissionsTrend.map(p => p.value)} value={String(dashSubmissions.filter(sub => sub.completed).length)} sublabel={`+${dashSubmissions.filter(sub => !sub.completed).length} unfinished (answers saved at the pay gate)`} onClick={() => setActiveTab('liveSubmissions')} />
+                  <BetaStatTile label="Reached pay gate" accent="#0e7490" value={String(gateStats.reached)} sublabel={gateStats.reached === 0 ? 'Live counting began 29 Oct; earlier visits not recorded' : `${Math.round(gateStats.reached / Math.max(gateStats.started, 1) * 100)}% of starters`} />
                   <BetaStatTile label="Gate → paid" accent="#008300" value={gateStats.reached ? `${Math.round(dashPaidSales.length / gateStats.reached * 100)}%` : '—'} sublabel={`${gateStats.pay_clicked} clicked pay · ${dashPaidSales.length} paid`} />
-                  <BetaStatTile label="Dropped off" accent="#eda100" value={String(abandonedList.filter(a => inDashDateRange(a.last_activity_at)).length)} sublabel="Started the assessment, never finished" onClick={() => { fetchAbandoned(); setActiveTab('abandoned') }} />
+                  <BetaStatTile label="Dropped off" accent="#eda100" value={String(abandonedList.filter(a => inDashDateRange(a.last_activity_at)).length)} sublabel="Gave an email and started, never completed (before or at the pay gate)" onClick={() => { fetchAbandoned(); setActiveTab('abandoned') }} />
                   {/* Moved under "Who's testing" and now shows careers rejected ("Not for me") instead of careers recommended:
                   <BetaStatTile label="Careers recommended" accent="#e87ba4" value={String(dashCareerRecs.length)} sublabel="Users who received career matches" onClick={() => setActiveTab('liveCareerRecs')} />
                   */}
