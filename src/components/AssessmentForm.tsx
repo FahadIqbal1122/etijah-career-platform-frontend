@@ -894,6 +894,7 @@ export default function AssessmentForm() {
   // and goes to the first question not answered yet.
   function onGateUnlocked(serverAnswers: Record<string, any> | null) {
     gatePassedRef.current = true
+    pushTelemetry({ event_type: 'gate_passed' }); flushTelemetry()
     try { window.localStorage.removeItem('assessment:atGate') } catch { /* ignore */ }
     const restoring = restoreOnUnlockRef.current || Object.keys(answersRef.current).length === 0
     if (!restoring) { proceedAfterReveal(); return }

@@ -1579,7 +1579,7 @@ export default function AdminPage() {
   type OrgDomain = { id: string; domain: string; org_name: string | null; plan_code: string; seat_limit: number; seats_used: number; seats_completed?: number; expires_at: string | null; active: boolean; grants: OrgGrant[] }
   const [orgDomains, setOrgDomains] = useState<OrgDomain[]>([])
   const [orgLoading, setOrgLoading] = useState(false)
-  const [gateStats, setGateStats] = useState({ started: 0, reached: 0, pay_clicked: 0 })
+  const [gateEvents, setGateEvents] = useState<{ event_type: string; session_id: string; created_at: string }[]>([])
   const [orgSaving, setOrgSaving] = useState(false)
   const [orgError, setOrgError] = useState('')
   const [orgOpen, setOrgOpen] = useState<string | null>(null)
@@ -1989,8 +1989,8 @@ export default function AdminPage() {
       const qs = new URLSearchParams()
       if (dashFrom) qs.set('since', new Date(`${dashFrom}T00:00:00`).toISOString())
       if (dashTo) qs.set('until', new Date(new Date(`${dashTo}T00:00:00`).getTime() + 86400000).toISOString())
-      const r = await fetch(`/api/admin/paygate-stats?${qs}`)
-      if (r.ok) setGateStats(await r.json())
+      const r = await fetch(`/api/admin/paygate-events?${qs}`)
+      if (r.ok) setGateEvents((await r.json()).events ?? [])
     } catch { /* best-effort */ }
   }, [dashFrom, dashTo])
   useEffect(() => {
@@ -3983,8 +3983,6 @@ export default function AdminPage() {
   const dashPaidSales = dashRealSales.filter(isPaidSale)
   // People at the pay gate = accounts whose answers were saved there and who have not finished. That is the only record from
   // before live tracking began, so it is the floor; the tracked count (which also sees people who never made an account) wins when higher.
-  const dashUnfinishedAtGate = dashSubmissions.filter(sub => !sub.completed).length
-  const dashReachedGate = Math.max(gateStats.reached, dashUnfinishedAtGate)
   const dashCoachingSales = dashPaidSales.filter(t => t.coaching_included)
   const dashExplorerCount = dashSubmissions.filter(s => s.completed && !livePaidEmails.has(emailKey(s.email))).length
   const dashRevenueByCurrency = new Map<string, number>()
@@ -4059,12 +4057,45 @@ export default function AdminPage() {
   const shortDay = (k: string) => new Date(`${k}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
   const submissionsTrend = trendDays120.map(k => ({ label: shortDay(k), value: subsPerDay.get(k) || 0 }))
   const salesTrend = trendDays120.map(k => ({ label: shortDay(k), value: salesPerDay.get(k) || 0 }))
+  // ── Pay gate funnel ──────────────────────────────────────────────────────────
+  // Tracked events (gate_reached / gate_pay_click / gate_passed) exist from GATE_TRACKING_FROM. Gate-era days before that are
+  // estimated: people who saved answers at the gate and stopped (unfinished rows) + paid orders. Days before the gate went live count nothing.
+  const GATE_LIVE_FROM = '2026-10-28'
+  const GATE_TRACKING_FROM = '2026-10-29'
+  const gateEvPerDay = (type: string) => {
+    const m = new Map<string, number>()
+    for (const e of gateEvents) if (e.event_type === type) { const k = dayKey(e.created_at); m.set(k, (m.get(k) || 0) + 1) }
+    return m
+  }
+  const gTrReached = gateEvPerDay('gate_reached'), gTrClicked = gateEvPerDay('gate_pay_click'), gTrPassed = gateEvPerDay('gate_passed')
+  const unfinishedRows = dashSubmissions.filter(sub => !sub.completed)
+  const unfinishedPerDay = new Map<string, number>()
+  for (const u of unfinishedRows) { const k = dayKey(u.created_at); unfinishedPerDay.set(k, (unfinishedPerDay.get(k) || 0) + 1) }
+  const gateDay = trendDays.map(k => {
+    const paid = salesPerDay.get(k) || 0, stopped = unfinishedPerDay.get(k) || 0
+    const live = k >= GATE_LIVE_FROM
+    const passed = Math.max(gTrPassed.get(k) || 0, live ? paid : 0)
+    const clicked = Math.max(gTrClicked.get(k) || 0, live ? paid : 0)
+    const reached = Math.max(gTrReached.get(k) || 0, live ? stopped + paid : 0, passed, clicked)
+    return { key: k, reached, clicked, passed, estimated: live && k < GATE_TRACKING_FROM }
+  })
+  const dashReachedGate = gateDay.reduce((n, d) => n + d.reached, 0)
+  const dashPassedGate = gateDay.reduce((n, d) => n + d.passed, 0)
+  const dashClickedPay = gateDay.reduce((n, d) => n + d.clicked, 0)
+  const dashStoppedAtGate = Math.max(0, dashReachedGate - dashPassedGate)
+  const dashStartedAssessment = Math.max(gateEvents.filter(e => e.event_type === 'session_start').length, dashSubmissions.length)
+  const gateReachedTrend = trendDays120.map(k => ({ label: shortDay(k), value: gateDay.find(d => d.key === k)?.reached || 0 }))
+  const gatePassedTrend = trendDays120.map(k => ({ label: shortDay(k), value: gateDay.find(d => d.key === k)?.passed || 0 }))
+  const gateHasEstimates = gateDay.some(d => d.estimated && d.reached > 0)
   // Hour-of-day distribution (viewer's local time), respects the dashboard filters
   const hourLabel = (h: number) => `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? ' AM' : ' PM'}`
   const hourSubs = subsHourDay ? dashSubmissions.filter(s => dayKey(s.created_at) === subsHourDay) : dashSubmissions
   // 3-hour windows: 12–3 AM, 3–6 AM, ... 9 PM–12 AM
   const subsPerWindow = Array.from({ length: 8 }, () => 0)
   for (const s of hourSubs) subsPerWindow[Math.floor(new Date(s.created_at).getHours() / 3)]++
+  const gateWindows = Array.from({ length: 8 }, () => 0)
+  for (const e of gateEvents) if (e.event_type === 'gate_reached') gateWindows[Math.floor(new Date(e.created_at).getHours() / 3)]++
+  const gateHourTrend = gateWindows.map((v, w) => ({ label: `${hourLabel(w * 3)} – ${hourLabel((w * 3 + 3) % 24)}`, value: v }))
   const hourlyTrend = subsPerWindow.map((v, w) => ({ label: `${hourLabel(w * 3)} – ${hourLabel((w * 3 + 3) % 24)}`, value: v }))
   const subByIdAll = new Map(submissions.map(s => [s.id, s]))
   const fbByResponseAll = new Map(betaFeedbackList.map(b => [b.response_id, b]))
@@ -4884,6 +4915,85 @@ export default function AdminPage() {
           <>
             {activeTab === 'liveDashboard' && (
               <div className="mb-6">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">Pay gate · after chapter 2</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <BetaStatTile label="Reached the gate" accent="#0e7490" value={String(dashReachedGate)} sublabel={dashStartedAssessment ? `${Math.round(dashReachedGate / dashStartedAssessment * 100)}% of ${dashStartedAssessment} who started` : 'People who got to the pay screen'} />
+                  <BetaStatTile label="Passed the gate" accent="#008300" value={String(dashPassedGate)} sublabel="Paid, company seat or admin access" onClick={() => setActiveTab('liveSales')} />
+                  <BetaStatTile label="Stopped at the gate" accent="#eda100" value={String(dashStoppedAtGate)} sublabel="Reached it and did not pass" />
+                  <BetaStatTile label="Gate → passed" accent="#6250d6" value={dashReachedGate ? `${Math.round(dashPassedGate / dashReachedGate * 100)}%` : '—'} sublabel={`${dashClickedPay} clicked pay`} />
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mt-4">
+                  <p className="text-sm font-semibold text-slate-700">Funnel</p>
+                  <p className="text-xs text-slate-400 mb-3">Each bar is a share of everyone who started the assessment</p>
+                  {[
+                    { label: 'Started the assessment', n: dashStartedAssessment },
+                    { label: 'Reached the pay gate', n: dashReachedGate },
+                    { label: 'Clicked pay', n: dashClickedPay },
+                    { label: 'Passed the gate', n: dashPassedGate },
+                    { label: 'Completed the assessment', n: dashSubmissions.filter(sub => sub.completed).length },
+                  ].map((step, i, arr) => {
+                    const pct = dashStartedAssessment ? Math.min(100, Math.round(step.n / dashStartedAssessment * 100)) : 0
+                    const prev = i > 0 ? arr[i - 1].n : 0
+                    return (
+                      <div key={step.label} className="mb-2">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-slate-600">{step.label}</span>
+                          <span className="font-medium text-slate-800">{step.n} <span className="text-slate-400">({pct}%{i > 0 && prev > 0 && step.n <= prev ? ` · −${prev - step.n} from the step above` : ''})</span></span>
+                        </div>
+                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-cyan-700 rounded-full" style={{ width: `${pct}%` }} /></div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <p className="text-sm font-semibold text-slate-700">Reached the gate per day</p>
+                    <p className="text-xs text-slate-400 mb-2">Click a day to see who stopped</p>
+                    <TrendChart points={gateReachedTrend} kind="column" color="#0e7490" unit="people" onSelect={i => {
+                      const day = trendDays120[i]
+                      setDemoDrilldown({ title: `Stopped at the pay gate on ${shortDay(day)}`, people: unfinishedRows.filter(u => dayKey(u.created_at) === day).map(personFromSub) })
+                    }} />
+                  </div>
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <p className="text-sm font-semibold text-slate-700">Passed the gate per day</p>
+                    <p className="text-xs text-slate-400 mb-2">Went on after paying or with a company seat</p>
+                    <TrendChart points={gatePassedTrend} kind="column" color="#008300" unit="people" />
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mt-4">
+                  <p className="text-sm font-semibold text-slate-700">When people reach the gate <span className="font-normal text-slate-400">· 3-hour windows, tracked visits only</span></p>
+                  <TrendChart points={gateHourTrend} kind="line" color="#0e7490" unit="people" />
+                </div>
+                {gateHasEstimates && (
+                  <p className="text-xs text-slate-400 mt-2">Days from 28 Oct before live tracking began (29 Oct) are estimated from saved answers at the gate and paid orders. Earlier days are not counted.</p>
+                )}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mt-4">
+                  <p className="text-sm font-semibold text-slate-700">Stopped at the gate <span className="font-normal text-slate-400">· {unfinishedRows.length} people with an account</span></p>
+                  {unfinishedRows.length === 0 ? (
+                    <p className="text-sm text-slate-400 mt-2">Nobody in this date range.</p>
+                  ) : (
+                    <div className="mt-3 overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead><tr className="text-left text-xs text-slate-400"><th className="py-1 pr-4 font-medium">Name</th><th className="py-1 pr-4 font-medium">Email</th><th className="py-1 pr-4 font-medium">Country</th><th className="py-1 font-medium">Reached</th></tr></thead>
+                        <tbody>
+                          {[...unfinishedRows].sort((x, y) => y.created_at.localeCompare(x.created_at)).slice(0, 30).map(u => (
+                            <tr key={u.id} className="border-t border-slate-100">
+                              <td className="py-1.5 pr-4 text-slate-700">{u.full_name || '—'}</td>
+                              <td className="py-1.5 pr-4 text-slate-500">{u.email || '—'}</td>
+                              <td className="py-1.5 pr-4 text-slate-500">{u.country || '—'}</td>
+                              <td className="py-1.5 text-slate-400">{new Date(u.created_at).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {unfinishedRows.length > 30 && <p className="text-xs text-slate-400 mt-2">Showing the latest 30 of {unfinishedRows.length}.</p>}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {activeTab === 'liveDashboard' && (
+              <div className="mb-6">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">At a glance · since {LIVE_START.toLocaleDateString()}</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   <BetaStatTile label="Number of sales" accent="#1baf7a" spark={salesTrend.map(p => p.value)} value={String(dashPaidSales.length)} sublabel="Transactions (paid orders)" onClick={() => setActiveTab('liveSales')} />
@@ -4898,36 +5008,12 @@ export default function AdminPage() {
                   <BetaStatTile label="Assessments submitted" accent="#2a78d6" spark={submissionsTrend.map(p => p.value)} value={String(dashSubmissions.length)} sublabel={`${dashSubmissions.filter(sub => sub.completed).length} completed`} onClick={() => setActiveTab('liveSubmissions')} />
                   */}
                   <BetaStatTile label="Assessments completed" accent="#2a78d6" spark={submissionsTrend.map(p => p.value)} value={String(dashSubmissions.filter(sub => sub.completed).length)} sublabel={`+${dashSubmissions.filter(sub => !sub.completed).length} unfinished (stopped at the pay gate)`} onClick={() => setActiveTab('liveSubmissions')} />
-                  <BetaStatTile label="Reached pay gate" accent="#0e7490" value={String(dashReachedGate)} sublabel={`${dashUnfinishedAtGate} stopped here and did not finish`} />
-                  <BetaStatTile label="Gate → paid" accent="#008300" value={dashReachedGate ? `${Math.round(dashPaidSales.length / dashReachedGate * 100)}%` : '—'} sublabel={`${gateStats.pay_clicked} clicked pay · ${dashPaidSales.length} paid`} />
                   <BetaStatTile label="Dropped off" accent="#eda100" value={String(abandonedList.filter(a => inDashDateRange(a.last_activity_at)).length)} sublabel="Unique emails that started (autosaved or saved at the gate) and never finished. Includes those stopped at the pay gate. Starters with no email are not counted." onClick={() => { fetchAbandoned(); setActiveTab('abandoned') }} />
                   {/* Moved under "Who's testing" and now shows careers rejected ("Not for me") instead of careers recommended:
                   <BetaStatTile label="Careers recommended" accent="#e87ba4" value={String(dashCareerRecs.length)} sublabel="Users who received career matches" onClick={() => setActiveTab('liveCareerRecs')} />
                   */}
                   <BetaStatTile label="Feedback responses" accent="#eda100" value={String(dashFeedback.length)} sublabel={`F1 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage1').length} · F2 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'result').length} · F3 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage2').length} · Incomplete ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'started').length}`} onClick={() => setActiveTab('liveFeedback')} />
-                  <BetaStatTile label="Conversion rate" accent="#008300" value={dashSubmissions.length > 0 ? `${Math.round((dashPaidSales.length / dashSubmissions.length) * 100)}%` : '—'} sublabel="Paid orders ÷ assessments submitted" />
-                </div>
-                {/* Pay-gate funnel: sessions that started, hit the gate, clicked pay, and paid orders */}
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mt-4">
-                  <p className="text-sm font-semibold text-slate-700">Pay-gate funnel</p>
-                  <p className="text-xs text-slate-400 mb-3">Counts begin when gate tracking shipped; earlier gate visits were not recorded</p>
-                  {[
-                    { label: 'Started assessment', n: gateStats.started },
-                    { label: 'Reached pay gate', n: dashReachedGate },
-                    { label: 'Clicked pay', n: gateStats.pay_clicked },
-                    { label: 'Paid', n: dashPaidSales.length },
-                  ].map(step => {
-                    const pct = gateStats.started ? Math.min(100, Math.round(step.n / gateStats.started * 100)) : 0
-                    return (
-                      <div key={step.label} className="mb-2">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-slate-600">{step.label}</span>
-                          <span className="font-medium text-slate-800">{step.n} <span className="text-slate-400">({pct}%)</span></span>
-                        </div>
-                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-cyan-700 rounded-full" style={{ width: `${pct}%` }} /></div>
-                      </div>
-                    )
-                  })}
+                  <BetaStatTile label="Conversion rate" accent="#008300" value={dashReachedGate > 0 ? `${Math.round((dashPaidSales.length / dashReachedGate) * 100)}%` : '—'} sublabel="Paid orders ÷ people who reached the pay gate" />
                 </div>
                 {/* Company licences: organisations given free seats to test the paid report (Settings -> Organization Access) */}
                 {(() => {
