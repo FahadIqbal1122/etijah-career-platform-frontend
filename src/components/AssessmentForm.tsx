@@ -881,6 +881,7 @@ export default function AssessmentForm() {
   function continueFromReveal() {
     // After the Interests & Personality chapter new people create an account and pay before the rest.
     if (gateRequired && !gatePassedRef.current && revealMsg?.chapter === GATE_AFTER_CHAPTER) {
+      pushTelemetry({ event_type: 'gate_reached' }); flushTelemetry()
       setPhase('gate')
       setEnterKey(k => k + 1)
       return
@@ -1008,6 +1009,7 @@ export default function AssessmentForm() {
       if (err?.message === 'payment_required') {
         setGateRequired(true)
         setSubmitting(false)
+        pushTelemetry({ event_type: 'gate_reached' }); flushTelemetry()
         setPhase('gate')
         return
       }

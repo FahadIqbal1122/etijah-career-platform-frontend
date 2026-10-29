@@ -13,7 +13,7 @@ const FLUSH_INTERVAL_MS = 8000
 const FLUSH_BATCH_SIZE = 8
 const MOBILE_BREAKPOINT = 900 // matches globals.css's `@media (min-width: 900px)`
 
-export type TelemetryEventType = 'session_start' | 'question_view' | 'break_open' | 'break_activity'
+export type TelemetryEventType = 'session_start' | 'question_view' | 'break_open' | 'break_activity' | 'gate_reached' | 'gate_pay_click'
 
 export interface TelemetryEvent {
   event_type: TelemetryEventType

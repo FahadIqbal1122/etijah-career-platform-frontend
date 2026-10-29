@@ -1577,6 +1577,7 @@ export default function AdminPage() {
   type OrgDomain = { id: string; domain: string; org_name: string | null; plan_code: string; seat_limit: number; seats_used: number; seats_completed?: number; expires_at: string | null; active: boolean; grants: OrgGrant[] }
   const [orgDomains, setOrgDomains] = useState<OrgDomain[]>([])
   const [orgLoading, setOrgLoading] = useState(false)
+  const [gateStats, setGateStats] = useState({ started: 0, reached: 0, pay_clicked: 0 })
   const [orgSaving, setOrgSaving] = useState(false)
   const [orgError, setOrgError] = useState('')
   const [orgOpen, setOrgOpen] = useState<string | null>(null)
@@ -1979,6 +1980,13 @@ export default function AdminPage() {
       setOrgLoading(false)
     }
   }, [])
+
+  const fetchGateStats = useCallback(async () => {
+    try { const r = await fetch('/api/admin/paygate-stats'); if (r.ok) setGateStats(await r.json()) } catch { /* best-effort */ }
+  }, [])
+  useEffect(() => {
+    if (authed && activeTab === 'liveDashboard') fetchGateStats()
+  }, [authed, activeTab, fetchGateStats])
 
   // The dashboard's company-licences card reads the same list as the Organization Access tab
   useEffect(() => {
@@ -4870,12 +4878,36 @@ export default function AdminPage() {
                   <BetaStatTile label="Pathfinder plans sold" accent="#eb6834" value={String(dashPaidSales.length - dashCoachingSales.length)} sublabel="Paid report" onClick={() => setActiveTab('liveSales')} />
                   <BetaStatTile label="Launchpad plans sold" accent="#6250d6" value={String(dashCoachingSales.length)} sublabel="Report + 1:1 coaching" onClick={() => setActiveTab('liveCoaching')} />
                   <BetaStatTile label="Assessments submitted" accent="#2a78d6" spark={submissionsTrend.map(p => p.value)} value={String(dashSubmissions.length)} sublabel={`${dashSubmissions.filter(sub => sub.completed).length} completed`} onClick={() => setActiveTab('liveSubmissions')} />
+                  <BetaStatTile label="Reached pay gate" accent="#0e7490" value={String(gateStats.reached)} sublabel={gateStats.started ? `${Math.round(gateStats.reached / gateStats.started * 100)}% of starters` : 'Hit the paywall after chapter 2'} />
+                  <BetaStatTile label="Gate → paid" accent="#008300" value={gateStats.reached ? `${Math.round(dashPaidSales.length / gateStats.reached * 100)}%` : '—'} sublabel={`${gateStats.pay_clicked} clicked pay · ${dashPaidSales.length} paid`} />
                   <BetaStatTile label="Dropped off" accent="#eda100" value={String(abandonedList.filter(a => inDashDateRange(a.last_activity_at)).length)} sublabel="Started the assessment, never finished" onClick={() => { fetchAbandoned(); setActiveTab('abandoned') }} />
                   {/* Moved under "Who's testing" and now shows careers rejected ("Not for me") instead of careers recommended:
                   <BetaStatTile label="Careers recommended" accent="#e87ba4" value={String(dashCareerRecs.length)} sublabel="Users who received career matches" onClick={() => setActiveTab('liveCareerRecs')} />
                   */}
                   <BetaStatTile label="Feedback responses" accent="#eda100" value={String(dashFeedback.length)} sublabel={`F1 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage1').length} · F2 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'result').length} · F3 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage2').length} · Incomplete ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'started').length}`} onClick={() => setActiveTab('liveFeedback')} />
                   <BetaStatTile label="Conversion rate" accent="#008300" value={dashSubmissions.length > 0 ? `${Math.round((dashPaidSales.length / dashSubmissions.length) * 100)}%` : '—'} sublabel="Paid orders ÷ assessments submitted" />
+                </div>
+                {/* Pay-gate funnel: sessions that started, hit the gate, clicked pay, and paid orders */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mt-4">
+                  <p className="text-sm font-semibold text-slate-700">Pay-gate funnel</p>
+                  <p className="text-xs text-slate-400 mb-3">Counts begin when gate tracking shipped; earlier gate visits were not recorded</p>
+                  {[
+                    { label: 'Started assessment', n: gateStats.started },
+                    { label: 'Reached pay gate', n: gateStats.reached },
+                    { label: 'Clicked pay', n: gateStats.pay_clicked },
+                    { label: 'Paid', n: dashPaidSales.length },
+                  ].map(step => {
+                    const pct = gateStats.started ? Math.min(100, Math.round(step.n / gateStats.started * 100)) : 0
+                    return (
+                      <div key={step.label} className="mb-2">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-slate-600">{step.label}</span>
+                          <span className="font-medium text-slate-800">{step.n} <span className="text-slate-400">({pct}%)</span></span>
+                        </div>
+                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-cyan-700 rounded-full" style={{ width: `${pct}%` }} /></div>
+                      </div>
+                    )
+                  })}
                 </div>
                 {/* Company licences: organisations given free seats to test the paid report (Settings -> Organization Access) */}
                 {(() => {

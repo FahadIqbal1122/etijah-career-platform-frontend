@@ -13,6 +13,7 @@ import {
   type DiscountPreview, type PlanCode,
 } from '@/lib/api'
 import { track, trackOnce } from '@/lib/analytics'
+import { pushTelemetry, flush as flushTelemetry } from '@/lib/telemetry'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
 import { buildReveal, computeRanked } from '@/data/revealScoring'
@@ -300,6 +301,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     if (!agreed || busy) return
     setBusy(true); setError('')
     track('report_checkout_click', { plan_code: plan, discount_code: applied?.code ?? undefined, from: 'assessment_gate' })
+    pushTelemetry({ event_type: 'gate_pay_click', payload: { plan_code: plan } }); flushTelemetry()
     try {
       // A code typed but never applied is checked now, so a wrong one stops here instead of being dropped silently.
       let code = applied?.code
