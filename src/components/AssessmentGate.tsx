@@ -59,6 +59,9 @@ const STR = {
     name: 'Full name', email: 'Email', password: 'Password (8+ characters)',
     createBtn: 'Create account and continue', loginBtn: 'Sign in and continue',
     existing: 'This email may already have an account. Try signing in.',
+    autoHead: 'Save your progress',
+    autoBody: 'We will create your free account with this email, so your answers are kept safe. After you pay we email you a link to set a password, so you can log in later.',
+    autoBtn: 'Continue to payment', haveAccount: 'I already have an account', google: 'Continue with Google', or: 'or',
     payHead: 'Unlock the rest of your assessment',
     payBody: 'Your first chapter is saved. Pay once to finish the assessment and get your full report.',
     teaser: 'Your first result',
@@ -98,6 +101,9 @@ const STR = {
     name: 'الاسم الكامل', email: 'البريد الإلكتروني', password: 'كلمة المرور (8 أحرف أو أكثر)',
     createBtn: 'أنشئ الحساب وتابع', loginBtn: 'سجّل الدخول وتابع',
     existing: 'ربما يوجد حساب بهذا البريد. جرّب تسجيل الدخول.',
+    autoHead: 'احفظ تقدّمك',
+    autoBody: 'سننشئ لك حساباً مجانياً بهذا البريد لنحفظ إجاباتك. بعد الدفع نرسل لك رابطاً لتعيين كلمة مرور لتسجّل الدخول لاحقاً.',
+    autoBtn: 'تابع إلى الدفع', haveAccount: 'لدي حساب بالفعل', google: 'المتابعة عبر Google', or: 'أو',
     payHead: 'افتح بقية تقييمك',
     payBody: 'تم حفظ فصلك الأول. ادفع مرة واحدة لتكمل التقييم وتحصل على تقريرك الكامل.',
     teaser: 'نتيجتك الأولى',
@@ -134,6 +140,17 @@ const STR = {
 const POLL_MS = 3000
 const POLL_MAX = 20   // about a minute, then offer a manual "check again"
 
+// An account made here has a random password nobody sees. Once the payment goes through we email a "set your password"
+// link (the same one as Forgot password). The address is kept in this browser until then, because the person leaves for the
+// payment page and the gate is mounted again when they come back.
+const AUTO_ACCOUNT_KEY = 'assessment:autoAccount'
+
+function randomPassword(): string {
+  const bytes = new Uint8Array(24)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
+}
+
 export default function AssessmentGate({ locale, answers, confirming = false, paymentFailed = false, onUnlocked }: {
   locale: string
   answers: Record<string, unknown>
@@ -151,6 +168,8 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   const [name, setName] = useState(String(answers.QD1 ?? ''))
   const [email, setEmail] = useState(String(answers.QD2 ?? ''))
   const [password, setPassword] = useState('')
+  // New people with a name and email already given skip the password form: one tap creates the account (see submitAuto).
+  const [auto, setAuto] = useState(!confirming && String(answers.QD1 ?? '').trim().length > 0 && /\S+@\S+\.\S+/.test(String(answers.QD2 ?? '')))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [orgUnverified, setOrgUnverified] = useState(false)
@@ -175,6 +194,14 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     if (unlockedRef.current) return
     unlockedRef.current = true
     track('assessment_gate_unlocked', { lang: locale })
+    // An account made here (random password) gets its "set your password" email now that the payment is confirmed.
+    try {
+      const made = window.localStorage.getItem(AUTO_ACCOUNT_KEY)
+      if (made) {
+        window.localStorage.removeItem(AUTO_ACCOUNT_KEY)
+        supabase.auth.resetPasswordForEmail(made, { redirectTo: `https://myetijahi.com/${locale}/reset-password` }).catch(() => {})
+      }
+    } catch { /* storage unavailable: they can still use Forgot password */ }
     onUnlockedRef.current(serverAnswers)
   }, [locale])
 
@@ -253,6 +280,41 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     }, POLL_MS)
     return () => window.clearInterval(id)
   }, [step, confirming, parentLink, checkAccess])
+
+  // One tap: create the account with a random password and go straight to payment.
+  async function submitAuto(e: React.FormEvent) {
+    e.preventDefault()
+    if (busy) return
+    setBusy(true); setError('')
+    try {
+      const { data, error: err } = await supabase.auth.signUp({
+        email: email.trim(), password: randomPassword(),
+        options: { data: { full_name: name.trim() }, emailRedirectTo: `https://myetijahi.com/${locale}/assessment` },
+      })
+      if (err) { setError(err.message); return }
+      // No session back means the address already has an account: send them to sign in instead.
+      if (!data.session) { setError(s.existing); setAuto(false); setMode('login'); return }
+      try { window.localStorage.setItem(AUTO_ACCOUNT_KEY, email.trim()) } catch { /* ignore */ }
+      track('assessment_account_created', { lang: locale, auto: true })
+      await afterSignedIn()
+    } catch {
+      setError(s.error)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Google instead of an email account. It leaves the page and comes back to the assessment, where the saved draft puts
+  // the person on the gate again (assessment:atGate) and the signed-in session carries on to payment.
+  async function withGoogle() {
+    setError('')
+    try { window.localStorage.setItem('assessment:atGate', '1') } catch { /* best-effort */ }
+    const { error: err } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/${locale}/assessment` },
+    })
+    if (err) setError(err.message)
+  }
 
   async function submitAccount(e: React.FormEvent) {
     e.preventDefault()
@@ -365,7 +427,34 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
 
           {step === 'checking' && <p className="text-sm text-charcoal/60">{s.checking}</p>}
 
-          {step === 'account' && (
+          {step === 'account' && auto && (
+            <form onSubmit={submitAuto} className="space-y-4">
+              <div>
+                <h2 className="text-xl font-extrabold text-charcoal">{s.autoHead}</h2>
+                <p className="mt-1 text-sm text-charcoal/60">{s.autoBody}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-charcoal/70 mb-1">{s.email}</label>
+                <input type="email" className={inputCls} value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" dir="ltr" />
+              </div>
+              {error && <p className="text-sm text-red-600">{error}</p>}
+              <button type="submit" disabled={busy} data-track="assessment_gate_account_auto"
+                className="w-full px-4 py-3 rounded-xl bg-primary text-white text-sm font-semibold disabled:opacity-50">
+                {busy ? '…' : s.autoBtn}
+              </button>
+              <div className="flex items-center gap-3 text-xs text-charcoal/40"><span className="flex-1 h-px bg-[var(--line)]" />{s.or}<span className="flex-1 h-px bg-[var(--line)]" /></div>
+              <button type="button" onClick={withGoogle} data-track="assessment_gate_google"
+                className="w-full min-h-[44px] rounded-xl border border-[var(--line-strong)] bg-white text-sm font-semibold text-charcoal hover:bg-lightblue transition-colors">
+                {s.google}
+              </button>
+              <button type="button" onClick={() => { setAuto(false); setMode('login'); setError('') }}
+                className="w-full min-h-[44px] text-sm text-primary underline">
+                {s.haveAccount}
+              </button>
+            </form>
+          )}
+
+          {step === 'account' && !auto && (
             <form onSubmit={submitAccount} className="space-y-4">
               <div>
                 <h2 className="text-xl font-extrabold text-charcoal">{s.accountHead}</h2>
@@ -398,6 +487,11 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
               <button type="submit" disabled={busy} data-track="assessment_gate_account"
                 className="w-full px-4 py-3 rounded-xl bg-primary text-white text-sm font-semibold disabled:opacity-50">
                 {busy ? '…' : mode === 'signup' ? s.createBtn : s.loginBtn}
+              </button>
+              <div className="flex items-center gap-3 text-xs text-charcoal/40"><span className="flex-1 h-px bg-[var(--line)]" />{s.or}<span className="flex-1 h-px bg-[var(--line)]" /></div>
+              <button type="button" onClick={withGoogle} data-track="assessment_gate_google"
+                className="w-full min-h-[44px] rounded-xl border border-[var(--line-strong)] bg-white text-sm font-semibold text-charcoal hover:bg-lightblue transition-colors">
+                {s.google}
               </button>
             </form>
           )}

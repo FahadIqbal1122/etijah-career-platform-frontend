@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { supabase } from '@/lib/supabase'
@@ -44,6 +44,11 @@ function LoginForm() {
       setLoading(false)
       return
     }
+    await finishLogin()
+  }
+
+  // Everything after a successful sign-in (password or Google): link the account's reports, claim a shared report, go on.
+  async function finishLogin() {
     // Await this so the dashboard's own fetch (fired right after navigation)
     // doesn't race it and show "no report yet" for a user whose prior
     // anonymous assessment hasn't been linked to their account yet.
@@ -61,6 +66,24 @@ function LoginForm() {
     const safeNext = next && /^\/(?!\/|\\)/.test(next) ? next : null
     // from an "Unlock" button (claim + plans): the dashboard's plans card, not the homepage pricing section
     router.push(safeNext ? `/${locale}${safeNext}` : claimId && searchParams.get('plans') === '1' ? `/${locale}/dashboard?plans=1` : claimId ? `/${locale}/#pricing` : `/${locale}/dashboard`)
+  }
+
+  // Back from Google (?g=1): the session is already there, so carry on as after a password sign-in.
+  useEffect(() => {
+    if (searchParams.get('g') !== '1') return
+    supabase.auth.getSession().then(({ data: { session } }) => { if (session) finishLogin() }).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on arrival
+  }, [])
+
+  async function loginWithGoogle() {
+    setError('')
+    // come back to this page with the same ?next / ?claim / ?plans, plus g=1
+    const back = new URLSearchParams(searchParams.toString()); back.set('g', '1')
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/${locale}/login?${back.toString()}` },
+    })
+    if (error) setError(error.message)
   }
 
   return (
@@ -128,6 +151,11 @@ function LoginForm() {
           >
             {loading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
             {loading ? 'Signing in…' : 'Sign in'}
+          </button>
+          <div className="flex items-center gap-3 text-xs text-charcoal/40"><span className="flex-1 h-px bg-[var(--line)]" />or<span className="flex-1 h-px bg-[var(--line)]" /></div>
+          <button type="button" onClick={loginWithGoogle} data-track="login_google"
+            className="w-full min-h-[44px] rounded-xl border border-[var(--line-strong)] bg-white text-sm font-semibold text-charcoal hover:bg-lightblue transition-colors">
+            Continue with Google
           </button>
           <p className="text-center text-sm text-charcoal/40">
             No account?{' '}
