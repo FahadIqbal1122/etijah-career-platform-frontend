@@ -6,10 +6,11 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { DEMO_REPORTS, demoReportHref } from '@/data/demoReports'
+import { Link } from '@/i18n/navigation'
 
 const COPY = {
-  en: { title: 'Choose a sample report', body: 'Your report is tailored to where you are. Pick the one closest to you.', close: 'Close' },
-  ar: { title: 'اختر نموذج تقرير', body: 'يُصمَّم تقريرك بحسب مرحلتك. اختر النموذج الأقرب إليك.', close: 'إغلاق' },
+  en: { title: 'Choose a sample report', body: 'Your report is tailored to where you are. Pick the one closest to you.', close: 'Close', read: 'Read online' },
+  ar: { title: 'اختر نموذج تقرير', body: 'يُصمَّم تقريرك بحسب مرحلتك. اختر النموذج الأقرب إليك.', close: 'إغلاق', read: 'اقرأ على الموقع' },
 }
 
 export default function DemoReportsModal({ open, onClose, locale, source }: {
@@ -44,13 +45,16 @@ export default function DemoReportsModal({ open, onClose, locale, source }: {
         </div>
         <ul className="mt-5 grid gap-3 sm:grid-cols-2">
           {DEMO_REPORTS.map(r => (
-            <li key={r.key}>
-              <a href={demoReportHref(r.key, l)} target="_blank" rel="noopener noreferrer"
-                data-track={`sample_report_${r.key}`} data-source={source}
-                className="block h-full rounded-xl border border-[var(--line)] p-4 hover:border-primary hover:bg-primary/5 transition-colors">
-                <span className="block text-sm font-bold text-charcoal">{r.title[l]} <span aria-hidden="true">↗</span></span>
-                <span className="block mt-1 text-xs text-charcoal/60 leading-snug">{r.body[l]}</span>
-              </a>
+            <li key={r.key} className="flex h-full flex-col rounded-xl border border-[var(--line)] p-4">
+              <span className="block text-sm font-bold text-charcoal">{r.title[l]}</span>
+              <span className="block mt-1 flex-1 text-xs text-charcoal/60 leading-snug">{r.body[l]}</span>
+              <span className="mt-3 flex items-center gap-4 text-xs font-bold">
+                  <Link href={`/sample/${r.key}`} target="_blank" data-track={`sample_page_${r.key}`} data-source={source}
+                    className="text-primary hover:underline">{t.read} <span aria-hidden="true">↗</span></Link>
+                <a href={demoReportHref(r.key, l)} target="_blank" rel="noopener noreferrer"
+                  data-track={`sample_report_${r.key}`} data-source={source}
+                  className="text-charcoal/60 hover:text-primary hover:underline">PDF <span aria-hidden="true">↗</span></a>
+              </span>
             </li>
           ))}
         </ul>
