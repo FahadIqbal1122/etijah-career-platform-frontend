@@ -3925,6 +3925,7 @@ export default function AdminPage() {
   const TEST_SALE_EMAILS = [
     'parental.newt.xvyt@hidingpost.com', // "testing final", 13 Oct 2026
     'fahadiqbalmohammad@gmail.com', // "Test payment", 27 Oct 2026
+    'dina@hotmail.com', // "Dina testing trying again", 59 SAR Pathfinder, 28 Oct 2026
   ]
   const isTestSale = (t: SaleEntry) =>
     new Date(t.paid_at || t.created_at) < SALES_REAL_FROM || (t.currency === 'BHD' && Number(t.amount) <= 0.1)
@@ -4106,7 +4107,7 @@ export default function AdminPage() {
         if (t.coaching_included) planByEmail.set(k, 'Launchpad')
         else if (!planByEmail.has(k)) planByEmail.set(k, 'Pathfinder')
       }
-      const planOf = (s: Submission) => planByEmail.get(emailKey(s.email)) || (s.completed ? 'Explorer (free)' : 'No purchase')
+      const planOf = (s: Submission) => planByEmail.get(emailKey(s.email)) || 'No purchase'
       const sessionOf = (id: string) => telemetryByResponseId.get(id)
 
       // ── Summary ──
@@ -4140,7 +4141,7 @@ export default function AdminPage() {
         { title: 'Key numbers', headers: ['Metric', 'Value'], rows: [
           ['Number of sales (paid orders)', dashPaidSales.length],
           ['Total revenue', dashRevenueLabel],
-          ['Free reports (Explorer): completed, no purchase', dashExplorerCount],
+          // Explorer tier removed: ['Free reports (Explorer): completed, no purchase', dashExplorerCount],
           ['Pathfinder plans sold', dashPaidSales.length - dashCoachingSales.length],
           ['Launchpad plans sold (report + 1:1 coaching)', dashCoachingSales.length],
           ['Assessments submitted', nSub],
@@ -4874,10 +4875,16 @@ export default function AdminPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   <BetaStatTile label="Number of sales" accent="#1baf7a" spark={salesTrend.map(p => p.value)} value={String(dashPaidSales.length)} sublabel="Transactions (paid orders)" onClick={() => setActiveTab('liveSales')} />
                   <BetaStatTile label="Total revenue" accent="#1baf7a" value={dashRevenueLabel} sublabel="Excl. 10% VAT · paid orders" onClick={() => setActiveTab('liveSales')} />
+                  {/* Explorer tier removed:
                   <BetaStatTile label="Free reports (Explorer)" accent="#2a78d6" value={String(dashExplorerCount)} sublabel="Completed, no purchase" onClick={() => setActiveTab('liveSubmissions')} />
+                  */}
                   <BetaStatTile label="Pathfinder plans sold" accent="#eb6834" value={String(dashPaidSales.length - dashCoachingSales.length)} sublabel="Paid report" onClick={() => setActiveTab('liveSales')} />
                   <BetaStatTile label="Launchpad plans sold" accent="#6250d6" value={String(dashCoachingSales.length)} sublabel="Report + 1:1 coaching" onClick={() => setActiveTab('liveCoaching')} />
+                  {/* Was "Assessments submitted" with "N completed" underneath, which read as two names for one thing. The gap is
+                      unfinished rows: answers saved at the pay gate by people who have not paid or finished yet.
                   <BetaStatTile label="Assessments submitted" accent="#2a78d6" spark={submissionsTrend.map(p => p.value)} value={String(dashSubmissions.length)} sublabel={`${dashSubmissions.filter(sub => sub.completed).length} completed`} onClick={() => setActiveTab('liveSubmissions')} />
+                  */}
+                  <BetaStatTile label="Assessments completed" accent="#2a78d6" spark={submissionsTrend.map(p => p.value)} value={String(dashSubmissions.filter(sub => sub.completed).length)} sublabel={`+${dashSubmissions.filter(sub => !sub.completed).length} saved at pay gate, not finished`} onClick={() => setActiveTab('liveSubmissions')} />
                   <BetaStatTile label="Reached pay gate" accent="#0e7490" value={String(gateStats.reached)} sublabel={gateStats.started ? `${Math.round(gateStats.reached / gateStats.started * 100)}% of starters` : 'Hit the paywall after chapter 2'} />
                   <BetaStatTile label="Gate → paid" accent="#008300" value={gateStats.reached ? `${Math.round(dashPaidSales.length / gateStats.reached * 100)}%` : '—'} sublabel={`${gateStats.pay_clicked} clicked pay · ${dashPaidSales.length} paid`} />
                   <BetaStatTile label="Dropped off" accent="#eda100" value={String(abandonedList.filter(a => inDashDateRange(a.last_activity_at)).length)} sublabel="Started the assessment, never finished" onClick={() => { fetchAbandoned(); setActiveTab('abandoned') }} />
