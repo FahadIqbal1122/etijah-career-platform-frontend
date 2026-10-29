@@ -17,9 +17,10 @@ export const DEMO_REPORTS: {
   // // body: { en: 'What you get free: your interests, values, strengths and personality, in two pages.', ar: 'ما تحصل عليه مجاناً: اهتماماتك وقيمك ونقاط قوتك وشخصيتك، في صفحتين.' } },
   // title: { en: 'Results preview', ar: 'معاينة النتائج' },
   // body: { en: 'A first look at your results: your interests, in two pages.', ar: 'نظرة أولى على نتائجك: اهتماماتك، في صفحتين.' } },
-  { key: 'general',
-    title: { en: 'Full sample report', ar: 'نموذج التقرير الكامل' },
-    body: { en: 'The complete report, every section.', ar: 'التقرير الكامل بكل أقسامه.' } },
+  // "general" (the old single sample, an older report template) is no longer offered: every scenario below is a full report in the current format
+  // { key: 'general',
+  //   title: { en: 'Full sample report', ar: 'نموذج التقرير الكامل' },
+  //   body: { en: 'The complete report, every section.', ar: 'التقرير الكامل بكل أقسامه.' } },
   { key: 'school_majors',
     title: { en: 'Choosing a major', ar: 'اختيار التخصص' },
     body: { en: 'For school students deciding what to study.', ar: 'لطلاب المدارس الذين يختارون ما سيدرسونه.' } },

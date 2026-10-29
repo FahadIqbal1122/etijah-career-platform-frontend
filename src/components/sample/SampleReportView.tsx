@@ -5,8 +5,9 @@
 
 import type { ReactNode } from 'react'
 import { Link } from '@/i18n/navigation'
-import Logomark from '@/components/brand/Logomark'
 import { demoReportHref, type DemoReportKey } from '@/data/demoReports'
+import { ProfileHexagon, type ReportTemplateData, type TemplateCareer } from '@/components/report-templates'
+import SampleTemplateHero from './SampleTemplateHero'
 
 export type Career = {
   title: string; sector: string; fit: string; fitTone: string; direction: string; dirTone: string
@@ -210,7 +211,7 @@ function Generic({ blocks }: { blocks: Block[] }) {
   return <div className="card p-5 space-y-3">{out}</div>
 }
 
-function Blocks({ s, l }: { s: Section; l: 'en' | 'ar' }) {
+function Blocks({ s, l, hex }: { s: Section; l: 'en' | 'ar'; hex?: ReportTemplateData }) {
   const t = COPY[l]
   if (s.type === 'summary') {
     return <>{s.blocks.map((b, i) => {
@@ -253,6 +254,7 @@ function Blocks({ s, l }: { s: Section; l: 'en' | 'ar' }) {
             <p className="rp-sub text-charcoal/90 leading-snug"><span className="font-bold text-primary me-1.5">{t.short}</span>{b.callout}</p>
           </div>
         )}
+        {hex && i === 0 && <ProfileHexagon data={hex} />}
         {b.rows.length > 0 && <div className="space-y-4">{b.rows.map((r, j) => <ScoreRow key={j} r={r} l={l} />)}</div>}
         {b.pills.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -360,6 +362,70 @@ function Blocks({ s, l }: { s: Section; l: 'en' | 'ar' }) {
   return <Generic blocks={s.blocks} />
 }
 
+// ---- Sample data -> the report template's data (the template is the live "Clarity Plus" look) ----
+const RIASEC_ORDER = ['realistic', 'investigative', 'artistic', 'social', 'enterprising', 'conventional'] as const
+const RIASEC_LABEL = {
+  en: { realistic: 'Realistic', investigative: 'Investigative', artistic: 'Artistic', social: 'Social', enterprising: 'Enterprising', conventional: 'Conventional' },
+  ar: { realistic: 'واقعي', investigative: 'استقصائي', artistic: 'فني', social: 'اجتماعي', enterprising: 'مبادر', conventional: 'تقليدي' },
+}
+// the PDF names each type either by its type name (English) or by a persona word (Arabic)
+const RIASEC_FROM_PDF: Record<string, (typeof RIASEC_ORDER)[number]> = {
+  Realistic: 'realistic', Investigative: 'investigative', Artistic: 'artistic', Social: 'social', Enterprising: 'enterprising', Conventional: 'conventional',
+  'الباني': 'realistic', 'المحلل': 'investigative', 'المبدع': 'artistic', 'المُعين': 'social', 'القائد': 'enterprising', 'المنظّم': 'conventional',
+}
+const LEVEL_WIDTH: Record<string, number> = { High: 80, Medium: 50, Low: 20, 'مرتفع': 80, 'متوسط': 50, 'منخفض': 20 }
+
+function buildTemplateData(data: SampleData, locale: 'en' | 'ar', pdfHref: string): ReportTemplateData {
+  const ar = locale === 'ar'
+  const groups = data.sections.filter(s => s.type === 'profile').flatMap(s => s.blocks).filter((b): b is Extract<Block, { k: 'group' }> => b.k === 'group')
+  const [interests, values, strengths, , personality] = groups
+  const byKey: Record<string, number> = {}
+  interests?.rows.forEach(r => { const k = RIASEC_FROM_PDF[r.label]; if (k && r.pct !== undefined) byKey[k] = r.pct })
+  // ties at the top are common in the samples: the PDF's own "Career type" card decides which one leads
+  const quick = data.sections.flatMap(s => s.blocks).find((b): b is Extract<Block, { k: 'quick' }> => b.k === 'quick')
+  const lead = quick ? RIASEC_FROM_PDF[quick.items[0]?.value] : undefined
+  const ranked = [...RIASEC_ORDER].sort((a, b) => (byKey[b] ?? 0) - (byKey[a] ?? 0) || (b === lead ? 1 : 0) - (a === lead ? 1 : 0))
+  const top3 = (g?: { rows: Row[] }) => (g?.rows || []).slice(0, 3).map(r => ({ label: r.label, score: r.pct }))
+  const careersBlock = data.sections.flatMap(s => s.blocks).find((b): b is Extract<Block, { k: 'careers' }> => b.k === 'careers')
+  const items = careersBlock?.items || []
+  const tag = (pick: (c: Career) => boolean, text: (c: Career) => string, fallback: string) => { const c = items.find(pick); return c ? text(c) : fallback }
+  const careers: TemplateCareer[] = items.map((c, i) => ({
+    title: c.title,
+    match: c.pct ?? 0,
+    summary: c.summary || undefined,
+    risk: c.risk === 'low' || c.risk === 'medium' || c.risk === 'high' ? c.risk : undefined,
+    direction: c.dirTone === 'purple' ? 'new_direction' : 'builds_on_background',
+    fit: c.fitTone === 'green' ? 'strong_fit' : 'worth_exploring',
+    gap: i === 0 && c.takes ? c.takes : undefined,
+  }))
+  const l = RIASEC_LABEL[locale]
+  return {
+    locale,
+    paid: true,
+    riasec: RIASEC_ORDER.map(k => ({ key: k, label: l[k], score: byKey[k] })),
+    riasecCode: ranked.slice(0, 3).map(k => k[0].toUpperCase()).join(''),
+    topTypeLabel: l[ranked[0]],
+    values: top3(values),
+    strengths: top3(strengths),
+    personality: (personality?.rows || []).slice(0, 5).map(r => ({ label: r.label, score: LEVEL_WIDTH[r.level || ''] ?? 50 })),
+    careers,
+    lockedMore: 0,
+    labels: {
+      builds_on_background: tag(c => c.dirTone !== 'purple', c => c.direction, ar ? 'يبني على خلفيتك' : 'Builds on your background'),
+      new_direction: tag(c => c.dirTone === 'purple', c => c.direction, ar ? 'اتجاه جديد' : 'A new direction'),
+      strong_fit: tag(c => c.fitTone === 'green', c => c.fit, ar ? 'تطابق قوي' : 'Strong fit'),
+      worth_exploring: tag(c => c.fitTone !== 'green', c => c.fit, ar ? 'يستحق الاستكشاف' : 'Worth exploring'),
+    },
+    unlockHref: `/${locale}/assessment`,
+    locked: { moreTitle: '', moreBody: '', planTitle: '', planBody: '', planCta: ar ? 'احصل على تقريرك' : 'Get your own report' },
+    download: {
+      label: ar ? 'تحميل التقرير PDF' : 'Download PDF Report',
+      altLabel: ar ? 'تحميل النسخة الإنجليزية' : 'Download Arabic PDF',
+      busyLabel: '…',
+    },
+  }
+}
+
 export default function SampleReportView({ data, reportKey, locale, title }: {
   data: SampleData
   reportKey: DemoReportKey
@@ -367,52 +433,35 @@ export default function SampleReportView({ data, reportKey, locale, title }: {
   title: string
 }) {
   const t = COPY[locale]
-  const { hero, sections } = data
+  const { sections } = data
+  const other = locale === 'ar' ? 'en' : 'ar'
+  const tpl = buildTemplateData(data, locale, demoReportHref(reportKey, locale))
+  // Same as the paid page with a template: the template covers the summary, the other sections follow it
+  const shown = sections.filter(s => s.type !== 'summary')
   return (
-    <div className="min-h-screen brand-surface page-fade-in">
-      <div className="brand-hero px-4 pt-10 pb-16 text-center relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <div className="absolute top-4 left-8 w-32 h-32 rounded-full bg-white" />
-          <div className="absolute bottom-0 right-4 w-48 h-48 rounded-full bg-teal" />
-        </div>
-        <div className="relative">
-          <div className="flex justify-center mb-5"><Logomark size={44} tone="dark" glow /></div>
-          <p className="eyebrow !text-white/70 mb-3">{t.badge} · {title}</p>
-          {hero.title && <h1 className="text-3xl font-extrabold mb-2">{hero.title}</h1>}
-          {hero.sub && <p className="text-white/70 text-sm mb-6 max-w-md mx-auto">{hero.sub}</p>}
-          <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
-            <a href={demoReportHref(reportKey, locale)} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-white text-primary px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-white/90 transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-              </svg>
-              {t.pdf}
-            </a>
-            <Link href={`/sample/${reportKey}`} locale={locale === 'ar' ? 'en' : 'ar'}
-              className="inline-flex items-center gap-2 bg-white/10 border border-white/25 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-white/20 transition-colors">
-              {t.other}
-            </Link>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen brand-surface page-fade-in rt-clarity-map">
+      <SampleTemplateHero data={tpl} pdfHref={demoReportHref(reportKey, locale)} altPdfHref={demoReportHref(reportKey, other)} />
 
-      <div className="max-w-5xl mx-auto px-6 mt-8 pb-16 space-y-4 relative z-10">
+      <div className="max-w-[1560px] mx-auto px-6 mt-8 pb-16 space-y-4 relative z-10">
         <div className="card p-5 flex items-center justify-between gap-4 flex-wrap border-s-4 border-s-teal">
           <div>
-            <p className="rp-h text-charcoal">{t.badge}</p>
+            <p className="rp-h text-charcoal">{t.badge} · {title}</p>
             <p className="rp-sub mt-0.5">{t.note}</p>
           </div>
-          <Link href="/assessment" className="cta shrink-0" style={{ padding: '10px 18px', fontSize: 14, borderRadius: 12 }}>{t.cta}</Link>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link href={`/sample/${reportKey}`} locale={other} className="rp-pill rp-blue" style={{ padding: '9px 16px', fontSize: 14 }}>{t.other}</Link>
+            <Link href="/assessment" className="cta shrink-0" style={{ padding: '10px 18px', fontSize: 14, borderRadius: 12 }}>{t.cta}</Link>
+          </div>
         </div>
 
-        {sections.map((s, i) => (
+        {shown.map((s, i) => (
           <details key={i} className="group report-section space-y-4" open>
             <summary className="report-section-bar list-none cursor-pointer w-full flex items-center justify-between gap-3 rounded-xl bg-white/70 border border-[var(--line)] px-4 py-2.5 text-start [&::-webkit-details-marker]:hidden">
-              <span className="rp-h text-charcoal">{s.num && <span className="font-mono text-xs font-bold tracking-widest text-teal me-2">{s.num}</span>}{s.title}</span>
+              <span className="rp-h text-charcoal">{s.title}</span>
               <span aria-hidden="true" className="transition-transform group-open:rotate-180">▾</span>
             </summary>
             <div className="report-section-body space-y-4 mt-4">
-              <Blocks s={s} l={locale} />
+              <Blocks s={s} l={locale} hex={tpl} />
             </div>
           </details>
         ))}
