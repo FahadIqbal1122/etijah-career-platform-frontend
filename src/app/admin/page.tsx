@@ -1460,6 +1460,7 @@ export default function AdminPage() {
   // Assessments card: per-day line, or hour-of-day line (optionally for one day, reached by clicking a day)
   // const [subsView, setSubsView] = useState<'day' | 'hour'>('day')   // toggle replaced by one card showing both charts
   const [subsHourDay, setSubsHourDay] = useState<string | null>(null)
+  const [dashEra, setDashEra] = useState<'before' | 'after'>('after') // Overview: before / after the pay gate
   const [betaStatDrilldown, setBetaStatDrilldown] = useState<{ title: string; rows: { bf: BetaFeedbackEntry; note: string }[] } | null>(null)
   const [betaFeedbackStageFilter, setBetaFeedbackStageFilter] = useState<'all' | BetaFeedbackStage>('all')
   const [betaFeedbackStatusFilter, setBetaFeedbackStatusFilter] = useState('all')
@@ -4090,11 +4091,26 @@ export default function AdminPage() {
   const gateEraSubmissions = dashSubmissions.filter(sub => sinceGate(sub.created_at))
   const gateEraSales = dashPaidSales.filter(t => sinceGate(t.paid_at || t.created_at))
   const gateEraRevenueLabel = `${(gateEraSales.reduce((sum, t) => sum + (t.currency === 'SAR' ? Number(t.amount || 0) * 0.1003 : Number(t.amount || 0)), 0) / 1.10).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BHD`
+  // Before the pay gate: the free-report era, shown on its own so the two never mix.
+  const netBhd = (list: typeof dashPaidSales) => list.reduce((sum, t) => sum + (t.currency === 'SAR' ? Number(t.amount || 0) * 0.1003 : Number(t.amount || 0)), 0) / 1.10
+  const preSubs = dashSubmissions.filter(sub => !sinceGate(sub.created_at))
+  const preSales = dashPaidSales.filter(t => !sinceGate(t.paid_at || t.created_at))
+  const preCompleted = preSubs.filter(sub => sub.completed).length
+  const preStarted = Math.max(gateEvents.filter(e => e.event_type === 'session_start' && !sinceGate(e.created_at)).length, preSubs.length)
+  const preDropped = Math.max(0, preStarted - preCompleted)
+  const preRevenueLabel = `${netBhd(preSales).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BHD`
+  const preDays = trendDays120.filter(k => k < GATE_LIVE_FROM)
+  const postDays = trendDays120.filter(k => k >= GATE_LIVE_FROM)
+  const preSubsPerDay = new Map<string, number>(); for (const sub of preSubs) preSubsPerDay.set(dayKey(sub.created_at), (preSubsPerDay.get(dayKey(sub.created_at)) || 0) + 1)
+  const preSalesPerDay = new Map<string, number>(); for (const t of preSales) { const k = dayKey(t.paid_at || t.created_at); preSalesPerDay.set(k, (preSalesPerDay.get(k) || 0) + 1) }
+  const preSubsTrend = preDays.map(k => ({ label: shortDay(k), value: preSubsPerDay.get(k) || 0 }))
+  const preSalesTrend = preDays.map(k => ({ label: shortDay(k), value: preSalesPerDay.get(k) || 0 }))
+  const postSalesTrend = postDays.map(k => ({ label: shortDay(k), value: salesPerDay.get(k) || 0 }))
   const dashFinishedGateEra = gateEraSubmissions.filter(sub => sub.completed).length
   const dashStartedAssessment = Math.max(gateEvents.filter(e => e.event_type === 'session_start' && sinceGate(e.created_at)).length, gateEraSubmissions.length)
   const dashDroppedBeforeGate = Math.max(0, dashStartedAssessment - dashReachedGate)
-  const gateReachedTrend = trendDays120.map(k => ({ label: shortDay(k), value: gateDay.find(d => d.key === k)?.reached || 0 }))
-  const gatePassedTrend = trendDays120.map(k => ({ label: shortDay(k), value: gateDay.find(d => d.key === k)?.passed || 0 }))
+  const gateReachedTrend = postDays.map(k => ({ label: shortDay(k), value: gateDay.find(d => d.key === k)?.reached || 0 }))
+  const gatePassedTrend = postDays.map(k => ({ label: shortDay(k), value: gateDay.find(d => d.key === k)?.passed || 0 }))
   const gateHasEstimates = gateDay.some(d => d.estimated && d.reached > 0)
   // Hour-of-day distribution (viewer's local time), respects the dashboard filters
   const hourLabel = (h: number) => `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? ' AM' : ' PM'}`
@@ -4924,7 +4940,14 @@ export default function AdminPage() {
           <>
             {activeTab === 'liveDashboard' && (
               <div className="mb-6">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">Overview · since {LIVE_START.toLocaleDateString()}</p>
+                <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{dashEra === 'after' ? 'After the paywall · since 28 Oct 2026' : `Before the paywall · ${LIVE_START.toLocaleDateString()} to 28 Oct 2026`}</p>
+                  <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
+                    {([['before', 'Before the paywall'], ['after', 'After the paywall']] as const).map(([k, label]) => (
+                      <button key={k} type="button" onClick={() => setDashEra(k)} className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${dashEra === k ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{label}</button>
+                    ))}
+                  </div>
+                </div>
                 {/* Four numbers, left to right = the order people go through: started, dropped before the gate, reached the gate, paid.
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <BetaStatTile label="Reached the gate" accent="#0e7490" value={String(dashReachedGate)} sublabel={dashStartedAssessment ? `${Math.round(dashReachedGate / dashStartedAssessment * 100)}% of ${dashStartedAssessment} who started` : 'People who got to the pay screen'} />
@@ -4933,6 +4956,29 @@ export default function AdminPage() {
                   <BetaStatTile label="Gate → passed" accent="#6250d6" value={dashReachedGate ? `${Math.round(dashPassedGate / dashReachedGate * 100)}%` : '—'} sublabel={`${dashClickedPay} clicked pay`} />
                 </div>
                 */}
+                {dashEra === 'before' && (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <BetaStatTile label="Started" accent="#2a78d6" value={String(preStarted)} sublabel="People who opened the assessment" />
+                      <BetaStatTile label="Completed" accent="#2a78d6" value={String(preCompleted)} sublabel="Got their free report" onClick={() => setActiveTab('liveSubmissions')} />
+                      <BetaStatTile label="Dropped off" accent="#eda100" value={String(preDropped)} sublabel={preStarted ? `${Math.round(preDropped / preStarted * 100)}% of those who started` : 'Started and did not finish'} />
+                      <BetaStatTile label="Sales" accent="#008300" value={String(preSales.length)} sublabel={`${preSales.length - preSales.filter(t => t.coaching_included).length} Pathfinder · ${preSales.filter(t => t.coaching_included).length} Launchpad${preCompleted ? ` · ${(preSales.length / preCompleted * 100).toFixed(1)}% of completed` : ''}`} onClick={() => setActiveTab('liveSales')} />
+                      <BetaStatTile label="Revenue" accent="#1baf7a" value={preRevenueLabel} sublabel="Excl. 10% VAT · paid orders" onClick={() => setActiveTab('liveSales')} />
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+                      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                        <p className="text-sm font-semibold text-slate-700">Completed assessments per day</p>
+                        <TrendChart points={preSubsTrend} kind="line" color="#2a78d6" unit="assessments" />
+                      </div>
+                      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                        <p className="text-sm font-semibold text-slate-700">Paid orders per day</p>
+                        <TrendChart points={preSalesTrend} kind="column" color="#1baf7a" unit="orders" />
+                      </div>
+                    </div>
+                  </>
+                )}
+                {dashEra === 'after' && (
+                  <>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   <BetaStatTile label="Started" accent="#2a78d6" value={String(dashStartedAssessment)} sublabel="People who opened the assessment" />
                   <BetaStatTile label="Dropped before the gate" accent="#eda100" value={String(dashDroppedBeforeGate)} sublabel={dashStartedAssessment ? `${Math.round(dashDroppedBeforeGate / dashStartedAssessment * 100)}% of those who started` : 'Left before the pay screen'} />
@@ -4969,7 +5015,7 @@ export default function AdminPage() {
                     <p className="text-sm font-semibold text-slate-700">Reached the gate per day</p>
                     <p className="text-xs text-slate-400 mb-2">Click a day to see who stopped</p>
                     <TrendChart points={gateReachedTrend} kind="column" color="#0e7490" unit="people" onSelect={i => {
-                      const day = trendDays120[i]
+                      const day = postDays[i]
                       setDemoDrilldown({ title: `Stopped at the pay gate on ${shortDay(day)}`, people: unfinishedRows.filter(u => dayKey(u.created_at) === day).map(personFromSub) })
                     }} />
                   </div>
@@ -5118,11 +5164,11 @@ export default function AdminPage() {
                       <p className="text-sm font-semibold text-slate-700">Paid orders per day</p>
                       <p className="text-xs text-slate-400">{dashPaidSales.length} total</p>
                     </div>
-                    <TrendChart points={salesTrend} kind="column" color="#1baf7a" unit="orders" onSelect={i => {
-                      const day = trendDays120[i]
+                    <TrendChart points={postSalesTrend} kind="column" color="#1baf7a" unit="orders" onSelect={i => {
+                      const day = postDays[i]
                       const subByEmail = new Map(submissions.map(s => [emailKey(s.email), s]))
                       setDemoDrilldown({
-                        title: `Paid orders on ${salesTrend[i].label}`,
+                        title: `Paid orders on ${postSalesTrend[i].label}`,
                         people: dashPaidSales.filter(t => dayKey(t.paid_at || t.created_at) === day).map(t => {
                           const sub = subByEmail.get(emailKey(t.email))
                           return sub ? { ...personFromSub(sub), at: t.paid_at || t.created_at } : { at: t.paid_at || t.created_at, name: t.full_name || t.email || 'Unknown', age_bracket: null, experience_level: null, current_stage: null, country: t.country, nationality: null, sub: null, bf: null }
@@ -5179,6 +5225,8 @@ export default function AdminPage() {
                   </div>
                   */}
                 </div>
+                  </>
+                )}
               </div>
             )}
             {betaFeedbackLoading && (
