@@ -4925,11 +4925,12 @@ export default function AdminPage() {
                   <BetaStatTile label="Gate → passed" accent="#6250d6" value={dashReachedGate ? `${Math.round(dashPassedGate / dashReachedGate * 100)}%` : '—'} sublabel={`${dashClickedPay} clicked pay`} />
                 </div>
                 */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   <BetaStatTile label="Started" accent="#2a78d6" value={String(dashStartedAssessment)} sublabel="People who opened the assessment" />
                   <BetaStatTile label="Dropped before the gate" accent="#eda100" value={String(dashDroppedBeforeGate)} sublabel={dashStartedAssessment ? `${Math.round(dashDroppedBeforeGate / dashStartedAssessment * 100)}% of those who started` : 'Left before the pay screen'} />
                   <BetaStatTile label="Reached the gate" accent="#0e7490" value={String(dashReachedGate)} sublabel={dashStartedAssessment ? `${Math.round(dashReachedGate / dashStartedAssessment * 100)}% of those who started · ${dashClickedPay} clicked pay` : 'People who got to the pay screen'} />
                   <BetaStatTile label="Paid orders" accent="#008300" value={String(dashPaidSales.length)} sublabel={dashReachedGate ? `${Math.round(dashPaidSales.length / dashReachedGate * 100)}% of those who reached the gate` : 'Paid orders'} onClick={() => setActiveTab('liveSales')} />
+                  <BetaStatTile label="Finished the whole assessment" accent="#2a78d6" value={String(dashSubmissions.filter(sub => sub.completed).length)} sublabel="Paid and answered everything" onClick={() => setActiveTab('liveSubmissions')} />
                 </div>
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mt-4">
                   <p className="text-sm font-semibold text-slate-700">Funnel</p>
@@ -4963,15 +4964,17 @@ export default function AdminPage() {
                       setDemoDrilldown({ title: `Stopped at the pay gate on ${shortDay(day)}`, people: unfinishedRows.filter(u => dayKey(u.created_at) === day).map(personFromSub) })
                     }} />
                   </div>
+                  {/* Passed the gate per day, retired (the Paid orders per day chart below shows the same thing):
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
                     <p className="text-sm font-semibold text-slate-700">Passed the gate per day</p>
                     <p className="text-xs text-slate-400 mb-2">Went on after paying or with a company seat</p>
                     <TrendChart points={gatePassedTrend} kind="column" color="#008300" unit="people" />
                   </div>
-                </div>
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mt-4">
+                  */}
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
                   <p className="text-sm font-semibold text-slate-700">When people reach the gate <span className="font-normal text-slate-400">· 3-hour windows, tracked visits only</span></p>
                   <TrendChart points={gateHourTrend} kind="line" color="#0e7490" unit="people" />
+                </div>
                 </div>
                 {gateHasEstimates && (
                   <p className="text-xs text-slate-400 mt-2">Days from 28 Oct before live tracking began (29 Oct) are estimated from saved answers at the gate and paid orders. Earlier days are not counted.</p>
@@ -5003,9 +5006,9 @@ export default function AdminPage() {
             )}
             {activeTab === 'liveDashboard' && (
               <div className="mb-6">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">At a glance · since {LIVE_START.toLocaleDateString()}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">Sales and feedback · since {LIVE_START.toLocaleDateString()}</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <BetaStatTile label="Number of sales" accent="#1baf7a" spark={salesTrend.map(p => p.value)} value={String(dashPaidSales.length)} sublabel="Transactions (paid orders)" onClick={() => setActiveTab('liveSales')} />
+                  {/* Old assessment-era tile, retired: <BetaStatTile label="Number of sales" accent="#1baf7a" spark={salesTrend.map(p => p.value)} value={String(dashPaidSales.length)} sublabel="Transactions (paid orders)" onClick={() => setActiveTab('liveSales')} /> */}
                   <BetaStatTile label="Total revenue" accent="#1baf7a" value={dashRevenueLabel} sublabel="Excl. 10% VAT · paid orders" onClick={() => setActiveTab('liveSales')} />
                   {/* Explorer tier removed:
                   <BetaStatTile label="Free reports (Explorer)" accent="#2a78d6" value={String(dashExplorerCount)} sublabel="Completed, no purchase" onClick={() => setActiveTab('liveSubmissions')} />
@@ -5016,13 +5019,13 @@ export default function AdminPage() {
                       unfinished rows: answers saved at the pay gate by people who have not paid or finished yet.
                   <BetaStatTile label="Assessments submitted" accent="#2a78d6" spark={submissionsTrend.map(p => p.value)} value={String(dashSubmissions.length)} sublabel={`${dashSubmissions.filter(sub => sub.completed).length} completed`} onClick={() => setActiveTab('liveSubmissions')} />
                   */}
-                  <BetaStatTile label="Assessments completed" accent="#2a78d6" spark={submissionsTrend.map(p => p.value)} value={String(dashSubmissions.filter(sub => sub.completed).length)} sublabel={`+${dashSubmissions.filter(sub => !sub.completed).length} unfinished (stopped at the pay gate)`} onClick={() => setActiveTab('liveSubmissions')} />
-                  <BetaStatTile label="Dropped off" accent="#eda100" value={String(abandonedList.filter(a => inDashDateRange(a.last_activity_at)).length)} sublabel="Unique emails that started (autosaved or saved at the gate) and never finished. Includes those stopped at the pay gate. Starters with no email are not counted." onClick={() => { fetchAbandoned(); setActiveTab('abandoned') }} />
+                  {/* Old assessment-era tile, retired: <BetaStatTile label="Assessments completed" accent="#2a78d6" spark={submissionsTrend.map(p => p.value)} value={String(dashSubmissions.filter(sub => sub.completed).length)} sublabel={`+${dashSubmissions.filter(sub => !sub.completed).length} unfinished (stopped at the pay gate)`} onClick={() => setActiveTab('liveSubmissions')} /> */}
+                  {/* Old assessment-era tile, retired: <BetaStatTile label="Dropped off" accent="#eda100" value={String(abandonedList.filter(a => inDashDateRange(a.last_activity_at)).length)} sublabel="Unique emails that started (autosaved or saved at the gate) and never finished. Includes those stopped at the pay gate. Starters with no email are not counted." onClick={() => { fetchAbandoned(); setActiveTab('abandoned') }} /> */}
                   {/* Moved under "Who's testing" and now shows careers rejected ("Not for me") instead of careers recommended:
                   <BetaStatTile label="Careers recommended" accent="#e87ba4" value={String(dashCareerRecs.length)} sublabel="Users who received career matches" onClick={() => setActiveTab('liveCareerRecs')} />
                   */}
                   <BetaStatTile label="Feedback responses" accent="#eda100" value={String(dashFeedback.length)} sublabel={`F1 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage1').length} · F2 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'result').length} · F3 ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'stage2').length} · Incomplete ${dashFeedback.filter(bf => betaFeedbackStageOf(bf) === 'started').length}`} onClick={() => setActiveTab('liveFeedback')} />
-                  <BetaStatTile label="Conversion rate" accent="#008300" value={dashReachedGate > 0 ? `${Math.round((dashPaidSales.length / dashReachedGate) * 100)}%` : '—'} sublabel="Paid orders ÷ people who reached the pay gate" />
+                  {/* Old assessment-era tile, retired: <BetaStatTile label="Conversion rate" accent="#008300" value={dashReachedGate > 0 ? `${Math.round((dashPaidSales.length / dashReachedGate) * 100)}%` : '—'} sublabel="Paid orders ÷ people who reached the pay gate" /> */}
                 </div>
                 {/* Company licences: organisations given free seats to test the paid report (Settings -> Organization Access) */}
                 {(() => {
@@ -5079,7 +5082,8 @@ export default function AdminPage() {
                     </div>
                   )
                 })()}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
+                <div className="grid grid-cols-1 gap-3 mt-4">
+                  {/* Assessments per day and Time of day (assessment-era charts), retired; the pay-gate section at the top covers it:
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
                     <div className="flex items-baseline justify-between mb-2">
                       <p className="text-sm font-semibold text-slate-700">Assessments per day</p>
@@ -5101,6 +5105,7 @@ export default function AdminPage() {
                       }} />
                     </div>
                   </div>
+                  */}
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
                     <div className="flex items-baseline justify-between mb-2">
                       <p className="text-sm font-semibold text-slate-700">Paid orders per day</p>

@@ -536,6 +536,13 @@ export default function AssessmentForm() {
     return () => clearTimeout(id)
   }, [answers, index, locale])
 
+  // Remember that the gate is on screen, so a refresh or reopened tab goes back to it instead of resuming past it
+  // (the saved position is already beyond the gate). Cleared when the gate lets the person through.
+  useEffect(() => {
+    if (phase !== 'gate') return
+    try { window.localStorage.setItem('assessment:atGate', '1') } catch { /* best-effort */ }
+  }, [phase])
+
   function resumeDraft() {
     if (!draft) return
     answersRef.current = draft.answers
@@ -544,8 +551,11 @@ export default function AssessmentForm() {
     // Left for the payment page from the gate (browser Back, closed tab): go back to the gate, not into the questions.
     let wasAtGate = false
     try { wasAtGate = window.localStorage.getItem('assessment:atGate') === '1' } catch { /* ignore */ }
-    if (wasAtGate && gateRequired) {
+    // (gateRequired loads asynchronously and can still be false here, so the flag alone decides: it is only set once the gate was shown.)
+    // if (wasAtGate && gateRequired) {
+    if (wasAtGate) {
       restoreOnUnlockRef.current = true
+      setGateRequired(true)
       setPhase('gate'); setEnterKey(k => k + 1); setDraft(null)
       return
     }

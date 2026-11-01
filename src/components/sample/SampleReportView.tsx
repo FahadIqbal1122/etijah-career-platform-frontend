@@ -72,7 +72,7 @@ function SectionHead({ title, subtitle }: { title: string; subtitle?: string }) 
   )
 }
 
-function ScoreRow({ r, l }: { r: Row; l: 'en' | 'ar' }) {
+function ScoreRow({ r }: { r: Row }) {
   return (
     <div>
       <div className="flex justify-between items-center mb-1">
@@ -255,7 +255,7 @@ function Blocks({ s, l, hex }: { s: Section; l: 'en' | 'ar'; hex?: ReportTemplat
           </div>
         )}
         {hex && i === 0 && <ProfileHexagon data={hex} />}
-        {b.rows.length > 0 && <div className="space-y-4">{b.rows.map((r, j) => <ScoreRow key={j} r={r} l={l} />)}</div>}
+        {b.rows.length > 0 && <div className="space-y-4">{b.rows.map((r, j) => <ScoreRow key={j} r={r} />)}</div>}
         {b.pills.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {b.pills.map((p, j) => (
@@ -375,7 +375,7 @@ const RIASEC_FROM_PDF: Record<string, (typeof RIASEC_ORDER)[number]> = {
 }
 const LEVEL_WIDTH: Record<string, number> = { High: 80, Medium: 50, Low: 20, 'مرتفع': 80, 'متوسط': 50, 'منخفض': 20 }
 
-function buildTemplateData(data: SampleData, locale: 'en' | 'ar', pdfHref: string): ReportTemplateData {
+function buildTemplateData(data: SampleData, locale: 'en' | 'ar'): ReportTemplateData {
   const ar = locale === 'ar'
   const groups = data.sections.filter(s => s.type === 'profile').flatMap(s => s.blocks).filter((b): b is Extract<Block, { k: 'group' }> => b.k === 'group')
   const [interests, values, strengths, , personality] = groups
@@ -435,7 +435,7 @@ export default function SampleReportView({ data, reportKey, locale, title }: {
   const t = COPY[locale]
   const { sections } = data
   const other = locale === 'ar' ? 'en' : 'ar'
-  const tpl = buildTemplateData(data, locale, demoReportHref(reportKey, locale))
+  const tpl = buildTemplateData(data, locale)
   // Same as the paid page with a template: the template covers the summary, the other sections follow it
   const shown = sections.filter(s => s.type !== 'summary')
   return (
