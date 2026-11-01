@@ -18,6 +18,7 @@ import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
 import { buildReveal, computeRanked } from '@/data/revealScoring'
 import Logomark from '@/components/brand/Logomark'
+import GoogleButton from '@/components/GoogleButton'
 
 type GateStatus = {
   has_access: boolean
@@ -199,7 +200,12 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
       const made = window.localStorage.getItem(AUTO_ACCOUNT_KEY)
       if (made) {
         window.localStorage.removeItem(AUTO_ACCOUNT_KEY)
-        supabase.auth.resetPasswordForEmail(made, { redirectTo: `https://myetijahi.com/${locale}/reset-password` }).catch(() => {})
+        // only for the account that was made here: someone else's account unlocking in this browser gets nothing
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user.email?.toLowerCase() === made.toLowerCase()) {
+            return supabase.auth.resetPasswordForEmail(made, { redirectTo: `https://myetijahi.com/${locale}/reset-password` })
+          }
+        }).catch(() => {})
       }
     } catch { /* storage unavailable: they can still use Forgot password */ }
     onUnlockedRef.current(serverAnswers)
@@ -443,10 +449,8 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                 {busy ? '…' : s.autoBtn}
               </button>
               <div className="flex items-center gap-3 text-xs text-charcoal/40"><span className="flex-1 h-px bg-[var(--line)]" />{s.or}<span className="flex-1 h-px bg-[var(--line)]" /></div>
-              <button type="button" onClick={withGoogle} data-track="assessment_gate_google"
-                className="w-full min-h-[44px] rounded-xl border border-[var(--line-strong)] bg-white text-sm font-semibold text-charcoal hover:bg-lightblue transition-colors">
-                {s.google}
-              </button>
+              {/* was: <button onClick={withGoogle}> {s.google} </button> (redirect via supabase.co) */}
+              <GoogleButton onDone={afterSignedIn} onError={setError} tracking="assessment_gate_google" />
               <button type="button" onClick={() => { setAuto(false); setMode('login'); setError('') }}
                 className="w-full min-h-[44px] text-sm text-primary underline">
                 {s.haveAccount}
@@ -489,10 +493,8 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                 {busy ? '…' : mode === 'signup' ? s.createBtn : s.loginBtn}
               </button>
               <div className="flex items-center gap-3 text-xs text-charcoal/40"><span className="flex-1 h-px bg-[var(--line)]" />{s.or}<span className="flex-1 h-px bg-[var(--line)]" /></div>
-              <button type="button" onClick={withGoogle} data-track="assessment_gate_google"
-                className="w-full min-h-[44px] rounded-xl border border-[var(--line-strong)] bg-white text-sm font-semibold text-charcoal hover:bg-lightblue transition-colors">
-                {s.google}
-              </button>
+              {/* was: <button onClick={withGoogle}> {s.google} </button> (redirect via supabase.co) */}
+              <GoogleButton onDone={afterSignedIn} onError={setError} tracking="assessment_gate_google" />
             </form>
           )}
 

@@ -6,6 +6,7 @@ import { useLocale } from 'next-intl'
 import { supabase } from '@/lib/supabase'
 import { apiAuthPost } from '@/lib/api'
 import Logomark from '@/components/brand/Logomark'
+import GoogleButton from '@/components/GoogleButton'
 
 const field =
   'w-full border border-[var(--line-strong)] rounded-xl px-3.5 py-2.5 text-sm bg-lightblue text-charcoal placeholder-charcoal/40 focus:outline-none focus:border-accent focus:ring-2 focus:ring-teal/20 transition-colors'
@@ -153,10 +154,9 @@ function LoginForm() {
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
           <div className="flex items-center gap-3 text-xs text-charcoal/40"><span className="flex-1 h-px bg-[var(--line)]" />or<span className="flex-1 h-px bg-[var(--line)]" /></div>
-          <button type="button" onClick={loginWithGoogle} data-track="login_google"
-            className="w-full min-h-[44px] rounded-xl border border-[var(--line-strong)] bg-white text-sm font-semibold text-charcoal hover:bg-lightblue transition-colors">
-            Continue with Google
-          </button>
+          {/* was: <button type="button" onClick={loginWithGoogle} data-track="login_google"> Continue with Google </button>
+              (redirect via supabase.co; replaced by Google Identity Services so that address is not shown) */}
+          <GoogleButton onDone={finishLogin} onError={setError} tracking="login_google" />
           <p className="text-center text-sm text-charcoal/40">
             No account?{' '}
             <a href={`/${locale}/signup${searchParams.get('claim') ? `?claim=${encodeURIComponent(searchParams.get('claim')!)}${searchParams.get('plans') === '1' ? '&plans=1' : ''}` : ''}`} className="text-primary font-medium hover:underline">Sign up</a>
