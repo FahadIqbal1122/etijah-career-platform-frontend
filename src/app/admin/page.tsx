@@ -4084,6 +4084,7 @@ export default function AdminPage() {
   const dashClickedPay = gateDay.reduce((n, d) => n + d.clicked, 0)
   const dashStoppedAtGate = Math.max(0, dashReachedGate - dashPassedGate)
   const dashStartedAssessment = Math.max(gateEvents.filter(e => e.event_type === 'session_start').length, dashSubmissions.length)
+  const dashDroppedBeforeGate = Math.max(0, dashStartedAssessment - dashReachedGate)
   const gateReachedTrend = trendDays120.map(k => ({ label: shortDay(k), value: gateDay.find(d => d.key === k)?.reached || 0 }))
   const gatePassedTrend = trendDays120.map(k => ({ label: shortDay(k), value: gateDay.find(d => d.key === k)?.passed || 0 }))
   const gateHasEstimates = gateDay.some(d => d.estimated && d.reached > 0)
@@ -4916,11 +4917,19 @@ export default function AdminPage() {
             {activeTab === 'liveDashboard' && (
               <div className="mb-6">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-2">Pay gate · after chapter 2</p>
+                {/* Four numbers, left to right = the order people go through: started, dropped before the gate, reached the gate, paid.
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <BetaStatTile label="Reached the gate" accent="#0e7490" value={String(dashReachedGate)} sublabel={dashStartedAssessment ? `${Math.round(dashReachedGate / dashStartedAssessment * 100)}% of ${dashStartedAssessment} who started` : 'People who got to the pay screen'} />
                   <BetaStatTile label="Passed the gate" accent="#008300" value={String(dashPassedGate)} sublabel="Paid, company seat or admin access" onClick={() => setActiveTab('liveSales')} />
                   <BetaStatTile label="Stopped at the gate" accent="#eda100" value={String(dashStoppedAtGate)} sublabel="Reached it and did not pass" />
                   <BetaStatTile label="Gate → passed" accent="#6250d6" value={dashReachedGate ? `${Math.round(dashPassedGate / dashReachedGate * 100)}%` : '—'} sublabel={`${dashClickedPay} clicked pay`} />
+                </div>
+                */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <BetaStatTile label="Started" accent="#2a78d6" value={String(dashStartedAssessment)} sublabel="People who opened the assessment" />
+                  <BetaStatTile label="Dropped before the gate" accent="#eda100" value={String(dashDroppedBeforeGate)} sublabel={dashStartedAssessment ? `${Math.round(dashDroppedBeforeGate / dashStartedAssessment * 100)}% of those who started` : 'Left before the pay screen'} />
+                  <BetaStatTile label="Reached the gate" accent="#0e7490" value={String(dashReachedGate)} sublabel={dashStartedAssessment ? `${Math.round(dashReachedGate / dashStartedAssessment * 100)}% of those who started · ${dashClickedPay} clicked pay` : 'People who got to the pay screen'} />
+                  <BetaStatTile label="Paid orders" accent="#008300" value={String(dashPaidSales.length)} sublabel={dashReachedGate ? `${Math.round(dashPaidSales.length / dashReachedGate * 100)}% of those who reached the gate` : 'Paid orders'} onClick={() => setActiveTab('liveSales')} />
                 </div>
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mt-4">
                   <p className="text-sm font-semibold text-slate-700">Funnel</p>
@@ -5108,7 +5117,8 @@ export default function AdminPage() {
                         }),
                       })
                     }} />
-                    {/* Funnel: where people drop between taking the assessment and paying (follows the dashboard filters) */}
+                    {/* Old "Assessment to purchase" funnel, replaced by the pay-gate funnel at the top of this page (it counted dropped-off emails as "Started" and ignored the gate):
+                    {/* Funnel: where people drop between taking the assessment and paying (follows the dashboard filters) * /}
                     <div className="mt-4 pt-4 border-t border-slate-100">
                       <div className="flex items-baseline justify-between mb-3">
                         <p className="text-sm font-semibold text-slate-700">Assessment to purchase</p>
@@ -5143,6 +5153,7 @@ export default function AdminPage() {
                         })}
                       </div>
                     </div>
+                    */}
                   </div>
                   {/* Separate "Assessments by time of day" card, now merged into the per-day card above:
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
