@@ -63,14 +63,19 @@ const STR = {
     autoHead: 'Save your progress',
     autoBody: 'We will create your free account with this email, so your answers are kept safe. After you pay we email you a link to set a password, so you can log in later.',
     autoBtn: 'Continue to payment', haveAccount: 'I already have an account', google: 'Continue with Google', or: 'or',
-    payHead: 'Unlock the rest of your assessment',
-    payBody: 'Your first chapter is saved. Pay once to finish the assessment and get your full report.',
+    payHead: 'Get your full career report: best-fit careers, AI impact and a 90-day plan',
+    payBody: 'Your first chapter is saved. One payment finishes the assessment and unlocks everything below.',
     teaser: 'Your first result',
     topHead: 'Your top interests so far',
     personalityHead: 'Your personality so far',
     lockedLine: 'Your values, strengths, work style and career matches are next.',
-    included: 'What you unlock',
-    bullets: ['Your values, strengths and work style', 'Your ranked career matches', 'Your full personal report (PDF)'],
+    included: 'What is in your report',
+    featured: [
+      { icon: '🤖', title: 'AI impact on your careers', line: 'How AI is changing each career that fits you, and which ones stay strong.' },
+      { icon: '🗓️', title: 'Your 90-day plan', line: 'Clear steps for your first three months, so you know what to do next.' },
+    ],
+    bullets: ['Your values, strengths and work style', 'Career matches ranked by fit', 'Your full personal report (PDF)'],
+    securePay: 'Secure payment', payMethods: ['mada', 'Apple Pay', 'STC Pay', 'Visa', 'Mastercard'],
     pathfinder: 'Pathfinder', pathfinderLine: 'Full report, yours for life',
     launchpad: 'Launchpad', launchpadLine: 'Full report + a 1:1 coaching session',
     code: 'Discount code', apply: 'Apply', codeOk: 'Code applied',
@@ -80,8 +85,8 @@ const STR = {
       discount_wrong_plan: "This code doesn't apply to this plan.", discount_rate_limited: 'Too many attempts. Please try again later.',
       discount_unavailable: 'Codes are unavailable right now. Please try again.',
     } as Record<string, string>,
-    agree: 'I agree to the', terms: 'terms', and: 'and', privacy: 'privacy policy',
-    payBtn: 'Continue to payment',
+    agree: 'By continuing you agree to the', terms: 'terms', and: 'and', privacy: 'privacy policy',
+    payBtn: 'Unlock my full report',
     parentHint: 'Under 18? Send a payment link to your parent. Your answers stay saved.',
     parentBtn: 'Ask a parent to pay', parentDone: 'Link ready. Send it to your parent. This page continues by itself once they pay.',
     confirming: 'Confirming your payment…',
@@ -106,41 +111,47 @@ const STR = {
     autoHead: 'احفظ تقدّمك',
     autoBody: 'سننشئ لك حساباً مجانياً بهذا البريد لنحفظ إجاباتك. بعد الدفع نرسل لك رابطاً لتعيين كلمة مرور لتسجّل الدخول لاحقاً.',
     autoBtn: 'تابع إلى الدفع', haveAccount: 'لدي حساب بالفعل', google: 'المتابعة عبر Google', or: 'أو',
-    payHead: 'افتح بقية تقييمك',
-    payBody: 'تم حفظ فصلك الأول. ادفع مرة واحدة لتكمل التقييم وتحصل على تقريرك الكامل.',
+    payHead: 'تقريرك المهني الكامل: المسارات الأنسب لك، وتأثير الذكاء الاصطناعي عليها، وخطة 90 يوم',
+    payBody: 'حفظنا إجاباتك في الفصل الأول. بدفعة واحدة تكمل التقييم ويصلك تقريرك كاملاً.',
     teaser: 'نتيجتك الأولى',
-    topHead: 'أبرز ميولك حتى الآن',
-    personalityHead: 'شخصيتك حتى الآن',
-    lockedLine: 'قيمك ونقاط قوتك وأسلوب عملك ومساراتك المهنية في الخطوة التالية.',
-    included: 'ما ستفتحه',
-    bullets: ['قيمك ونقاط قوتك وأسلوب عملك', 'مسارات مهنية مرتبة حسب توافقها معك', 'تقريرك الشخصي الكامل (PDF)'],
-    pathfinder: 'مرشد المسار', pathfinderLine: 'التقرير الكامل، لك مدى الحياة',
-    launchpad: 'منصة الانطلاق', launchpadLine: 'التقرير الكامل + جلسة تدريب فردية',
-    code: 'كود الخصم', apply: 'تطبيق', codeOk: 'تم تطبيق الكود',
+    topHead: 'أبرز ميولك إلى الآن',
+    personalityHead: 'شخصيتك إلى الآن',
+    lockedLine: 'قيمك ونقاط قوتك وأسلوبك في العمل والمسارات المناسبة لك تجدها في التقرير الكامل.',
+    included: 'ماذا يتضمن تقريرك',
+    featured: [
+      { icon: '🤖', title: 'تأثير الذكاء الاصطناعي على مساراتك', line: 'كيف يغيّر الذكاء الاصطناعي كل مسار يناسبك، وأي المسارات تبقى قوية في المستقبل.' },
+      { icon: '🗓️', title: 'خطتك لـ 90 يوم', line: 'خطوات واضحة لأول ثلاثة أشهر، تعرف منها وش تسوي بعد التقرير.' },
+    ],
+    bullets: ['قيمك ونقاط قوتك وأسلوبك في العمل', 'المسارات المهنية الأنسب لك، مرتبة حسب التوافق', 'تقريرك الكامل بصيغة PDF تحتفظ به'],
+    securePay: 'دفع آمن', payMethods: ['mada', 'Apple Pay', 'STC Pay', 'Visa', 'Mastercard'],
+    pathfinder: 'مرشد المسار', pathfinderLine: 'التقرير الكامل، يبقى لك دائماً',
+    launchpad: 'منصة الانطلاق', launchpadLine: 'التقرير الكامل + جلسة تدريب فردية معك',
+    code: 'كود الخصم', apply: 'تفعيل', codeOk: 'تم تفعيل الكود',
     codeErrors: {
       discount_invalid: 'هذا الكود غير صالح.', discount_expired: 'انتهت صلاحية هذا الكود.', discount_not_started: 'هذا الكود غير مفعّل بعد.',
       discount_used_up: 'تم استنفاد عدد مرات استخدام هذا الكود.', discount_already_used: 'لقد استخدمت هذا الكود من قبل.',
       discount_wrong_plan: 'هذا الكود لا ينطبق على هذه الباقة.', discount_rate_limited: 'محاولات كثيرة. حاول لاحقاً.',
       discount_unavailable: 'الأكواد غير متاحة حالياً. حاول مرة أخرى.',
     } as Record<string, string>,
-    agree: 'أوافق على', terms: 'الشروط والأحكام', and: 'و', privacy: 'سياسة الخصوصية',
-    payBtn: 'المتابعة إلى الدفع',
-    parentHint: 'أقل من 18 سنة؟ أرسل رابط الدفع إلى والدك. إجاباتك محفوظة.',
-    parentBtn: 'اطلب من والدك الدفع', parentDone: 'الرابط جاهز. أرسله إلى والدك. تستمر هذه الصفحة تلقائياً بعد أن يدفع.',
-    confirming: 'نتأكد من عملية الدفع…',
-    slow: 'استغرق الأمر وقتاً أطول من المعتاد. إذا كنت قد دفعت، اضغط الزر للتحقق مرة أخرى.',
+    agree: 'بمتابعتك فأنت توافق على', terms: 'الشروط والأحكام', and: 'و', privacy: 'سياسة الخصوصية',
+    payBtn: 'افتح تقريري الكامل',
+    parentHint: 'عمرك أقل من 18؟ أرسل رابط الدفع لولي أمرك، وإجاباتك تبقى محفوظة.',
+    parentBtn: 'أرسل رابط الدفع لولي أمرك', parentDone: 'الرابط جاهز، أرسله لولي أمرك. وتكمل هذه الصفحة تلقائياً بمجرد أن يدفع.',
+    confirming: 'جارٍ التأكد من الدفع…',
+    slow: 'تأخر الأمر أكثر من المعتاد. إذا كنت قد دفعت، اضغط الزر للتحقق مرة أخرى.',
     checkAgain: 'تحقق مرة أخرى',
     orgUnverified: 'شركتك تمنحك وصولاً مجانياً. يرجى تأكيد بريدك الإلكتروني أولاً ثم العودة إلى هذه الصفحة.',
     retake: 'حسابك يحتوي بالفعل على تقريره الكامل، لذا لا يشمل تقييماً جديداً.',
-    failedNote: 'لم تتم عملية الدفع ولم يتم خصم أي مبلغ. يمكنك المحاولة مرة أخرى.',
+    failedNote: 'لم تكتمل عملية الدفع ولم يُخصم أي مبلغ. يمكنك المحاولة مرة أخرى.',
     existingHead: 'لديك نتيجة بالفعل',
     existingBody: 'حسابك يحتوي على تقييم مكتمل. افتحه لتفتح تقريرك الكامل، ولا حاجة لإعادة الإجابة عن الأسئلة.',
     existingBtn: 'افتح نتيجتي',
-    error: 'حدث خطأ ما. حاول مرة أخرى.',
+    error: 'حدث خطأ. حاول مرة أخرى.',
   },
 } as const
 
 const POLL_MS = 3000
+const PARENT_POLL_MS = 8000   // waiting for a parent to pay
 const POLL_MAX = 20   // about a minute, then offer a manual "check again"
 
 // An account made here has a random password nobody sees. Once the payment goes through we email a "set your password"
@@ -181,7 +192,9 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   const [codeInput, setCodeInput] = useState('')
   const [applied, setApplied] = useState<{ code: string; preview: DiscountPreview } | null>(null)
   const [codeError, setCodeError] = useState('')
-  const [agreed, setAgreed] = useState(false)
+  // Terms are now accepted by continuing (notice under the button), so the pay button is active from the start.
+  const [agreed] = useState(true)
+  // const [agreed, setAgreed] = useState(false)
   const [canAskParent, setCanAskParent] = useState(false)
   const [parentLink, setParentLink] = useState('')
   const [slow, setSlow] = useState(false)
@@ -281,11 +294,13 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   useEffect(() => {
     if (step !== 'pay' || !(confirming || parentLink)) return
     let tries = 0
+    // A parent can take hours to pay: keep checking (slowly) for as long as this page stays open, instead of giving up after a minute.
+    const waitingForParent = !confirming
     const id = window.setInterval(async () => {
       tries += 1
       try { await checkAccess(); if (unlockedRef.current) window.clearInterval(id) } catch { /* try again on the next tick */ }
-      if (tries >= POLL_MAX) { window.clearInterval(id); setSlow(true) }
-    }, POLL_MS)
+      if (!waitingForParent && tries >= POLL_MAX) { window.clearInterval(id); setSlow(true) }
+    }, waitingForParent ? PARENT_POLL_MS : POLL_MS)
     return () => window.clearInterval(id)
   }, [step, confirming, parentLink, checkAccess])
 
@@ -519,6 +534,24 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
               {orgUnverified && <p className="text-sm rounded-xl bg-amber-50 text-amber-800 px-3 py-2">{s.orgUnverified}</p>}
               {paymentFailed && <p className="text-sm rounded-xl bg-amber-50 text-amber-800 px-3 py-2">{s.failedNote}</p>}
 
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-charcoal/50">{s.included}</p>
+                <div className="mt-2 grid gap-2">
+                  {s.featured.map(f => (
+                    <div key={f.title} className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2.5">
+                      <span className="text-xl leading-none" aria-hidden="true">{f.icon}</span>
+                      <span>
+                        <span className="block text-sm font-bold text-charcoal">{f.title}</span>
+                        <span className="block text-xs text-charcoal/70">{f.line}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <ul className="mt-2 space-y-1 text-sm text-charcoal/80">
+                  {s.bullets.map(b => <li key={b}>✓ {b}</li>)}
+                </ul>
+              </div>
+
               <div className="rounded-2xl border border-primary/30 bg-white px-4 py-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-wide text-charcoal/50">{s.teaser}</p>
                 <p className="mt-1 text-lg font-extrabold text-charcoal">{reveal.head}</p>
@@ -565,12 +598,6 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                 )}
               </div>
 
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-charcoal/50">{s.included}</p>
-                <ul className="mt-1 space-y-1 text-sm text-charcoal/80">
-                  {s.bullets.map(b => <li key={b}>🔒 {b}</li>)}
-                </ul>
-              </div>
 
               {confirming ? (
                 <div className="text-sm text-charcoal/70">
@@ -610,6 +637,13 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                     {codeError && <p className="mt-1 text-xs text-red-600">{codeError}</p>}
                   </div>
 
+                  <p className="text-xs text-charcoal/60">
+                    {s.agree}{' '}
+                    <a href="https://shop.etijahcoaching.com/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">{s.terms}</a>
+                    {' '}{s.and}{' '}
+                    <a href="https://shop.etijahcoaching.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">{s.privacy}</a>.
+                  </p>
+                  {/* Old: a checkbox that kept the pay button disabled until ticked.
                   <label className="flex items-start gap-3 py-1 text-sm text-charcoal/70">
                     <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} className="mt-0.5 w-5 h-5 shrink-0" />
                     <span>
@@ -619,13 +653,19 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                       <a href="https://shop.etijahcoaching.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">{s.privacy}</a>.
                     </span>
                   </label>
+                  */}
 
                   {error && <p className="text-sm text-red-600">{error}</p>}
 
-                  <button onClick={pay} disabled={!agreed || busy} data-track="assessment_gate_pay"
+                  <button onClick={pay} disabled={busy} data-track="assessment_gate_pay"
                     className="w-full px-4 py-3 rounded-xl bg-primary text-white text-sm font-semibold disabled:opacity-40">
                     {busy ? '…' : s.payBtn}
                   </button>
+
+                  <div className="flex flex-wrap items-center justify-center gap-1.5">
+                    <span className="text-xs text-charcoal/60">🔒 {s.securePay}</span>
+                    {s.payMethods.map(m => <span key={m} className="chip !text-[11px] !py-0.5" dir="ltr">{m}</span>)}
+                  </div>
 
                   {canAskParent && (
                     <div className="rounded-xl border border-[var(--line-strong)] bg-white/60 p-3 text-center space-y-2">
