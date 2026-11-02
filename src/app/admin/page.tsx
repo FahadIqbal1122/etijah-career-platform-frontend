@@ -4149,6 +4149,8 @@ export default function AdminPage() {
       const answersById: Record<string, { answers: Record<string, unknown>; locale: string | null }> = {}
       const scoresById: Record<string, { framework: string; dimension: string; raw_score: number | null; normalized_score: number | null }[]> = {}
       const topById: Record<string, Record<string, string[]>> = {}
+      const accountById: Record<string, string> = {}
+      const discountByOrder: Record<string, { code: string | null; status: string | null; original_amount: number | null; discount_amount: number | null; final_amount: number | null }> = {}
       const ids = dashSubmissions.map(s => s.id)
       for (let i = 0; i < ids.length; i += 1000) {
         const res = await fetch('/api/admin/export/assessment-details', {
@@ -4159,6 +4161,8 @@ export default function AdminPage() {
         Object.assign(answersById, d.answers || {})
         Object.assign(scoresById, d.scores || {})
         Object.assign(topById, d.top || {})
+        Object.assign(accountById, d.accounts || {})
+        Object.assign(discountByOrder, d.discounts || {})
       }
 
       const dt = (iso: string | null | undefined) => iso ? new Date(iso).toLocaleString('en-GB') : ''
@@ -4176,7 +4180,20 @@ export default function AdminPage() {
         if (t.coaching_included) planByEmail.set(k, 'Launchpad')
         else if (!planByEmail.has(k)) planByEmail.set(k, 'Pathfinder')
       }
-      const planOf = (s: Submission) => planByEmail.get(emailKey(s.email)) || 'No purchase'
+      // Match by account first (exact), then by email, so someone who paid under a different email still shows their plan.
+      const planByUser = new Map<string, string>()
+      for (const t of livePaidSales) {
+        if (!t.user_id) continue
+        if (t.coaching_included) planByUser.set(t.user_id, 'Launchpad')
+        else if (!planByUser.has(t.user_id)) planByUser.set(t.user_id, 'Pathfinder')
+      }
+      const planOf = (s: Submission) => planByUser.get(accountById[s.id] || '') || planByEmail.get(emailKey(s.email)) || 'No purchase'
+      const eraOf = (iso: string) => sinceGate(iso) ? 'After pay gate' : 'Before pay gate'
+      // Answers that only exist once the full assessment is done stay blank for people who stopped early; say so.
+      const orNotReached = (s: Submission, v: string) => v || (s.completed ? '' : 'Not reached')
+      const funnelOf = (s: Submission) => planOf(s) !== 'No purchase' ? 'Paid'
+        : s.completed ? (sinceGate(s.created_at) ? 'Completed, not paid' : 'Completed (free report)')
+        : (sinceGate(s.created_at) ? 'Stopped at pay gate' : 'Did not finish')
       const sessionOf = (id: string) => telemetryByResponseId.get(id)
 
       // ── Summary ──
@@ -4240,6 +4257,18 @@ export default function AdminPage() {
 
       // ── Data sheets ──
       const sheets: SheetSpec[] = []
+      sheets.push({
+        name: 'Read me', headers: ['Topic', 'Explanation'],
+        rows: [
+          ['Pay gate', `Pay gate went live ${new Date(GATE_LIVE_AT).toLocaleString('en-GB')}. "Era" and "Funnel stage" on the Submissions sheet separate the two periods.`],
+          ['Blank / "Not reached"', 'People who stopped at the pay gate saved only their profile, so experience, education, career direction and later answers do not exist for them.'],
+          ['Plan', 'Matched to paid orders by account first, then by email. "No purchase" = no paid order found.'],
+          ['Funnel stage', 'Paid / Completed, not paid / Stopped at pay gate (post-gate), or Completed (free report) / Did not finish (pre-gate).'],
+          ['Career matches', 'Only matches already generated are exported. People who never opened their report are listed as "Not generated yet".'],
+          ['Discounts', 'Discount code and amounts come from the discount redemptions table, matched by order reference.'],
+          ['Time taken', 'Not exported: it is not recorded for current submissions.'],
+        ],
+      })
 
       sheets.push({
         name: 'Daily trend', headers: ['Date', 'Assessments submitted', 'Completed', 'Paid orders'],
@@ -4253,17 +4282,18 @@ export default function AdminPage() {
       sheets.push({
         name: 'Submissions',
         headers: ['Submitted at', 'Name', 'Email', 'Phone', 'Country', 'Nationality', 'Age', 'Age group', 'Experience', 'Education field',
-          'Major own choice', 'Major choice reason', 'Career direction', 'Current stage', 'Status', 'Plan', 'Feedback stage', 'Device', 'Games played', 'Response ID'],
+          'Major own choice', 'Major choice reason', 'Career direction', 'Current stage', 'Status', 'Plan', 'Funnel stage', 'Era', 'Language', 'Feedback stage', 'Device', 'Games played', 'Account ID', 'Response ID'],
         rows: [...dashSubmissions].sort((a, b) => b.created_at.localeCompare(a.created_at)).map(s => {
           const bf = betaFeedbackByResponseId.get(s.id)
           const sess = sessionOf(s.id)
           return [
             dt(s.created_at), s.full_name, s.email, s.phone, lab(COUNTRY_LABEL, s.country), lab(NATIONALITY_LABEL, s.nationality),
-            ageText(s), ageGroup(s), lab(EXPERIENCE_LEVEL_LABEL, s.experience_level), (s.education_field || []).join('; '),
+            ageText(s), ageGroup(s), orNotReached(s, lab(EXPERIENCE_LEVEL_LABEL, s.experience_level)), orNotReached(s, (s.education_field || []).join('; ')),
             s.major_was_own_choice === 'no' ? 'No' : s.major_was_own_choice === 'yes' ? 'Yes' : '', s.major_was_own_choice === 'no' ? s.major_choice_reason : '',
-            formatUnderscored(s.career_direction), lab(CURRENT_STAGE_LABEL, s.current_stage), s.completed ? 'Complete' : 'Incomplete', planOf(s),
+            orNotReached(s, formatUnderscored(s.career_direction)), lab(CURRENT_STAGE_LABEL, s.current_stage), s.completed ? 'Complete' : 'Incomplete', planOf(s),
+            funnelOf(s), eraOf(s.created_at), answersById[s.id]?.locale || '',
             bf ? BETA_FEEDBACK_STAGE_LABELS[betaFeedbackStageOf(bf)] : 'None', sess?.device_type || '',
-            sess ? sess.activities.map(k => ACTIVITY_LABEL[k] || k).join('; ') : '', s.id,
+            sess ? sess.activities.map(k => ACTIVITY_LABEL[k] || k).join('; ') : '', accountById[s.id] || '', s.id,
           ]
         }),
       })
@@ -4309,7 +4339,12 @@ export default function AdminPage() {
           careerRows.push([r.full_name, r.email, dt(r.created_at), i + 1, c.title, c.match_score ?? null, c.fit_tag || '', c.fit_summary || '', c.growth_note || ''])
         })
       }
-      sheets.push({ name: 'Career matches', headers: ['Name', 'Email', 'Submitted at', 'Rank', 'Career', 'Match score', 'Fit', 'Why it fits', 'Growth note'], rows: careerRows })
+      // Cache-only on purpose: completed people whose report was never opened have no matches yet; list them instead of omitting them.
+      const withRecs = new Set(dashCareerRecs.filter(r => (r.career_recommendations || []).length > 0).map(r => r.id))
+      for (const s of dashSubmissions) {
+        if (s.completed && !withRecs.has(s.id)) careerRows.push([s.full_name, s.email, dt(s.created_at), '', 'Not generated yet (report not opened)', null, '', '', ''])
+      }
+      sheets.push({ name: 'Career matches', note: 'Matches are only what has already been generated for a person; opening their report creates them.', headers: ['Name', 'Email', 'Submitted at', 'Rank', 'Career', 'Match score', 'Fit', 'Why it fits', 'Growth note'], rows: careerRows })
 
       const FEEDBACK_COLUMNS: [string, (bf: BetaFeedbackEntry) => string | number | null][] = [
         ['Feedback stage', bf => BETA_FEEDBACK_STAGE_LABELS[betaFeedbackStageOf(bf)]],
@@ -4355,9 +4390,10 @@ export default function AdminPage() {
         }),
       })
 
-      const saleHeaders = ['Ordered at', 'Paid at', 'Name', 'Email', 'Country', 'Plan', 'Amount', 'Currency', 'Status', 'Paid', 'Coaching session included', 'Order ref']
+      const saleHeaders = ['Ordered at', 'Paid at', 'Name', 'Email', 'Country', 'Plan', 'Amount', 'Currency', 'Status', 'Paid', 'Coaching session included', 'Order ref', 'Discount code', 'Price before discount', 'Discount amount']
       const saleRow = (t: SaleEntry) => [dt(t.created_at), dt(t.paid_at), t.full_name, t.email, lab(COUNTRY_LABEL, t.country), t.plan_code, Number(t.amount),
-        t.currency, t.status, isPaidSale(t) ? 'Yes' : 'No', t.coaching_included ? 'Yes' : 'No', t.order_ref]
+        t.currency, t.status, isPaidSale(t) ? 'Yes' : 'No', t.coaching_included ? 'Yes' : 'No', t.order_ref,
+        discountByOrder[t.order_ref]?.code || '', discountByOrder[t.order_ref]?.original_amount ?? '', discountByOrder[t.order_ref]?.discount_amount ?? '']
       sheets.push({ name: 'Sales', headers: saleHeaders, rows: dashRealSales.map(saleRow) })
       sheets.push({ name: 'Coaching purchases', note: 'Paid Launchpad orders: each includes one 1:1 coaching session.', headers: saleHeaders, rows: dashCoachingSales.map(saleRow) })
 
