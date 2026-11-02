@@ -4069,7 +4069,19 @@ export default function AdminPage() {
     return m
   }
   const gTrReached = gateEvPerDay('gate_reached'), gTrClicked = gateEvPerDay('gate_pay_click'), gTrPassed = gateEvPerDay('gate_passed')
-  const unfinishedRows = dashSubmissions.filter(sub => !sub.completed)
+  // One row per person (latest attempt), excluding test/staff accounts, anyone who later finished, and anyone who paid
+  const isTestEmail = (e?: string | null) =>
+    !!e && /(@test\.com$|@1234test\.com$|^test\d*[a-z0-9]*@|@etijahcoaching\.com$|@myetijahi\.com$|hidesit\.net$)/i.test(e)
+  const completedEmails = new Set(dashSubmissions.filter(s => s.completed).map(s => emailKey(s.email)))
+  const unfinishedRows = Array.from(
+    dashSubmissions
+      .filter(s => !s.completed && !isTestEmail(s.email)
+        && !completedEmails.has(emailKey(s.email)) && !livePaidEmails.has(emailKey(s.email)))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .reduce((m, s) => (m.has(emailKey(s.email)) ? m : m.set(emailKey(s.email), s)), new Map<string, typeof dashSubmissions[number]>())
+      .values()
+  )
+  // const unfinishedRows = dashSubmissions.filter(sub => !sub.completed)
   const unfinishedPerDay = new Map<string, number>()
   for (const u of unfinishedRows) { const k = dayKey(u.created_at); unfinishedPerDay.set(k, (unfinishedPerDay.get(k) || 0) + 1) }
   const gateDay = trendDays.map(k => {
