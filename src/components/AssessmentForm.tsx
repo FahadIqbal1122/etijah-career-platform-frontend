@@ -42,6 +42,7 @@ import { buildReveal } from '@/data/revealScoring'
 import { CHAPTERS, CHAPTER_COUNT, chapterIndexOf } from '@/data/chapters'
 import { initTelemetry, pushTelemetry, getTelemetrySessionId, rotateTelemetrySession, flush as flushTelemetry } from '@/lib/telemetry'
 import { track, trackOnce } from '@/lib/analytics'
+import DemoReportsButton from '@/components/shared/DemoReportsButton'
 
 // ── skip / auto-fill rules (identical to the original form) ──────────────────
 // The real (non-"not applicable") study fields picked in QO5, in pick order.
@@ -1043,6 +1044,14 @@ export default function AssessmentForm() {
       <div className="assess-topbar">
         <Logomark size={30} tone="dark" />
         <div className="assess-topbar-actions">
+          <DemoReportsButton
+            locale={locale}
+            source="assessment_header"
+            track="assessment_header_sample_report"
+            className="assess-lang"
+          >
+            {locale === 'ar' ? 'نماذج التقارير' : 'Sample reports'}
+          </DemoReportsButton>
           <BugReportModal locale={locale as 'en' | 'ar'} page={q ? `${phase}:${q.id}` : phase} />
           <button className="assess-lang" onClick={() => switchLocale(locale === 'en' ? 'ar' : 'en')}>
             {locale === 'en' ? 'العربية' : 'English'}

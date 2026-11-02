@@ -71,7 +71,7 @@ const STR = {
     lockedLine: 'Your values, strengths, work style and career matches are next.',
     included: 'What is in your report',
     featured: [
-      { icon: '🤖', title: 'AI impact on your careers', line: 'How AI is changing each career that fits you, and which ones stay strong.' },
+      { icon: '🤖', title: 'AI impact on your paths', line: 'How AI is affecting each path.' },
       { icon: '🗓️', title: 'Your 90-day plan', line: 'Clear steps for your first three months, so you know what to do next.' },
     ],
     bullets: ['Your values, strengths and work style', 'Career matches ranked by fit', 'Your full personal report (PDF)'],
@@ -119,8 +119,8 @@ const STR = {
     lockedLine: 'قيمك ونقاط قوتك وأسلوبك في العمل والمسارات المناسبة لك تجدها في التقرير الكامل.',
     included: 'ماذا يتضمن تقريرك',
     featured: [
-      { icon: '🤖', title: 'تأثير الذكاء الاصطناعي على مساراتك', line: 'كيف يغيّر الذكاء الاصطناعي كل مسار يناسبك، وأي المسارات تبقى قوية في المستقبل.' },
-      { icon: '🗓️', title: 'خطتك لـ 90 يوم', line: 'خطوات واضحة لأول ثلاثة أشهر، تعرف منها وش تسوي بعد التقرير.' },
+      { icon: '🤖', title: 'تأثير الذكاء الاصطناعي على مساراتك', line: 'كيف يؤثر الذكاء الاصطناعي على كل مسار.' },
+      { icon: '🗓️', title: 'خطتك لـ 90 يوم', line: 'خطوات واضحة لأول ثلاثة أشهر، تعرف منها ماذا تفعل بعد التقرير.' },
     ],
     bullets: ['قيمك ونقاط قوتك وأسلوبك في العمل', 'المسارات المهنية الأنسب لك، مرتبة حسب التوافق', 'تقريرك الكامل بصيغة PDF تحتفظ به'],
     securePay: 'دفع آمن', payMethods: ['mada', 'Apple Pay', 'STC Pay', 'Visa', 'Mastercard'],
