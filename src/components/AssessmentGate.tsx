@@ -82,6 +82,7 @@ const STR = {
     } as Record<string, string>,
     agree: 'I agree to the', terms: 'terms', and: 'and', privacy: 'privacy policy',
     payBtn: 'Continue to payment',
+    parentHint: 'Under 18? Send a payment link to your parent. Your answers stay saved.',
     parentBtn: 'Ask a parent to pay', parentDone: 'Link ready. Send it to your parent. This page continues by itself once they pay.',
     confirming: 'Confirming your payment…',
     slow: 'This is taking longer than usual. If you have paid, press the button to check again.',
@@ -124,6 +125,7 @@ const STR = {
     } as Record<string, string>,
     agree: 'أوافق على', terms: 'الشروط والأحكام', and: 'و', privacy: 'سياسة الخصوصية',
     payBtn: 'المتابعة إلى الدفع',
+    parentHint: 'أقل من 18 سنة؟ أرسل رابط الدفع إلى والدك. إجاباتك محفوظة.',
     parentBtn: 'اطلب من والدك الدفع', parentDone: 'الرابط جاهز. أرسله إلى والدك. تستمر هذه الصفحة تلقائياً بعد أن يدفع.',
     confirming: 'نتأكد من عملية الدفع…',
     slow: 'استغرق الأمر وقتاً أطول من المعتاد. إذا كنت قد دفعت، اضغط الزر للتحقق مرة أخرى.',
@@ -626,14 +628,20 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                   </button>
 
                   {canAskParent && (
-                    <div className="text-center">
+                    <div className="rounded-xl border border-[var(--line-strong)] bg-white/60 p-3 text-center space-y-2">
                       {parentLink ? (
                         <div className="text-xs text-charcoal/70 space-y-1">
                           <p>{s.parentDone}</p>
                           <p className="break-all" dir="ltr">{parentLink}</p>
                         </div>
                       ) : (
-                        <button onClick={askParent} disabled={busy} className="min-h-[44px] px-2 text-sm text-primary underline disabled:opacity-50">{s.parentBtn}</button>
+                        <>
+                          <p className="text-xs text-charcoal/70">{s.parentHint}</p>
+                          <button onClick={askParent} disabled={busy} data-track="assessment_gate_parent_link"
+                            className="w-full min-h-[44px] px-4 rounded-xl border border-primary text-primary text-sm font-semibold disabled:opacity-50">{s.parentBtn}</button>
+                          {/* Old version: a small underlined text link that most under-18s did not notice.
+                          <button onClick={askParent} disabled={busy} className="min-h-[44px] px-2 text-sm text-primary underline disabled:opacity-50">{s.parentBtn}</button> */}
+                        </>
                       )}
                     </div>
                   )}
