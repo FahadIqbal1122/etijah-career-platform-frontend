@@ -1581,6 +1581,8 @@ export default function AdminPage() {
   const [orgDomains, setOrgDomains] = useState<OrgDomain[]>([])
   const [orgLoading, setOrgLoading] = useState(false)
   const [gateEvents, setGateEvents] = useState<{ event_type: string; session_id: string; created_at: string }[]>([])
+  // One-tap "why not now?" answers from the pay step: reason -> number of people (latest answer per browser session).
+  const [gateExitReasons, setGateExitReasons] = useState<Record<string, number>>({})
   const [orgSaving, setOrgSaving] = useState(false)
   const [orgError, setOrgError] = useState('')
   const [orgOpen, setOrgOpen] = useState<string | null>(null)
@@ -1992,6 +1994,8 @@ export default function AdminPage() {
       if (dashTo) qs.set('until', new Date(new Date(`${dashTo}T00:00:00`).getTime() + 86400000).toISOString())
       const r = await fetch(`/api/admin/paygate-events?${qs}`)
       if (r.ok) setGateEvents((await r.json()).events ?? [])
+      const r2 = await fetch(`/api/admin/paygate-stats?${qs}`)
+      if (r2.ok) setGateExitReasons((await r2.json()).exit_reasons ?? {})
     } catch { /* best-effort */ }
   }, [dashFrom, dashTo])
   useEffect(() => {
@@ -5085,6 +5089,26 @@ export default function AdminPage() {
                 {gateHasEstimates && (
                   <p className="text-xs text-slate-400 mt-2">Days from 28 Oct before live tracking began (29 Oct) are estimated from saved answers at the gate and paid orders. Earlier days are not counted.</p>
                 )}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mt-4">
+                  <p className="text-sm font-semibold text-slate-700">Why people did not pay <span className="font-normal text-slate-400">· one-tap answer on the pay screen</span></p>
+                  {Object.keys(gateExitReasons).length === 0 ? (
+                    <p className="text-sm text-slate-400 mt-2">No answers yet in this date range.</p>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      {([['too_expensive', 'Too expensive'], ['need_parents', 'Need to ask my parents'], ['not_sure_useful', 'Not sure it’s useful'], ['later', 'Will do it later']] as const).map(([k, label]) => {
+                        const n = gateExitReasons[k] || 0
+                        const total = Object.values(gateExitReasons).reduce((a, b) => a + b, 0)
+                        return (
+                          <div key={k} className="flex items-center gap-3 text-sm">
+                            <span className="w-48 shrink-0 text-slate-600">{label}</span>
+                            <span className="h-2 flex-1 rounded-full bg-slate-100 overflow-hidden"><span className="block h-full bg-cyan-700" style={{ width: `${total ? (n / total) * 100 : 0}%` }} /></span>
+                            <span className="w-16 text-right font-semibold text-slate-700">{n} <span className="font-normal text-slate-400">({total ? Math.round((n / total) * 100) : 0}%)</span></span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mt-4">
                   <p className="text-sm font-semibold text-slate-700">Stopped at the gate <span className="font-normal text-slate-400">· {unfinishedRows.length} people with an account</span></p>
                   {unfinishedRows.length === 0 ? (
