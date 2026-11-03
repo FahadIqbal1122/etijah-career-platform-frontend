@@ -3976,6 +3976,7 @@ export default function AdminPage() {
     !!e && /(@test\.com$|@1234test\.com$|^test\d*[a-z0-9]*@|@etijahcoaching\.com$|@myetijahi\.com$|hidesit\.net$)/i.test(e)
   // const dashSubmissions = liveSubmissions.filter(matchesDashSubmission)
   const dashSubmissions = liveSubmissions.filter(matchesDashSubmission).filter(s => !isTestEmail(s.email))
+  const liveRealSubmissionsCount = liveSubmissions.filter(s => !isTestEmail(s.email)).length // staff/test excluded, so "X of Y" labels match dashSubmissions
   const dashSubmissionIds = new Set(dashSubmissions.map(s => s.id))
   const dashFeedback = liveFeedbackList.filter(bf => dashSubmissionIds.has(bf.response_id))
   const dashCareerRecs = liveCareerRecsGenerated.filter(r => dashSubmissionIds.has(r.id))
@@ -4235,7 +4236,7 @@ export default function AdminPage() {
           ['Country', dashCountry === 'all' ? 'All' : lab(COUNTRY_LABEL, dashCountry)],
           ['Nationality', dashNationality === 'all' ? 'All' : lab(NATIONALITY_LABEL, dashNationality)],
           ['Age', dashAge === 'all' ? 'All' : lab(AGE_BRACKET_LABEL, dashAge)],
-          ['People matching the filters', `${nSub} of ${liveSubmissions.length}`],
+          ['People matching the filters', `${nSub} of ${liveRealSubmissionsCount}`],
           ...filterNotes.map(n => ['Note', n]),
         ] },
         { title: 'Key numbers', headers: ['Metric', 'Value'], rows: [
@@ -4680,7 +4681,7 @@ export default function AdminPage() {
               key: 'dashboard', label: 'Dashboard', color: 'bg-sky-700',
               tabs: [
                 { key: 'liveDashboard', label: 'Dashboard', color: 'bg-sky-700' },
-                { key: 'liveSubmissions', label: 'Submissions', color: 'bg-sky-600', badge: liveSubmissions.length > 0 ? liveSubmissions.length : undefined },
+                { key: 'liveSubmissions', label: 'Submissions', color: 'bg-sky-600', badge: liveRealSubmissionsCount > 0 ? liveRealSubmissionsCount : undefined },
                 { key: 'liveCareerRecs', label: 'Career Recs', color: 'bg-teal-600', badge: liveCareerRecsGenerated.length > 0 ? liveCareerRecsGenerated.length : undefined },
                 { key: 'abandoned', label: 'Dropped off', color: 'bg-amber-600', badge: abandonedList.length > 0 ? abandonedList.length : undefined, onSelect: fetchAbandoned },
                 { key: 'liveFeedback', label: 'Feedback', color: 'bg-sky-500', badge: liveFeedbackList.length > 0 ? liveFeedbackList.length : undefined },
@@ -4977,7 +4978,7 @@ export default function AdminPage() {
               {exportError && <p className="text-xs text-red-500 mt-3">{exportError}</p>}
               {dashFiltersActive && (
                 <p className="text-xs text-slate-400 mt-3">
-                  Showing {dashSubmissions.length} of {liveSubmissions.length} submissions
+                  Showing {dashSubmissions.length} of {liveRealSubmissionsCount} submissions
                   {demoFilterOn && ' · sales are matched to filtered users by email'}
                 </p>
               )}
