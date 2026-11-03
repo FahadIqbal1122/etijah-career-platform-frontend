@@ -49,6 +49,10 @@ const TRAIT_INFO: Record<string, { en: [string, string]; ar: [string, string] }>
   stability:         { en: ['Steady', 'You stay calm when things get stressful.'], ar: ['متزن', 'تحافظ على هدوئك عند الضغط.'] },
 }
 
+// The real end of the launch price. Leave null until a date is decided: nothing is shown, so no false deadline appears.
+// Set an ISO date to show "Launch price ends <date>", e.g. '2026-12-31T20:59:00Z'.
+const LAUNCH_PRICE_ENDS_AT: string | null = null
+
 type GatePlan = Extract<PlanCode, 'pathfinder' | 'launchpad_monthly'>
 
 const STR = {
@@ -75,6 +79,9 @@ const STR = {
       { icon: '🗓️', title: 'Your 90-day plan', line: 'Clear steps for your first three months, so you know what to do next.' },
     ],
     bullets: ['Your values, strengths and work style', 'Career matches ranked by fit', 'Your full personal report (PDF)'],
+    priceNow: 'now', timeLeft: 'About 10 minutes to finish.', offerEnds: 'Launch price ends',
+    exitQ: 'Not buying right now? Tell us why, one tap:', exitThanks: 'Thank you, this helps us improve.',
+    exitReasons: [['too_expensive', 'Too expensive'], ['need_parents', 'Need to ask my parents'], ['not_sure_useful', 'Not sure it’s useful'], ['later', 'Will do it later']] as [string, string][],
     securePay: 'Secure payment', payMethods: ['mada', 'Apple Pay', 'STC Pay', 'Visa', 'Mastercard'],
     pathfinder: 'Pathfinder', pathfinderLine: 'Full report, yours for life',
     launchpad: 'Launchpad', launchpadLine: 'Full report + a 1:1 coaching session',
@@ -123,6 +130,9 @@ const STR = {
       { icon: '🗓️', title: 'خطتك لـ 90 يوم', line: 'خطوات واضحة لأول ثلاثة أشهر، تعرف منها ماذا تفعل بعد التقرير.' },
     ],
     bullets: ['قيمك ونقاط قوتك وأسلوبك في العمل', 'المسارات المهنية الأنسب لك، مرتبة حسب التوافق', 'تقريرك الكامل بصيغة PDF تحتفظ به'],
+    priceNow: 'الآن', timeLeft: 'يبقى نحو 10 دقائق لإنهاء التقييم.', offerEnds: 'ينتهي سعر الإطلاق في',
+    exitQ: 'لن تشتري الآن؟ أخبرنا لماذا بنقرة واحدة:', exitThanks: 'شكراً لك، هذا يساعدنا على التحسين.',
+    exitReasons: [['too_expensive', 'السعر مرتفع'], ['need_parents', 'أحتاج إلى سؤال والديّ'], ['not_sure_useful', 'لست متأكداً من فائدته'], ['later', 'سأكمل لاحقاً']] as [string, string][],
     securePay: 'دفع آمن', payMethods: ['mada', 'Apple Pay', 'STC Pay', 'Visa', 'Mastercard'],
     pathfinder: 'مرشد المسار', pathfinderLine: 'التقرير الكامل، يبقى لك دائماً',
     launchpad: 'منصة الانطلاق', launchpadLine: 'التقرير الكامل + جلسة تدريب فردية معك',
@@ -436,6 +446,41 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   const traits = computeRanked(answers, 'big_five').filter(r => TRAIT_INFO[r.dimension]).slice(0, 2)
   const lang = locale === 'ar' ? 'ar' : 'en'
   const price = (key: 'pathfinder' | 'launchpad') => formatPrice(key, currency, locale)
+  const standardPrice = (key: 'pathfinder' | 'launchpad') => formatPrice(key === 'pathfinder' ? 'pathfinder_standard' : 'launchpad_standard', currency, locale)
+  // Evaluated once on mount (not during render); an end date that has already passed shows nothing.
+  const [launchEndsDate] = useState(() => (LAUNCH_PRICE_ENDS_AT && new Date(LAUNCH_PRICE_ENDS_AT).getTime() > Date.now() ? new Date(LAUNCH_PRICE_ENDS_AT) : null))
+  const launchEndsLabel = launchEndsDate ? launchEndsDate.toLocaleDateString(locale === 'ar' ? 'ar' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : null
+  // One-tap "why not now?" answer (latest answer per browser session counts). Also offered when the mouse leaves the page on desktop.
+  const [exitAnswered, setExitAnswered] = useState(false)
+  const [exitOpen, setExitOpen] = useState(false)
+  const exitShown = useRef(false)
+  const sendExitReason = (reason: string) => {
+    pushTelemetry({ event_type: 'gate_exit_reason', payload: { reason } }); flushTelemetry()
+    setExitAnswered(true)
+    setTimeout(() => setExitOpen(false), 1200)
+  }
+  useEffect(() => {
+    if (step !== 'pay' || confirming || exitAnswered) return
+    const onLeave = (e: MouseEvent) => {
+      if (e.clientY > 0 || exitShown.current || window.innerWidth < 900) return
+      exitShown.current = true; setExitOpen(true)
+    }
+    document.addEventListener('mouseleave', onLeave)
+    return () => document.removeEventListener('mouseleave', onLeave)
+  }, [step, confirming, exitAnswered])
+  const exitChips = (
+    exitAnswered ? <p className="text-xs text-green-700">{s.exitThanks}</p> : (
+      <div className="space-y-2">
+        <p className="text-xs text-charcoal/70">{s.exitQ}</p>
+        <div className="flex flex-wrap gap-2">
+          {s.exitReasons.map(([k, label]) => (
+            <button key={k} type="button" onClick={() => sendExitReason(k)} data-track="assessment_gate_exit_reason"
+              className="min-h-[40px] px-3 rounded-full border border-[var(--line-strong)] text-xs font-medium text-charcoal hover:border-primary">{label}</button>
+          ))}
+        </div>
+      </div>
+    )
+  )
   // 16px text: below that iPhones zoom the page in when a field is tapped.
   const inputCls = 'w-full min-w-0 rounded-xl border border-[var(--line-strong)] px-3 py-3 text-base text-charcoal bg-white'
 
@@ -619,13 +664,23 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                         <span className="flex items-center justify-between gap-2">
                           <span className="text-sm font-bold text-charcoal">{label}</span>
                           <span className="text-sm font-semibold text-charcoal">
-                            {plan === code && applied ? `${applied.preview.final} ${applied.preview.currency}` : price(key)}
+                            {plan === code && applied ? `${applied.preview.final} ${applied.preview.currency}` : (
+                              <>
+                                <span className="me-1.5 font-normal text-charcoal/50 line-through" dir="ltr">{standardPrice(key)}</span>
+                                <span className="text-xs font-normal text-charcoal/60">{s.priceNow} </span>
+                                <span>{price(key)}</span>
+                              </>
+                            )}
                           </span>
                         </span>
                         <span className="block text-xs text-charcoal/60">{line}</span>
                       </button>
                     ))}
                   </div>
+
+                  <p className="text-xs text-charcoal/70 text-center">
+                    {launchEndsLabel && <span className="font-semibold text-charcoal">{s.offerEnds} {launchEndsLabel}. </span>}{s.timeLeft}
+                  </p>
 
                   <div>
                     <div className="flex gap-2">
@@ -685,12 +740,22 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                       )}
                     </div>
                   )}
+
+                  <div className="rounded-xl bg-[var(--surface-2,#f5f7f8)] p-3">{exitChips}</div>
                 </>
               )}
             </div>
           )}
         </div>
       </div>
+      {exitOpen && !confirming && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" onClick={() => setExitOpen(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl" onClick={e => e.stopPropagation()}>
+            {exitChips}
+            <button type="button" onClick={() => setExitOpen(false)} className="mt-3 text-xs text-charcoal/60 underline">{locale === 'ar' ? 'إغلاق' : 'Close'}</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

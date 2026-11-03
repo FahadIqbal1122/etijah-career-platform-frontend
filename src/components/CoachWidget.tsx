@@ -33,7 +33,7 @@ export type Spot = HTMLElement | 'start' | 'end' | null
 
 interface Props {
   locale: 'en' | 'ar'
-  mode: 'assessment' | 'results' | 'landing'
+  mode: 'assessment' | 'results' | 'landing' | 'gate'   // gate: the pay step inside the assessment
   responseId?: string                    // results mode
   sessionId?: () => string               // assessment / landing mode: stable per-browser id (rate limiting only)
   questionIndex?: number                 // assessment mode, 1-based
@@ -71,6 +71,10 @@ const T = {
   greetResults: {
     en: 'Hi, I’m Sarah, your coach. Ask me anything about your results and what they mean.',
     ar: 'مرحباً، أنا سارة، مدرّبتك. اسألني عن نتائجك وماذا تعني.',
+  },
+  greetGate: {
+    en: 'Hi, I’m Sarah. Wondering if the full report is worth it, what it includes, or how to talk to your parents about it? Ask me.',
+    ar: 'مرحباً، أنا سارة. تتساءل إن كان التقرير الكامل يستحق، أو ماذا يتضمن، أو كيف تحدّث والديك عنه؟ اسألني.',
   },
   greetLanding: {
     en: 'Hi, I’m Sarah. Ask me anything about Etijahi: how the assessment works, what each plan includes, pricing, or how to get in touch.',
@@ -244,7 +248,7 @@ export default function CoachWidget({
   const panelBelow = effPlace === 'target' && !!pos && pos.y - 56 < 440
   const tipBelow = effPlace === 'target' && !!pos && pos.y - 56 < 130
 
-  const greeting = mode === 'results' ? tr(T.greetResults) : mode === 'landing' ? tr(T.greetLanding) : tr(T.greetAssessment)
+  const greeting = mode === 'results' ? tr(T.greetResults) : mode === 'landing' ? tr(T.greetLanding) : mode === 'gate' ? tr(T.greetGate) : tr(T.greetAssessment)
   const nudge = feedbackActive && !open ? feedback?.nudge : undefined
   const bubbleText = !open ? (nudge ? tr(nudge) : tip ? tr(tip) : null) : null
   const bubbleVisible = !!bubbleText

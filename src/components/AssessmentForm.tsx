@@ -1484,6 +1484,15 @@ export default function AssessmentForm() {
         </div>
       )}
       {/* <CoachBubble locale={locale as 'en' | 'ar'} message={phase === 'question' ? coachMsg : null} onDismiss={dismissCoach} /> */}
+      {/* At the pay step Sarah explains what the report includes, answers "is it worth it?" and helps with asking parents. */}
+      {coachEnabled && phase === 'gate' && <CoachWidget
+        locale={locale as 'en' | 'ar'} mode="gate" sessionId={getTelemetrySessionId}
+        suggestions={[
+          { en: 'Is it worth it?', ar: 'هل يستحق الدفع؟' },
+          { en: 'What is included in the report?', ar: 'ماذا يتضمن التقرير؟' },
+          { en: 'How do I ask my parents?', ar: 'كيف أطلب من والديّ؟' },
+        ]}
+      />}
       {coachEnabled && phase !== 'gate' && <CoachWidget
         locale={locale as 'en' | 'ar'} mode="assessment" sessionId={getTelemetrySessionId}
         questionIndex={index + 1} questionTotal={total}
