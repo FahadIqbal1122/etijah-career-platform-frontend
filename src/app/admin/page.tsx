@@ -3972,7 +3972,10 @@ export default function AdminPage() {
     (dashAge === 'all' || (s.age_bracket ?? ageToBracket(s.age)) === dashAge)
   const matchesDashSubmission = (s: Submission) => inDashDateRange(s.created_at) && matchesDashDemo(s)
   const emailKey = (e: string | null | undefined) => (e || '').trim().toLowerCase()
-  const dashSubmissions = liveSubmissions.filter(matchesDashSubmission)
+  const isTestEmail = (e?: string | null) =>
+    !!e && /(@test\.com$|@1234test\.com$|^test\d*[a-z0-9]*@|@etijahcoaching\.com$|@myetijahi\.com$|hidesit\.net$)/i.test(e)
+  // const dashSubmissions = liveSubmissions.filter(matchesDashSubmission)
+  const dashSubmissions = liveSubmissions.filter(matchesDashSubmission).filter(s => !isTestEmail(s.email))
   const dashSubmissionIds = new Set(dashSubmissions.map(s => s.id))
   const dashFeedback = liveFeedbackList.filter(bf => dashSubmissionIds.has(bf.response_id))
   const dashCareerRecs = liveCareerRecsGenerated.filter(r => dashSubmissionIds.has(r.id))
@@ -4070,8 +4073,7 @@ export default function AdminPage() {
   }
   const gTrReached = gateEvPerDay('gate_reached'), gTrClicked = gateEvPerDay('gate_pay_click'), gTrPassed = gateEvPerDay('gate_passed')
   // One row per person (latest attempt), excluding test/staff accounts, anyone who later finished, and anyone who paid
-  const isTestEmail = (e?: string | null) =>
-    !!e && /(@test\.com$|@1234test\.com$|^test\d*[a-z0-9]*@|@etijahcoaching\.com$|@myetijahi\.com$|hidesit\.net$)/i.test(e)
+  // (isTestEmail moved up above dashSubmissions so staff/test accounts are excluded from every dashboard number and the Excel export)
   const completedEmails = new Set(dashSubmissions.filter(s => s.completed).map(s => emailKey(s.email)))
   const unfinishedRows = Array.from(
     dashSubmissions
