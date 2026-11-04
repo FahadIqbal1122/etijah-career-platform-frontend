@@ -367,6 +367,7 @@ export default function AssessmentForm() {
   const [returningPaid, setReturningPaid] = useState(false)
   const [paymentFailed, setPaymentFailed] = useState(false)
   const gatePassedRef = useRef(false)
+  const orgOfferRef = useRef(false)   // the typed email's domain has a company free-seat offer: skip the paywall
   // The page was reloaded onto the gate (back from the payment page): the place in the question list is gone, so once the
   // gate lets the person through they are put on the first question not answered yet.
   const restoreOnUnlockRef = useRef(false)
@@ -494,6 +495,21 @@ export default function AssessmentForm() {
       .catch(() => {})
     return () => { cancelled = true }
   }, [])
+
+  // Company free-seat offer: if the typed email's domain has one, the pay step is skipped (the seat is claimed on the
+  // results page once the email is confirmed).
+  useEffect(() => {
+    orgOfferRef.current = false   // a changed email never keeps the previous answer
+    const email = String(answers.QD2 ?? '').trim().toLowerCase()
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return
+    let cancelled = false
+    const id = window.setTimeout(() => {
+      apiGet<{ offer: boolean }>(`/org-offer-check?email=${encodeURIComponent(email)}`)
+        .then(r => { if (!cancelled) orgOfferRef.current = !!r?.offer })
+        .catch(() => {})
+    }, 500)
+    return () => { cancelled = true; clearTimeout(id) }
+  }, [answers.QD2])
 
   // A paid account that has used its one full report is told now, before any question, and pointed to that report.
   useEffect(() => {
@@ -891,7 +907,7 @@ export default function AssessmentForm() {
 
   function continueFromReveal() {
     // After the Interests & Personality chapter new people create an account and pay before the rest.
-    if (gateRequired && !gatePassedRef.current && revealMsg?.chapter === GATE_AFTER_CHAPTER) {
+    if (gateRequired && !orgOfferRef.current && !gatePassedRef.current && revealMsg?.chapter === GATE_AFTER_CHAPTER) {
       pushTelemetry({ event_type: 'gate_reached' }); flushTelemetry()
       trackOnce(`assessment_gate_reached:${getTelemetrySessionId()}`, 'assessment_gate_reached', { lang: locale })
       setPhase('gate')
