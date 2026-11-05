@@ -643,6 +643,14 @@ export default function UserDashboard() {
             </div>
           )}
 
+          {/* Paid (or company seat) but the assessment is not finished: the first thing they see says what to do next. */}
+          {unfinished && !assessmentsLoading && !latest && (
+            <div className="rounded-xl bg-teal/10 border border-teal/30 text-charcoal px-4 py-3 text-sm flex items-center justify-between gap-3 flex-wrap">
+              <span><strong>{t.resumeHead}.</strong> {t.resumeSub}</span>
+              <Link href="/assessment" data-track="dashboard_resume_banner" className="cta cta-teal shrink-0" style={{ padding: '8px 16px', fontSize: 13 }}>{t.resumeCta}</Link>
+            </div>
+          )}
+
           {/* welcome */}
           <header id="sec-home" className="flex items-center justify-between gap-4 flex-wrap scroll-mt-4">
             <div>
