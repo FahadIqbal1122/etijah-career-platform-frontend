@@ -15,8 +15,8 @@ import {
 import { track, trackOnce } from '@/lib/analytics'
 import { gateVariantFor } from '@/lib/gateVariant'
 import { getAttribution } from '@/lib/attribution'
-import { pushTelemetry, getTelemetrySessionId, flush as flushTelemetry } from '@/lib/telemetry'
-import { formatPrice, PRICES } from '@/lib/pricing'
+import { pushTelemetry, flush as flushTelemetry } from '@/lib/telemetry'
+import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
 import { buildReveal, computeRanked } from '@/data/revealScoring'
 import Logomark from '@/components/brand/Logomark'
@@ -171,10 +171,10 @@ const POLL_MAX = 20   // about a minute, then offer a manual "check again"
 // payment page and the gate is mounted again when they come back.
 const AUTO_ACCOUNT_KEY = 'assessment:autoAccount'
 
-// Set when the buyer leaves for the payment page; read when access is confirmed on return, to send the `purchase` event
-// to Tag Manager exactly once. A marker older than a day is ignored (an abandoned attempt must not count as a sale later).
-const PENDING_PURCHASE_KEY = 'assessment:pendingPurchase'
-const PENDING_PURCHASE_MAX_AGE_MS = 24 * 60 * 60 * 1000
+// Paid orders confirmed within this window count as "the purchase the buyer just came back from" (same rule as the dashboard).
+const RECENT_PURCHASE_MS = 60 * 60 * 1000
+const PAID_STATUSES = ['paid', 'captured', 'succeeded', 'success', 'completed']
+type GateTransaction = { order_ref: string; amount: number; currency: string; status: string; created_at: string }
 
 function randomPassword(): string {
   const bytes = new Uint8Array(24)
@@ -250,25 +250,17 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     if (unlockedRef.current) return
     unlockedRef.current = true
     track('assessment_gate_unlocked', { lang: locale })
-    // Paid from this browser: tell Tag Manager (once) so Google Ads / GA4 can count the sale and the ad it came from.
-    try {
-      const raw = window.localStorage.getItem(PENDING_PURCHASE_KEY)
-      if (raw) {
-        window.localStorage.removeItem(PENDING_PURCHASE_KEY)
-        const pending = JSON.parse(raw) as { at: number; plan_code: string; value: number; currency: string; coupon?: string; gate_variant?: string }
-        if (Date.now() - pending.at < PENDING_PURCHASE_MAX_AGE_MS) {
-          const { at: _at, ...rest } = pending
-          void _at
-          const a = getAttribution() ?? {}
-          track('purchase', {
-            ...rest,
-            transaction_id: getTelemetrySessionId(),
-            items: [{ item_id: pending.plan_code, item_name: pending.plan_code, price: pending.value, quantity: 1 }],
-            utm_source: a.utm_source, utm_medium: a.utm_medium, utm_campaign: a.utm_campaign, utm_term: a.utm_term, gclid: a.gclid,
-          })
-        }
-      }
-    } catch { /* tracking must never block the unlock */ }
+    // Paid from the gate: tell Tag Manager with the same `report_purchase` event (and once-per-order key) the dashboard uses,
+    // so a buyer who comes back here instead of to the dashboard is still counted, and nobody is counted twice.
+    apiAuthGet<GateTransaction[]>('/billing/transaction').then(rows => {
+      const att = getAttribution() ?? {}
+      rows
+        .filter(txn => PAID_STATUSES.includes(txn.status.toLowerCase()) && Date.now() - new Date(txn.created_at).getTime() < RECENT_PURCHASE_MS)
+        .forEach(txn => trackOnce(`purchase:${txn.order_ref}`, 'report_purchase', {
+          value: txn.amount, currency: txn.currency, transaction_id: txn.order_ref, event_id: txn.order_ref,
+          utm_source: att.utm_source, utm_medium: att.utm_medium, utm_campaign: att.utm_campaign, utm_term: att.utm_term, gclid: att.gclid,
+        }, 'local'))
+    }).catch(() => { /* tracking must never block the unlock */ })
     // An account made here (random password) gets its "set your password" email now that the payment is confirmed.
     try {
       const made = window.localStorage.getItem(AUTO_ACCOUNT_KEY)
@@ -463,16 +455,6 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
       const { checkout_url } = await startCheckout(plan, code, 'assessment')
       // Remember the buyer left from the gate, so coming back by any route lands on the gate and not mid-assessment.
       try { window.localStorage.setItem('assessment:atGate', '1') } catch { /* best-effort */ }
-      // What they are paying, kept until access is confirmed on return (see unlock()).
-      try {
-        const finalApplied = applied && applied.code === code ? applied.preview : null
-        window.localStorage.setItem(PENDING_PURCHASE_KEY, JSON.stringify({
-          at: Date.now(), plan_code: plan,
-          value: finalApplied ? finalApplied.final : PRICES[plan === 'launchpad_monthly' ? 'launchpad' : 'pathfinder'][currency],
-          currency: finalApplied ? finalApplied.currency : currency,
-          coupon: code || undefined, gate_variant: gateVariant,
-        }))
-      } catch { /* best-effort */ }
       window.location.href = checkout_url
     } catch (e: unknown) {
       setBusy(false)
