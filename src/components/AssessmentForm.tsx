@@ -22,7 +22,7 @@ import AssessmentGate from '@/components/AssessmentGate'
 // import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
 import CoachWidget from '@/components/CoachWidget'
 import { useCoachSwitches } from '@/lib/useCoachEnabled'
-import { COACH_BREAK, COACH_MOTIVATION, COACH_REVEAL, type Bi } from '@/data/coachMessages'
+import { COACH_BREAK, COACH_MOTIVATION, COACH_REVEAL, COACH_CAREER_CHANGER, type Bi } from '@/data/coachMessages'
 
 // module-level so the random call stays out of render (only used in an effect)
 function pickCoachReveal(): Bi {
@@ -636,6 +636,18 @@ export default function AssessmentForm() {
   const hsId = q && answers['QO4'] === 'high_school' && tQ.has(`${q.id}_HS.text`) ? `${q.id}_HS` : null
   const mid = hsId ?? q?.msgId ?? q?.id
   const qTextStr = q ? tQ(`${mid}.text`, dynField ? { field: tQ(`QO5.options.${dynField}`) } : undefined) : ''
+
+  // When someone says they want to change careers (QO4), Sarah welcomes them once, on the next question.
+  // The ref makes it fire once per visit, even if they go back and forward.
+  const careerChangerGreeted = useRef(false)
+  useEffect(() => {
+    if (!coachEnabled || phase !== 'question' || careerChangerGreeted.current) return
+    if (answers['QO4'] !== 'career_changer' || q?.id === 'QO4') return
+    careerChangerGreeted.current = true
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-off reaction to an answer, guarded by a ref
+    setCoachTipGame(false)
+    setCoachMsg(COACH_CAREER_CHANGER[Math.floor(Math.random() * COACH_CAREER_CHANGER.length)])
+  }, [answers, phase, q?.id, coachEnabled])
 
   // Tag Manager: the page was seen (fires on every load of the assessment).
   // assessment_start now fires from doAdvance() when question 1 is actually answered.

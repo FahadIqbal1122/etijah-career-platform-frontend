@@ -23,6 +23,19 @@ export const COACH_REVEAL: Bi[] = [
   { en: 'A real pattern is starting to show. I can’t wait for you to see it.', ar: 'بدأ نمط حقيقي بالظهور. متحمسة لأن تراه.' },
 ]
 
+// Shown once, right after someone says they want to change careers (QO4 = career_changer).
+// Bilingual and ready-made: no AI call. Sarah picks one at random.
+export const COACH_CAREER_CHANGER: Bi[] = [
+  {
+    en: 'A career change takes courage. We’re excited to support you in finding the right career for you.',
+    ar: 'تغيير المسار المهني يحتاج إلى شجاعة. يسعدنا أن ندعمك في إيجاد المسار المناسب لك.',
+  },
+  {
+    en: 'We understand how hard it can be to stay in a job you don’t enjoy. You’re in the right place.',
+    ar: 'نتفهم كم قد يكون صعباً البقاء في وظيفة لا تستمتع بها. أنت في المكان الصحيح.',
+  },
+]
+
 // Results-page advice, built from the user's own results.
 export function resultsAdvice(p: {
   topType: string; topStrength: string; resilience?: number
