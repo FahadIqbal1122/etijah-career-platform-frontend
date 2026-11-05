@@ -108,6 +108,7 @@ const STR = {
     existingBody: 'Your account already has a finished assessment. Open it to unlock your full report. No need to answer the questions again.',
     existingBtn: 'Open my result',
     error: 'Something went wrong. Please try again.',
+    fillAccount: 'Please fill in your account details above.',
   },
   ar: {
     checking: 'لحظة…',
@@ -159,6 +160,7 @@ const STR = {
     existingBody: 'حسابك يحتوي على تقييم مكتمل. افتحه لتفتح تقريرك الكامل، ولا حاجة لإعادة الإجابة عن الأسئلة.',
     existingBtn: 'افتح نتيجتي',
     error: 'حدث خطأ. حاول مرة أخرى.',
+    fillAccount: 'يرجى إكمال بيانات حسابك أعلاه.',
   },
 } as const
 
@@ -286,18 +288,18 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   }, [unlock])
 
   // Saves the answers so far to the account (checkout needs a saved assessment), then asks whether it may go on.
-  const afterSignedIn = useCallback(async () => {
+  const afterSignedIn = useCallback(async (): Promise<boolean> => {
     setError('')
     const a = answersRef.current
     try {
       // Ask first: someone who can already go on (paid, company seat, admin) needs nothing saved here.
       const status = await checkAccess()
-      if (unlockedRef.current) return
+      if (unlockedRef.current) return false
       // A finished result already on the account is unlocked by paying for it: point there rather than selling a second one.
       if (!confirming && status?.latest_completed_id) {
         setExistingId(status.latest_completed_id)
         setStep('existing')
-        return
+        return false
       }
       // Coming back from the payment page the answers may not be loaded yet: never overwrite the saved copy with nothing.
       if (!confirming && Object.keys(a).length > 0) {
@@ -314,9 +316,11 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
       }
       setStep('pay')
       trackOnce(`assessment_gate_viewed:${confirming ? 'back' : 'first'}`, 'assessment_gate_viewed', { lang: locale })
+      return true
     } catch (e: unknown) {
       setError(e instanceof Error && e.message === 'retake_not_included' ? s.retake : s.error)
       if (!unlockedRef.current) setStep('pay')
+      return false
     }
   }, [confirming, checkAccess, email, locale, s])
 
@@ -326,7 +330,10 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (cancelled) return
       if (session) afterSignedIn()
-      else setStep('account')
+      else {
+        setStep('account')
+        if (!confirming) trackOnce('assessment_gate_viewed:first', 'assessment_gate_viewed', { lang: locale })   // the pay page is what they see now
+      }
     }).catch(() => { if (!cancelled) setStep('account') })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once on open
@@ -355,28 +362,29 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     return () => window.clearInterval(id)
   }, [step, confirming, parentLink, checkAccess])
 
-  // One tap: create the account with a random password and go straight to payment.
-  async function submitAuto(e: React.FormEvent) {
-    e.preventDefault()
-    if (busy) return
-    setBusy(true); setError('')
-    try {
-      const { data, error: err } = await supabase.auth.signUp({
-        email: email.trim(), password: randomPassword(),
-        options: { data: { full_name: name.trim() }, emailRedirectTo: `https://myetijahi.com/${locale}/assessment` },
-      })
-      if (err) { setError(err.message); return }
-      // No session back means the address already has an account: send them to sign in instead.
-      if (!data.session) { setError(s.existing); setAuto(false); setMode('login'); return }
-      try { window.localStorage.setItem(AUTO_ACCOUNT_KEY, email.trim()) } catch { /* ignore */ }
-      track('assessment_account_created', { lang: locale, auto: true })
-      await afterSignedIn()
-    } catch {
-      setError(s.error)
-    } finally {
-      setBusy(false)
-    }
-  }
+//   // (replaced by createAccount below: the account is now made when they press the pay button)
+//   // One tap: create the account with a random password and go straight to payment.
+//   async function submitAuto(e: React.FormEvent) {
+//     e.preventDefault()
+//     if (busy) return
+//     setBusy(true); setError('')
+//     try {
+//       const { data, error: err } = await supabase.auth.signUp({
+//         email: email.trim(), password: randomPassword(),
+//         options: { data: { full_name: name.trim() }, emailRedirectTo: `https://myetijahi.com/${locale}/assessment` },
+//       })
+//       if (err) { setError(err.message); return }
+//       // No session back means the address already has an account: send them to sign in instead.
+//       if (!data.session) { setError(s.existing); setAuto(false); setMode('login'); return }
+//       try { window.localStorage.setItem(AUTO_ACCOUNT_KEY, email.trim()) } catch { /* ignore */ }
+//       track('assessment_account_created', { lang: locale, auto: true })
+//       await afterSignedIn()
+//     } catch {
+//       setError(s.error)
+//     } finally {
+//       setBusy(false)
+//     }
+//   }
 
   // Google instead of an email account. It leaves the page and comes back to the assessment, where the saved draft puts
   // the person on the gate again (assessment:atGate) and the signed-in session carries on to payment.
@@ -390,31 +398,44 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     if (err) setError(err.message)
   }
 
+  // Makes (or signs in to) the account from the details on the page, saves the answers, and says whether checkout may go on.
+  async function createAccount(): Promise<boolean> {
+    if (auto) {
+      const { data, error: err } = await supabase.auth.signUp({
+        email: email.trim(), password: randomPassword(),
+        options: { data: { full_name: name.trim() }, emailRedirectTo: `https://myetijahi.com/${locale}/assessment` },
+      })
+      if (err) { setError(err.message); return false }
+      // No session back means the address already has an account: send them to sign in instead.
+      if (!data.session) { setError(s.existing); setAuto(false); setMode('login'); return false }
+      try { window.localStorage.setItem(AUTO_ACCOUNT_KEY, email.trim()) } catch { /* ignore */ }
+      track('assessment_account_created', { lang: locale, auto: true })
+    } else if (mode === 'signup') {
+      const { data, error: err } = await supabase.auth.signUp({
+        email: email.trim(), password,
+        options: { data: { full_name: name.trim() }, emailRedirectTo: `https://myetijahi.com/${locale}/assessment` },
+      })
+      if (err) { setError(err.message); return false }
+      // No session back means the address already has an account: send them to sign in instead.
+      if (!data.session) { setError(s.existing); setMode('login'); return false }
+      track('assessment_account_created', { lang: locale })
+    } else {
+      const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+      if (err) { setError(err.message); return false }
+      await apiAuthPost('/assessment/link-by-email', {}).catch(() => {})
+    }
+    return afterSignedIn()
+  }
+
+  const accountReady = () =>
+    /\S+@\S+\.\S+/.test(email) && (auto || (password.length >= 8 && (mode === 'login' || name.trim().length > 0)))
+
+  // Only the "back from the payment page" sign-in form still submits on its own.
   async function submitAccount(e: React.FormEvent) {
     e.preventDefault()
     if (busy) return
     setBusy(true); setError('')
-    try {
-      if (mode === 'signup') {
-        const { data, error: err } = await supabase.auth.signUp({
-          email: email.trim(), password,
-          options: { data: { full_name: name.trim() }, emailRedirectTo: `https://myetijahi.com/${locale}/assessment` },
-        })
-        if (err) { setError(err.message); return }
-        // No session back means the address already has an account: send them to sign in instead.
-        if (!data.session) { setError(s.existing); setMode('login'); return }
-        track('assessment_account_created', { lang: locale })
-      } else {
-        const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
-        if (err) { setError(err.message); return }
-        await apiAuthPost('/assessment/link-by-email', {}).catch(() => {})
-      }
-      await afterSignedIn()
-    } catch {
-      setError(s.error)
-    } finally {
-      setBusy(false)
-    }
+    try { await createAccount() } catch { setError(s.error) } finally { setBusy(false) }
   }
 
   function choosePlan(p: GatePlan) {
@@ -435,10 +456,13 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
 
   async function pay() {
     if (!agreed || busy) return
+    if (step === 'account' && !accountReady()) { setError(s.fillAccount); return }
     setBusy(true); setError('')
     track('report_checkout_click', { plan_code: plan, discount_code: applied?.code ?? undefined, from: 'assessment_gate' })
     pushTelemetry({ event_type: 'gate_pay_click', payload: { plan_code: plan, gate_variant: gateVariant } }); flushTelemetry()
     try {
+      // Not signed in yet: make the account first (this also saves the answers), then go straight on to payment.
+      if (step === 'account' && !(await createAccount())) { setBusy(false); return }
       // A code typed but never applied is checked now, so a wrong one stops here instead of being dropped silently.
       let code = applied?.code
       const typed = codeInput.trim().toUpperCase()
@@ -463,8 +487,10 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   }
 
   async function askParent() {
+    if (step === 'account' && !accountReady()) { setError(s.fillAccount); return }
     setBusy(true); setError('')
     try {
+      if (step === 'account' && !(await createAccount())) return
       const { url } = await createParentLink(plan)
       setParentLink(url)
       if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
@@ -501,7 +527,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     setTimeout(() => setExitOpen(false), 1200)
   }
   useEffect(() => {
-    if (step !== 'pay' || confirming || exitAnswered) return
+    if ((step !== 'pay' && step !== 'account') || confirming || exitAnswered) return
     const onLeave = (e: MouseEvent) => {
       if (e.clientY > 0 || exitShown.current || window.innerWidth < 900) return
       exitShown.current = true; setExitOpen(true)
@@ -536,6 +562,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
 
           {step === 'checking' && <p className="text-sm text-charcoal/60">{s.checking}</p>}
 
+          {/* Old one-tap account page (now part of the pay page, see createAccount):
           {step === 'account' && auto && (
             <form onSubmit={submitAuto} className="space-y-4">
               <div>
@@ -552,7 +579,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                 {busy ? '…' : s.autoBtn}
               </button>
               <div className="flex items-center gap-3 text-xs text-charcoal/40"><span className="flex-1 h-px bg-[var(--line)]" />{s.or}<span className="flex-1 h-px bg-[var(--line)]" /></div>
-              {/* was: <button onClick={withGoogle}> {s.google} </button> (redirect via supabase.co) */}
+              {/* was: <button onClick={withGoogle}> {s.google} </button> (redirect via supabase.co) * /}
               <GoogleButton onDone={afterSignedIn} onError={setError} tracking="assessment_gate_google" />
               <button type="button" onClick={() => { setAuto(false); setMode('login'); setError('') }}
                 className="w-full min-h-[44px] text-sm text-primary underline">
@@ -561,7 +588,9 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
             </form>
           )}
 
-          {step === 'account' && !auto && (
+          */}
+
+          {step === 'account' && confirming && (
             <form onSubmit={submitAccount} className="space-y-4">
               <div>
                 <h2 className="text-xl font-extrabold text-charcoal">{s.accountHead}</h2>
@@ -610,7 +639,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
             </div>
           )}
 
-          {step === 'pay' && (
+          {(step === 'pay' || (step === 'account' && !confirming)) && (
             <div className="space-y-4">
               <div>
                 <h2 className="text-xl font-extrabold text-charcoal">{s.payHead}</h2>
@@ -733,6 +762,41 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                     {codeError && <p className="mt-1 text-xs text-red-600">{codeError}</p>}
                   </div>
 
+                  {step === 'account' && (
+                    <div className="rounded-xl border border-[var(--line-strong)] bg-white/60 p-3 space-y-3">
+                      <p className="text-sm font-bold text-charcoal">{s.accountHead}</p>
+                      {auto ? (
+                        <>
+                          <p className="text-xs text-charcoal/70">{s.autoBody}</p>
+                          <input type="email" className={inputCls} value={email} onChange={e => setEmail(e.target.value)}
+                            autoComplete="email" dir="ltr" placeholder={s.email} aria-label={s.email} />
+                          <button type="button" onClick={() => { setAuto(false); setMode('login'); setError('') }}
+                            className="min-h-[44px] text-sm text-primary underline">{s.haveAccount}</button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex gap-2 text-sm">
+                            {(['signup', 'login'] as const).map(m => (
+                              <button key={m} type="button" onClick={() => { setMode(m); setError('') }}
+                                className={`flex-1 min-h-[44px] px-3 rounded-lg border ${mode === m ? 'bg-primary text-white border-primary' : 'border-[var(--line-strong)] text-charcoal/70'}`}>
+                                {m === 'signup' ? s.signupTab : s.loginTab}
+                              </button>
+                            ))}
+                          </div>
+                          {mode === 'signup' && (
+                            <input className={inputCls} value={name} onChange={e => setName(e.target.value)} autoComplete="name" placeholder={s.name} aria-label={s.name} />
+                          )}
+                          <input type="email" className={inputCls} value={email} onChange={e => setEmail(e.target.value)}
+                            autoComplete="email" dir="ltr" placeholder={s.email} aria-label={s.email} />
+                          <input type="password" className={inputCls} value={password} onChange={e => setPassword(e.target.value)}
+                            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} dir="ltr" placeholder={s.password} aria-label={s.password} />
+                        </>
+                      )}
+                      <div className="flex items-center gap-3 text-xs text-charcoal/40"><span className="flex-1 h-px bg-[var(--line)]" />{s.or}<span className="flex-1 h-px bg-[var(--line)]" /></div>
+                      <GoogleButton onDone={afterSignedIn} onError={setError} tracking="assessment_gate_google" />
+                    </div>
+                  )}
+
                   <p className="text-xs text-charcoal/60">
                     {s.agree}{' '}
                     <a href="https://shop.etijahcoaching.com/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">{s.terms}</a>
@@ -763,7 +827,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                     {s.payMethods.map(m => <span key={m} className="chip !text-[11px] !py-0.5" dir="ltr">{m}</span>)}
                   </div>
 
-                  {canAskParent && gateVariant !== 'adult' && (
+                  {(canAskParent || (step === 'account' && Number(answers.QO3) < 18)) && gateVariant !== 'adult' && (
                     <div className="rounded-xl border border-[var(--line-strong)] bg-white/60 p-3 text-center space-y-2">
                       {parentLink ? (
                         <div className="text-xs text-charcoal/70 space-y-1">
