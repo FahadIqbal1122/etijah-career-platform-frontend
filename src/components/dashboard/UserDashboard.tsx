@@ -82,6 +82,9 @@ const T = {
     downloadAr: 'Download Arabic PDF', downloadEn: 'Download English PDF',
     noReportHead: 'You haven’t taken the assessment yet', noReportSub: 'It takes about 15 minutes.',
     startAssessment: 'Start the assessment',
+    resumeHead: 'Your payment went through. Finish your assessment',
+    resumeSub: 'Your answers are saved. Pick up where you left off to get your full report.',
+    resumeCta: 'Continue my assessment',
     statCompleted: 'Assessment completed', statMatch: 'Top career match', statType: 'Strongest interest type', statRetake: 'Recommended retake',
     jobsHead: 'Job Matches', jobsLockedHead: 'Daily job matching is coming', notBuilt: 'Not available yet',
     jobsLockedBody: 'Soon Etijahi will match you to live GCC openings every day and review your CV against each one.',
@@ -113,6 +116,9 @@ const T = {
     downloadAr: 'تحميل النسخة العربية PDF', downloadEn: 'تحميل النسخة الإنجليزية PDF',
     noReportHead: 'لم تُجرِ التقييم بعد', noReportSub: 'يستغرق حوالي ١٥ دقيقة.',
     startAssessment: 'ابدأ التقييم',
+    resumeHead: 'تم الدفع بنجاح. أكمل تقييمك',
+    resumeSub: 'إجاباتك محفوظة. أكمل من حيث توقفت لتحصل على تقريرك الكامل.',
+    resumeCta: 'أكمل تقييمي',
     statCompleted: 'اكتمل التقييم', statMatch: 'أفضل مسار مهني', statType: 'أقوى نوع اهتمام', statRetake: 'إعادة التقييم المقترحة',
     jobsHead: 'الوظائف المطابقة', jobsLockedHead: 'المطابقة اليومية للوظائف قادمة', notBuilt: 'غير متاحة بعد',
     jobsLockedBody: 'قريباً ستطابقك إتجاهي مع الوظائف المتاحة في الخليج يومياً وتراجع سيرتك الذاتية مع كل وظيفة.',
@@ -268,6 +274,16 @@ export default function UserDashboard() {
   const [applicationsLoading, setApplicationsLoading] = useState(true)
   const [plan, setPlan] = useState<Plan | null>(null)
   const [planLoading, setPlanLoading] = useState(true)
+  // Paid (or company-seat) account with an unfinished assessment: the saved copy is at /assessment/gate
+  const [unfinished, setUnfinished] = useState(false)
+  useEffect(() => {
+    if (!user) return
+    apiAuthGet<{ has_access: boolean; answers: Record<string, unknown> | null; slots_left?: number | null; latest_completed_id: string | null }>('/assessment/gate')
+      .then(g => setUnfinished(
+        g.has_access && !!g.answers && Object.keys(g.answers).length > 0 && !g.latest_completed_id && g.slots_left !== 0,
+      ))
+      .catch(() => {})
+  }, [user])
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [jobMatches, setJobMatches] = useState<JobMatch[]>([])
   const [jobMatchesLoading, setJobMatchesLoading] = useState(true)
@@ -693,9 +709,11 @@ export default function UserDashboard() {
             ) : (
               <div className="text-center py-4">
                 <div className="flex justify-center mb-3"><Logomark size={40} /></div>
-                <h2 className="text-lg font-extrabold text-charcoal">{t.noReportHead}</h2>
-                <p className="text-sm text-charcoal/60 mt-1 mb-5">{t.noReportSub}</p>
-                <Link href="/assessment" className="cta cta-teal">{t.startAssessment}</Link>
+                <h2 className="text-lg font-extrabold text-charcoal">{unfinished ? t.resumeHead : t.noReportHead}</h2>
+                <p className="text-sm text-charcoal/60 mt-1 mb-5">{unfinished ? t.resumeSub : t.noReportSub}</p>
+                <Link href="/assessment" data-track={unfinished ? 'dashboard_resume_assessment' : undefined} className="cta cta-teal">
+                  {unfinished ? t.resumeCta : t.startAssessment}
+                </Link>
               </div>
             )}
           </section>
