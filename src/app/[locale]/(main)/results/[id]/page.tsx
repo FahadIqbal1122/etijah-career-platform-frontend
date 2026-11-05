@@ -466,7 +466,11 @@ export default function ResultsPage() {
               .catch(() => {})
           }
         })
-        .catch(err => setError(err.message || t('error.loadFailed')))
+        .catch(err => {
+          // An unfinished assessment (saved at the pay-to-continue step) has no results: carry on with the assessment.
+          if (err.message === 'assessment_incomplete') { localeRouter.replace('/assessment'); return }
+          setError(err.message || t('error.loadFailed'))
+        })
       apiAuthGet<any>(`/assessment/${id}/direction?locale=${locale}`)
         .then(applyDirection)
         .catch(() => {})
