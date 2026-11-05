@@ -6,13 +6,14 @@
 // onUnlocked and the assessment carries on with the Values chapter. `confirming` is the same screen after coming back from
 // the payment page: it waits for the payment to be confirmed instead of asking again.
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
   apiAuthGet, apiAuthPost, startCheckout, previewDiscount, getParentLinkEligibility, createParentLink,
   type DiscountPreview, type PlanCode,
 } from '@/lib/api'
 import { track, trackOnce } from '@/lib/analytics'
+import { gateVariantFor } from '@/lib/gateVariant'
 import { pushTelemetry, flush as flushTelemetry } from '@/lib/telemetry'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
@@ -175,6 +176,23 @@ function randomPassword(): string {
   return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
 }
 
+// Pay-screen wording for adults (see gateVariantFor): about finding the right next role, not choosing a major.
+// Only the lines listed here differ from STR; everything else is shared.
+const ADULT_STR = {
+  en: {
+    payHead: 'Find the right next role: your full career report with best-fit roles, AI impact and a 90-day plan',
+    payBody: 'Your first chapter is saved. One payment finishes the assessment and shows you where to go next.',
+    lockedLine: 'Your values, strengths, work style and best-fit roles are next.',
+    bullets: ['Your values, strengths and work style', 'Roles that suit you, ranked by fit', 'Your full personal report (PDF)'],
+  },
+  ar: {
+    payHead: 'اعثر على وظيفتك القادمة المناسبة: تقريرك المهني الكامل بأنسب الوظائف لك، وتأثير الذكاء الاصطناعي عليها، وخطة 90 يوم',
+    payBody: 'حفظنا إجاباتك في الفصل الأول. بدفعة واحدة تكمل التقييم وتعرف وجهتك المهنية القادمة.',
+    lockedLine: 'قيمك ونقاط قوتك وأسلوبك في العمل والوظائف الأنسب لك تجدها في التقرير الكامل.',
+    bullets: ['قيمك ونقاط قوتك وأسلوبك في العمل', 'الوظائف الأنسب لك، مرتبة حسب التوافق', 'تقريرك الكامل بصيغة PDF تحتفظ به'],
+  },
+}
+
 export default function AssessmentGate({ locale, answers, confirming = false, paymentFailed = false, onUnlocked }: {
   locale: string
   answers: Record<string, unknown>
@@ -182,7 +200,13 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   paymentFailed?: boolean   // back from the payment page and it did not go through
   onUnlocked: (serverAnswers: Record<string, unknown> | null) => void
 }) {
-  const s = STR[locale === 'ar' ? 'ar' : 'en']
+  const strLang = locale === 'ar' ? 'ar' : 'en'
+  const gateVariant = gateVariantFor(answers)
+  const base = STR[strLang]
+  // Memoised: a fresh object every render would re-create the callbacks below that depend on `s`.
+  const s = useMemo(() => gateVariant === 'adult'
+    ? { ...base, ...ADULT_STR[strLang], exitReasons: base.exitReasons.filter(([k]) => k !== 'need_parents') }   // adults have no parents to ask
+    : base, [gateVariant, base, strLang])
   const dir = locale === 'ar' ? 'rtl' : 'ltr'
   const currency = useDisplayCurrency()
 
@@ -396,7 +420,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     if (!agreed || busy) return
     setBusy(true); setError('')
     track('report_checkout_click', { plan_code: plan, discount_code: applied?.code ?? undefined, from: 'assessment_gate' })
-    pushTelemetry({ event_type: 'gate_pay_click', payload: { plan_code: plan } }); flushTelemetry()
+    pushTelemetry({ event_type: 'gate_pay_click', payload: { plan_code: plan, gate_variant: gateVariant } }); flushTelemetry()
     try {
       // A code typed but never applied is checked now, so a wrong one stops here instead of being dropped silently.
       let code = applied?.code
@@ -722,7 +746,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                     {s.payMethods.map(m => <span key={m} className="chip !text-[11px] !py-0.5" dir="ltr">{m}</span>)}
                   </div>
 
-                  {canAskParent && (
+                  {canAskParent && gateVariant !== 'adult' && (
                     <div className="rounded-xl border border-[var(--line-strong)] bg-white/60 p-3 text-center space-y-2">
                       {parentLink ? (
                         <div className="text-xs text-charcoal/70 space-y-1">

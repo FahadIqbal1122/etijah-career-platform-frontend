@@ -3,6 +3,7 @@ import { NextIntlClientProvider, hasLocale } from 'next-intl'
 import { getMessages } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
+import AttributionCapture from '@/components/AttributionCapture'
 
 export const metadata: Metadata = {
   title: 'Etijahi — Career Assessment by Etijah Coaching & Consulting',
@@ -30,6 +31,7 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
+      <AttributionCapture />
       <div dir={locale === 'ar' ? 'rtl' : 'ltr'} lang={locale} className="contents">
         {children}
       </div>

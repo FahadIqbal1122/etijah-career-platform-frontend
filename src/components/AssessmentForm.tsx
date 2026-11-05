@@ -40,6 +40,8 @@ import IconTiles from '@/components/IconTiles'
 import AgeWheel from '@/components/AgeWheel'
 import { buildReveal } from '@/data/revealScoring'
 import { CHAPTERS, CHAPTER_COUNT, chapterIndexOf } from '@/data/chapters'
+import { getAttribution } from '@/lib/attribution'
+import { gateVariantFor } from '@/lib/gateVariant'
 import { initTelemetry, pushTelemetry, getTelemetrySessionId, rotateTelemetrySession, flush as flushTelemetry } from '@/lib/telemetry'
 import { track, trackOnce } from '@/lib/analytics'
 import DemoReportsButton from '@/components/shared/DemoReportsButton'
@@ -602,7 +604,7 @@ export default function AssessmentForm() {
   // Runs once on mount; locale is re-synced separately below since the
   // in-page language toggle can change it without remounting.
   useEffect(() => {
-    pushTelemetry({ event_type: 'session_start', payload: { user_agent: navigator.userAgent } })
+    pushTelemetry({ event_type: 'session_start', payload: { user_agent: navigator.userAgent, attribution: getAttribution() } })
     // best-effort flush when the tab is hidden/closed — an in-flight fetch
     // would otherwise get cancelled before an ordinary POST completes.
     const onHide = () => { if (document.visibilityState === 'hidden') flushTelemetry(true) }
@@ -908,7 +910,7 @@ export default function AssessmentForm() {
   function continueFromReveal() {
     // After the Interests & Personality chapter new people create an account and pay before the rest.
     if (gateRequired && !orgOfferRef.current && !gatePassedRef.current && revealMsg?.chapter === GATE_AFTER_CHAPTER) {
-      pushTelemetry({ event_type: 'gate_reached' }); flushTelemetry()
+      pushTelemetry({ event_type: 'gate_reached', payload: { gate_variant: gateVariantFor(answers) } }); flushTelemetry()
       trackOnce(`assessment_gate_reached:${getTelemetrySessionId()}`, 'assessment_gate_reached', { lang: locale })
       setPhase('gate')
       setEnterKey(k => k + 1)
@@ -1038,7 +1040,7 @@ export default function AssessmentForm() {
       if (err?.message === 'payment_required') {
         setGateRequired(true)
         setSubmitting(false)
-        pushTelemetry({ event_type: 'gate_reached' }); flushTelemetry()
+        pushTelemetry({ event_type: 'gate_reached', payload: { gate_variant: gateVariantFor(answers) } }); flushTelemetry()
         trackOnce(`assessment_gate_reached:${getTelemetrySessionId()}`, 'assessment_gate_reached', { lang: locale })
         setPhase('gate')
         return
