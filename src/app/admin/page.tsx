@@ -4125,7 +4125,11 @@ export default function AdminPage() {
   const preSubsTrend = preDays.map(k => ({ label: shortDay(k), value: preSubsPerDay.get(k) || 0 }))
   const preSalesTrend = preDays.map(k => ({ label: shortDay(k), value: preSalesPerDay.get(k) || 0 }))
   const postSalesTrend = postDays.map(k => ({ label: shortDay(k), value: salesPerDay.get(k) || 0 }))
-  const dashFinishedGateEra = gateEraSubmissions.filter(sub => sub.completed).length
+  // Organization seat holders are not customers: count them separately so "finished" means paying customers only.
+  const orgEmails = new Set(orgDomains.flatMap(o => o.grants.filter(g => !g.revoked_at).map(g => emailKey(g.email))))
+  // const dashFinishedGateEra = gateEraSubmissions.filter(sub => sub.completed).length
+  const dashFinishedGateEra = gateEraSubmissions.filter(sub => sub.completed && !orgEmails.has(emailKey(sub.email))).length
+  const dashFinishedViaOrg = gateEraSubmissions.filter(sub => sub.completed && orgEmails.has(emailKey(sub.email))).length
   const dashStartedAssessment = Math.max(gateEvents.filter(e => e.event_type === 'session_start' && sinceGate(e.created_at)).length, gateEraSubmissions.length)
   const dashDroppedBeforeGate = Math.max(0, dashStartedAssessment - dashReachedGate)
   const gateReachedTrend = postDays.map(k => ({ label: shortDay(k), value: gateDay.find(d => d.key === k)?.reached || 0 }))
@@ -5040,7 +5044,7 @@ export default function AdminPage() {
                   <BetaStatTile label="Reached the gate" accent="#0e7490" value={String(dashReachedGate)} sublabel={dashStartedAssessment ? `${Math.round(dashReachedGate / dashStartedAssessment * 100)}% of those who started · ${dashClickedPay} clicked pay` : 'People who got to the pay screen'} />
                   <BetaStatTile label="Sales" accent="#008300" value={String(gateEraSales.length)} sublabel={`${gateEraSales.length - gateEraSales.filter(t => dashCoachingSales.includes(t)).length} Pathfinder · ${gateEraSales.filter(t => dashCoachingSales.includes(t)).length} Launchpad${dashReachedGate ? ` · ${Math.round(gateEraSales.length / dashReachedGate * 100)}% of those who reached the gate` : ''}`} onClick={() => setActiveTab('liveSales')} />
                   <BetaStatTile label="Revenue" accent="#1baf7a" value={gateEraRevenueLabel} sublabel="Excl. 10% VAT · paid orders" onClick={() => setActiveTab('liveSales')} />
-                  <BetaStatTile label="Finished the whole assessment" accent="#2a78d6" value={String(dashFinishedGateEra)} sublabel="Paid and answered everything" onClick={() => setActiveTab('liveSubmissions')} />
+                  <BetaStatTile label="Finished the whole assessment" accent="#2a78d6" value={String(dashFinishedGateEra)} sublabel={`Paying customers · ${dashFinishedViaOrg} via organization access`} onClick={() => setActiveTab('liveSubmissions')} />
                 </div>
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mt-4">
                   <p className="text-sm font-semibold text-slate-700">Funnel</p>
