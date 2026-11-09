@@ -3940,6 +3940,7 @@ export default function AdminPage() {
     'parental.newt.xvyt@hidingpost.com', // "testing final", 13 Oct 2026
     'fahadiqbalmohammad@gmail.com', // "Test payment", 27 Oct 2026
     'dina@hotmail.com', // "Dina testing trying again", 59 SAR Pathfinder, 28 Oct 2026
+    'statistical.porpoise.qcix@hidingpost.com', // test, 5.9 BHD Pathfinder, 8 Nov 2026
   ]
   const isTestSale = (t: SaleEntry) =>
     new Date(t.paid_at || t.created_at) < SALES_REAL_FROM || (t.currency === 'BHD' && Number(t.amount) <= 0.1)
