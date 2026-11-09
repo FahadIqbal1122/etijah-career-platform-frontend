@@ -284,6 +284,8 @@ export default function ResultsPage() {
     return () => { live = false; clearTimeout(giveUp) }
   }, [])
   const [stage1Done, setStage1Done] = useState(false)
+  // Server-decided: the pre-result questions are compulsory for the owner's own report (finished since the pay gate).
+  const [stage1Required, setStage1Required] = useState(false)
   const [resultStageDone, setResultStageDone] = useState(false)
   // Local "already answered" markers, same keys the original form cards write.
   const [stage1Marker] = useState(() => {
@@ -436,7 +438,9 @@ export default function ResultsPage() {
           // (the feedback status, the "not for me" list and the recent-completions count used to be three more
           // requests; /results now carries them)
           const fbStatus = data.feedback_status
-          if (justCompleted && fbStatus?.stage1_completed) setStage1Done(true)
+          // if (justCompleted && fbStatus?.stage1_completed) setStage1Done(true)
+          if (fbStatus?.stage1_completed) setStage1Done(true)
+          setStage1Required(!!fbStatus?.stage1_required)
           if (fbStatus?.result_stage_completed) setResultStageDone(true)
           setRecFeedback(Object.fromEntries((data.recommendation_feedback || []).map((r: any) => [r.career_title, r.reason])))
           if (typeof data.recent_completions === 'number') setRecentCompletions(data.recent_completions)
@@ -611,7 +615,8 @@ export default function ResultsPage() {
   // the only time we gate on it. A later revisit (justCompleted false)
   // always falls straight through to the report once loaded.
   // const awaitingStage1 = betaMode && justCompleted && !stage1Done && !(COACH_FEEDBACK && stage1Marker)
-  const awaitingStage1 = justCompleted && !stage1Done && !(COACH_FEEDBACK && stage1Marker)
+  // const awaitingStage1 = justCompleted && !stage1Done && !(COACH_FEEDBACK && stage1Marker)
+  const awaitingStage1 = (justCompleted || stage1Required) && !stage1Done && !(COACH_FEEDBACK && stage1Marker && !stage1Required)
 
   // Listings are titled "Internships" only when every listing is an internship. Final-year students and recent
   // graduates get internships and entry-level jobs together, which is titled "Live Job Postings" with an
@@ -744,7 +749,8 @@ export default function ResultsPage() {
     const litCount = Math.max(1, Math.round((completedCount / stages.length) * 7) + 1)
     // Feedback shows for every fresh completion, not just in beta. Only the hold-back (awaitingStage1) stays beta-only.
     // const showFeedbackCol = betaMode && justCompleted
-    const showFeedbackCol = justCompleted
+    // const showFeedbackCol = justCompleted
+    const showFeedbackCol = justCompleted || stage1Required
     return (
       <div className="min-h-screen brand-hero flex items-center justify-center px-6 py-10">
         <div className="report-loading-grid">
@@ -796,7 +802,7 @@ export default function ResultsPage() {
         {COACH_FEEDBACK && (
           <CoachWidget
             locale={locale as 'en' | 'ar'} mode="results" responseId={id}
-            feedback={showFeedbackCol && !stage1Marker ? {
+            feedback={showFeedbackCol && (!stage1Marker || stage1Required) ? {
               kind: 'stage1', responseId: id, autoOpen: true, required: reportReadyButAwaitingFeedback,
               nudge: COACH_NUDGE_STAGE1, onDone: () => setStage1Done(true),
             } : undefined}
