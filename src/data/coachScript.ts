@@ -260,3 +260,43 @@ export function gateBubbles(qo4: unknown, age: unknown): (Bi & { answer: Bi })[]
     : ['K1', 'K2']   // working_exploring and career_changer
   return [...byGroup.map(id => BUBBLES[id]), BUBBLE_C1].map(b => ({ ...b.q, answer: b.a }))
 }
+
+// ── Idea 2: what else the coach says at the pay gate ──
+// 2-B1 (parents button) waits for the parent flow; 2-B4 (sample report) waits for decision 7; 2-B2 shows only its first
+// half (what is in the report, C1), the score-based second half (C2) comes with the label logic.
+const GATE_LINES: Record<string, Bi> = {
+  '2-B3': {
+    en: 'Your answers are saved. I’ll email you a link so you can continue whenever suits you.',
+    ar: 'إجاباتك محفوظة، وسأرسل لك رابطاً عبر البريد لإكمال التقييم في أي وقت يناسبك.',
+  },
+  '2-B5': {
+    en: 'Welcome back, {name}. Your results are still waiting for you.',
+    ar: 'أهلاً بعودتك يا {name}. نتائجك ما زالت بانتظارك.',
+  },
+  '2-B6': {
+    en: 'Any questions before you decide? I’m here.',
+    ar: 'هل لديك أسئلة قبل اتخاذ القرار؟ أنا هنا.',
+  },
+}
+
+export type GateCoachEvent = { type: 'exit_reason'; reason: string } | { type: 'idle' }
+
+/** The coach line (message ID + text) for something that happened on the pay gate, or null for nothing to say.
+ *  emailOk: the automatic reminder email is switched on, so 2-B3 may promise a link. */
+export function gateEventLine(e: GateCoachEvent, name: string, emailOk: boolean): { id: string; line: Bi } | null {
+  let id: string | null = null
+  if (e.type === 'idle') id = '2-B6'
+  else if (e.reason === 'later' || e.reason === 'too_expensive') id = emailOk ? '2-B3' : null
+  else if (e.reason === 'not_sure_useful') return { id: '2-B2', line: BUBBLE_C1.a }
+  if (!id) return null
+  const m = GATE_LINES[id]
+  const fill = (t: string) => t.replace(/\{name\}/g, name)
+  return { id, line: { en: fill(m.en), ar: fill(m.ar) } }
+}
+
+/** 2-B5: a returning person lands on the gate again. */
+export function gateReturningLine(name: string): Bi {
+  const m = GATE_LINES['2-B5']
+  const fill = (t: string) => t.replace(/\{name\}/g, name)
+  return { en: fill(m.en), ar: fill(m.ar) }
+}

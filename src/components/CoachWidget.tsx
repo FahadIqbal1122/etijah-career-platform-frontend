@@ -354,7 +354,8 @@ export default function CoachWidget({
                 ))}
                 {sending && <div className="coach-msg coach-msg-coach coach-typing">{tr(T.thinking)}</div>}
               </div>
-              {suggestions && !msgs.length && (
+              {/* at the pay gate the ready-made questions stay available, so a student can ask another one after the first answer */}
+              {suggestions && (!msgs.length || mode === 'gate') && (
                 <div className="coach-chips">
                   {suggestions.map(sg => (
                     <button key={sg.en} type="button" disabled={sending} onClick={() => (sg.answer ? sayLocal(tr(sg), sg.answer) : void send(tr(sg)))}>{tr(sg)}</button>

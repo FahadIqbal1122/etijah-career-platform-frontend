@@ -19,6 +19,7 @@ import { pushTelemetry, flush as flushTelemetry } from '@/lib/telemetry'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
 import { buildReveal, computeRanked } from '@/data/revealScoring'
+import type { GateCoachEvent } from '@/data/coachScript'
 import Logomark from '@/components/brand/Logomark'
 import GoogleButton from '@/components/GoogleButton'
 
@@ -202,12 +203,14 @@ const ADULT_STR = {
   },
 }
 
-export default function AssessmentGate({ locale, answers, confirming = false, paymentFailed = false, onUnlocked }: {
+export default function AssessmentGate({ locale, answers, confirming = false, paymentFailed = false, onUnlocked, onCoachEvent }: {
   locale: string
   answers: Record<string, unknown>
   confirming?: boolean   // back from the payment page: wait for the payment to be confirmed
   paymentFailed?: boolean   // back from the payment page and it did not go through
   onUnlocked: (serverAnswers: Record<string, unknown> | null) => void
+  // Lets the coach react to what the person does here (exit reason chosen, or 20 seconds with no action)
+  onCoachEvent?: (e: GateCoachEvent) => void
 }) {
   const strLang = locale === 'ar' ? 'ar' : 'en'
   const gateVariant = gateVariantFor(answers)
@@ -520,17 +523,32 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   // The end date now comes from Admin (Pay to Continue tab); nothing shows until one is saved.
   const [launchEndsAt, setLaunchEndsAt] = useState<string | null>(null)
   useEffect(() => {
-    apiGet<{ ends_at: string | null }>('/launch-offer-config').then(r => setLaunchEndsAt(r.ends_at)).catch(() => {})
+    // a date that has already passed is treated as no date, so nothing is shown
+    apiGet<{ ends_at: string | null }>('/launch-offer-config')
+      .then(r => setLaunchEndsAt(r.ends_at && new Date(r.ends_at).getTime() > Date.now() ? r.ends_at : null))
+      .catch(() => {})
   }, [])
-  const launchEndsDate = launchEndsAt && new Date(launchEndsAt).getTime() > Date.now() ? new Date(launchEndsAt) : null
+  const launchEndsDate = launchEndsAt ? new Date(launchEndsAt) : null
   const launchEndsLabel = launchEndsDate ? launchEndsDate.toLocaleDateString(locale === 'ar' ? 'ar' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : null
   // One-tap "why not now?" answer (latest answer per browser session counts). Also offered when the mouse leaves the page on desktop.
+  const onCoachEventRef = useRef(onCoachEvent)
+  useEffect(() => { onCoachEventRef.current = onCoachEvent })
+  // 2-B6: 20 seconds on the pay screen with no action (a tap, key press, scroll or touch) -> the coach asks once.
+  useEffect(() => {
+    if ((step !== 'pay' && step !== 'account') || confirming) return
+    const fire = () => onCoachEventRef.current?.({ type: 'idle' })
+    const t = window.setTimeout(() => { stop(); fire() }, 20000)
+    const stop = () => { window.clearTimeout(t); ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach(ev => window.removeEventListener(ev, stop, true)) }
+    ;['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach(ev => window.addEventListener(ev, stop, true))
+    return stop
+  }, [step, confirming])
   const [exitAnswered, setExitAnswered] = useState(false)
   const [exitOpen, setExitOpen] = useState(false)
   const exitShown = useRef(false)
   const sendExitReason = (reason: string) => {
     pushTelemetry({ event_type: 'gate_exit_reason', payload: { reason } }); flushTelemetry()
     setExitAnswered(true)
+    onCoachEventRef.current?.({ type: 'exit_reason', reason })
     setTimeout(() => setExitOpen(false), 1200)
   }
   useEffect(() => {

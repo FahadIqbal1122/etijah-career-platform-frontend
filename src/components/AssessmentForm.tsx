@@ -22,7 +22,7 @@ import AssessmentGate from '@/components/AssessmentGate'
 // import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
 import CoachWidget from '@/components/CoachWidget'
 import { useCoachSwitches } from '@/lib/useCoachEnabled'
-import { fillScript, firstName, welcomeId, goalQuestionKey, goalReplyId, segmentGroup, gateBubbles } from '@/data/coachScript'
+import { fillScript, firstName, welcomeId, goalQuestionKey, goalReplyId, segmentGroup, gateBubbles, gateEventLine, gateReturningLine, type GateCoachEvent } from '@/data/coachScript'
 import { COACH_BREAK, COACH_MOTIVATION, COACH_REVEAL, COACH_CAREER_CHANGER, COACH_CAREER_CHANGER_REVEAL, type Bi } from '@/data/coachMessages'
 
 // How many times Sarah may speak up unprompted during one visit to the assessment.
@@ -386,11 +386,15 @@ export default function AssessmentForm() {
   // One-way coach bubble: a random break/motivation nudge every 8–12 questions, at most 3 tips in total
   // (first around Q4–6), never during reveal/finish, each message at most once.
   const [coachMsg, setCoachMsg] = useState<Bi | null>(null)
-  const coachNextAt = useRef(3 + Math.floor(Math.random() * 3))
+  // was: useRef(3 + Math.floor(Math.random() * 3)). The scripted welcome and goal reply now cover the first questions, so the
+  // first random nudge waits until about Q8 to Q11.
+  const coachNextAt = useRef(8 + Math.floor(Math.random() * 4))
   const coachUsed = useRef<Set<string>>(new Set())
   // Sarah speaks up on her own at most COACH_MAX_TIPS times per visit (random nudges, the career-changer welcome and the
   // reveal-screen lines all share this). Her chat, when the person opens it, is not limited by this.
   const coachTipsShown = useRef(0)
+  // When a scripted line (welcome, goal reply, check-in...) was last shown, so a random nudge never replaces it a moment later.
+  const scriptedAtMs = useRef(0)
   // Sarah moves around so she is never parked in one place: on desktop she glides between a few spots (under the
   // text, in the sky above the stars, over the top of the question card), on phones she hops between the two
   // bottom corners. She changes spot every time she has a tip, and comes to the middle of the screen on the green
@@ -406,6 +410,7 @@ export default function AssessmentForm() {
   useEffect(() => {
     if (!coachEnabled || phase !== 'question' || index < coachNextAt.current) return
     if (coachTipsShown.current >= COACH_MAX_TIPS) return
+    if (Date.now() - scriptedAtMs.current < 30000) return   // a scripted line was just shown: wait for the next question
     const { pool: basePool, isBreak } = pickCoachPool()
     const pool = basePool.filter(m => !coachUsed.current.has(m.en))
     // was: index + 4 + Math.floor(Math.random() * 4)  (a nudge every 4-7 questions)
@@ -501,10 +506,19 @@ export default function AssessmentForm() {
 
   // Pay-to-continue: is this visitor in the group that is asked to pay after chapter 2? (Admin: paywall_percent.) If the
   // lookup fails they carry on free; with the paywall on for everybody the submit then sends them back to the gate.
+  // Coach lines at the pay gate (brief idea 2). The "I'll email you a link" promise is only made when that email is switched on.
+  const [reminderEmailOn, setReminderEmailOn] = useState(false)
+  const [gateTip, setGateTip] = useState<Bi | null>(null)
+  const onGateCoachEvent = useCallback((e: GateCoachEvent) => {
+    const hit = gateEventLine(e, firstName(answersRef.current['QD1']), reminderEmailOn)
+    if (!hit) return
+    track('coach_gate_line', { message_id: hit.id, segment: String(answersRef.current['QO4'] ?? '') })
+    setGateTip(hit.line)
+  }, [reminderEmailOn])
   useEffect(() => {
     let cancelled = false
-    apiGet<{ percent: number }>('/paywall-config')
-      .then(r => { if (!cancelled) setGateRequired(getPaywallBucket() <= (r?.percent ?? 0)) })
+    apiGet<{ percent: number; reminder_email?: boolean }>('/paywall-config')
+      .then(r => { if (!cancelled) { setGateRequired(getPaywallBucket() <= (r?.percent ?? 0)); setReminderEmailOn(r?.reminder_email === true) } })
       .catch(() => {})
     return () => { cancelled = true }
   }, [])
@@ -587,6 +601,7 @@ export default function AssessmentForm() {
     if (wasAtGate) {
       restoreOnUnlockRef.current = true
       setGateRequired(true)
+      if (coachEnabled) setGateTip(gateReturningLine(firstName(draft.answers['QD1'])))   // brief 2-B5
       setPhase('gate'); setEnterKey(k => k + 1); setDraft(null)
       return
     }
@@ -600,7 +615,7 @@ export default function AssessmentForm() {
     setMaxIndex(resumeAt)
     setPhase('question')
     setDraft(null)
-    if (coachEnabled) setCoachMsg(fillScript('18-ALL-05', { name: firstName(draft.answers['QD1']) }))   // brief 18-ALL-05
+    if (coachEnabled) { scriptedAtMs.current = Date.now(); setCoachMsg(fillScript('18-ALL-05', { name: firstName(draft.answers['QD1']) })) }   // brief 18-ALL-05
   }
 
   function discardDraft() {
@@ -672,8 +687,8 @@ export default function AssessmentForm() {
     scriptedFired.current.add(kind)
     if (!line) return
     track('welcome_shown', { segment: String(answers['QO4']), message_id: id })
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-off reaction to an answer, guarded by a ref
     setCoachTipGame(false)
+    scriptedAtMs.current = Date.now()
     setCoachMsg(line)
   }, [answers, phase, q?.id, coachEnabled])
 
@@ -686,8 +701,8 @@ export default function AssessmentForm() {
     if (q?.id === 'Q13' && !scriptedFired.current.has('half')) { scriptedFired.current.add('half'); id = group === 'CHG' ? '18-CHG-02' : '18-ALL-02' }
     else if (q?.id === 'Q21' && !scriptedFired.current.has('two-left')) { scriptedFired.current.add('two-left'); id = '18-ALL-03' }
     if (!id) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-off reaction to reaching a question, guarded by a ref
     setCoachTipGame(false)
+    scriptedAtMs.current = Date.now()
     setCoachMsg(fillScript(id))
   }, [phase, q?.id, coachEnabled]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -703,6 +718,7 @@ export default function AssessmentForm() {
       if (!empty || scriptedFired.current.has(key)) return
       scriptedFired.current.add(key)
       setCoachTipGame(false)
+      scriptedAtMs.current = Date.now()
       setCoachMsg(fillScript('18-ALL-04'))
     }, 45000)
     return () => window.clearTimeout(t)
@@ -1481,7 +1497,7 @@ export default function AssessmentForm() {
 
       {/* ── create an account and pay to continue (full-screen overlay) ──── */}
       {phase === 'gate' && (
-        <AssessmentGate locale={locale} answers={answers} confirming={returningPaid} paymentFailed={paymentFailed} onUnlocked={onGateUnlocked} />
+        <AssessmentGate locale={locale} answers={answers} confirming={returningPaid} paymentFailed={paymentFailed} onUnlocked={onGateUnlocked} onCoachEvent={onGateCoachEvent} />
       )}
 
       {/* ── reveal takeover (full-screen overlay) ───────────────────────── */}
@@ -1602,6 +1618,7 @@ export default function AssessmentForm() {
       {/* At the pay step Sarah explains what the report includes, answers "is it worth it?" and helps with asking parents. */}
       {coachEnabled && phase === 'gate' && <CoachWidget
         locale={locale as 'en' | 'ar'} mode="gate" sessionId={getTelemetrySessionId}
+        tip={gateTip} tipAutoHideMs={20000} onTipDismiss={() => setGateTip(null)}
         // Hint mode: she sees only what the pay screen already shows for free (top interest types and personality traits).
         getProfile={() => ({
           riasec: computeRanked(answers, 'riasec').slice(0, 3).map(r => r.dimension),
