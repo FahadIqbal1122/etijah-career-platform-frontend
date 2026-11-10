@@ -22,6 +22,7 @@ import AssessmentGate from '@/components/AssessmentGate'
 // import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
 import CoachWidget from '@/components/CoachWidget'
 import { useCoachSwitches } from '@/lib/useCoachEnabled'
+import { fillScript, firstName, welcomeId, goalQuestionKey, goalReplyId, segmentGroup, gateBubbles } from '@/data/coachScript'
 import { COACH_BREAK, COACH_MOTIVATION, COACH_REVEAL, COACH_CAREER_CHANGER, COACH_CAREER_CHANGER_REVEAL, type Bi } from '@/data/coachMessages'
 
 // How many times Sarah may speak up unprompted during one visit to the assessment.
@@ -575,6 +576,7 @@ export default function AssessmentForm() {
   function resumeDraft() {
     if (!draft) return
     answersRef.current = draft.answers
+    scriptedFired.current = new Set(['welcome', 'goal'])   // a resumed visit does not replay the welcome or the goal reply
     revealedRef.current = new Set(draft.revealedFrameworks)
     setAnswers(draft.answers)
     // Left for the payment page from the gate (browser Back, closed tab): go back to the gate, not into the questions.
@@ -598,6 +600,7 @@ export default function AssessmentForm() {
     setMaxIndex(resumeAt)
     setPhase('question')
     setDraft(null)
+    if (coachEnabled) setCoachMsg(fillScript('18-ALL-05', { name: firstName(draft.answers['QD1']) }))   // brief 18-ALL-05
   }
 
   function discardDraft() {
@@ -647,18 +650,77 @@ export default function AssessmentForm() {
   const mid = hsId ?? q?.msgId ?? q?.id
   const qTextStr = q ? tQ(`${mid}.text`, dynField ? { field: tQ(`QO5.options.${dynField}`) } : undefined) : ''
 
-  // When someone says they want to change careers (QO4), Sarah welcomes them once, on the next question.
-  // The ref makes it fire once per visit, even if they go back and forward.
-  const careerChangerGreeted = useRef(false)
+  // Scripted coach lines (Pay Gate IT Brief, ideas 17 and 18; copy in data/coachScript.ts, keyed by message ID):
+  //  - a welcome for every kind of person, as soon as we know their first name (the name question comes after QO4, so the
+  //    welcome appears right after it is answered), and
+  //  - a reply after the goal question.
+  // Each fires once per visit and never replays when a saved draft is resumed. These are not counted in the 3 random tips.
+  const scriptedFired = useRef<Set<string>>(new Set())
   useEffect(() => {
-    if (!coachEnabled || phase !== 'question' || careerChangerGreeted.current) return
-    if (answers['QO4'] !== 'career_changer' || q?.id === 'QO4') return
-    careerChangerGreeted.current = true
-    coachTipsShown.current += 1   // counts towards the 3 unprompted tips
+    if (!coachEnabled || phase !== 'question') return
+    const name = firstName(answers['QD1'])
+    const goalKey = goalQuestionKey(answers['QO4'])
+    let id: string | null = null
+    let kind = ''
+    if (!scriptedFired.current.has('welcome') && name && welcomeId(answers['QO4']) && q?.id !== 'QD1' && q?.id !== 'QO4') {
+      id = welcomeId(answers['QO4']); kind = 'welcome'
+    } else if (goalKey && !scriptedFired.current.has('goal') && answers[goalKey] && q?.id !== goalKey) {
+      id = goalReplyId(answers['QO4'], answers[goalKey]); kind = 'goal'
+    }
+    if (!id) return
+    const line = fillScript(id, { name })
+    scriptedFired.current.add(kind)
+    if (!line) return
+    track('welcome_shown', { segment: String(answers['QO4']), message_id: id })
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-off reaction to an answer, guarded by a ref
     setCoachTipGame(false)
-    setCoachMsg(COACH_CAREER_CHANGER[Math.floor(Math.random() * COACH_CAREER_CHANGER.length)])
+    setCoachMsg(line)
   }, [answers, phase, q?.id, coachEnabled])
+
+  // Check-ins along the Interests & Personality chapter (brief 18): halfway (arriving at Q13, right after the interest
+  // items), and "two more questions" (arriving at Q21). Each once per visit; CHG people get the work-minded halfway line.
+  useEffect(() => {
+    if (!coachEnabled || phase !== 'question') return
+    const group = segmentGroup(answers['QO4'], answers['QO3'])
+    let id: string | null = null
+    if (q?.id === 'Q13' && !scriptedFired.current.has('half')) { scriptedFired.current.add('half'); id = group === 'CHG' ? '18-CHG-02' : '18-ALL-02' }
+    else if (q?.id === 'Q21' && !scriptedFired.current.has('two-left')) { scriptedFired.current.add('two-left'); id = '18-ALL-03' }
+    if (!id) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-off reaction to reaching a question, guarded by a ref
+    setCoachTipGame(false)
+    setCoachMsg(fillScript(id))
+  }, [phase, q?.id, coachEnabled]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // "No rush": if a question sits unanswered for 45 seconds, Sarah says so (once per chapter).
+  useEffect(() => {
+    if (!coachEnabled || phase !== 'question' || !q) return
+    const key = `idle:${curChapter}`
+    if (scriptedFired.current.has(key)) return
+    const qid = q.id
+    const t = window.setTimeout(() => {
+      const v = answersRef.current[qid]
+      const empty = v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)
+      if (!empty || scriptedFired.current.has(key)) return
+      scriptedFired.current.add(key)
+      setCoachTipGame(false)
+      setCoachMsg(fillScript('18-ALL-04'))
+    }, 45000)
+    return () => window.clearTimeout(t)
+  }, [phase, q?.id, coachEnabled]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Old career-changer-only welcome, replaced by the scripted lines above:
+  // // When someone says they want to change careers (QO4), Sarah welcomes them once, on the next question.
+  // // The ref makes it fire once per visit, even if they go back and forward.
+  // const careerChangerGreeted = useRef(false)
+  // useEffect(() => {
+  //   if (!coachEnabled || phase !== 'question' || careerChangerGreeted.current) return
+  //   if (answers['QO4'] !== 'career_changer' || q?.id === 'QO4') return
+  //   careerChangerGreeted.current = true
+  //   coachTipsShown.current += 1   // counts towards the 3 unprompted tips
+  //   // eslint-disable-next-line react-hooks/set-state-in-effect -- one-off reaction to an answer, guarded by a ref
+  //   setCoachTipGame(false)
+  //   setCoachMsg(COACH_CAREER_CHANGER[Math.floor(Math.random() * COACH_CAREER_CHANGER.length)])
+  // }, [answers, phase, q?.id, coachEnabled])
 
   // Tag Manager: the page was seen (fires on every load of the assessment).
   // assessment_start now fires from doAdvance() when question 1 is actually answered.
@@ -1163,6 +1225,12 @@ export default function AssessmentForm() {
               >
             {/* old: section name — <div className="qsection">{safe(() => tSections(q.section), q.section)}</div> */}
             <div className="qsection">{chapterLabel(curChapter)} · {chapterTitle(curChapter)}</div>
+            {/* Brief 18: one guiding line for the Interests & Personality chapter, written for the person's segment */}
+            {q.id === 'Q1' && (() => {
+              const g = segmentGroup(answers['QO4'], answers['QO3'])
+              const line = fillScript(g === 'HS' ? '18-HS-01' : g === 'UNI' ? '18-UNI-01' : '18-CHG-01')
+              return line ? <p className="chapter-guide" style={{ fontSize: 14, opacity: 0.8, margin: '4px 0 12px' }}>{locale === 'ar' ? line.ar : line.en}</p> : null
+            })()}
 
             {q.type === 'behavioral_scale' && (
               <>
@@ -1540,9 +1608,11 @@ export default function AssessmentForm() {
           big_five: computeRanked(answers, 'big_five').slice(0, 2).map(r => r.dimension),
         })}
         suggestions={[
+          // Brief ideas 2 + 16: ready-made questions for the person's segment, answered from fixed text (no AI call).
+          ...gateBubbles(answers['QO4'], answers['QO3']),
           { en: 'What does my result say about me?', ar: 'ماذا تقول نتيجتي عني؟' },
           { en: 'Is it worth it?', ar: 'هل يستحق الدفع؟' },
-          { en: 'What is included in the report?', ar: 'ماذا يتضمن التقرير؟' },
+          // { en: 'What is included in the report?', ar: 'ماذا يتضمن التقرير؟' },   // replaced by the C1 bubble above
           { en: 'How do I ask my parents?', ar: 'كيف أطلب من والديّ؟' },
         ]}
       />}
@@ -1563,7 +1633,7 @@ export default function AssessmentForm() {
         spotIndex={coachSpot}
         games={gamesEnabled} tipOffersGame={gamesEnabled && phase === 'question' && coachTipGame}
         tip={phase === 'question' ? coachMsg : phase === 'reveal' ? revealTip : null}
-        tipAutoHideMs={phase === 'reveal' ? 0 : 9000} onTipDismiss={dismissCoach}
+        tipAutoHideMs={phase === 'reveal' ? 0 : 20000} onTipDismiss={dismissCoach}
       />}
     </div>
   )

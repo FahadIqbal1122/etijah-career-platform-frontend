@@ -77,8 +77,8 @@ const T = {
     ar: 'مرحباً، أنا سارة، مدرّبتك. اسألني عن نتائجك وماذا تعني.',
   },
   greetGate: {
-    en: 'Hi, I’m Sarah. Curious about your results? Ask me for a hint (3 free questions), or ask if the full report is worth it or how to talk to your parents about it.',
-    ar: 'مرحباً، أنا سارة. تريد أن تعرف المزيد عن نتائجك؟ اسألني وسأعطيك تلميحاً (3 أسئلة مجانية)، أو اسألني إن كان التقرير الكامل يستحق أو كيف تحدّث والديك عنه.',
+    en: 'Hi, I’m Sarah. Curious about your results? Ask me for a hint (3 questions), or ask if the full report is worth it or how to talk to your parents about it.',
+    ar: 'مرحباً، أنا سارة. تريد أن تعرف المزيد عن نتائجك؟ اسألني وسأعطيك تلميحاً (٣ أسئلة)، أو اسألني إن كان التقرير الكامل يستحق أو كيف تحدّث والديك عنه.',
   },
   greetLanding: {
     en: 'Hi, I’m Sarah. Ask me anything about Etijahi: how the assessment works, what each plan includes, pricing, or how to get in touch.',
