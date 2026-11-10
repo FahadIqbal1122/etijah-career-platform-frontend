@@ -1,13 +1,13 @@
 'use client'
 
-// Scroll wheel for the age question. Produces the same string the number box did (valid range 10–100).
+// Scroll wheel for the age question. Produces the same string the number box did (valid range 16–80).
 // The wheel starts near a typical age for orientation, but nothing is recorded until the person scrolls
 // or taps a number, so the preset never becomes an answer by accident.
 
 import { useEffect, useRef, useState } from 'react'
 
-const MIN = 10
-const MAX = 100
+const MIN = 16
+const MAX = 80
 const ROW = 48
 const START = 25
 const AGES = Array.from({ length: MAX - MIN + 1 }, (_, i) => MIN + i)

@@ -823,7 +823,7 @@ export default function AssessmentForm() {
     if (question.type === 'text_input') return String(a).trim().length >= 2
     if (question.type === 'number_input') {
       const n = Number(a)
-      return Number.isInteger(n) && n >= 10 && n <= 100
+      return Number.isInteger(n) && n >= 16 && n <= 80
     }
     if (a === 'other' && !otherTextFilled(question.id)) return false
     return true
@@ -1413,8 +1413,8 @@ export default function AssessmentForm() {
                       type="number"
                       inputMode="numeric"
                       step={1}
-                      min={10}
-                      max={100}
+                      min={16}
+                      max={80}
                       value={answers[q.id] || ''}
                       onChange={e => setAnswer(q.id, e.target.value)}
                       placeholder={tForm('placeholder')}
