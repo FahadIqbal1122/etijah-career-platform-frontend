@@ -20,6 +20,12 @@ export const PARENTS = {
     } as Bi,
     cta: { en: 'Get access to the assessment', ar: 'احصل على التقييم' } as Bi,
     note: { en: 'One-time payment. You’ll receive a personal link to share with your child.', ar: 'دفعة واحدة. يصلك رابط خاص ترسله لابنك أو ابنتك.' } as Bi,
+    // Short facts under the button, taken from the copy elsewhere on the page.
+    facts: [
+      { en: 'About 15 minutes', ar: 'نحو ١٥ دقيقة' },
+      { en: 'Arabic or English', ar: 'بالعربية أو الإنجليزية' },
+      { en: 'One-time payment, no subscription', ar: 'دفعة واحدة، دون اشتراك' },
+    ] as Bi[],
   },
 
   problem: {
@@ -40,6 +46,18 @@ export const PARENTS = {
       en: 'Etijahi gives your child a way to understand themselves, and gives you both something concrete to talk about. The assessment explores what they enjoy, what matters to them, how they like to work, and where they naturally do well. It then shows the careers that suit them, why, and what they would need to study to get there.',
       ar: 'إتجاهي يمنح ابنك فرصة ليفهم نفسه، ويمنحكما معاً ما تتحدثان عنه بوضوح. يتعرّف التقييم على ما يستمتع به، وما يهمّه، وطريقته المفضلة في العمل، وما يبرع فيه بطبيعته، ثم يوضّح المهن التي تناسبه، وسبب ملاءمتها له، وما يحتاج إلى دراسته للوصول إليها.',
     } as Bi,
+    // The path the assessment follows, in the words of the paragraph above.
+    explores: [
+      { en: 'What they enjoy', ar: 'ما يستمتع به' },
+      { en: 'What matters to them', ar: 'ما يهمّه' },
+      { en: 'How they like to work', ar: 'طريقته المفضلة في العمل' },
+      { en: 'Where they naturally do well', ar: 'ما يبرع فيه بطبيعته' },
+    ] as Bi[],
+    shows: [
+      { en: 'The careers that suit them', ar: 'المهن التي تناسبه' },
+      { en: 'Why they suit them', ar: 'سبب ملاءمتها له' },
+      { en: 'What to study to get there', ar: 'ما يحتاج إلى دراسته للوصول إليها' },
+    ] as Bi[],
     p2: {
       en: 'It’s built on 15 years of career guidance by Etijah Coaching & Consulting, working with students and professionals across the Gulf.',
       ar: 'صُمّم إتجاهي على خبرة ١٥ عاماً من الإرشاد المهني قدّمتها اتجاه للإرشاد والاستشارات للطلاب والمهنيين في الخليج.',
