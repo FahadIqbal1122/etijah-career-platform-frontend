@@ -1611,6 +1611,8 @@ export default function AdminPage() {
   const [coachOn, setCoachOn] = useState(false)
   // Pay to continue inside the assessment: share of starters (0-100) who are asked to create an account and pay after chapter 2
   const [paywallPercent, setPaywallPercent] = useState(0)
+  const [launchEndsAt, setLaunchEndsAt] = useState('')   // datetime-local value
+  const [launchMsg, setLaunchMsg] = useState('')
   const [paywallLoading, setPaywallLoading] = useState(false)
   const [paywallSaving, setPaywallSaving] = useState(false)
   const [paywallError, setPaywallError] = useState('')
@@ -2196,6 +2198,28 @@ export default function AdminPage() {
       setPaywallLoading(false)
     }
   }, [])
+
+  const fetchLaunchOffer = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/launch-offer')
+      if (!res.ok) throw new Error()
+      const v = (await res.json()).ends_at
+      // datetime-local wants local time "YYYY-MM-DDTHH:mm"
+      setLaunchEndsAt(v ? new Date(new Date(v).getTime() - new Date(v).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '')
+    } catch { setLaunchMsg('Failed to load') }
+  }, [])
+
+  async function saveLaunchOffer(clear = false) {
+    setLaunchMsg('')
+    const ends_at = clear || !launchEndsAt ? null : new Date(launchEndsAt).toISOString()
+    const res = await fetch('/api/admin/launch-offer', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ends_at }),
+    })
+    if (!res.ok) return setLaunchMsg('Failed to save')
+    if (clear) setLaunchEndsAt('')
+    setLaunchMsg(ends_at ? 'Saved: deadline is now visible on the pay gate' : 'Saved: deadline hidden')
+  }
 
   async function savePaywallPercent(percent: number) {
     setPaywallSaving(true)
@@ -4742,7 +4766,7 @@ export default function AdminPage() {
                 { key: 'homepage', label: 'Homepage', color: 'bg-fuchsia-600', badge: homepageMode, onSelect: fetchHomepageMode },
                 { key: 'currency', label: 'Currency', color: 'bg-emerald-600', badge: multiCurrency ? 'ON' : undefined, onSelect: fetchMultiCurrency },
                 { key: 'betaclosed', label: 'Beta Access', color: 'bg-red-600', badge: betaClosed ? 'CLOSED' : undefined, onSelect: fetchBetaClosed },
-                { key: 'paywall', label: 'Pay to Continue', color: 'bg-lime-600', badge: paywallPercent > 0 ? `${paywallPercent}%` : undefined, onSelect: fetchPaywallPercent },
+                { key: 'paywall', label: 'Pay to Continue', color: 'bg-lime-600', badge: paywallPercent > 0 ? `${paywallPercent}%` : undefined, onSelect: () => { fetchPaywallPercent(); fetchLaunchOffer() } },
                 { key: 'coach', label: 'Coach', color: 'bg-teal-600', badge: coachOn || gamesOn ? 'ON' : undefined, onSelect: fetchCoachEnabled },
                 { key: 'reportTemplates', label: 'Report Templates', color: 'bg-violet-600' },
                 { key: 'templates', label: 'Email Templates', color: 'bg-pink-600' },
@@ -8402,6 +8426,18 @@ export default function AdminPage() {
               ))}
             </div>
             {paywallError && <p className="text-xs text-red-500 mt-3">{paywallError}</p>}
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mt-4">
+            <p className="font-semibold text-slate-800">Launch price end date</p>
+            <p className="text-xs text-slate-400 mt-0.5">Shown on the pay gate as "Launch price ends …". Empty = hidden. Time is in your browser's timezone.</p>
+            <div className="flex flex-wrap gap-2 mt-4">
+              <input type="datetime-local" value={launchEndsAt} onChange={e => setLaunchEndsAt(e.target.value)}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <button onClick={() => saveLaunchOffer()} className="rounded-lg bg-lime-600 px-4 py-2 text-sm font-semibold text-white">Save</button>
+              <button onClick={() => saveLaunchOffer(true)} className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200">Hide</button>
+            </div>
+            {launchMsg && <p className="text-xs text-slate-600 mt-3">{launchMsg}</p>}
           </div>
         </div>
       )}

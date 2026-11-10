@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
-  apiAuthGet, apiAuthPost, startCheckout, previewDiscount, getParentLinkEligibility, createParentLink,
+  apiGet, apiAuthGet, apiAuthPost, startCheckout, previewDiscount, getParentLinkEligibility, createParentLink,
   type DiscountPreview, type PlanCode,
 } from '@/lib/api'
 import { track, trackOnce } from '@/lib/analytics'
@@ -53,7 +53,8 @@ const TRAIT_INFO: Record<string, { en: [string, string]; ar: [string, string] }>
 
 // The real end of the launch price. Leave null until a date is decided: nothing is shown, so no false deadline appears.
 // Set an ISO date to show "Launch price ends <date>", e.g. '2026-12-31T20:59:00Z'.
-const LAUNCH_PRICE_ENDS_AT: string | null = null
+// (Now set in Admin > Pay to Continue; the constant below is no longer used.)
+// const LAUNCH_PRICE_ENDS_AT: string | null = null
 
 type GatePlan = Extract<PlanCode, 'pathfinder' | 'launchpad_monthly'>
 
@@ -515,7 +516,13 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   const price = (key: 'pathfinder' | 'launchpad') => formatPrice(key, currency, locale)
   const standardPrice = (key: 'pathfinder' | 'launchpad') => formatPrice(key === 'pathfinder' ? 'pathfinder_standard' : 'launchpad_standard', currency, locale)
   // Evaluated once on mount (not during render); an end date that has already passed shows nothing.
-  const [launchEndsDate] = useState(() => (LAUNCH_PRICE_ENDS_AT && new Date(LAUNCH_PRICE_ENDS_AT).getTime() > Date.now() ? new Date(LAUNCH_PRICE_ENDS_AT) : null))
+  // const [launchEndsDate] = useState(() => (LAUNCH_PRICE_ENDS_AT && new Date(LAUNCH_PRICE_ENDS_AT).getTime() > Date.now() ? new Date(LAUNCH_PRICE_ENDS_AT) : null))
+  // The end date now comes from Admin (Pay to Continue tab); nothing shows until one is saved.
+  const [launchEndsAt, setLaunchEndsAt] = useState<string | null>(null)
+  useEffect(() => {
+    apiGet<{ ends_at: string | null }>('/launch-offer-config').then(r => setLaunchEndsAt(r.ends_at)).catch(() => {})
+  }, [])
+  const launchEndsDate = launchEndsAt && new Date(launchEndsAt).getTime() > Date.now() ? new Date(launchEndsAt) : null
   const launchEndsLabel = launchEndsDate ? launchEndsDate.toLocaleDateString(locale === 'ar' ? 'ar' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : null
   // One-tap "why not now?" answer (latest answer per browser session counts). Also offered when the mouse leaves the page on desktop.
   const [exitAnswered, setExitAnswered] = useState(false)

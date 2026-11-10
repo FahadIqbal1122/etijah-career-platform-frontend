@@ -22,11 +22,15 @@ import AssessmentGate from '@/components/AssessmentGate'
 // import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
 import CoachWidget from '@/components/CoachWidget'
 import { useCoachSwitches } from '@/lib/useCoachEnabled'
-import { COACH_BREAK, COACH_MOTIVATION, COACH_REVEAL, COACH_CAREER_CHANGER, type Bi } from '@/data/coachMessages'
+import { COACH_BREAK, COACH_MOTIVATION, COACH_REVEAL, COACH_CAREER_CHANGER, COACH_CAREER_CHANGER_REVEAL, type Bi } from '@/data/coachMessages'
+
+// How many times Sarah may speak up unprompted during one visit to the assessment.
+const COACH_MAX_TIPS = 3
 
 // module-level so the random call stays out of render (only used in an effect)
-function pickCoachReveal(): Bi {
-  return COACH_REVEAL[Math.floor(Math.random() * COACH_REVEAL.length)]
+function pickCoachReveal(careerChanger = false): Bi {
+  const pool = careerChanger ? COACH_CAREER_CHANGER_REVEAL : COACH_REVEAL
+  return pool[Math.floor(Math.random() * pool.length)]
 }
 function pickCoachPool(): { pool: Bi[]; isBreak: boolean } {
   const isBreak = Math.random() < 0.35
@@ -38,7 +42,7 @@ import LanguageSelect from '@/components/LanguageSelect'
 import FieldOfStudySelect from '@/components/FieldOfStudySelect'
 import IconTiles from '@/components/IconTiles'
 import AgeWheel from '@/components/AgeWheel'
-import { buildReveal } from '@/data/revealScoring'
+import { buildReveal, computeRanked } from '@/data/revealScoring'
 import { CHAPTERS, CHAPTER_COUNT, chapterIndexOf } from '@/data/chapters'
 import { getAttribution } from '@/lib/attribution'
 import { gateVariantFor } from '@/lib/gateVariant'
@@ -378,11 +382,14 @@ export default function AssessmentForm() {
   // The riddle / games button is a separate switch (Coach tab): off = no game button anywhere in the assessment.
   const { coach: coachEnabled, games: gamesEnabled } = useCoachSwitches()
 
-  // One-way coach bubble: a random break/motivation nudge every 4–7 questions
+  // One-way coach bubble: a random break/motivation nudge every 8–12 questions, at most 3 tips in total
   // (first around Q4–6), never during reveal/finish, each message at most once.
   const [coachMsg, setCoachMsg] = useState<Bi | null>(null)
   const coachNextAt = useRef(3 + Math.floor(Math.random() * 3))
   const coachUsed = useRef<Set<string>>(new Set())
+  // Sarah speaks up on her own at most COACH_MAX_TIPS times per visit (random nudges, the career-changer welcome and the
+  // reveal-screen lines all share this). Her chat, when the person opens it, is not limited by this.
+  const coachTipsShown = useRef(0)
   // Sarah moves around so she is never parked in one place: on desktop she glides between a few spots (under the
   // text, in the sky above the stars, over the top of the question card), on phones she hops between the two
   // bottom corners. She changes spot every time she has a tip, and comes to the middle of the screen on the green
@@ -397,12 +404,15 @@ export default function AssessmentForm() {
   const dismissCoach = useCallback(() => { setCoachMsg(null); setRevealTip(null); setCoachSpot(0) }, [])
   useEffect(() => {
     if (!coachEnabled || phase !== 'question' || index < coachNextAt.current) return
+    if (coachTipsShown.current >= COACH_MAX_TIPS) return
     const { pool: basePool, isBreak } = pickCoachPool()
     const pool = basePool.filter(m => !coachUsed.current.has(m.en))
-    coachNextAt.current = index + 4 + Math.floor(Math.random() * 4)
+    // was: index + 4 + Math.floor(Math.random() * 4)  (a nudge every 4-7 questions)
+    coachNextAt.current = index + 8 + Math.floor(Math.random() * 5)   // spread out so the 3 tips cover the whole assessment
     if (!pool.length) return
     const pick = pool[Math.floor(Math.random() * pool.length)]
     coachUsed.current.add(pick.en)
+    coachTipsShown.current += 1
     // she stays where she is now (no hopping between sides or stepping over to the question while she comments)
     // setCoachSide(s => (s === 'end' ? 'start' : 'end'))
     // setCoachSpot(1)   // she steps over to the question while she comments on it
@@ -644,6 +654,7 @@ export default function AssessmentForm() {
     if (!coachEnabled || phase !== 'question' || careerChangerGreeted.current) return
     if (answers['QO4'] !== 'career_changer' || q?.id === 'QO4') return
     careerChangerGreeted.current = true
+    coachTipsShown.current += 1   // counts towards the 3 unprompted tips
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-off reaction to an answer, guarded by a ref
     setCoachTipGame(false)
     setCoachMsg(COACH_CAREER_CHANGER[Math.floor(Math.random() * COACH_CAREER_CHANGER.length)])
@@ -784,7 +795,13 @@ export default function AssessmentForm() {
         ? buildReveal(answersRef.current, ch.revealFramework, locale)
         : ch.done?.[lang] ?? buildReveal(answersRef.current, 'riasec', locale)
       setRevealMsg({ ...msg, chapter: curCh })
-      setRevealTip(pickCoachReveal())
+      // setRevealTip(pickCoachReveal(answersRef.current['QO4'] === 'career_changer'))   // was: a line on every reveal screen
+      if (coachTipsShown.current < COACH_MAX_TIPS) {
+        coachTipsShown.current += 1
+        setRevealTip(pickCoachReveal(answersRef.current['QO4'] === 'career_changer'))
+      } else {
+        setRevealTip(null)
+      }
       pendingRef.current = next
       setPhase('reveal')
     } else if (done) {
@@ -1517,7 +1534,13 @@ export default function AssessmentForm() {
       {/* At the pay step Sarah explains what the report includes, answers "is it worth it?" and helps with asking parents. */}
       {coachEnabled && phase === 'gate' && <CoachWidget
         locale={locale as 'en' | 'ar'} mode="gate" sessionId={getTelemetrySessionId}
+        // Hint mode: she sees only what the pay screen already shows for free (top interest types and personality traits).
+        getProfile={() => ({
+          riasec: computeRanked(answers, 'riasec').slice(0, 3).map(r => r.dimension),
+          big_five: computeRanked(answers, 'big_five').slice(0, 2).map(r => r.dimension),
+        })}
         suggestions={[
+          { en: 'What does my result say about me?', ar: 'ماذا تقول نتيجتي عني؟' },
           { en: 'Is it worth it?', ar: 'هل يستحق الدفع؟' },
           { en: 'What is included in the report?', ar: 'ماذا يتضمن التقرير؟' },
           { en: 'How do I ask my parents?', ar: 'كيف أطلب من والديّ؟' },
@@ -1525,6 +1548,7 @@ export default function AssessmentForm() {
       />}
       {coachEnabled && phase !== 'gate' && <CoachWidget
         locale={locale as 'en' | 'ar'} mode="assessment" sessionId={getTelemetrySessionId}
+        careerChanger={answers['QO4'] === 'career_changer'}
         questionIndex={index + 1} questionTotal={total}
         getQuestion={() => {
           if (phase !== 'question' || !q || !qTextStr) return null

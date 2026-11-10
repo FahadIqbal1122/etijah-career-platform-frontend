@@ -34,6 +34,28 @@ export const COACH_CAREER_CHANGER: Bi[] = [
     en: 'We understand how hard it can be to stay in a job you don’t enjoy. You’re in the right place.',
     ar: 'نتفهم كم قد يكون صعباً البقاء في وظيفة لا تستمتع بها. أنت في المكان الصحيح.',
   },
+  // Added from the Pay Gate Review doc (#17). Needs a native Arabic review before launch.
+  {
+    en: 'We’re excited to support you in finding a career that better aligns with your interests, strengths, and aspirations.',
+    ar: 'يسعدنا أن ندعمك في إيجاد مسار مهني يتوافق أكثر مع اهتماماتك ونقاط قوتك وطموحاتك.',
+  },
+]
+
+// Shown on the green screens between chapters, instead of the general lines, to people who said they want to change
+// careers (QO4 = career_changer). Empathetic, from the Pay Gate Review doc (#18). Needs a native Arabic review.
+export const COACH_CAREER_CHANGER_REVEAL: Bi[] = [
+  {
+    en: 'We understand that finding the right career fit isn’t always easy. Let’s explore what matters most to you.',
+    ar: 'نتفهم أن إيجاد المسار المهني المناسب ليس دائماً سهلاً. دعنا نستكشف ما يهمك أكثر.',
+  },
+  {
+    en: 'Think about what you’d like to experience differently in your next career. Your answers are shaping that picture.',
+    ar: 'فكّر فيما تتمنى أن يكون مختلفاً في مسارك المهني القادم. إجاباتك ترسم هذه الصورة.',
+  },
+  {
+    en: 'Looking back at what you enjoyed and didn’t enjoy is a real strength here. Keep going.',
+    ar: 'التأمل في ما استمتعت به وما لم تستمتع به قوة حقيقية هنا. واصل.',
+  },
 ]
 
 // Results-page advice, built from the user's own results.

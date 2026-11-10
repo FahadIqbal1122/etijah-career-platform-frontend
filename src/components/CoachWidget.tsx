@@ -40,6 +40,10 @@ interface Props {
   questionTotal?: number
   // assessment mode: the question currently on screen, so she can explain it (called when a message is sent)
   getQuestion?: () => { text: string; type?: string; options?: string[] } | null
+  // assessment mode: the person said they want to change careers, so her chat answers are warmer and ask what they'd like different
+  careerChanger?: boolean
+  // gate mode (hint mode): the top interest types / personality traits the pay screen already shows for free
+  getProfile?: () => { riasec: string[]; big_five: string[] } | null
   place?: 'end' | 'start' | 'center'      // which bottom spot she is at; changing it glides her across
   // Places she can stand during the assessment, rotated by spotIndex (she moves on every tip): an element to glide
   // to (she stands centred on it) or a screen corner. `wide` is used at >= 900px, `narrow` below.
@@ -73,8 +77,8 @@ const T = {
     ar: 'مرحباً، أنا سارة، مدرّبتك. اسألني عن نتائجك وماذا تعني.',
   },
   greetGate: {
-    en: 'Hi, I’m Sarah. Wondering if the full report is worth it, what it includes, or how to talk to your parents about it? Ask me.',
-    ar: 'مرحباً، أنا سارة. تتساءل إن كان التقرير الكامل يستحق، أو ماذا يتضمن، أو كيف تحدّث والديك عنه؟ اسألني.',
+    en: 'Hi, I’m Sarah. Curious about your results? Ask me for a hint (3 free questions), or ask if the full report is worth it or how to talk to your parents about it.',
+    ar: 'مرحباً، أنا سارة. تريد أن تعرف المزيد عن نتائجك؟ اسألني وسأعطيك تلميحاً (3 أسئلة مجانية)، أو اسألني إن كان التقرير الكامل يستحق أو كيف تحدّث والديك عنه.',
   },
   greetLanding: {
     en: 'Hi, I’m Sarah. Ask me anything about Etijahi: how the assessment works, what each plan includes, pricing, or how to get in touch.',
@@ -94,7 +98,7 @@ const T = {
 } satisfies Record<string, Bi>
 
 export default function CoachWidget({
-  locale, mode, responseId, sessionId, questionIndex, questionTotal, getQuestion,
+  locale, mode, responseId, sessionId, questionIndex, questionTotal, getQuestion, getProfile, careerChanger,
   place = 'end', spots, spotIndex = 0, games = false, suggestions, tipOffersGame = false, tipChoices, onHide, dock: dockProp, onDock,
   tip = null, onTipDismiss, tipAutoHideMs = 9000, feedback,
 }: Props) {
@@ -295,6 +299,8 @@ export default function CoachWidget({
         session_id: mode !== 'results' ? sessionId?.() : undefined,
         question_index: questionIndex, question_total: questionTotal,
         question_text: qc?.text || undefined, question_type: qc?.type, question_options: qc?.options,
+        career_changer: mode === 'assessment' && careerChanger ? true : undefined,
+        profile: mode === 'gate' ? getProfile?.() ?? undefined : undefined,
       })
       if (res.limited || !res.reply) {
         setRested(true)
