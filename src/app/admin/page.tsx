@@ -8431,7 +8431,7 @@ export default function AdminPage() {
 
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mt-4">
             <p className="font-semibold text-slate-800">Launch price end date</p>
-            <p className="text-xs text-slate-400 mt-0.5">Shown on the pay gate as "Launch price ends …". Empty = hidden. Time is in your browser's timezone.</p>
+            <p className="text-xs text-slate-400 mt-0.5">The launch price (59 SAR report, 330 SAR with coaching) runs until this date. It is shown on the pay gate as "Launch price ends …". <strong>After the date every price on the site and every charge returns to the standard price (99 SAR, 440 SAR with coaching).</strong> To extend the launch price, set a later date here. <strong>Hide</strong> removes the date and keeps the launch price on with no deadline. Time is in your browser's timezone.</p>
             <div className="flex flex-wrap gap-2 mt-4">
               <input type="datetime-local" value={launchEndsAt} onChange={e => setLaunchEndsAt(e.target.value)}
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />

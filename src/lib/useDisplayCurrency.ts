@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { readCurrencyCookie, type Currency } from './pricing'
+import { useLaunchActive } from './launchPricing'
 
 // Admin switch (Admin → Currency). Off = every price shown in SAR only. Fetched once per page load.
 let multiCurrencyFlag: Promise<boolean> | null = null
@@ -18,6 +19,7 @@ function fetchMultiCurrencyEnabled(): Promise<boolean> {
 
 // The currency prices are shown in: SAR unless the admin switch is on, then the visitor's local currency.
 export function useDisplayCurrency(): Currency {
+  useLaunchActive()   // every component that shows a price uses this hook, so they all redraw when the launch price ends
   const [currency, setCurrency] = useState<Currency>('SAR')
   useEffect(() => {
     let cancelled = false

@@ -18,6 +18,7 @@ import { getAttribution } from '@/lib/attribution'
 import { pushTelemetry, flush as flushTelemetry } from '@/lib/telemetry'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
+import { useLaunchActive } from '@/lib/launchPricing'
 import { buildReveal, computeRanked } from '@/data/revealScoring'
 import { gateHeadline, loadScriptOverrides, type GateCoachEvent } from '@/data/coachScript'
 import Logomark from '@/components/brand/Logomark'
@@ -232,6 +233,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   const dir = locale === 'ar' ? 'rtl' : 'ltr'
   const headline = gateHeadline(answers['QO4'], answers['QO3'], locale === 'ar' ? 'ar' : 'en')
   const currency = useDisplayCurrency()
+  const launchOn = useLaunchActive()
 
   const [step, setStep] = useState<'checking' | 'account' | 'pay' | 'existing'>('checking')
   const [mode, setMode] = useState<'signup' | 'login'>(confirming ? 'login' : 'signup')   // someone who already paid has an account
@@ -849,8 +851,10 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                           <span className="text-sm font-semibold text-charcoal">
                             {plan === code && applied ? `${applied.preview.final} ${applied.preview.currency}` : (
                               <>
-                                <span className="me-1.5 font-normal text-charcoal/50 line-through" dir="ltr">{standardPrice(key)}</span>
-                                <span className="text-xs font-normal text-charcoal/60">{s.priceNow} </span>
+                                {launchOn && <>
+                                  <span className="me-1.5 font-normal text-charcoal/50 line-through" dir="ltr">{standardPrice(key)}</span>
+                                  <span className="text-xs font-normal text-charcoal/60">{s.priceNow} </span>
+                                </>}
                                 <span>{price(key)}</span>
                               </>
                             )}

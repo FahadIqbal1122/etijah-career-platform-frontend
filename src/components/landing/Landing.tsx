@@ -29,6 +29,7 @@ import { useCoachSwitches } from '@/lib/useCoachEnabled'
 import { getTelemetrySessionId } from '@/lib/telemetry'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
+import { useLaunchActive } from '@/lib/launchPricing'
 
 // Render a headline, tealing the `hl` phrase inside it. Uses indexOf so text
 // after a repeated phrase is never dropped.
@@ -167,6 +168,7 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
   // Display currency comes from the proxy's geo cookie; read after mount to avoid a hydration mismatch.
   // Unknown -> SAR (the billing currency).
   const currency = useDisplayCurrency()
+  const launchOn = useLaunchActive()   // false once the launch price has ended
   // The launch price in the visitor's currency, filled into copy that says {price}.
   const launchPrice = formatPrice('pathfinder', currency, locale)
   const fillPrice = (x: string) => x.replace(/\{price\}/g, launchPrice)
@@ -695,12 +697,12 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             </div> */}
             {/* offer price: crossed-out standard price + big introductory price */}
             <div className="mt-3 flex items-center gap-3 flex-wrap">
-              <span className="text-xl font-semibold text-white/60 line-through decoration-2 decoration-white/70">{formatPrice('pathfinder_standard', currency, locale)}</span>
+              {launchOn && <span className="text-xl font-semibold text-white/60 line-through decoration-2 decoration-white/70">{formatPrice('pathfinder_standard', currency, locale)}</span>}
               <span className="text-4xl font-extrabold text-white leading-none">{formatPrice('pathfinder', currency, locale)}</span>
             </div>
-            <span className="mt-3 inline-block rounded-full bg-white/15 border border-white/40 px-3 py-1 text-xs font-bold text-white">
+            {launchOn && <span className="mt-3 inline-block rounded-full bg-white/15 border border-white/40 px-3 py-1 text-xs font-bold text-white">
               {locale === 'ar' ? 'سعر الإطلاق' : 'Launch price'}
-            </span>
+            </span>}
             <p className="mt-3 text-lg font-bold text-white">{c.pricing.paid.priceNote}</p>
             <p className="mt-3 text-sm text-white/80 leading-relaxed">{c.pricing.paid.for}</p>
             <div className="h-px bg-white/16 my-6" />
@@ -731,19 +733,19 @@ export default function Landing({ variant }: { variant?: VariantSlug } = {}) {
             </div> */}
             {/* offer price: crossed-out standard price + launch price */}
             <div className="mt-3 flex items-center gap-3 flex-wrap">
-              <span className="text-xl font-semibold text-charcoal/65 line-through decoration-2 decoration-charcoal/50">{formatPrice('launchpad_standard', currency, locale)}</span>
+              {launchOn && <span className="text-xl font-semibold text-charcoal/65 line-through decoration-2 decoration-charcoal/50">{formatPrice('launchpad_standard', currency, locale)}</span>}
               <span className="text-4xl font-extrabold text-charcoal leading-none">{formatPrice('launchpad', currency, locale)}</span>
             </div>
-            <span className="mt-3 inline-block rounded-full bg-teal/10 border border-teal/40 px-3 py-1 text-xs font-bold text-teal">
+            {launchOn && <span className="mt-3 inline-block rounded-full bg-teal/10 border border-teal/40 px-3 py-1 text-xs font-bold text-teal">
               {locale === 'ar' ? 'سعر الإطلاق' : 'Launch price'}
-            </span>
-            <p className="mt-3 text-xs text-charcoal/65">{c.pricing.subscription.priceSub}</p>
+            </span>}
+            {launchOn && <p className="mt-3 text-xs text-charcoal/65">{c.pricing.subscription.priceSub}</p>}
             {/* package price vs adding coaching later to Pathfinder */}
-            <p className="mt-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs leading-relaxed text-charcoal/75">
+            {launchOn && <p className="mt-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs leading-relaxed text-charcoal/75">
               {locale === 'ar'
                 ? `سعر الإطلاق هو سعر الباقة عند شراء التقرير والتدريب معاً. إذا اشتريت مرشد المسار أولاً ثم أضفت منصة الانطلاق لاحقاً، يكون السعر ${formatPrice('launchpad_upgrade', currency, locale)}.`
                 : `The launch price is the package price, for buying the report and coaching together. If you buy Pathfinder first and add Launchpad later, it costs ${formatPrice('launchpad_upgrade', currency, locale)}.`}
-            </p>
+            </p>}
             <p className="mt-3 text-sm text-charcoal/80 leading-relaxed">{c.pricing.subscription.for}</p>
             <div className="h-px bg-[var(--line)] my-6" />
             <ul className="space-y-3.5 flex-1">

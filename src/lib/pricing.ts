@@ -39,8 +39,24 @@ export function currencyForCountry(country: string | null | undefined): Currency
   return COUNTRY_CURRENCY[(country || '').toUpperCase()] ?? 'USD'
 }
 
+// The launch price applies until the Admin end date passes (see launchPricing.ts, which sets this from the backend). After it,
+// asking for the launch price gives the standard one, so every place that shows a price follows the same switch.
+let launchActive = true
+const launchListeners = new Set<() => void>()
+export function isLaunchActive(): boolean { return launchActive }
+export function setLaunchActive(v: boolean): void {
+  if (v === launchActive) return
+  launchActive = v
+  launchListeners.forEach(f => f())
+}
+export function subscribeLaunchActive(f: () => void): () => void {
+  launchListeners.add(f)
+  return () => { launchListeners.delete(f) }
+}
+
 export function formatPrice(key: PriceKey, currency: Currency, locale: string): string {
-  const n = PRICES[key][currency]
+  const k: PriceKey = launchActive ? key : key === 'pathfinder' ? 'pathfinder_standard' : key === 'launchpad' ? 'launchpad_standard' : key
+  const n = PRICES[k][currency]
   if (locale === 'ar') {
     return `${n.toLocaleString('ar-EG', { maximumFractionDigits: 1 })} ${AR_NAMES[currency]}`
   }

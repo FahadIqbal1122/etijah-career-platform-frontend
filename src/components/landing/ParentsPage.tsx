@@ -24,6 +24,7 @@ import ParentBuyForm from '@/components/landing/ParentBuyForm'
 import type { PlanCode } from '@/lib/api'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
+import { useLaunchActive } from '@/lib/launchPricing'
 import { setLandingVariant, track, trackOnce } from '@/lib/analytics'
 
 type FooterCopy = { brandTagline: string; brandPowered: string; contactHead: string; phone: string; legal: { label: string; href: string }[]; copyright: string }
@@ -145,6 +146,7 @@ export default function ParentsPage() {
   const arrow = dir === 'rtl' ? '←' : '→'
   const router = useRouter()
   const pathname = usePathname()
+  const launchOn = useLaunchActive()   // false once the launch price has ended: no crossed-out price
   const currency = useDisplayCurrency()   // SAR unless the admin currency switch is on and the visitor is elsewhere in the Gulf
   const price = formatPrice('pathfinder', currency, locale)
   const priceWas = formatPrice('pathfinder_standard', currency, locale)
@@ -347,7 +349,7 @@ export default function ParentsPage() {
               <span className="pcard-badge absolute -top-3.5 start-1/2 -translate-x-1/2 rtl:translate-x-1/2">{t.pricing.packageName[lang]}</span>
               <h2 className="text-xl font-extrabold text-white">{t.pricing.title[lang]}</h2>
               <div className="mt-4 flex items-center gap-3 flex-wrap" dir="ltr" style={{ justifyContent: lang === 'ar' ? 'flex-end' : 'flex-start' }}>
-                {<span className="text-xl font-semibold text-white/60 line-through decoration-2 decoration-white/70">{priceWas}</span>}
+                {launchOn && <span className="text-xl font-semibold text-white/60 line-through decoration-2 decoration-white/70">{priceWas}</span>}
                 <span className="text-4xl font-extrabold text-white leading-none">{price}</span>
               </div>
               <p className="mt-3 text-sm text-white/80 leading-relaxed">{t.pricing.underPrice[lang]}</p>
@@ -364,7 +366,7 @@ export default function ParentsPage() {
             <Reveal className="card p-7 relative flex flex-col" style={{ transitionDelay: '180ms' }}>
               <h3 className="text-xl font-extrabold text-charcoal">{t.pricing.addOnName[lang]}</h3>
               <div className="mt-4 flex items-center gap-3 flex-wrap" dir="ltr" style={{ justifyContent: lang === 'ar' ? 'flex-end' : 'flex-start' }}>
-                {<span className="text-xl font-semibold text-charcoal/65 line-through decoration-2 decoration-charcoal/50">{coachWas}</span>}
+                {launchOn && <span className="text-xl font-semibold text-charcoal/65 line-through decoration-2 decoration-charcoal/50">{coachWas}</span>}
                 <span className="text-4xl font-extrabold text-charcoal leading-none">{coachPrice}</span>
               </div>
               <div className="h-px bg-[var(--line)] my-6" />
