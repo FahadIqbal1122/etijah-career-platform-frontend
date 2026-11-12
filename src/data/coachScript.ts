@@ -359,6 +359,21 @@ const TEMPLATE: Record<string, { q: Bi; a: Bi }> = {
       ar: 'أصحاب الاهتمام {top_label} القوي غالباً ما يستكشفون مجالات مثل {top_families}. والجانب {second_label} لديك قد يغيّر أي الأدوار داخل هذه المجالات هي الأنسب لك. تقريرك الكامل يقارن ذلك بقيمك ونقاط قوتك، ثم يرتّب المسارات المهنية الأنسب لك.',
     },
   },
+  // What the free results on the pay screen mean (no AI call, no free-question used). C9 only appears when a work-style trait is clear.
+  C8: {
+    q: { en: 'What does {top_label} mean?', ar: 'ماذا يعني الجانب {top_label}؟' },
+    a: {
+      en: '{top_label} is your strongest interest type. It means you’re drawn to {top_desc}. People with this interest often explore fields like {top_families}. Your full report then checks it against your values and strengths, and ranks the careers that fit you.',
+      ar: 'الجانب {top_label} هو أقوى اهتماماتك، ويعني أنك تميل إلى {top_desc}. غالباً ما يستكشف أصحاب هذا الاهتمام مجالات مثل {top_families}. ثم يقارن تقريرك الكامل ذلك بقيمك ونقاط قوتك، ويرتّب المسارات المهنية الأنسب لك.',
+    },
+  },
+  C9: {
+    q: { en: 'What does my work style say about me?', ar: 'ماذا يقول أسلوبي في العمل عني؟' },
+    a: {
+      en: 'From your answers I can see {trait_1}. That describes how you like to work, which matters as much as what you do. Your values and strengths come in the next section, and your full report brings it all together.',
+      ar: 'من إجاباتك أرى {trait_1}. وهذا يصف الطريقة التي تفضّل أن تعمل بها، وهي مهمة بقدر ما تعمله. قيمك ونقاط قوتك في القسم التالي، ويجمع تقريرك الكامل كل ذلك.',
+    },
+  },
   C7: {
     q: { en: 'Is the report worth it?', ar: 'هل يستحق التقرير؟' },
     a: {
@@ -425,12 +440,13 @@ export function gateBubbles(qo4: unknown, age: unknown, profile: HintProfile | n
     : qo4 === 'returning' || qo4 === 'between_roles' ? ['R1', 'R2']
     : qo4 === 'other' ? (Number(age) >= 23 ? ['K1', 'K2', 'K3'] : ['U1', 'U2'])
     : ['K1', 'K2', 'K3']   // working_exploring and career_changer
-  const shared = ['C1', 'C2', 'C3', 'C7']
+  const shared = ['C1', 'C2', 'C8', 'C9', 'C3', 'C7']
   const out: GateBubble[] = []
   for (const id of [...group, ...shared]) {
     if (TEMPLATE[id]) {
       if (!profile) continue
-      out.push({ id, ...ov(id + '.q', TEMPLATE[id].q), answer: applyTemplate(id, profile, c) })
+      if (id === 'C9' && !profile.trait) continue   // nothing true to say about work style yet
+      out.push({ id, ...withProfile(ov(id + '.q', TEMPLATE[id].q), profile, c), answer: applyTemplate(id, profile, c) })
     } else {
       const b = id === 'C1' ? BUBBLE_C1 : BUBBLES[id]
       out.push({ id, ...ov(id + '.q', b.q), answer: ov(id + '.a', b.a) })
