@@ -104,6 +104,13 @@ const T = {
   tooMany: { en: 'You’ve asked a lot of questions. Please try again a bit later.', ar: 'لقد سألت الكثير من الأسئلة. حاول مرة أخرى لاحقاً.' },
 } satisfies Record<string, Bi>
 
+// Sarah never sits in a corner of the page (a corner looks like a customer-support widget): her centre stays at least 190px
+// below the top and 200px above the bottom edge, on every page and when dragged. A very short window just centres her.
+function keepOffCorners(y: number): number {
+  const lo = 190, hi = window.innerHeight - 200
+  return hi <= lo ? window.innerHeight / 2 : Math.min(Math.max(y, lo), hi)
+}
+
 export default function CoachWidget({
   locale, mode, responseId, sessionId, questionIndex, questionTotal, getQuestion, getProfile, careerChanger,
   place = 'end', spots, spotIndex = 0, games = false, suggestions, segment, showParentsAction = false, tipAction = null, tipOffersGame = false, tipChoices, onHide, dock: dockProp, onDock,
@@ -148,7 +155,7 @@ export default function CoachWidget({
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null)
   const dragRef = useRef<{ sx: number; sy: number; moved: boolean } | null>(null)
   const justDragged = useRef(false)
-  const clampY = (y: number) => Math.min(Math.max(y, 118), window.innerHeight - 60)
+  const clampY = keepOffCorners
   function onPointerDown(e: React.PointerEvent) {
     if (!onDock || e.button > 0) return
     dragRef.current = { sx: e.clientX, sy: e.clientY, moved: false }
@@ -194,14 +201,14 @@ export default function CoachWidget({
         const off = room >= 70 && r.width > 600 ? 40 : -34
         setPos({
           x: rtl ? r.left - off : r.right + off,
-          y: Math.min(Math.max(r.top + 38, 118), Math.max(r.bottom - 44, 118), window.innerHeight - 60),
+          y: keepOffCorners(Math.min(Math.max(r.top + 38, 118), Math.max(r.bottom - 44, 118), window.innerHeight - 60)),
         })
         return
       }
       // keep her clear of the top bar (logo, report a bug, language) and the screen edges
       setPos({
         x: Math.min(Math.max(r.left + r.width / 2, 70), window.innerWidth - 70),
-        y: Math.min(Math.max(r.top + r.height / 2, 150), window.innerHeight - 70),
+        y: keepOffCorners(Math.min(Math.max(r.top + r.height / 2, 150), window.innerHeight - 70)),
       })
     }
     const ro = new ResizeObserver(measure)
@@ -214,7 +221,7 @@ export default function CoachWidget({
     return () => { ro.disconnect(); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true) }
   }, [target])
 
-  const edge = dock?.peek && !open && !tip ? 6 : 44   // distance of her centre from the screen edge (6 = half hidden)
+  const edge = dock?.peek && !open && !tip ? 6 : wide ? 76 : 44   // distance of her centre from the screen edge (6 = half hidden)
   const pos = drag ?? (dock && inBrowser ? { x: dock.side === 'l' ? edge : window.innerWidth - edge, y: clampY(dock.y) } : measured)
 
   // Derived-state updates during render (keeps these out of effects).
@@ -254,10 +261,11 @@ export default function CoachWidget({
   }
   // The panel opens on the side with more room and is capped to fit, so it never runs off the screen.
   const vh = inBrowser ? window.innerHeight : 0
-  const roomAbove = pos ? pos.y - 56 - 12 : 0
-  const roomBelow = pos ? vh - pos.y - 56 - 12 : 0
+  const half = wide ? 72 : 56   // half her height: 144px on desktop, 112px below the desktop breakpoint
+  const roomAbove = pos ? pos.y - half - 12 : 0
+  const roomBelow = pos ? vh - pos.y - half - 12 : 0
   const panelBelow = effPlace === 'target' && !!pos && roomAbove < 440 && roomBelow > roomAbove
-  const tipBelow = effPlace === 'target' && !!pos && pos.y - 56 < 130
+  const tipBelow = effPlace === 'target' && !!pos && pos.y - half < 130
   const panelMax = Math.max(220, Math.min(560, 0.7 * vh, panelBelow ? roomBelow : roomAbove))
   const targetStyle = effPlace === 'target'
     ? ({
