@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
-  apiGet, apiAuthGet, apiAuthPost, startCheckout, previewDiscount, getParentLinkEligibility, createParentLink,
+  apiGet, apiAuthGet, apiAuthPost, startCheckout, previewDiscount, getGift, redeemGift, getParentLinkEligibility, createParentLink,
   type DiscountPreview, type PlanCode,
 } from '@/lib/api'
 import { track, trackOnce } from '@/lib/analytics'
@@ -19,7 +19,7 @@ import { pushTelemetry, flush as flushTelemetry } from '@/lib/telemetry'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
 import { buildReveal, computeRanked } from '@/data/revealScoring'
-import type { GateCoachEvent } from '@/data/coachScript'
+import { gateHeadline, loadScriptOverrides, type GateCoachEvent } from '@/data/coachScript'
 import Logomark from '@/components/brand/Logomark'
 import GoogleButton from '@/components/GoogleButton'
 
@@ -98,6 +98,11 @@ const STR = {
     } as Record<string, string>,
     agree: 'By continuing you agree to the', terms: 'terms', and: 'and', privacy: 'privacy policy',
     payBtn: 'Unlock my full report',
+    giftHead: 'Your parent has already paid for your full report',
+    giftBody: 'There is nothing to pay. Create your account below and your full report unlocks.',
+    giftConsent: 'I understand my parent will be able to read my report through a private link.',
+    giftConsentNeeded: 'Please tick the box to continue.',
+    giftBtn: 'Unlock my report',
     parentHint: 'Under 18? Send a payment link to your parent. Your answers stay saved.',
     parentBtn: 'Ask a parent to pay', parentDone: 'Link ready. Send it to your parent. This page continues by itself once they pay.',
     confirming: 'Confirming your payment…',
@@ -150,6 +155,11 @@ const STR = {
     } as Record<string, string>,
     agree: 'بمتابعتك فأنت توافق على', terms: 'الشروط والأحكام', and: 'و', privacy: 'سياسة الخصوصية',
     payBtn: 'افتح تقريري الكامل',
+    giftHead: 'والدك دفع لك تقريرك الكامل',
+    giftBody: 'لا يوجد شيء تدفعه. أنشئ حسابك أدناه ويُفتح تقريرك الكامل.',
+    giftConsent: 'أفهم أن والدي سيستطيع قراءة تقريري عبر رابط خاص.',
+    giftConsentNeeded: 'يرجى تحديد المربع للمتابعة.',
+    giftBtn: 'افتح تقريري',
     parentHint: 'عمرك أقل من 18؟ أرسل رابط الدفع لولي أمرك، وإجاباتك تبقى محفوظة.',
     parentBtn: 'أرسل رابط الدفع لولي أمرك', parentDone: 'الرابط جاهز، أرسله لولي أمرك. وتكمل هذه الصفحة تلقائياً بمجرد أن يدفع.',
     confirming: 'جارٍ التأكد من الدفع…',
@@ -220,6 +230,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     ? { ...base, ...ADULT_STR[strLang], exitReasons: base.exitReasons.filter(([k]) => k !== 'need_parents') }   // adults have no parents to ask
     : base, [gateVariant, base, strLang])
   const dir = locale === 'ar' ? 'rtl' : 'ltr'
+  const headline = gateHeadline(answers['QO4'], answers['QO3'], locale === 'ar' ? 'ar' : 'en')
   const currency = useDisplayCurrency()
 
   const [step, setStep] = useState<'checking' | 'account' | 'pay' | 'existing'>('checking')
@@ -244,6 +255,21 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   const [canAskParent, setCanAskParent] = useState(false)
   const [parentLink, setParentLink] = useState('')
   const [slow, setSlow] = useState(false)
+  // The coach lines and the pay headline can be edited in Admin: read them once, then draw again.
+  const [, setScriptLoaded] = useState(false)
+  useEffect(() => { loadScriptOverrides().then(() => setScriptLoaded(true)) }, [])
+  // A parent already paid (the child opened the link the parent sent): nothing to buy, the child agrees and unlocks.
+  const [gift, setGift] = useState<string | null>(null)
+  const [giftConsent, setGiftConsent] = useState(false)
+  useEffect(() => {
+    let token: string | null = null
+    try { token = window.localStorage.getItem('etijahi:gift') } catch { /* no storage: normal gate */ }
+    if (!token) return
+    getGift(token).then(g => {
+      if (g.status === 'paid') setGift(token)
+      else { try { window.localStorage.removeItem('etijahi:gift') } catch { /* ignore */ } }
+    }).catch(() => { try { window.localStorage.removeItem('etijahi:gift') } catch { /* ignore */ } })
+  }, [])
 
   // Latest props kept in refs so the polling below is not restarted every time the form re-renders.
   const unlockedRef = useRef(false)
@@ -460,6 +486,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
 
   async function pay() {
     if (!agreed || busy) return
+    if (gift && !giftConsent) { setError(s.giftConsentNeeded); return }   // before anything is created
     if (step === 'account' && !accountReady()) { setError(s.fillAccount); return }
     setBusy(true); setError('')
     track('report_checkout_click', { plan_code: plan, discount_code: applied?.code ?? undefined, from: 'assessment_gate' })
@@ -467,6 +494,14 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     try {
       // Not signed in yet: make the account first (this also saves the answers), then go straight on to payment.
       if (step === 'account' && !(await createAccount())) { setBusy(false); return }
+      if (gift) {
+        await redeemGift(gift, true)
+        try { window.localStorage.removeItem('etijahi:gift') } catch { /* ignore */ }
+        track('parent_gift_redeemed', { lang: locale })
+        await checkAccess()
+        if (!unlockedRef.current) { setBusy(false); setError(s.error) }
+        return
+      }
       // A code typed but never applied is checked now, so a wrong one stops here instead of being dropped silently.
       let code = applied?.code
       const typed = codeInput.trim().toUpperCase()
@@ -490,7 +525,33 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     }
   }
 
+  // Parent already paid and the child already has a finished assessment: redeem it here, then open the report.
+  async function redeemOnExisting() {
+    if (!gift || busy) return
+    if (!giftConsent) { setError(s.giftConsentNeeded); return }
+    setBusy(true); setError('')
+    try {
+      await redeemGift(gift, true)
+      try { window.localStorage.removeItem('etijahi:gift') } catch { /* ignore */ }
+      track('parent_gift_redeemed', { lang: locale, existing: true })
+      window.location.href = `/${locale}/results/${existingId}`
+    } catch { setBusy(false); setError(s.error) }
+  }
+
+  // The coach's buttons ("Unlock the full report", "Send to my parents") ask this screen to act (see CoachWidget.gateAction).
+  const askParentRef = useRef<() => void>(() => {})
+  useEffect(() => {
+    const onAction = (e: Event) => {
+      const action = (e as CustomEvent<string>).detail
+      if (action === 'unlock') document.querySelector('[data-track=assessment_gate_pay]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      else if (action === 'parents') askParentRef.current()
+    }
+    window.addEventListener('etijahi:gate-action', onAction)
+    return () => window.removeEventListener('etijahi:gate-action', onAction)
+  }, [])
+
   async function askParent() {
+    track('parent_button_click', { from: 'assessment_gate', plan_code: plan })   // brief event list
     if (step === 'account' && !accountReady()) { setError(s.fillAccount); return }
     setBusy(true); setError('')
     try {
@@ -505,6 +566,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     } catch { setError(s.error) }
     finally { setBusy(false) }
   }
+  useEffect(() => { askParentRef.current = askParent })
 
   async function checkAgain() {
     setSlow(false)
@@ -659,15 +721,30 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
             <div className="space-y-4">
               <h2 className="text-xl font-extrabold text-charcoal">{s.existingHead}</h2>
               <p className="text-sm text-charcoal/60">{s.existingBody}</p>
-              <button onClick={() => { window.location.href = `/${locale}/results/${existingId}` }} data-track="assessment_gate_existing"
-                className="w-full px-4 py-3 rounded-xl bg-primary text-white text-sm font-semibold">{s.existingBtn}</button>
+              {gift ? (
+                // A parent already paid, and this account already has a finished assessment: unlock it right here.
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+                  <p className="text-sm font-bold text-charcoal">{s.giftHead}</p>
+                  <p className="text-xs text-charcoal/70">{s.giftBody}</p>
+                  <label className="flex items-start gap-2 text-xs text-charcoal/80 cursor-pointer">
+                    <input type="checkbox" checked={giftConsent} onChange={e => setGiftConsent(e.target.checked)} className="mt-0.5 w-4 h-4 shrink-0" />
+                    <span>{s.giftConsent}</span>
+                  </label>
+                  {error && <p className="text-sm text-red-600">{error}</p>}
+                  <button onClick={redeemOnExisting} disabled={busy} data-track="assessment_gate_gift_existing"
+                    className="w-full px-4 py-3 rounded-xl bg-primary text-white text-sm font-semibold disabled:opacity-50">{busy ? '…' : s.giftBtn}</button>
+                </div>
+              ) : (
+                <button onClick={() => { window.location.href = `/${locale}/results/${existingId}` }} data-track="assessment_gate_existing"
+                  className="w-full px-4 py-3 rounded-xl bg-primary text-white text-sm font-semibold">{s.existingBtn}</button>
+              )}
             </div>
           )}
 
           {(step === 'pay' || (step === 'account' && !confirming)) && (
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-extrabold text-charcoal">{s.payHead}</h2>
+                <h2 className="text-xl font-extrabold text-charcoal">{headline}</h2>
                 <p className="mt-1 text-sm text-charcoal/60">{s.payBody}</p>
               </div>
 
@@ -752,6 +829,17 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                 </div>
               ) : (
                 <>
+                  {gift && (
+                    <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+                      <p className="text-sm font-bold text-charcoal">{s.giftHead}</p>
+                      <p className="text-xs text-charcoal/70">{s.giftBody}</p>
+                      <label className="flex items-start gap-2 text-xs text-charcoal/80 cursor-pointer">
+                        <input type="checkbox" checked={giftConsent} onChange={e => setGiftConsent(e.target.checked)} className="mt-0.5 w-4 h-4 shrink-0" />
+                        <span>{s.giftConsent}</span>
+                      </label>
+                    </div>
+                  )}
+                  <div className={gift ? 'hidden' : 'space-y-4'}>
                   <div className="grid gap-2">
                     {([['pathfinder', s.pathfinder, s.pathfinderLine, 'pathfinder'], ['launchpad_monthly', s.launchpad, s.launchpadLine, 'launchpad']] as const).map(([code, label, line, key]) => (
                       <button key={code} type="button" onClick={() => choosePlan(code)}
@@ -785,6 +873,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                     </div>
                     {applied && <p className="mt-1 text-xs text-green-700">{s.codeOk}</p>}
                     {codeError && <p className="mt-1 text-xs text-red-600">{codeError}</p>}
+                  </div>
                   </div>
 
                   {step === 'account' && (
@@ -844,7 +933,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
 
                   <button onClick={pay} disabled={busy} data-track="assessment_gate_pay"
                     className="w-full px-4 py-3 rounded-xl bg-primary text-white text-sm font-semibold disabled:opacity-40">
-                    {busy ? '…' : s.payBtn}
+                    {busy ? '…' : gift ? s.giftBtn : s.payBtn}
                   </button>
 
                   <div className="flex flex-wrap items-center justify-center gap-1.5">
@@ -852,7 +941,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                     {s.payMethods.map(m => <span key={m} className="chip !text-[11px] !py-0.5" dir="ltr">{m}</span>)}
                   </div>
 
-                  {(canAskParent || (step === 'account' && Number(answers.QO3) < 18)) && gateVariant !== 'adult' && (
+                  {!gift && (canAskParent || (step === 'account' && Number(answers.QO3) < 18)) && gateVariant !== 'adult' && (
                     <div className="rounded-xl border border-[var(--line-strong)] bg-white/60 p-3 text-center space-y-2">
                       {parentLink ? (
                         <div className="text-xs text-charcoal/70 space-y-1">
@@ -871,7 +960,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                     </div>
                   )}
 
-                  <div className="rounded-xl bg-[var(--surface-2,#f5f7f8)] p-3">{exitChips}</div>
+                  {!gift && <div className="rounded-xl bg-[var(--surface-2,#f5f7f8)] p-3">{exitChips}</div>}
                 </>
               )}
             </div>

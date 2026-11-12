@@ -6,6 +6,7 @@ import Logomark from '@/components/brand/Logomark'
 import DashboardStatsView, { type DashboardStats } from '@/components/admin/DashboardStatsView'
 import { DonutChart, ColumnChart, TrendChart, Sparkline, catColor } from '@/components/admin/DashCharts'
 import EmailTemplatesTab from '@/components/admin/EmailTemplatesTab'
+import CoachMessagesEditor from '@/components/admin/CoachMessagesEditor'
 import EmailSchedulerTab from '@/components/admin/EmailSchedulerTab'
 import SmtpSettingsTab from '@/components/admin/SmtpSettingsTab'
 import ReportTemplatesTab from '@/components/admin/ReportTemplatesTab'
@@ -8444,6 +8445,7 @@ export default function AdminPage() {
 
       {/* ── Currency Tab ── */}
       {activeTab === 'coach' && (
+      <>
         <div className="max-w-2xl mx-auto px-4 py-8">
           <h2 className="text-xl font-bold text-slate-800 mb-1">Coach (Sarah)</h2>
           <p className="text-sm text-slate-400 mb-6">
@@ -8510,6 +8512,8 @@ export default function AdminPage() {
             {gamesError && <p className="text-xs text-red-500 mt-3">{gamesError}</p>}
           </div>
         </div>
+        <CoachMessagesEditor />
+      </>
       )}
 
       {activeTab === 'currency' && (

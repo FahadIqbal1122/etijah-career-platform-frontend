@@ -160,6 +160,15 @@ export const createParentLink = (planCode: PlanCode) =>
 export const getParentLink = (token: string) => apiGet<ParentLinkInfo>(`/billing/parent-link/${token}`)
 export const payParentLink = (token: string) => apiPost<{ checkout_url: string }>(`/billing/parent-link/${token}/checkout`, {})
 
+// Parent pays first: the parent buys on the parents page, the child redeems the link, the parent reads the report
+export type GiftInfo = { status: 'pending' | 'paid' | 'redeemed'; plan_name: string; child_first_name: string | null; locale: string }
+export type ParentStatus = GiftInfo & { gift_url?: string; report_url?: string; order_ref?: string; amount?: number; currency?: string }
+export const buyForChild = (b: { parent_email: string; child_first_name?: string; plan_code: PlanCode; locale: string; currency?: string; consent: boolean }) =>
+    apiPost<{ checkout_url: string }>('/parent/purchase', b)
+export const getGift = (token: string) => apiGet<GiftInfo>(`/parent/gift/${token}`)
+export const redeemGift = (token: string, consent: boolean) => apiAuthPost<{ redeemed: boolean }>(`/parent/gift/${token}/redeem`, { consent })
+export const getParentStatus = (token: string) => apiGet<ParentStatus>(`/parent/status/${token}`)
+
 export async function apiAuthDelete<T>(path: string): Promise<T> {
     const res = await requestWithRetry(path, { method: 'DELETE' }, authHeader)
     return asJson<T>(res)

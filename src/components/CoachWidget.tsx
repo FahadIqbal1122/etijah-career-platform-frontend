@@ -13,6 +13,8 @@ import CoachFeedback, { feedbackThanks, type FeedbackKind } from '@/components/C
 import BreakGame, { pickNextGame, type GameState } from '@/components/BreakGame'
 import { breakCopy } from '@/data/breakActivities'
 import { pushTelemetry } from '@/lib/telemetry'
+import { track } from '@/lib/analytics'
+import { GATE_ACTION_LABEL } from '@/data/coachScript'
 
 type Role = 'user' | 'coach'
 interface Msg { role: Role; text: string }
@@ -53,7 +55,12 @@ interface Props {
   games?: boolean
   // Quick questions shown as chips until the visitor sends their first message (landing page).
   // A suggestion with an `answer` is answered from that text, with no AI call.
-  suggestions?: (Bi & { answer?: Bi })[]
+  suggestions?: (Bi & { answer?: Bi; id?: string })[]
+  // gate mode: the person's segment (sent with the coach events) and whether "Send to my parents" is offered under each answer
+  segment?: string
+  showParentsAction?: boolean
+  // gate mode: a button under her tip (for example 2-B1, "Send to my parents")
+  tipAction?: { label: Bi; action: 'parents' | 'unlock' } | null
   tipOffersGame?: boolean
   // Buttons under her tip: each opens the chat and sends `ask` (the landing page's plan chooser).
   tipChoices?: { label: Bi; ask: Bi; answer?: Bi }[]
@@ -99,7 +106,7 @@ const T = {
 
 export default function CoachWidget({
   locale, mode, responseId, sessionId, questionIndex, questionTotal, getQuestion, getProfile, careerChanger,
-  place = 'end', spots, spotIndex = 0, games = false, suggestions, tipOffersGame = false, tipChoices, onHide, dock: dockProp, onDock,
+  place = 'end', spots, spotIndex = 0, games = false, suggestions, segment, showParentsAction = false, tipAction = null, tipOffersGame = false, tipChoices, onHide, dock: dockProp, onDock,
   tip = null, onTipDismiss, tipAutoHideMs = 9000, feedback,
 }: Props) {
   const isAr = locale === 'ar'
@@ -107,6 +114,8 @@ export default function CoachWidget({
 
   const [open, setOpen] = useState(false)
   const [msgs, setMsgs] = useState<Msg[]>([])
+  const [lastBubble, setLastBubble] = useState<string | null>(null)   // gate: the ready-made answer on screen, so its buttons show
+  const [moreOpen, setMoreOpen] = useState(false)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [rested, setRested] = useState(false)
@@ -274,11 +283,22 @@ export default function CoachWidget({
   function toggleOpen() {
     if (open) { if (!required) setOpen(false); return }   // a required feedback card keeps the panel open
     setOpen(true)
+    if (mode === 'gate') track('coach_opened', { segment })
     if (tip) onTipDismiss?.()
   }
 
+  // Buttons under a ready-made answer and under her tip: tell the pay screen what to do (it listens, see AssessmentGate).
+  function gateAction(action: 'parents' | 'unlock' | 'another', bubbleId?: string | null) {
+    track('coach_cta_click', { bubble_id: bubbleId ?? undefined, button: action, segment })
+    if (action === 'another') { setLastBubble(null); setMoreOpen(true); return }
+    window.dispatchEvent(new CustomEvent('etijahi:gate-action', { detail: action }))
+    setOpen(false)
+    onTipDismiss?.()
+  }
+
   // Shows a ready-made question and answer in the chat without calling the AI (no cost, never fails).
-  function sayLocal(question: string, answer: Bi) {
+  function sayLocal(question: string, answer: Bi, bubbleId?: string) {
+    if (mode === 'gate') { track('coach_bubble_opened', { bubble_id: bubbleId, segment }); setLastBubble(bubbleId ?? null) }
     setMsgs(m => [...m, { role: 'user', text: question }, { role: 'coach', text: tr(answer) }])
   }
 
@@ -294,6 +314,7 @@ export default function CoachWidget({
     if (!text || sending || rested) return
     const history = msgs.slice(-6)
     const qc = mode === 'assessment' ? getQuestion?.() ?? null : null
+    setLastBubble(null)
     setMsgs(m => [...m, { role: 'user', text }])
     setInput('')
     setSending(true)
@@ -362,9 +383,20 @@ export default function CoachWidget({
               {/* at the pay gate the ready-made questions stay available, so a student can ask another one after the first answer */}
               {suggestions && (!msgs.length || mode === 'gate') && (
                 <div className="coach-chips">
-                  {suggestions.map(sg => (
-                    <button key={sg.en} type="button" disabled={sending} onClick={() => (sg.answer ? sayLocal(tr(sg), sg.answer) : void send(tr(sg)))}>{tr(sg)}</button>
+                  {/* at the gate three questions show first and "More questions" opens the rest (brief) */}
+                  {suggestions.filter((_, i) => mode !== 'gate' || moreOpen || suggestions.length <= 4 || i < 3).map(sg => (
+                    <button key={sg.en} type="button" disabled={sending} onClick={() => { if (sg.answer) sayLocal(tr(sg), sg.answer, sg.id); else { setLastBubble(null); void send(tr(sg)) } }}>{tr(sg)}</button>
                   ))}
+                  {mode === 'gate' && !moreOpen && suggestions.length > 4 && (
+                    <button type="button" onClick={() => setMoreOpen(true)}>{isAr ? 'أسئلة أخرى' : 'More questions'}</button>
+                  )}
+                </div>
+              )}
+              {mode === 'gate' && lastBubble && !sending && (
+                <div className="coach-chips coach-actions">
+                  <button type="button" onClick={() => gateAction('unlock', lastBubble)}>{tr(GATE_ACTION_LABEL.unlock)}</button>
+                  <button type="button" onClick={() => gateAction('another', lastBubble)}>{tr(GATE_ACTION_LABEL.another)}</button>
+                  {showParentsAction && <button type="button" onClick={() => gateAction('parents', lastBubble)}>{tr(GATE_ACTION_LABEL.parents)}</button>}
                 </div>
               )}
               {games && (
@@ -395,6 +427,11 @@ export default function CoachWidget({
               {tipChoices.map(c => (
                 <button key={c.label.en} type="button" className="coach-tip-action" onClick={() => askAndOpen(tr(c.ask), c.answer)}>{tr(c.label)}</button>
               ))}
+            </div>
+          )}
+          {tipAction && tip && !nudge && (
+            <div className="coach-tip-choices">
+              <button type="button" className="coach-tip-action" onClick={() => gateAction(tipAction.action)}>{tr(tipAction.label)}</button>
             </div>
           )}
           {games && tipOffersGame && tip && !nudge && (

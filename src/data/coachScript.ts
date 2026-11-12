@@ -3,6 +3,33 @@
 // to Admin without touching the code that uses it. Placeholders in {curly brackets} are filled by fillScript().
 // Copy rules from the brief: Arabic is gender-neutral on purpose (do not "fix" it), no em dashes, never "free" / مجاناً.
 import type { Bi } from '@/data/coachMessages'
+import { computeRanked } from '@/data/revealScoring'
+import { apiGet } from '@/lib/api'
+
+// ── Admin overrides ──
+// What Admin saves (Coach tab, "Coach messages") replaces a line's English and/or Arabic text. Keys are the brief's message
+// IDs; the ready-made bubbles use "<ID>.q" (the question) and "<ID>.a" (the answer). Anything not overridden keeps the
+// built-in wording below, so an empty table changes nothing.
+type Over = Record<string, Partial<Bi>>
+let OV: Over = {}
+let TRAIT_HIGH = 4.5
+let TRAIT_LOW = 2.5
+export function setScriptOverrides(messages?: Over, high?: number, low?: number) {
+  OV = messages && typeof messages === 'object' ? messages : {}
+  if (typeof high === 'number' && typeof low === 'number' && low > 1 && high > low && high < 6) { TRAIT_HIGH = high; TRAIT_LOW = low }
+}
+const ov = (key: string, base: Bi): Bi => ({ en: OV[key]?.en || base.en, ar: OV[key]?.ar || base.ar })
+
+let loading: Promise<void> | null = null
+/** Reads the saved overrides once per page load. Never throws: if the request fails the built-in wording is used. */
+export function loadScriptOverrides(): Promise<void> {
+  if (!loading) {
+    loading = apiGet<{ messages?: Over; trait_high?: number; trait_low?: number }>('/coach-script')
+      .then(d => setScriptOverrides(d?.messages, d?.trait_high, d?.trait_low))
+      .catch(() => { /* built-in wording */ })
+  }
+  return loading
+}
 
 export const COACH_SCRIPT: Record<string, Bi> = {
   // ── Idea 17: welcome after the first question (QO4: where are you now) ──
@@ -176,8 +203,9 @@ export function firstName(full: unknown): string {
 
 /** A scripted line with its {placeholders} filled, in both languages. Returns null for an unknown ID. */
 export function fillScript(id: string, vars: Record<string, string> = {}): Bi | null {
-  const m = COACH_SCRIPT[id]
-  if (!m) return null
+  const base = COACH_SCRIPT[id]
+  if (!base) return null
+  const m = ov(id, base)
   const fill = (t: string) => t.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '')
   return { en: fill(m.en), ar: fill(m.ar) }
 }
@@ -249,16 +277,166 @@ const BUBBLES: Record<string, Bubble> = {
   },
 }
 
-/** The static question chips for the pay gate: the person's segment set first, then the shared one (brief, ideas 2 + 16). */
-export function gateBubbles(qo4: unknown, age: unknown): (Bi & { answer: Bi })[] {
-  const byGroup: string[] =
-    qo4 === 'high_school' ? ['H3']
-    : qo4 === 'university' ? ['U2']
-    : qo4 === 'recent_graduate' ? ['G2']
+// ── Idea 16, phase 2: the personal (score-based) bubbles ──
+// Before the gate only the interest scores (Holland, Q1 to Q12 + the two either/or items) and the five work-style traits
+// (Q13 to Q22) exist. So these answers may only talk about interests and work style, never values, strengths or a specific
+// career as "your match". Labels and phrases are the brief's approved wording; if the report uses different words, the
+// report wins and these are updated.
+type Info = { label: Bi; desc: Bi; families: Bi }
+const INTEREST: Record<string, Info> = {
+  realistic: { label: { en: 'Practical', ar: 'العملي' }, desc: { en: 'building, fixing and working with tools or technology', ar: 'البناء والإصلاح والتعامل مع الأدوات والتقنية' },
+    families: { en: 'engineering, technical and operations roles, aviation and construction', ar: 'الهندسة، والمجالات التقنية والتشغيلية، والطيران، والبناء' } },
+  investigative: { label: { en: 'Investigative', ar: 'البحثي التحليلي' }, desc: { en: 'understanding how and why things work', ar: 'فهم كيف تعمل الأشياء ولماذا' },
+    families: { en: 'science, medicine, data and research', ar: 'العلوم، والطب، والبيانات، والبحث العلمي' } },
+  artistic: { label: { en: 'Creative', ar: 'الإبداعي' }, desc: { en: 'creating original ideas, designs or content', ar: 'ابتكار أفكار وتصاميم ومحتوى جديد' },
+    families: { en: 'design, media, architecture and content creation', ar: 'التصميم، والإعلام، والعمارة، وصناعة المحتوى' } },
+  social: { label: { en: 'Social', ar: 'الاجتماعي' }, desc: { en: 'helping, teaching and supporting people', ar: 'مساعدة الناس وتعليمهم ودعمهم' },
+    families: { en: 'education, healthcare, counselling and human resources', ar: 'التعليم، والرعاية الصحية، والإرشاد، والموارد البشرية' } },
+  enterprising: { label: { en: 'Enterprising', ar: 'القيادي' }, desc: { en: 'leading, persuading and driving projects forward', ar: 'القيادة والإقناع ودفع المشاريع إلى الأمام' },
+    families: { en: 'business, marketing, law and entrepreneurship', ar: 'إدارة الأعمال، والتسويق، والقانون، وريادة الأعمال' } },
+  conventional: { label: { en: 'Organised', ar: 'التنظيمي' }, desc: { en: 'organising information and working with clear systems', ar: 'تنظيم المعلومات والعمل وفق أنظمة واضحة' },
+    families: { en: 'finance, accounting, administration and data management', ar: 'المالية، والمحاسبة، والإدارة، وإدارة البيانات' } },
+}
+
+// Work-style phrases: trait dimension → [high phrase, low phrase]. Calm under pressure (stability) is only ever shown when
+// high, never when low. Scores are 1 to 6 averages (6 = "sounds exactly like me"); the two thresholds below are what the brief
+// calls "set in Admin" (not yet editable there).
+const TRAIT: Record<string, { high: Bi; low?: Bi }> = {
+  openness: { high: { en: 'a clear pull towards new ideas and big-picture thinking', ar: 'انجذاب واضح للأفكار الجديدة والتفكير في الصورة الكبيرة' }, low: { en: 'a preference for practical, proven approaches', ar: 'تفضيل للأساليب العملية المجرّبة' } },
+  conscientiousness: { high: { en: 'strong planning and high standards', ar: 'حسّ تخطيط عالٍ ومعايير مرتفعة في العمل' }, low: { en: 'flexibility and an ability to adapt as things change', ar: 'مرونة وقدرة على التكيّف مع المتغيرات' } },
+  extraversion: { high: { en: 'energy that comes from people, and a readiness to share views', ar: 'طاقة تتجدد بالتواصل مع الناس وسرعة في طرح الرأي' }, low: { en: 'sharper focus when there is space and quiet', ar: 'تركيز أعلى حين تتوفر المساحة والهدوء' } },
+  agreeableness: { high: { en: 'real care for others and their needs', ar: 'اهتمام حقيقي بالآخرين واحتياجاتهم' }, low: { en: 'an ability to set clear boundaries', ar: 'قدرة على وضع حدود واضحة' } },
+  stability: { high: { en: 'a steady, calm approach under pressure', ar: 'ثبات وهدوء تحت الضغط' } },
+}
+
+export type HintProfile = { top: Info; second: Info; trait: Bi | null }
+
+/** What the coach may say about this person before payment, from their own answers. Null until the interest questions are answered. */
+export function hintProfile(answers: Record<string, unknown>): HintProfile | null {
+  const interests = computeRanked(answers, 'riasec').filter(r => INTEREST[r.dimension])
+  if (interests.length < 2) return null
+  let trait: Bi | null = null
+  let best = 0
+  for (const t of computeRanked(answers, 'big_five')) {
+    const phrases = TRAIT[t.dimension]
+    if (!phrases) continue
+    const level = t.score >= TRAIT_HIGH ? phrases.high : t.score <= TRAIT_LOW ? phrases.low : undefined
+    if (!level) continue
+    const away = Math.abs(t.score - 3.5)
+    if (away > best) { best = away; trait = level }
+  }
+  return { top: INTEREST[interests[0].dimension], second: INTEREST[interests[1].dimension], trait }
+}
+
+type Ctx = { name: string; price: string }
+const fillAll = (b: Bi, f: (t: string, l: 'en' | 'ar') => string): Bi => ({ en: f(b.en, 'en'), ar: f(b.ar, 'ar') })
+const withProfile = (b: Bi, p: HintProfile, c: Ctx): Bi => fillAll(b, (t, l) => t
+  .replace(/\{top_label\}/g, p.top.label[l]).replace(/\{second_label\}/g, p.second.label[l])
+  .replace(/\{top_desc\}/g, p.top.desc[l]).replace(/\{top_families\}/g, p.top.families[l])
+  .replace(/\{trait_1\}/g, p.trait ? p.trait[l] : '').replace(/\{price\}/g, c.price).replace(/\{name\}/g, c.name))
+
+/** 16-ALL-00: the coach's one opening line at the gate. */
+export function gateOpeningLine(p: HintProfile, c: Ctx): Bi {
+  return withProfile(ov('16-ALL-00', {
+    en: '{name}, I’ve looked at your answers. Your strongest interest is {top_label}, and it combines with {second_label} in an interesting way. Ask me about it.',
+    ar: '{name}، اطّلعت على إجاباتك. أقوى اهتماماتك هو الجانب {top_label}، ويترابط مع الجانب {second_label} بطريقة لافتة. يمكنك سؤالي عن ذلك.',
+  }), p, c)
+}
+
+// A template may have an optional trait sentence ([[ ... ]]): dropped when no trait is clearly high or low (QA item in the brief).
+const TEMPLATE: Record<string, { q: Bi; a: Bi }> = {
+  C2: {
+    q: { en: 'What do my answers say so far?', ar: 'ماذا تقول إجاباتي حتى الآن؟' },
+    a: {
+      en: 'Your strongest interest is {top_label}: {top_desc}. [[Your answers also point to {trait_1}. ]]That’s a real part of your profile, but only one part. Your values and strengths, in the next section, decide which careers come first.',
+      ar: 'أقوى اهتماماتك هو الجانب {top_label}: {top_desc}. [[كما تشير إجاباتك إلى {trait_1}. ]]هذا جزء حقيقي من ملفك، لكنه جزء واحد فقط، فقيمك ونقاط قوتك في القسم التالي هي التي تحدد أي المسارات تأتي أولاً.',
+    },
+  },
+  C3: {
+    q: { en: 'What kind of careers suit people like me?', ar: 'ما المسارات المهنية التي تناسب أشخاصاً مثلي؟' },
+    a: {
+      en: 'People with a strong {top_label} interest often explore fields like {top_families}. Your {second_label} side can change which roles within those fields suit you best. Your full report checks this against your values and strengths and ranks the careers that fit you.',
+      ar: 'أصحاب الاهتمام {top_label} القوي غالباً ما يستكشفون مجالات مثل {top_families}. والجانب {second_label} لديك قد يغيّر أي الأدوار داخل هذه المجالات هي الأنسب لك. تقريرك الكامل يقارن ذلك بقيمك ونقاط قوتك، ثم يرتّب المسارات المهنية الأنسب لك.',
+    },
+  },
+  C7: {
+    q: { en: 'Is the report worth it?', ar: 'هل يستحق التقرير؟' },
+    a: {
+      en: 'You’ve finished the first part. So far I can see your interests ({top_label} and {second_label}) and how you like to work. What I can’t see yet is what matters most to you and where your strengths are, and that’s what decides which careers fit you. For {price}, your report brings it all together: careers, what to study, and AI impact for each.',
+      ar: 'أنهيت الجزء الأول. ما أراه حتى الآن هو اهتماماتك (الجانب {top_label} والجانب {second_label}) وأسلوبك المفضل في العمل. أما ما لا أراه بعد فهو ما يهمك أكثر وأين تكمن نقاط قوتك، وهذا تحديداً ما يحدد المسارات المناسبة لك. مقابل {price}، يجمع تقريرك كل ذلك: المسارات المهنية، وما يلزم دراسته، وأثر الذكاء الاصطناعي على كل منها.',
+    },
+  },
+  H1: {
+    q: { en: 'What should I study?', ar: 'ما التخصص المناسب لي؟' },
+    a: {
+      en: 'I can’t answer that honestly yet, and I won’t guess. Your interests point towards fields like {top_families}, but the right choice also depends on your values and strengths, which come next. Your full report shows the careers that fit you and what to study for each one.',
+      ar: 'لا أستطيع الإجابة عن هذا بدقة الآن، ولن أخمّن. اهتماماتك تشير إلى مجالات مثل {top_families}، لكن الاختيار الصحيح يعتمد أيضاً على قيمك ونقاط قوتك، وهي في القسم التالي. تقريرك الكامل يوضح المسارات المهنية التي تناسبك وما يلزم دراسته لكل منها.',
+    },
+  },
+  U1: {
+    q: { en: 'What if my major doesn’t suit me?', ar: 'ماذا لو لم يكن تخصصي مناسباً لي؟' },
+    a: {
+      en: 'Then it’s far better to know now. Your interests lean towards {top_label}. Your full report shows the careers that fit you, including ones you can reach from your current field, so you’ll see your options either way.',
+      ar: 'إذن من الأفضل بكثير أن تتضح الصورة الآن. اهتماماتك تميل نحو الجانب {top_label}، وتقريرك الكامل يوضح المسارات المهنية المناسبة لك، بما فيها مسارات يمكن الوصول إليها من تخصصك الحالي، فتتضح الخيارات في الحالتين.',
+    },
+  },
+  G1: {
+    q: { en: 'Where should I start applying?', ar: 'من أين أبدأ التقديم على الوظائف؟' },
+    a: {
+      en: 'Start where your profile is strongest. Your interests point to fields like {top_families}. Your full report narrows this to the careers that fit you best, with Gulf job market context and how AI is changing each one, so you can apply with focus.',
+      ar: 'الأفضل أن تكون البداية حيث يكون ملفك أقوى. اهتماماتك تشير إلى مجالات مثل {top_families}، وتقريرك الكامل يحدد المسارات المهنية الأنسب لك، مع سياق سوق العمل الخليجي وأثر الذكاء الاصطناعي على كل منها، ليكون التقديم مركّزاً.',
+    },
+  },
+  K3: {
+    q: { en: 'What kind of work would suit me better?', ar: 'ما نوع العمل الذي قد يناسبني أكثر؟' },
+    a: {
+      en: 'Your answers show a clear {top_label} interest[[ and {trait_1}]]. If your current work doesn’t use [[those]][[that]], that may explain part of what you’re feeling. Your full report shows which careers do, ranked by how well they fit you.',
+      ar: 'تُظهر إجاباتك اهتماماً واضحاً بالجانب {top_label}[[، إضافة إلى {trait_1}]]. إن كان عملك الحالي لا يستثمر ذلك، فقد يفسّر هذا جزءاً من شعورك. تقريرك الكامل يوضح المسارات التي تستثمره، مرتبة حسب درجة ملاءمتها لك.',
+    },
+  },
+}
+
+/** A template with its optional [[...]] parts kept only when the person has a work-style trait to mention. */
+function applyTemplate(id: string, p: HintProfile, c: Ctx): Bi {
+  const t = { q: ov(id + '.q', TEMPLATE[id].q), a: ov(id + '.a', TEMPLATE[id].a) }
+  const keep = !!p.trait
+  const strip = (x: string) => {
+    // K3 English has "[[those]][[that]]": "those" when a trait was added, "that" when only the interest is mentioned.
+    let out = x
+    if (id === 'K3') out = out.replace(/\[\[those\]\]\[\[that\]\]/, keep ? 'those' : 'that')
+    return out.replace(/\[\[(.*?)\]\]/g, (_m, inner) => (keep ? inner : ''))
+  }
+  return withProfile({ en: strip(t.a.en), ar: strip(t.a.ar) }, p, c)
+}
+
+/** C2 as a standalone line (used by 2-B2). */
+export function gatePersonalSummary(p: HintProfile, c: Ctx): Bi { return applyTemplate('C2', p, c) }
+
+export type GateBubble = Bi & { id: string; answer: Bi }
+
+/** The question chips for the pay gate: the person's segment set first, then the shared ones (brief, ideas 2 + 16).
+ *  Static answers need nothing; the personal ones (C2, C3, C7, H1, U1, G1, K3) appear once the interest scores exist.
+ *  Held back until decisions are confirmed: C4 (the AI check), C5 (accuracy claim), C6 (privacy wording), H2 (the new parent button). */
+export function gateBubbles(qo4: unknown, age: unknown, profile: HintProfile | null = null, c: Ctx = { name: '', price: '' }): GateBubble[] {
+  const group: string[] =
+    qo4 === 'high_school' ? ['H1', 'H3']
+    : qo4 === 'university' ? ['U1', 'U2']
+    : qo4 === 'recent_graduate' ? ['G1', 'G2']
     : qo4 === 'returning' || qo4 === 'between_roles' ? ['R1', 'R2']
-    : qo4 === 'other' ? (Number(age) >= 23 ? ['K1', 'K2'] : ['U2'])
-    : ['K1', 'K2']   // working_exploring and career_changer
-  return [...byGroup.map(id => BUBBLES[id]), BUBBLE_C1].map(b => ({ ...b.q, answer: b.a }))
+    : qo4 === 'other' ? (Number(age) >= 23 ? ['K1', 'K2', 'K3'] : ['U1', 'U2'])
+    : ['K1', 'K2', 'K3']   // working_exploring and career_changer
+  const shared = ['C1', 'C2', 'C3', 'C7']
+  const out: GateBubble[] = []
+  for (const id of [...group, ...shared]) {
+    if (TEMPLATE[id]) {
+      if (!profile) continue
+      out.push({ id, ...ov(id + '.q', TEMPLATE[id].q), answer: applyTemplate(id, profile, c) })
+    } else {
+      const b = id === 'C1' ? BUBBLE_C1 : BUBBLES[id]
+      out.push({ id, ...ov(id + '.q', b.q), answer: ov(id + '.a', b.a) })
+    }
+  }
+  return out
 }
 
 // ── Idea 2: what else the coach says at the pay gate ──
@@ -281,22 +459,84 @@ const GATE_LINES: Record<string, Bi> = {
 
 export type GateCoachEvent = { type: 'exit_reason'; reason: string } | { type: 'idle' }
 
+// 2-B1: someone leaving because they "need my parents" is offered the parent route.
+const LINE_2B1_BASE: Bi = { en: 'Want me to send this to your parents so they can unlock it?', ar: 'هل أرسل هذا إلى أهلك ليتمكنوا من فتح التقرير؟' }
+export const GATE_ACTION_LABEL = {
+  parents: { en: 'Send to my parents', ar: 'إرسال إلى أهلي' } as Bi,
+  unlock: { en: 'Unlock the full report', ar: 'فتح التقرير الكامل' } as Bi,
+  another: { en: 'Ask another question', ar: 'سؤال آخر' } as Bi,
+}
+
 /** The coach line (message ID + text) for something that happened on the pay gate, or null for nothing to say.
  *  emailOk: the automatic reminder email is switched on, so 2-B3 may promise a link. */
-export function gateEventLine(e: GateCoachEvent, name: string, emailOk: boolean): { id: string; line: Bi } | null {
+export function gateEventLine(e: GateCoachEvent, name: string, emailOk: boolean, personal: Bi | null = null, canAskParent = false): { id: string; line: Bi; action?: 'parents' } | null {
   let id: string | null = null
   if (e.type === 'idle') id = '2-B6'
   else if (e.reason === 'later' || e.reason === 'too_expensive') id = emailOk ? '2-B3' : null
-  else if (e.reason === 'not_sure_useful') return { id: '2-B2', line: BUBBLE_C1.a }
+  else if (e.reason === 'not_sure_useful') {
+    // 2-B2: what is in the report (C1), then what their own answers say (C2) when the scores exist.
+    const c1 = ov('C1.a', BUBBLE_C1.a)
+    const both = (l: 'en' | 'ar') => personal ? `${c1[l]}\n\n${personal[l]}` : c1[l]
+    return { id: '2-B2', line: { en: both('en'), ar: both('ar') } }
+  }
+  else if (e.reason === 'need_parents') return canAskParent ? { id: '2-B1', line: ov('2-B1', LINE_2B1_BASE), action: 'parents' } : null
   if (!id) return null
-  const m = GATE_LINES[id]
+  const m = ov(id, GATE_LINES[id])
   const fill = (t: string) => t.replace(/\{name\}/g, name)
   return { id, line: { en: fill(m.en), ar: fill(m.ar) } }
 }
 
 /** 2-B5: a returning person lands on the gate again. */
 export function gateReturningLine(name: string): Bi {
-  const m = GATE_LINES['2-B5']
+  const m = ov('2-B5', GATE_LINES['2-B5'])
   const fill = (t: string) => t.replace(/\{name\}/g, name)
   return { en: fill(m.en), ar: fill(m.ar) }
+}
+
+
+// ── Pay screen headline per group (3 Nov review, point 4: sell the decision, not the report) ──
+// The brief's copy rules apply: the report recommends careers and what to study for each, never "a list of majors"; no "free".
+// Students, graduates and working adults each get the decision they came for. Editable in Admin under GATE-HEAD-<group>.
+const GATE_HEADS: Record<string, Bi> = {
+  HS: { en: 'Your full report: the careers that fit you, and what to study for each one',
+        ar: 'تقريرك الكامل: المسارات المهنية الأنسب لك، وما يلزم دراسته لكل مسار' },
+  UNI: { en: 'Your full report: the careers that fit you, including ones you can reach from your current degree',
+         ar: 'تقريرك الكامل: المسارات المهنية الأنسب لك، بما فيها مسارات يمكن الوصول إليها من تخصصك الحالي' },
+  GRAD: { en: 'Your full report: where to start applying, with the careers that fit you and Gulf job market context',
+          ar: 'تقريرك الكامل: من أين تبدأ التقديم، والمسارات الأنسب لك مع سياق سوق العمل الخليجي' },
+  CHG: { en: 'Find the right next role: your full career report with best-fit roles, AI impact and a 90-day plan',
+         ar: 'اعثر على وظيفتك القادمة المناسبة: تقريرك المهني الكامل بأنسب الوظائف لك، وتأثير الذكاء الاصطناعي عليها، وخطة 90 يوم' },
+}
+function headGroup(qo4: unknown, age: unknown): string {
+  if (qo4 === 'high_school') return 'HS'
+  if (qo4 === 'university') return 'UNI'
+  if (qo4 === 'recent_graduate') return 'GRAD'
+  if (qo4 === 'other') return Number(age) >= 23 ? 'CHG' : 'UNI'
+  return 'CHG'   // working, changing careers, returning, between jobs
+}
+/** The pay screen's main headline for this person, in the given language. */
+export function gateHeadline(qo4: unknown, age: unknown, locale: 'en' | 'ar'): string {
+  const g = headGroup(qo4, age)
+  return ov('GATE-HEAD-' + g, GATE_HEADS[g])[locale]
+}
+
+/** Every editable line with its built-in wording, for the Admin table. `group` is for filtering. */
+export function scriptCatalogue(): { id: string; group: string; label: string; en: string; ar: string }[] {
+  const rows: { id: string; group: string; label: string; en: string; ar: string }[] = []
+  for (const [id, b] of Object.entries(COACH_SCRIPT)) {
+    const group = id.startsWith('17-G-') ? 'Goal replies' : id.startsWith('17-') ? 'Welcome' : 'During the assessment'
+    rows.push({ id, group, label: id, ...b })
+  }
+  rows.push({ id: '16-ALL-00', group: 'Pay gate', label: 'Opening line', en: '{name}, I’ve looked at your answers. Your strongest interest is {top_label}, and it combines with {second_label} in an interesting way. Ask me about it.', ar: '{name}، اطّلعت على إجاباتك. أقوى اهتماماتك هو الجانب {top_label}، ويترابط مع الجانب {second_label} بطريقة لافتة. يمكنك سؤالي عن ذلك.' })
+  for (const [id, b] of Object.entries(GATE_LINES)) rows.push({ id, group: 'Pay gate', label: id, ...b })
+  rows.push({ id: '2-B1', group: 'Pay gate', label: '2-B1', ...LINE_2B1_BASE })
+  for (const [g, b] of Object.entries(GATE_HEADS)) rows.push({ id: 'GATE-HEAD-' + g, group: 'Pay screen headline', label: 'Headline for ' + g, ...b })
+  const bubbleRows = (id: string, q: Bi, a: Bi) => {
+    rows.push({ id: id + '.q', group: 'Pay gate questions', label: id + ' question', ...q })
+    rows.push({ id: id + '.a', group: 'Pay gate questions', label: id + ' answer', ...a })
+  }
+  bubbleRows('C1', BUBBLE_C1.q, BUBBLE_C1.a)
+  for (const [id, b] of Object.entries(BUBBLES)) bubbleRows(id, b.q, b.a)
+  for (const [id, b] of Object.entries(TEMPLATE)) bubbleRows(id, b.q, b.a)
+  return rows
 }

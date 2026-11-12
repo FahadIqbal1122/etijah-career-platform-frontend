@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from 'react'
 import { useLocale } from 'next-intl'
 import { getParentLink, payParentLink, type ParentLinkInfo } from '@/lib/api'
+import { trackOnce } from '@/lib/analytics'
 
 type State = 'loading' | 'ok' | 'link_used' | 'link_expired' | 'link_invalid'
 
@@ -37,10 +38,11 @@ export default function PayForPage({ params }: { params: Promise<{ token: string
 
   useEffect(() => {
     getParentLink(token)
-      .then(i => { setInfo(i); setState('ok') })
+      .then(i => { setInfo(i); setState('ok'); trackOnce(`parent_page_open:${token}`, 'parent_page_open', { lang: locale }) })
       .catch((e: unknown) => {
         const m = e instanceof Error ? e.message : ''
         setState(m === 'link_used' || m === 'link_expired' ? m : 'link_invalid')
+        if (m === 'link_used') trackOnce(`parent_paid:${token}`, 'parent_paid', { lang: locale })   // the parent came back after paying
       })
   }, [token])
 

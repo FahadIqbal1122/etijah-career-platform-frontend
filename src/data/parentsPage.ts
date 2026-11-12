@@ -129,6 +129,13 @@ export const PARENTS = {
     soon: { en: 'Payment opens soon', ar: 'الدفع متاح قريباً' } as Bi,
   },
 
+  // The three button wordings from the doc ("CTA wording to test"). One is picked per visitor (see ParentsPage); the first is the recommended one.
+  ctaVariants: [
+    { en: 'Get access to the assessment', ar: 'احصل على التقييم' },
+    { en: 'Get my child’s assessment link', ar: 'احصل على رابط التقييم لابنك' },
+    { en: 'Start with your child', ar: 'ابدأ مع ابنك' },
+  ] as Bi[],
+
   closing: {
     title: { en: 'Give them clarity before the big decisions.', ar: 'امنحه الوضوح قبل قراراته الكبيرة.' } as Bi,
     cta: { en: 'Get access to the assessment', ar: 'احصل على التقييم' } as Bi,

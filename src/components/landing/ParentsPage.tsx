@@ -19,13 +19,18 @@ import DemoReportsButton from '@/components/shared/DemoReportsButton'
 import EmailLink from '@/components/shared/EmailLink'
 import { L } from '@/data/landing'
 import { PARENTS, type Bi } from '@/data/parentsPage'
+import ParentBuyForm from '@/components/landing/ParentBuyForm'
+import type { PlanCode } from '@/lib/api'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
 import { setLandingVariant, track, trackOnce } from '@/lib/analytics'
 
 type FooterCopy = { brandTagline: string; brandPowered: string; contactHead: string; phone: string; legal: { label: string; href: string }[]; copyright: string }
 
-const PAY_FLOW_READY = false   // true once a parent can pay first and receive the child's personal link
+const PAY_FLOW_READY = process.env.NEXT_PUBLIC_PARENT_PAY === '1'   // true once a parent can pay first and receive the child's personal link
+// Tester switch: opening the page with ?pay=1 turns the buy buttons on in that browser only (remembered for the session), so the
+// flow can be tried on the live preview before the setting above is turned on for everyone.
+const TESTER_KEY = 'parents:pay-test'
 
 const CSS = `
 .pp-thread { stroke-dasharray: 1; stroke-dashoffset: 1; animation: pp-draw 1.9s .5s cubic-bezier(.5,.1,.2,1) forwards; }
@@ -132,14 +137,45 @@ export default function ParentsPage() {
   const t = PARENTS
   const nums = lang === 'ar' ? ['١', '٢', '٣'] : ['1', '2', '3']
 
+  // Which of the three button wordings this visitor sees: ?cta=1|2|3 forces one (for checking), otherwise one is picked at random
+  // and remembered so the same person always sees the same wording. It is sent with every event, so results can be compared.
+  const [ctaV, setCtaV] = useState<number | null>(null)   // null until the pick below has run, so no event goes out with the wrong wording
+  useEffect(() => {
+    let v = -1
+    try {
+      const q = Number(new URLSearchParams(window.location.search).get('cta'))
+      if (q >= 1 && q <= t.ctaVariants.length) v = q - 1
+      else {
+        const saved = Number(window.localStorage.getItem('parents:cta'))
+        if (Number.isInteger(saved) && saved >= 0 && saved < t.ctaVariants.length && window.localStorage.getItem('parents:cta') !== null) v = saved
+      }
+      if (v < 0) v = Math.floor(Math.random() * t.ctaVariants.length)
+      window.localStorage.setItem('parents:cta', String(v))
+    } catch { if (v < 0) v = 0 }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of a browser-only store
+    setCtaV(v)
+  }, [t.ctaVariants.length])
+  const ctaLabel = t.ctaVariants[ctaV ?? 0][lang]
+  const variantNo = (ctaV ?? 0) + 1
+
   useEffect(() => {
     setLandingVariant('parents')
-    trackOnce('parents_page_view', 'parents_page_view', { lang })
-  }, [lang])
+    if (ctaV !== null) trackOnce('parents_page_view', 'parents_page_view', { lang, cta_variant: variantNo })
+  }, [lang, ctaV])
 
   // On phones a button stays at the bottom once the hero is gone, until the pricing section is on screen.
   const heroRef = useRef<HTMLElement | null>(null)
   const priceRef = useRef<HTMLElement | null>(null)
+  const [buying, setBuying] = useState<PlanCode | null>(null)
+  const [testerPay, setTesterPay] = useState(false)
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get('pay') === '1') window.sessionStorage.setItem(TESTER_KEY, '1')
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of a browser-only store
+      if (window.sessionStorage.getItem(TESTER_KEY) === '1') setTesterPay(true)
+    } catch { /* no storage: the setting above decides */ }
+  }, [])
+  const payOn = PAY_FLOW_READY || testerPay
   const [heroGone, setHeroGone] = useState(false)
   const [priceSeen, setPriceSeen] = useState(false)
   useEffect(() => {
@@ -151,7 +187,7 @@ export default function ParentsPage() {
     return () => { a.disconnect(); b.disconnect() }
   }, [])
 
-  const cta = (where: string) => track('parents_cta_click', { where, lang })
+  const cta = (where: string) => track('parents_cta_click', { where, lang, cta_variant: variantNo })
   const bigH = { fontSize: 'clamp(2.1rem, 5.4vw, 4.2rem)', lineHeight: lang === 'ar' ? 1.4 : 1.08, letterSpacing: lang === 'ar' ? 0 : '-0.03em', textWrap: 'balance' } as React.CSSProperties
   const midH = { fontSize: 'clamp(1.7rem, 3.6vw, 2.8rem)', lineHeight: lang === 'ar' ? 1.4 : 1.12, letterSpacing: lang === 'ar' ? 0 : '-0.02em', textWrap: 'balance' } as React.CSSProperties
 
@@ -183,7 +219,7 @@ export default function ParentsPage() {
             <h1 className="font-extrabold" style={bigH}>{t.hero.headline[lang]}</h1>
             <p className="mt-6 text-lg sm:text-xl text-white/85 leading-relaxed max-w-[56ch]">{t.hero.sub[lang]}</p>
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-              <a href="#pricing" onClick={() => cta('hero')} className="cta cta-teal"><span>{t.hero.cta[lang]}</span><span className="cta-arrow">{arrow}</span></a>
+              <a href="#pricing" onClick={() => cta('hero')} className="cta cta-teal"><span>{ctaLabel}</span><span className="cta-arrow">{arrow}</span></a>
               <DemoReportsButton locale={locale} source="parents_hero" track="parents_hero_sample_report" className="text-white/90 underline underline-offset-4 hover:text-white py-3">{t.closing.sample[lang]}</DemoReportsButton>
             </div>
             <p className="mt-4 text-sm text-white/75">{t.hero.note[lang]}</p>
@@ -299,10 +335,10 @@ export default function ParentsPage() {
               <p className="mt-5 text-charcoal/85">{t.pricing.included[lang]}</p>
               <div className="mt-auto pt-8">
                 <button
-                  type="button" disabled={!PAY_FLOW_READY} aria-disabled={!PAY_FLOW_READY}
-                  onClick={() => { track('parents_pay_click', { plan: 'pathfinder', lang }) }}
+                  type="button" disabled={!payOn} aria-disabled={!payOn}
+                  onClick={() => { track('parents_pay_click', { plan: 'pathfinder', lang, cta_variant: variantNo }); setBuying('pathfinder') }}
                   className="cta cta-teal w-full"
-                >{PAY_FLOW_READY ? t.pricing.button[lang] : t.pricing.soon[lang]}</button>
+                >{payOn ? t.pricing.button[lang] : t.pricing.soon[lang]}</button>
                 <p className="mt-3 text-sm text-charcoal/65">{t.pricing.underButton[lang]}</p>
               </div>
             </div>
@@ -316,10 +352,10 @@ export default function ParentsPage() {
               </p>
               <div className="mt-auto pt-8">
                 <button
-                  type="button" disabled={!PAY_FLOW_READY} aria-disabled={!PAY_FLOW_READY}
-                  onClick={() => { track('parents_pay_click', { plan: 'launchpad', lang }) }}
+                  type="button" disabled={!payOn} aria-disabled={!payOn}
+                  onClick={() => { track('parents_pay_click', { plan: 'launchpad', lang, cta_variant: variantNo }); setBuying('launchpad_monthly') }}
                   className="cta cta-onteal w-full"
-                >{PAY_FLOW_READY ? t.pricing.addOnButton[lang] : t.pricing.soon[lang]}</button>
+                >{payOn ? t.pricing.addOnButton[lang] : t.pricing.soon[lang]}</button>
               </div>
             </div>
           </div>
@@ -332,7 +368,7 @@ export default function ParentsPage() {
         <div className="relative z-10 max-w-2xl mx-auto px-5">
           <h2 className="font-extrabold" style={midH}>{t.closing.title[lang]}</h2>
           <div className="mt-8 flex justify-center">
-            <a href="#pricing" onClick={() => cta('closing')} className="cta cta-onteal"><span>{t.closing.cta[lang]}</span><span className="cta-arrow">{arrow}</span></a>
+            <a href="#pricing" onClick={() => cta('closing')} className="cta cta-onteal"><span>{ctaLabel}</span><span className="cta-arrow">{arrow}</span></a>
           </div>
           <p className="mt-6 text-sm text-white/85">{t.closing.trust[lang]}</p>
         </div>
@@ -372,8 +408,9 @@ export default function ParentsPage() {
         className={`md:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur border-t border-[var(--line)] px-4 py-3 transition-transform duration-300 ${heroGone && !priceSeen ? 'translate-y-0' : 'translate-y-full'}`}
         aria-hidden={!(heroGone && !priceSeen)}
       >
-        <a href="#pricing" onClick={() => cta('sticky')} tabIndex={heroGone && !priceSeen ? 0 : -1} className="cta cta-teal w-full"><span>{t.hero.cta[lang]}</span><span className="cta-arrow">{arrow}</span></a>
+        <a href="#pricing" onClick={() => cta('sticky')} tabIndex={heroGone && !priceSeen ? 0 : -1} className="cta cta-teal w-full"><span>{ctaLabel}</span><span className="cta-arrow">{arrow}</span></a>
       </div>
+      {buying && <ParentBuyForm plan={buying} lang={lang} onClose={() => setBuying(null)} />}
     </div>
   )
 }

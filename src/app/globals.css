@@ -1110,6 +1110,8 @@ html { scroll-behavior: smooth; }
   border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: grab;
 }
 .coach-tip-action { margin-top: 8px; }
+.coach-actions button:first-child { background: #00C9A7; border-color: #00C9A7; color: #fff; }
+.coach-actions button:first-child:hover { background: #00b497; }
 .coach-chips button:hover, .coach-tip-action:hover { background: rgba(0, 201, 167, .2); }
 
 /* the riddle / games were styled for the blue assessment background; recolour them for the white panel */

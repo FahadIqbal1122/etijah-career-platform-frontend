@@ -22,7 +22,9 @@ import AssessmentGate from '@/components/AssessmentGate'
 // import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
 import CoachWidget from '@/components/CoachWidget'
 import { useCoachSwitches } from '@/lib/useCoachEnabled'
-import { fillScript, firstName, welcomeId, goalQuestionKey, goalReplyId, segmentGroup, gateBubbles, gateEventLine, gateReturningLine, type GateCoachEvent } from '@/data/coachScript'
+import { fillScript, firstName, welcomeId, goalQuestionKey, goalReplyId, segmentGroup, gateBubbles, gateEventLine, gateReturningLine, hintProfile, gateOpeningLine, gatePersonalSummary, GATE_ACTION_LABEL, loadScriptOverrides, type GateCoachEvent } from '@/data/coachScript'
+import { formatPrice } from '@/lib/pricing'
+import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
 import { COACH_BREAK, COACH_MOTIVATION, COACH_REVEAL, COACH_CAREER_CHANGER, COACH_CAREER_CHANGER_REVEAL, type Bi } from '@/data/coachMessages'
 
 // How many times Sarah may speak up unprompted during one visit to the assessment.
@@ -330,6 +332,7 @@ function getPaywallBucket(): number {
 }
 // The gate comes right after this chapter's reveal screen (0-based: About You = 0, Interests & Personality = 1).
 const GATE_AFTER_CHAPTER = 1
+const ASSESSMENT_MINUTES = 15   // how long the whole assessment takes, as the parent page and the pay screen say
 
 const MANUAL_TYPES = new Set(['multi_select', 'text_input', 'number_input', 'email_input', 'phone_input'])
 
@@ -509,12 +512,34 @@ export default function AssessmentForm() {
   // Coach lines at the pay gate (brief idea 2). The "I'll email you a link" promise is only made when that email is switched on.
   const [reminderEmailOn, setReminderEmailOn] = useState(false)
   const [gateTip, setGateTip] = useState<Bi | null>(null)
+  // Coach lines can be edited in Admin: read the saved wording once, then draw again so it shows.
+  const [, setScriptLoaded] = useState(false)
+  useEffect(() => { loadScriptOverrides().then(() => setScriptLoaded(true)) }, [])
+  const [gateTipAction, setGateTipAction] = useState<'parents' | null>(null)   // 2-B1: a button under her line
+  const gateCurrency = useDisplayCurrency()
+  const gatePrice = formatPrice('pathfinder', gateCurrency, locale)
+  // What she may say about this person before payment: their top two interests and a work-style trait (brief, idea 16).
+  const hint = useMemo(() => hintProfile(answers), [answers])
   const onGateCoachEvent = useCallback((e: GateCoachEvent) => {
-    const hit = gateEventLine(e, firstName(answersRef.current['QD1']), reminderEmailOn)
+    const ctx = { name: firstName(answersRef.current['QD1']), price: gatePrice }
+    const p = hintProfile(answersRef.current)
+    const hit = gateEventLine(e, ctx.name, reminderEmailOn, p ? gatePersonalSummary(p, ctx) : null, Number(answersRef.current['QO3']) < 18)
     if (!hit) return
     track('coach_gate_line', { message_id: hit.id, segment: String(answersRef.current['QO4'] ?? '') })
     setGateTip(hit.line)
-  }, [reminderEmailOn])
+    setGateTipAction(hit.action ?? null)
+  }, [reminderEmailOn, gatePrice])
+  // 16-ALL-00: when the pay screen opens she says one personal line about their strongest interest (not on the way back from payment,
+  // and not when the welcome-back line is already up).
+  const gateOpeningShown = useRef(false)
+  useEffect(() => {
+    if (phase !== 'gate' || !coachEnabled || gateOpeningShown.current) return
+    if (returningPaid || !hint || gateTip) { if (gateTip || returningPaid) gateOpeningShown.current = true; return }   // another line is up already: no second one
+    gateOpeningShown.current = true
+    track('coach_gate_line', { message_id: '16-ALL-00', segment: String(answers['QO4'] ?? '') })
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- shown once, when the gate opens
+    setGateTip(gateOpeningLine(hint, { name: firstName(answers['QD1']), price: gatePrice }))
+  }, [phase, coachEnabled, returningPaid, hint, gateTip, answers, gatePrice])
   useEffect(() => {
     let cancelled = false
     apiGet<{ percent: number; reminder_email?: boolean }>('/paywall-config')
@@ -783,7 +808,15 @@ export default function AssessmentForm() {
   // const chapterCount = locale === 'ar' ? `${chapterPos} من ${chapterTotal}` : `${chapterPos} / ${chapterTotal}`   // question counts are not shown any more
   // Overall progress as a percentage of the assessment (no question counts).
   const percentDone = total ? Math.max(0, Math.min(100, Math.round((index / total) * 100))) : 0
-  const percentLabel = locale === 'ar' ? `اكتمل ${percentDone}%` : `${percentDone}% complete`
+  // Minutes left: the whole assessment takes about 15 minutes. Arabic follows the brief's rules: Arabic-Indic digits, دقائق for
+  // 3 to 10, دقيقة for 11 and more.
+  const minutesLeft = total ? Math.ceil(ASSESSMENT_MINUTES * (1 - index / total)) : 0
+  const arDigits = (n: number) => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[Number(d)])
+  const minutesLabel = minutesLeft <= 0 ? ''
+    : locale === 'ar'
+      ? (minutesLeft === 1 ? 'متبقٍ نحو دقيقة' : minutesLeft === 2 ? 'متبقٍ نحو دقيقتين' : `متبقٍ نحو ${arDigits(minutesLeft)} ${minutesLeft <= 10 ? 'دقائق' : 'دقيقة'}`)
+      : `about ${minutesLeft} ${minutesLeft === 1 ? 'minute' : 'minutes'} left`
+  const percentLabel = (locale === 'ar' ? `اكتمل ${percentDone}%` : `${percentDone}% complete`) + (minutesLabel && phase === 'question' ? ` · ${minutesLabel}` : '')
   // The travelling light: finished chapters plus how far through the current one (never moves backwards past a lit star).
   const journeyProgress = Math.max(
     litCount,
@@ -1618,7 +1651,9 @@ export default function AssessmentForm() {
       {/* At the pay step Sarah explains what the report includes, answers "is it worth it?" and helps with asking parents. */}
       {coachEnabled && phase === 'gate' && <CoachWidget
         locale={locale as 'en' | 'ar'} mode="gate" sessionId={getTelemetrySessionId}
-        tip={gateTip} tipAutoHideMs={20000} onTipDismiss={() => setGateTip(null)}
+        tip={gateTip} tipAutoHideMs={20000} onTipDismiss={() => { setGateTip(null); setGateTipAction(null) }}
+        segment={String(answers['QO4'] ?? '')} showParentsAction={Number(answers['QO3']) < 18}
+        tipAction={gateTipAction ? { label: GATE_ACTION_LABEL.parents, action: gateTipAction } : null}
         // Hint mode: she sees only what the pay screen already shows for free (top interest types and personality traits).
         getProfile={() => ({
           riasec: computeRanked(answers, 'riasec').slice(0, 3).map(r => r.dimension),
@@ -1626,9 +1661,12 @@ export default function AssessmentForm() {
         })}
         suggestions={[
           // Brief ideas 2 + 16: ready-made questions for the person's segment, answered from fixed text (no AI call).
-          ...gateBubbles(answers['QO4'], answers['QO3']),
-          { en: 'What does my result say about me?', ar: 'ماذا تقول نتيجتي عني؟' },
-          { en: 'Is it worth it?', ar: 'هل يستحق الدفع؟' },
+          ...gateBubbles(answers['QO4'], answers['QO3'], hint, { name: firstName(answers['QD1']), price: gatePrice }),
+          // Without scores yet these two stay as AI questions; with scores the personal bubbles C2 and C7 above replace them.
+          ...(hint ? [] : [
+            { en: 'What does my result say about me?', ar: 'ماذا تقول نتيجتي عني؟' },
+            { en: 'Is it worth it?', ar: 'هل يستحق الدفع؟' },
+          ]),
           // { en: 'What is included in the report?', ar: 'ماذا يتضمن التقرير؟' },   // replaced by the C1 bubble above
           { en: 'How do I ask my parents?', ar: 'كيف أطلب من والديّ؟' },
         ]}
