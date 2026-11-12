@@ -163,8 +163,10 @@ export const payParentLink = (token: string) => apiPost<{ checkout_url: string }
 // Parent pays first: the parent buys on the parents page, the child redeems the link, the parent reads the report
 export type GiftInfo = { status: 'pending' | 'paid' | 'redeemed'; plan_name: string; child_first_name: string | null; locale: string }
 export type ParentStatus = GiftInfo & { gift_url?: string; report_url?: string; order_ref?: string; amount?: number; currency?: string }
-export const buyForChild = (b: { parent_email: string; child_first_name?: string; plan_code: PlanCode; locale: string; currency?: string; consent: boolean }) =>
+export const buyForChild = (b: { parent_email: string; child_first_name?: string; plan_code: PlanCode; locale: string; currency?: string; consent: boolean; discount_code?: string }) =>
     apiPost<{ checkout_url: string }>('/parent/purchase', b)
+export const previewParentDiscount = (plan_code: PlanCode, code: string, currency?: string) =>
+    apiPost<DiscountPreview>('/parent/discount/preview', { plan_code, code, currency })
 export const getGift = (token: string) => apiGet<GiftInfo>(`/parent/gift/${token}`)
 export const redeemGift = (token: string, consent: boolean) => apiAuthPost<{ redeemed: boolean }>(`/parent/gift/${token}/redeem`, { consent })
 export const getParentStatus = (token: string) => apiGet<ParentStatus>(`/parent/status/${token}`)
