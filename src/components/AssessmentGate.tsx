@@ -104,6 +104,7 @@ const STR = {
     giftConsent: 'I understand my parent will be able to read my report through a private link.',
     giftConsentNeeded: 'Please tick the box to continue.',
     giftBtn: 'Unlock my report',
+    giftWorking: 'Setting up your report…',
     parentHint: 'Under 18? Send a payment link to your parent. Your answers stay saved.',
     parentBtn: 'Ask a parent to pay', parentDone: 'Link ready. Send it to your parent. This page continues by itself once they pay.',
     confirming: 'Confirming your payment…',
@@ -161,6 +162,7 @@ const STR = {
     giftConsent: 'أفهم أن والدي سيستطيع قراءة تقريري عبر رابط خاص.',
     giftConsentNeeded: 'يرجى تحديد المربع للمتابعة.',
     giftBtn: 'افتح تقريري',
+    giftWorking: 'نجهّز تقريرك…',
     parentHint: 'عمرك أقل من 18؟ أرسل رابط الدفع لولي أمرك، وإجاباتك تبقى محفوظة.',
     parentBtn: 'أرسل رابط الدفع لولي أمرك', parentDone: 'الرابط جاهز، أرسله لولي أمرك. وتكمل هذه الصفحة تلقائياً بمجرد أن يدفع.',
     confirming: 'جارٍ التأكد من الدفع…',
@@ -263,13 +265,20 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   // A parent already paid (the child opened the link the parent sent): nothing to buy, the child agrees and unlocks.
   const [gift, setGift] = useState<string | null>(null)
   const [giftConsent, setGiftConsent] = useState(false)
+  // 'pending' = consent given on the link page, waiting for the gate to be ready; 'running' = hiding the gate while it works; 'off' = show the normal screen.
+  const [giftAuto, setGiftAuto] = useState<'off' | 'pending' | 'running'>('off')
   useEffect(() => {
     let token: string | null = null
     try { token = window.localStorage.getItem('etijahi:gift') } catch { /* no storage: normal gate */ }
     if (!token) return
     getGift(token).then(g => {
-      if (g.status === 'paid') setGift(token)
-      else { try { window.localStorage.removeItem('etijahi:gift') } catch { /* ignore */ } }
+      if (g.status === 'paid') {
+        setGift(token)
+        // The child already agreed on the link page: no gate screen, the account and the unlock happen on their own.
+        let agreed = false
+        try { agreed = window.localStorage.getItem('etijahi:gift-consent') === token } catch { /* ignore */ }
+        if (agreed) { setGiftConsent(true); setGiftAuto('pending') }
+      } else { try { window.localStorage.removeItem('etijahi:gift') } catch { /* ignore */ } }
     }).catch(() => { try { window.localStorage.removeItem('etijahi:gift') } catch { /* ignore */ } })
   }, [])
 
@@ -486,9 +495,9 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     } finally { setBusy(false) }
   }
 
-  async function pay() {
+  async function pay(consented = false) {
     if (!agreed || busy) return
-    if (gift && !giftConsent) { setError(s.giftConsentNeeded); return }   // before anything is created
+    if (gift && !giftConsent && !consented) { setError(s.giftConsentNeeded); return }   // before anything is created
     if (step === 'account' && !accountReady()) { setError(s.fillAccount); return }
     setBusy(true); setError('')
     track('report_checkout_click', { plan_code: plan, discount_code: applied?.code ?? undefined, from: 'assessment_gate' })
@@ -637,6 +646,15 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
       </div>
     )
   )
+  // Consent given on the link page: run the unlock as soon as the gate is ready, and only show the normal screen if it needs the child.
+  useEffect(() => {
+    if (giftAuto !== 'pending' || !gift || busy || (step !== 'account' && step !== 'pay')) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- starts the one-time automatic unlock
+    setGiftAuto('running')
+    pay(true).finally(() => { if (!unlockedRef.current) setGiftAuto('off') })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- starts once, when the gate has decided what step it is on
+  }, [giftAuto, gift, step, busy])
+
   // 16px text: below that iPhones zoom the page in when a field is tapped.
   const inputCls = 'w-full min-w-0 rounded-xl border border-[var(--line-strong)] px-3 py-3 text-base text-charcoal bg-white'
 
@@ -649,7 +667,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
             <p className="text-xs text-charcoal/40">Etijahi · إتجاهي</p>
           </div>
 
-          {step === 'checking' && <p className="text-sm text-charcoal/60">{s.checking}</p>}
+          {(step === 'checking' || giftAuto === 'pending' || giftAuto === 'running') && <p className="text-sm text-charcoal/60">{giftAuto === 'off' ? s.checking : s.giftWorking}</p>}
 
           {/* Old one-tap account page (now part of the pay page, see createAccount):
           {step === 'account' && auto && (
@@ -679,7 +697,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
 
           */}
 
-          {step === 'account' && confirming && (
+          {giftAuto === 'off' && step === 'account' && confirming && (
             <form onSubmit={submitAccount} className="space-y-4">
               <div>
                 <h2 className="text-xl font-extrabold text-charcoal">{s.accountHead}</h2>
@@ -719,7 +737,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
             </form>
           )}
 
-          {step === 'existing' && (
+          {giftAuto === 'off' && step === 'existing' && (
             <div className="space-y-4">
               <h2 className="text-xl font-extrabold text-charcoal">{s.existingHead}</h2>
               <p className="text-sm text-charcoal/60">{s.existingBody}</p>
@@ -743,7 +761,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
             </div>
           )}
 
-          {(step === 'pay' || (step === 'account' && !confirming)) && (
+          {giftAuto === 'off' && (step === 'pay' || (step === 'account' && !confirming)) && (
             <div className="space-y-4">
               <div>
                 <h2 className="text-xl font-extrabold text-charcoal">{headline}</h2>
@@ -935,7 +953,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
 
                   {error && <p className="text-sm text-red-600">{error}</p>}
 
-                  <button onClick={pay} disabled={busy} data-track="assessment_gate_pay"
+                  <button onClick={() => pay()} disabled={busy} data-track="assessment_gate_pay"
                     className="w-full px-4 py-3 rounded-xl bg-primary text-white text-sm font-semibold disabled:opacity-40">
                     {busy ? '…' : gift ? s.giftBtn : s.payBtn}
                   </button>

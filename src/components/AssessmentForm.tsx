@@ -374,6 +374,12 @@ export default function AssessmentForm() {
   // Pay-to-continue: whether this visitor is asked to create an account and pay after chapter 2, and whether this page
   // load is the buyer coming back from the payment page (?paid=1), which waits for the payment to be confirmed.
   const [gateRequired, setGateRequired] = useState(false)
+  // A child who opened the link their parent paid for and agreed on it: the gate does its work unseen, so no pay lines from the coach.
+  const [giftChild, setGiftChild] = useState(false)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read once from storage on the client
+    try { const t = window.localStorage.getItem('etijahi:gift'); setGiftChild(!!t && window.localStorage.getItem('etijahi:gift-consent') === t) } catch { /* ignore */ }
+  }, [])
   const [returningPaid, setReturningPaid] = useState(false)
   const [paymentFailed, setPaymentFailed] = useState(false)
   const gatePassedRef = useRef(false)
@@ -1649,7 +1655,7 @@ export default function AssessmentForm() {
       )}
       {/* <CoachBubble locale={locale as 'en' | 'ar'} message={phase === 'question' ? coachMsg : null} onDismiss={dismissCoach} /> */}
       {/* At the pay step Sarah explains what the report includes, answers "is it worth it?" and helps with asking parents. */}
-      {coachEnabled && phase === 'gate' && <CoachWidget
+      {coachEnabled && phase === 'gate' && !giftChild && <CoachWidget
         locale={locale as 'en' | 'ar'} mode="gate" sessionId={getTelemetrySessionId}
         tip={gateTip} tipAutoHideMs={20000} onTipDismiss={() => { setGateTip(null); setGateTipAction(null) }}
         segment={String(answers['QO4'] ?? '')} showParentsAction={Number(answers['QO3']) < 18}
