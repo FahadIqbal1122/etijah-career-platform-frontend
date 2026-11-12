@@ -10,10 +10,10 @@
 // a typographic statement (the problem), a path (what the assessment explores and shows), a thread of three stations
 // (your part, their part, together), the report as a sheet, and a pricing band.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocale } from 'next-intl'
 import { useRouter, usePathname } from '@/i18n/navigation'
-import { Wordmark } from '@/components/brand/Logomark'
+import Logomark, { Wordmark } from '@/components/brand/Logomark'
 import HeroField from '@/components/landing/HeroField'
 import DemoReportsButton from '@/components/shared/DemoReportsButton'
 import EmailLink from '@/components/shared/EmailLink'
@@ -46,12 +46,28 @@ const CSS = `
   .pp-node, .pp-node-late, .pp-node-child { animation: none; opacity: 1; }
   .pp-pulse { animation: none; opacity: 0; }
 }
-.pp-hero { background: radial-gradient(120% 100% at 85% 0%, #0a82d6 0%, var(--primary) 38%, var(--primary-deep) 100%); color: #fff; }
-.pp-veil { background: linear-gradient(to right, rgba(5,58,96,.7), rgba(5,58,96,.35) 55%, transparent); }
-[dir="rtl"] .pp-veil { background: linear-gradient(to left, rgba(5,58,96,.7), rgba(5,58,96,.35) 55%, transparent); }
-@media (max-width: 1023px) { .pp-veil, [dir="rtl"] .pp-veil { background: rgba(5,58,96,.5); } .pp-hero .hero-field { opacity: .4; } }
-.pp-band { background: radial-gradient(110% 90% at 50% -10%, #0a82d6 0%, var(--primary-deep) 55%, #053a60 100%); color: #fff; }
 `
+
+// Same fade-up-on-scroll as the default landing page (Landing.tsx), so the two pages move the same way.
+function Reveal({ children, className = '', style }: { children: ReactNode; className?: string; style?: React.CSSProperties }) {
+  const ref = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (!('IntersectionObserver' in window) || el.getBoundingClientRect().top < (window.innerHeight || 800) * 0.95) { el.classList.add('in'); return }
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target) } }), { threshold: 0.12, rootMargin: '0px 0px -8% 0px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+  return <div ref={ref} className={`reveal-up ${className}`} style={style}>{children}</div>
+}
+
+/** Headline in two lines, the second in teal, like the default landing's hero ("You know your child." / "Etijahi helps them..."). */
+function TwoLine({ text }: { text: string }) {
+  const m = text.match(/^([^]+?[.،])\s*([^]+)$/)
+  if (!m) return <>{text}</>
+  return <>{m[1]}<br /><span className="text-teal">{m[2]}</span></>
+}
 
 function Faq({ items, lang }: { items: { q: Bi; a: Bi }[]; lang: 'en' | 'ar' }) {
   const [open, setOpen] = useState(-1)
@@ -84,7 +100,7 @@ function LinkPicture({ lang, parent, child, together }: { lang: 'en' | 'ar'; par
   const A = { x: mx(64), y: 232 }, B = { x: mx(352), y: 70 }, M = { x: mx(206), y: 150 }
   const path = `M ${A.x} ${A.y} C ${mx(150)} ${262}, ${mx(190)} ${60}, ${B.x} ${B.y}`
   const label = (x: number, y: number, text: string, anchor: 'start' | 'middle' | 'end') => (
-    <text x={x} y={y} textAnchor={anchor} fill="#fff" fontSize="16" fontWeight="700" style={{ fontFamily: 'inherit' }}>{text}</text>
+    <text x={x} y={y} textAnchor={anchor} fontSize="16" fontWeight="700" style={{ fontFamily: 'inherit', fill: 'var(--charcoal)' }}>{text}</text>
   )
   return (
     <svg viewBox="0 0 420 300" className="w-full h-auto max-w-[520px] mx-auto" role="img" aria-label={`${parent}, ${together}, ${child}`}>
@@ -95,13 +111,13 @@ function LinkPicture({ lang, parent, child, together }: { lang: 'en' | 'ar'; par
       </defs>
       {/* faint context stars from the brand asterism */}
       {[[40, 40], [120, 100], [300, 220], [380, 270], [260, 30], [20, 160], [400, 150]].map(([x, y], i) => (
-        <circle key={i} cx={mx(x)} cy={y} r={i % 2 ? 1.6 : 1.1} fill="#fff" opacity=".35" />
+        <circle key={i} cx={mx(x)} cy={y} r={i % 2 ? 1.6 : 1.1} style={{ fill: 'var(--primary)' }} opacity=".3" />
       ))}
       <path d={path} pathLength={1} className="pp-thread" fill="none" stroke="#00C9A7" strokeWidth="4" strokeLinecap="round" />
       {/* you */}
       <g className="pp-node">
         <circle cx={A.x} cy={A.y} r="30" fill="url(#pp-glow)" />
-        <circle cx={A.x} cy={A.y} r="9" fill="#fff" />
+        <circle cx={A.x} cy={A.y} r="9" style={{ fill: 'var(--primary)' }} />
         {label(A.x, A.y + 34, parent, 'middle')}
       </g>
       {/* together, on the thread */}
@@ -113,8 +129,8 @@ function LinkPicture({ lang, parent, child, together }: { lang: 'en' | 'ar'; par
       {/* your child */}
       <g className="pp-node-child">
         <circle cx={B.x} cy={B.y} r="34" fill="url(#pp-glow)" />
-        <circle cx={B.x} cy={B.y} r="11" fill="#fff" />
-        <circle cx={B.x} cy={B.y} r="4.5" fill="#00C9A7" />
+        <circle cx={B.x} cy={B.y} r="11" style={{ fill: 'var(--primary)' }} />
+        <circle cx={B.x} cy={B.y} r="4.5" fill="#fff" />
         {label(B.x, B.y - 22, child, 'middle')}
       </g>
     </svg>
@@ -135,7 +151,7 @@ export default function ParentsPage() {
   const coachWas = formatPrice('launchpad_standard', currency, locale)
   const footer = ((L as unknown as Record<string, { footer: FooterCopy }>)[lang] ?? (L as unknown as Record<string, { footer: FooterCopy }>).en).footer
   const t = PARENTS
-  const nums = lang === 'ar' ? ['١', '٢', '٣'] : ['1', '2', '3']
+  // const nums = lang === 'ar' ? ['١', '٢', '٣'] : ['1', '2', '3']
 
   // Which of the three button wordings this visitor sees: ?cta=1|2|3 forces one (for checking), otherwise one is picked at random
   // and remembered so the same person always sees the same wording. It is sent with every event, so results can be compared.
@@ -188,20 +204,24 @@ export default function ParentsPage() {
   }, [])
 
   const cta = (where: string) => track('parents_cta_click', { where, lang, cta_variant: variantNo })
-  const bigH = { fontSize: 'clamp(2.1rem, 5.4vw, 4.2rem)', lineHeight: lang === 'ar' ? 1.4 : 1.08, letterSpacing: lang === 'ar' ? 0 : '-0.03em', textWrap: 'balance' } as React.CSSProperties
-  const midH = { fontSize: 'clamp(1.7rem, 3.6vw, 2.8rem)', lineHeight: lang === 'ar' ? 1.4 : 1.12, letterSpacing: lang === 'ar' ? 0 : '-0.02em', textWrap: 'balance' } as React.CSSProperties
+  // const bigH = { fontSize: 'clamp(2.1rem, 5.4vw, 4.2rem)', lineHeight: lang === 'ar' ? 1.4 : 1.08, letterSpacing: lang === 'ar' ? 0 : '-0.03em', textWrap: 'balance' } as React.CSSProperties
+  // const midH = { fontSize: 'clamp(1.7rem, 3.6vw, 2.8rem)', lineHeight: lang === 'ar' ? 1.4 : 1.12, letterSpacing: lang === 'ar' ? 0 : '-0.02em', textWrap: 'balance' } as React.CSSProperties
+
+  const sectionH = 'section-h'
+  const check = (cls = 'bg-teal/15 text-teal') => <span className={`flex-none w-5 h-5 rounded-full ${cls} text-[11px] font-black flex items-center justify-center mt-0.5`} aria-hidden="true">✓</span>
 
   return (
-    <div dir={dir} lang={lang} className="min-h-screen bg-white">
+    <div dir={dir} lang={lang} className="brand-surface landing-root text-charcoal min-h-screen">
       <style>{CSS}</style>
 
-      <nav className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-[var(--line)]">
+      {/* ── NAV (same as the default landing) ── */}
+      <nav className="sticky top-0 z-30 bg-white border-b border-[var(--line)]">
         <div className="site-wrap h-16 flex items-center justify-between gap-4">
           <Wordmark size={30} />
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.replace(pathname, { locale: lang === 'en' ? 'ar' : 'en' })}
-              className="text-xs font-medium text-charcoal/60 hover:text-primary border border-[var(--line-strong)] rounded-full px-3 py-2"
+              className="text-xs font-medium text-charcoal/60 hover:text-teal border border-[var(--line-strong)] rounded-full px-3 py-1.5"
             >
               {lang === 'en' ? 'العربية' : 'English'}
             </button>
@@ -210,175 +230,175 @@ export default function ParentsPage() {
         </div>
       </nav>
 
-      {/* ── 1 + 2  Hero: headline, supporting line, button, and the thread between two stars ── */}
-      <header ref={heroRef} className="pp-hero relative overflow-hidden">
-        <HeroField tone="onteal" fadeMode="left" />
-        <div className="pp-veil absolute inset-y-0 start-0 w-full lg:w-[66%] pointer-events-none" aria-hidden="true" />
-        <div className="site-wrap relative z-10 py-14 sm:py-20 lg:py-24 grid gap-10 lg:grid-cols-[1.2fr_0.8fr] items-center">
-          <div>
-            <h1 className="font-extrabold" style={bigH}>{t.hero.headline[lang]}</h1>
-            <p className="mt-6 text-lg sm:text-xl text-white/85 leading-relaxed max-w-[56ch]">{t.hero.sub[lang]}</p>
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-              <a href="#pricing" onClick={() => cta('hero')} className="cta cta-teal"><span>{ctaLabel}</span><span className="cta-arrow">{arrow}</span></a>
-              <DemoReportsButton locale={locale} source="parents_hero" track="parents_hero_sample_report" className="text-white/90 underline underline-offset-4 hover:text-white py-3">{t.closing.sample[lang]}</DemoReportsButton>
+      {/* ── HERO: light, headline in two lines with the second in teal, like the default landing ── */}
+      <header ref={heroRef} className="relative overflow-hidden">
+        <div className="site-wrap relative z-10 pt-12 pb-14 sm:pt-16 grid gap-10 lg:grid-cols-[1.1fr_0.9fr] items-center">
+          <Reveal>
+            <h1 className="text-4xl sm:text-5xl font-extrabold leading-[1.1] tracking-tight text-charcoal" style={{ textWrap: 'balance', ...(lang === 'ar' ? { lineHeight: 1.35, letterSpacing: 0 } : null) } as React.CSSProperties}>
+              <TwoLine text={t.hero.headline[lang]} />
+            </h1>
+            <p className="mt-6 text-lg text-charcoal/80 leading-relaxed max-w-xl">{t.hero.sub[lang]}</p>
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <a href="#pricing" onClick={() => cta('hero')} className="cta"><span>{ctaLabel}</span><span className="cta-arrow">{arrow}</span></a>
+              <DemoReportsButton locale={locale} source="parents_hero" track="parents_hero_sample_report" className="cta cta-outline cta-sm">{t.closing.sample[lang]}</DemoReportsButton>
             </div>
-            <p className="mt-4 text-sm text-white/75">{t.hero.note[lang]}</p>
-            <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/85">
-              {t.hero.facts.map(f => (
-                <li key={f.en} className="flex items-center gap-2"><span className="inline-block w-1.5 h-1.5 rounded-full bg-teal" aria-hidden="true" />{f[lang]}</li>
-              ))}
+            <p className="mt-3 text-sm text-charcoal/80">{t.hero.note[lang]}</p>
+            <ul className="mt-5 flex flex-wrap gap-2">
+              {t.hero.facts.map(f => <li key={f.en} className="chip chip-teal">{f[lang]}</li>)}
             </ul>
-          </div>
-          <LinkPicture lang={lang} parent={t.how.cols[0].head[lang]} child={t.how.cols[1].head[lang]} together={t.how.cols[2].head[lang]} />
+          </Reveal>
+          <Reveal className="relative" style={{ transitionDelay: '120ms' }}>
+            <div className="card p-6 sm:p-8 max-w-md mx-auto">
+              <LinkPicture lang={lang} parent={t.how.cols[0].head[lang]} child={t.how.cols[1].head[lang]} together={t.how.cols[2].head[lang]} />
+            </div>
+          </Reveal>
         </div>
       </header>
 
-      {/* ── 3  The problem: one statement, set large ── */}
-      <section className="bg-white">
-        <div className="site-wrap py-16 sm:py-24 grid gap-8 lg:grid-cols-[1fr_1fr] lg:gap-16 items-start">
-          <h2 className="font-extrabold text-charcoal" style={bigH}>{t.problem.title[lang]}</h2>
-          <div className="space-y-5 text-charcoal/80 leading-relaxed text-lg lg:pt-3">
-            <p>{t.problem.p1[lang]}</p>
-            <p className="border-s-4 border-teal ps-5 text-charcoal">{t.problem.p2[lang]}</p>
-          </div>
+      {/* ── THE PROBLEM ── */}
+      <section className="bg-white border-y border-[var(--line)]">
+        <div className="site-wrap py-16 sm:py-20 split">
+          <Reveal><h2 className={`${sectionH} split-h`}>{t.problem.title[lang]}</h2></Reveal>
+          <Reveal style={{ transitionDelay: '120ms' }}>
+            <p className="text-charcoal/80 leading-relaxed text-[1.05rem]">{t.problem.p1[lang]}</p>
+            <p className="payoff mt-5 font-semibold text-charcoal leading-relaxed">{t.problem.p2[lang]}</p>
+          </Reveal>
         </div>
       </section>
 
-      {/* ── 4  The solution: what the assessment looks at, and what it gives back ── */}
-      <section className="bg-lightblue">
-        <div className="site-wrap py-16 sm:py-24">
-          <h2 className="font-extrabold text-charcoal max-w-[22ch]" style={midH}>{t.solution.title[lang]}</h2>
-          <p className="mt-6 text-charcoal/80 leading-relaxed text-lg max-w-[62ch]">{t.solution.p1[lang]}</p>
-
-          <div className="mt-10 grid gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch">
-            <ul className="grid grid-cols-2 gap-3">
-              {t.solution.explores.map(x => (
-                <li key={x.en} className="bg-white border border-[var(--line)] rounded-2xl px-4 py-4 font-bold text-charcoal leading-snug">{x[lang]}</li>
-              ))}
-            </ul>
-            <div className="flex lg:flex-col items-center justify-center text-primary text-3xl font-light py-1" aria-hidden="true">
+      {/* ── THE SOLUTION: what the assessment looks at, and what it gives back ── */}
+      <section className="scroll-mt-20">
+        <div className="site-wrap py-16 sm:py-20">
+          <Reveal><h2 className={`${sectionH} max-w-3xl`}>{t.solution.title[lang]}</h2></Reveal>
+          <Reveal><p className="mt-5 text-charcoal/80 leading-relaxed text-[1.05rem] max-w-[62ch]">{t.solution.p1[lang]}</p></Reveal>
+          <div className="mt-10 grid gap-5 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch">
+            <Reveal className="card p-6">
+              <ul className="grid grid-cols-2 gap-3 h-full">
+                {t.solution.explores.map(x => (
+                  <li key={x.en} className="rounded-2xl bg-lightblue px-4 py-4 font-bold text-charcoal leading-snug flex items-center">{x[lang]}</li>
+                ))}
+              </ul>
+            </Reveal>
+            <div className="flex lg:flex-col items-center justify-center text-teal text-3xl font-light" aria-hidden="true">
               <span className="lg:hidden">↓</span><span className="hidden lg:inline">{arrow}</span>
             </div>
-            <ul className="grid gap-3">
-              {t.solution.shows.map((x, i) => (
-                <li key={x.en} className={`rounded-2xl px-5 py-4 font-bold leading-snug ${i === 0 ? 'bg-primary text-white' : 'bg-white border border-[var(--line)] text-charcoal'}`}>{x[lang]}</li>
-              ))}
-            </ul>
+            <Reveal className="pcard-paid rounded-[26px] p-6" style={{ transitionDelay: '90ms' }}>
+              <ul className="space-y-3.5">
+                {t.solution.shows.map(x => (
+                  <li key={x.en} className="flex items-start gap-2.5 text-white font-bold leading-snug">{check('bg-teal/25 text-teal')}{x[lang]}</li>
+                ))}
+              </ul>
+            </Reveal>
           </div>
-
-          <p className="mt-8 text-sm text-charcoal/70 max-w-[62ch]">{t.solution.p2[lang]}</p>
+          <Reveal><p className="mt-8 text-sm text-charcoal/70 max-w-[62ch]">{t.solution.p2[lang]}</p></Reveal>
         </div>
       </section>
 
-      {/* ── 5  How it works: three stations on one thread (a real sequence, so numbered) ── */}
-      <section className="bg-white">
-        <div className="site-wrap py-16 sm:py-24">
-          <h2 className="font-extrabold text-charcoal max-w-[24ch]" style={midH}>{t.how.title[lang]}</h2>
-          <div className="relative mt-12">
-            <span className="absolute start-[19px] top-2 bottom-2 w-px bg-teal/50 md:hidden" aria-hidden="true" />
-            <span className="absolute hidden md:block top-[19px] start-5 end-5 h-px bg-teal/50" aria-hidden="true" />
-            <div className="grid gap-10 md:grid-cols-3 md:gap-8">
-              {t.how.cols.map((c, i) => (
-                <div key={c.head.en} className="relative ps-14 md:ps-0 md:pt-16">
-                  <span className="absolute start-0 top-0 w-10 h-10 rounded-full bg-primary text-white font-extrabold flex items-center justify-center ring-4 ring-white">{nums[i]}</span>
-                  <h3 className="text-xl font-extrabold text-charcoal">{c.head[lang]}</h3>
-                  <ul className="mt-3 space-y-3 text-charcoal/80 leading-relaxed">
-                    {c.items.map(it => <li key={it.en}>{it[lang]}</li>)}
-                  </ul>
-                </div>
-              ))}
-            </div>
+      {/* ── HOW IT WORKS: three cards, the same shape as the landing's steps ── */}
+      <section className="bg-white border-y border-[var(--line)]">
+        <div className="site-wrap py-16 sm:py-20">
+          <Reveal><h2 className={`${sectionH} max-w-3xl`}>{t.how.title[lang]}</h2></Reveal>
+          <div className="mt-8 grid md:grid-cols-3 gap-5">
+            {t.how.cols.map((c, i) => (
+              <Reveal key={c.head.en} className="card card-hover p-6" style={{ transitionDelay: `${i * 90}ms` }}>
+                <div className="text-teal font-mono font-medium text-xs tracking-[0.2em] mb-2">0{i + 1}</div>
+                <h3 className="font-extrabold text-charcoal text-lg">{c.head[lang]}</h3>
+                <ul className="mt-3 space-y-3 text-sm text-charcoal/80 leading-relaxed">
+                  {c.items.map(it => <li key={it.en}>{it[lang]}</li>)}
+                </ul>
+              </Reveal>
+            ))}
           </div>
-          <p className="mt-12 max-w-[62ch] rounded-2xl bg-lightblue px-6 py-5 text-charcoal/85 leading-relaxed">{t.how.why[lang]}</p>
+          <Reveal className="mt-8 card p-6 max-w-3xl"><p className="text-charcoal/85 leading-relaxed">{t.how.why[lang]}</p></Reveal>
         </div>
       </section>
 
-      {/* ── 6  What you'll read together: the report, shown as a sheet ── */}
-      <section className="bg-lightblue">
-        <div className="site-wrap py-16 sm:py-24 grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:gap-16 items-start">
-          <div>
-            <h2 className="font-extrabold text-charcoal" style={midH}>{t.read.title[lang]}</h2>
-            <p className="mt-5 text-charcoal/75 leading-relaxed text-lg max-w-[44ch]">{t.read.coach[lang]}</p>
-            <div className="mt-6">
-              <DemoReportsButton locale={locale} source="parents_page" track="parents_sample_report" className="cta cta-outline cta-sm">{t.closing.sample[lang]}</DemoReportsButton>
+      {/* ── WHAT YOU'LL READ TOGETHER ── */}
+      <section>
+        <div className="site-wrap py-16 sm:py-20 split">
+          <Reveal>
+            <h2 className={`${sectionH} split-h`}>{t.read.title[lang]}</h2>
+            <p className="mt-5 text-charcoal/80 leading-relaxed text-[1.05rem] max-w-[44ch]">{t.read.coach[lang]}</p>
+            <div className="mt-7">
+              <DemoReportsButton locale={locale} source="parents_page" track="parents_sample_report" className="cta cta-outline">{t.closing.sample[lang]}</DemoReportsButton>
             </div>
-          </div>
-          <div className="bg-white rounded-3xl border border-[var(--line)] shadow-[0_30px_70px_-40px_rgba(7,82,136,0.55)] overflow-hidden">
-            <div className="bg-primary text-white px-6 py-5">
-              <p className="text-sm text-white/80">{t.pricing.packageName[lang]}</p>
-              <p className="text-xl font-extrabold">{t.pricing.title[lang]}</p>
+          </Reveal>
+          <Reveal className="card overflow-hidden" style={{ transitionDelay: '120ms' }}>
+            <div className="px-6 pt-6">
+              <p className="font-mono text-xs uppercase tracking-widest text-teal">{t.pricing.packageName[lang]}</p>
+              <p className="mt-1 text-xl font-extrabold text-charcoal">{t.pricing.title[lang]}</p>
+              <div className="h-px bg-[var(--line)] mt-5" />
             </div>
-            <ul className="px-6 py-2">
+            <ul className="px-6 py-5 space-y-3.5">
               {t.read.items.map(it => (
-                <li key={it.en} className="flex gap-3 py-3.5 border-b border-[var(--line)] last:border-b-0 text-charcoal/85 leading-relaxed">
-                  <span className="mt-1 flex-none w-5 h-5 rounded-full bg-teal/15 text-teal flex items-center justify-center text-xs" aria-hidden="true">✓</span>
-                  <span>{it[lang]}</span>
-                </li>
+                <li key={it.en} className="flex items-start gap-2.5 text-sm text-charcoal">{check()}{it[lang]}</li>
               ))}
             </ul>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── PRICING: the landing's two cards (blue featured card + plain card) ── */}
+      <section id="pricing" ref={priceRef} className="bg-white border-y border-[var(--line)] scroll-mt-20">
+        <div className="site-wrap py-16 sm:py-20">
+          <div className="grid gap-6 md:grid-cols-2 items-start max-w-5xl mx-auto text-start">
+            <Reveal className="pcard-paid rounded-[26px] p-7 relative flex flex-col" style={{ transitionDelay: '90ms' }}>
+              <span className="pcard-badge absolute -top-3.5 start-1/2 -translate-x-1/2 rtl:translate-x-1/2">{t.pricing.packageName[lang]}</span>
+              <h2 className="text-xl font-extrabold text-white">{t.pricing.title[lang]}</h2>
+              <div className="mt-4 flex items-center gap-3 flex-wrap" dir="ltr" style={{ justifyContent: lang === 'ar' ? 'flex-end' : 'flex-start' }}>
+                {<span className="text-xl font-semibold text-white/60 line-through decoration-2 decoration-white/70">{priceWas}</span>}
+                <span className="text-4xl font-extrabold text-white leading-none">{price}</span>
+              </div>
+              <p className="mt-3 text-sm text-white/80 leading-relaxed">{t.pricing.underPrice[lang]}</p>
+              <div className="h-px bg-white/16 my-6" />
+              <p className="text-sm text-white/90 leading-relaxed">{t.pricing.included[lang]}</p>
+              <button
+                type="button" disabled={!payOn} aria-disabled={!payOn}
+                onClick={() => { track('parents_pay_click', { plan: 'pathfinder', lang, cta_variant: variantNo }); setBuying('pathfinder') }}
+                className="cta mt-7 w-full !bg-white !text-primary !shadow-[0_16px_40px_-14px_rgba(0,0,0,0.4)]"
+              >{payOn ? t.pricing.button[lang] : t.pricing.soon[lang]}</button>
+              <p className="mt-4 text-xs text-white/75 leading-relaxed text-center">{t.pricing.underButton[lang]}</p>
+            </Reveal>
+
+            <Reveal className="card p-7 relative flex flex-col" style={{ transitionDelay: '180ms' }}>
+              <h3 className="text-xl font-extrabold text-charcoal">{t.pricing.addOnName[lang]}</h3>
+              <div className="mt-4 flex items-center gap-3 flex-wrap" dir="ltr" style={{ justifyContent: lang === 'ar' ? 'flex-end' : 'flex-start' }}>
+                {<span className="text-xl font-semibold text-charcoal/65 line-through decoration-2 decoration-charcoal/50">{coachWas}</span>}
+                <span className="text-4xl font-extrabold text-charcoal leading-none">{coachPrice}</span>
+              </div>
+              <div className="h-px bg-[var(--line)] my-6" />
+              <p className="text-sm text-charcoal/80 leading-relaxed">{t.pricing.addOn[lang]}</p>
+              <button
+                type="button" disabled={!payOn} aria-disabled={!payOn}
+                onClick={() => { track('parents_pay_click', { plan: 'launchpad', lang, cta_variant: variantNo }); setBuying('launchpad_monthly') }}
+                className="cta cta-outline mt-7 w-full"
+              >{payOn ? t.pricing.addOnButton[lang] : t.pricing.soon[lang]}</button>
+            </Reveal>
           </div>
         </div>
       </section>
 
-      {/* ── 6b  Pricing ── */}
-      <section id="pricing" ref={priceRef} className="pp-band scroll-mt-16">
-        <div className="site-wrap py-16 sm:py-24">
-          <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] items-stretch max-w-5xl mx-auto">
-            <div className="bg-white text-charcoal rounded-3xl p-8 sm:p-10 shadow-[0_40px_80px_-40px_rgba(0,0,0,0.6)] flex flex-col">
-              <p className="text-sm font-bold text-primary">{t.pricing.packageName[lang]}</p>
-              <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold">{t.pricing.title[lang]}</h2>
-              <p className="mt-6 flex items-baseline gap-3" dir="ltr" style={{ justifyContent: lang === 'ar' ? 'flex-end' : 'flex-start' }}>
-                <span className="text-2xl text-charcoal/45 line-through">{priceWas}</span>
-                <span className="text-5xl sm:text-6xl font-extrabold text-primary-deep">{price}</span>
-              </p>
-              <p className="mt-2 text-sm text-charcoal/70">{t.pricing.underPrice[lang]}</p>
-              <p className="mt-5 text-charcoal/85">{t.pricing.included[lang]}</p>
-              <div className="mt-auto pt-8">
-                <button
-                  type="button" disabled={!payOn} aria-disabled={!payOn}
-                  onClick={() => { track('parents_pay_click', { plan: 'pathfinder', lang, cta_variant: variantNo }); setBuying('pathfinder') }}
-                  className="cta cta-teal w-full"
-                >{payOn ? t.pricing.button[lang] : t.pricing.soon[lang]}</button>
-                <p className="mt-3 text-sm text-charcoal/65">{t.pricing.underButton[lang]}</p>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-white/30 p-8 flex flex-col">
-              <h3 className="text-xl font-extrabold">{t.pricing.addOnName[lang]}</h3>
-              <p className="mt-3 text-white/85 leading-relaxed">{t.pricing.addOn[lang]}</p>
-              <p className="mt-6 flex items-baseline gap-3" dir="ltr" style={{ justifyContent: lang === 'ar' ? 'flex-end' : 'flex-start' }}>
-                <span className="text-lg text-white/55 line-through">{coachWas}</span>
-                <span className="text-4xl font-extrabold">{coachPrice}</span>
-              </p>
-              <div className="mt-auto pt-8">
-                <button
-                  type="button" disabled={!payOn} aria-disabled={!payOn}
-                  onClick={() => { track('parents_pay_click', { plan: 'launchpad', lang, cta_variant: variantNo }); setBuying('launchpad_monthly') }}
-                  className="cta cta-onteal w-full"
-                >{payOn ? t.pricing.addOnButton[lang] : t.pricing.soon[lang]}</button>
-              </div>
-            </div>
-          </div>
+      {/* ── FAQ ── */}
+      <section id="faq" className="scroll-mt-20">
+        <div className="site-wrap py-16 sm:py-20 split">
+          <Reveal>
+            <p className="eyebrow landing-eyebrow mb-3">{lang === 'ar' ? 'الأسئلة الشائعة' : 'FAQ'}</p>
+            <h2 className={`${sectionH} split-h`}>{t.faqTitle[lang]}</h2>
+          </Reveal>
+          <Reveal style={{ transitionDelay: '120ms' }}><div className="border-t border-[var(--line)]"><Faq items={t.faq} lang={lang} /></div></Reveal>
         </div>
       </section>
 
-      {/* ── 7  Closing call to action ── */}
-      <section className="sec-teal relative overflow-hidden text-center py-16 sm:py-24">
+      {/* ── CLOSING: the landing's blue band ── */}
+      <section className="sec-teal relative overflow-hidden text-center py-20 sm:py-28">
         <HeroField tone="onteal" fadeMode="center" />
         <div className="relative z-10 max-w-2xl mx-auto px-5">
-          <h2 className="font-extrabold" style={midH}>{t.closing.title[lang]}</h2>
-          <div className="mt-8 flex justify-center">
+          <Reveal className="flex justify-center mb-6"><Logomark size={48} tone="dark" glow /></Reveal>
+          <Reveal><h2 className="text-3xl sm:text-4xl font-extrabold leading-tight">{t.closing.title[lang]}</h2></Reveal>
+          <Reveal className="mt-8 flex justify-center">
             <a href="#pricing" onClick={() => cta('closing')} className="cta cta-onteal"><span>{ctaLabel}</span><span className="cta-arrow">{arrow}</span></a>
-          </div>
-          <p className="mt-6 text-sm text-white/85">{t.closing.trust[lang]}</p>
-        </div>
-      </section>
-
-      {/* ── 8  FAQs ── */}
-      <section className="bg-white">
-        <div className="site-wrap py-16 sm:py-24 grid gap-10 lg:grid-cols-[0.8fr_1.4fr] lg:gap-16">
-          <h2 className="font-extrabold text-charcoal" style={midH}>{t.faqTitle[lang]}</h2>
-          <div className="border-t border-[var(--line)]"><Faq items={t.faq} lang={lang} /></div>
+          </Reveal>
+          <Reveal><p className="mt-6 text-xs text-white/65 max-w-[50ch] mx-auto">{t.closing.trust[lang]}</p></Reveal>
         </div>
       </section>
 
