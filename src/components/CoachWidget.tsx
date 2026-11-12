@@ -243,14 +243,19 @@ export default function CoachWidget({
     const want = pos.x - w / 2
     return Math.max(12, Math.min(want, vw - w - 12)) - want
   }
+  // The panel opens on the side with more room and is capped to fit, so it never runs off the screen.
+  const vh = inBrowser ? window.innerHeight : 0
+  const roomAbove = pos ? pos.y - 56 - 12 : 0
+  const roomBelow = pos ? vh - pos.y - 56 - 12 : 0
+  const panelBelow = effPlace === 'target' && !!pos && roomAbove < 440 && roomBelow > roomAbove
+  const tipBelow = effPlace === 'target' && !!pos && pos.y - 56 < 130
+  const panelMax = Math.max(220, Math.min(560, 0.7 * vh, panelBelow ? roomBelow : roomAbove))
   const targetStyle = effPlace === 'target'
     ? ({
         left: pos?.x ?? -999, top: pos?.y ?? -999, opacity: pos ? undefined : 0,
-        '--shift-panel': `${clampShift(380)}px`, '--shift-tip': `${clampShift(280)}px`,
+        '--shift-panel': `${clampShift(380)}px`, '--shift-tip': `${clampShift(280)}px`, '--panel-max': `${panelMax}px`,
       } as React.CSSProperties)
     : undefined
-  const panelBelow = effPlace === 'target' && !!pos && pos.y - 56 < 440
-  const tipBelow = effPlace === 'target' && !!pos && pos.y - 56 < 130
 
   const greeting = mode === 'results' ? tr(T.greetResults) : mode === 'landing' ? tr(T.greetLanding) : mode === 'gate' ? tr(T.greetGate) : tr(T.greetAssessment)
   const nudge = feedbackActive && !open ? feedback?.nudge : undefined

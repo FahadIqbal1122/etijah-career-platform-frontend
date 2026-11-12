@@ -1088,6 +1088,7 @@ html { scroll-behavior: smooth; }
 .coach-widget[data-place="target"] .coach-panel {
   position: absolute; left: 50%; bottom: calc(100% + 12px); z-index: 70;
   width: min(380px, calc(100vw - 24px)); transform: translateX(calc(-50% + var(--shift-panel, 0px)));
+  max-height: var(--panel-max, min(70vh, 560px));
 }
 .coach-widget[data-place="target"].panel-below .coach-panel { bottom: auto; top: calc(100% + 12px); }
 
