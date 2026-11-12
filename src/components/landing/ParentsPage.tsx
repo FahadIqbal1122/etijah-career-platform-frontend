@@ -15,6 +15,7 @@ import { useLocale } from 'next-intl'
 import { useRouter, usePathname } from '@/i18n/navigation'
 import Logomark, { Wordmark } from '@/components/brand/Logomark'
 import HeroField from '@/components/landing/HeroField'
+import HeroStories from '@/components/landing/HeroStories'
 import DemoReportsButton from '@/components/shared/DemoReportsButton'
 import EmailLink from '@/components/shared/EmailLink'
 import { L } from '@/data/landing'
@@ -230,28 +231,28 @@ export default function ParentsPage() {
         </div>
       </nav>
 
-      {/* ── HERO: light, headline in two lines with the second in teal, like the default landing ── */}
+      {/* ── HERO: the landing's hero (intro on one side, rotating reviews on the other) with the parents copy ── */}
       <header ref={heroRef} className="relative overflow-hidden">
-        <div className="site-wrap relative z-10 pt-12 pb-14 sm:pt-16 grid gap-10 lg:grid-cols-[1.1fr_0.9fr] items-center">
+        <div className="site-wrap relative z-10 pt-12 pb-14">
           <Reveal>
-            <h1 className="text-4xl sm:text-5xl font-extrabold leading-[1.1] tracking-tight text-charcoal" style={{ textWrap: 'balance', ...(lang === 'ar' ? { lineHeight: 1.35, letterSpacing: 0 } : null) } as React.CSSProperties}>
-              <TwoLine text={t.hero.headline[lang]} />
-            </h1>
-            <p className="mt-6 text-lg text-charcoal/80 leading-relaxed max-w-xl">{t.hero.sub[lang]}</p>
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <a href="#pricing" onClick={() => cta('hero')} className="cta"><span>{ctaLabel}</span><span className="cta-arrow">{arrow}</span></a>
-              <DemoReportsButton locale={locale} source="parents_hero" track="parents_hero_sample_report" className="cta cta-outline cta-sm">{t.closing.sample[lang]}</DemoReportsButton>
-            </div>
-            <p className="mt-3 text-sm text-charcoal/80">{t.hero.note[lang]}</p>
-            <ul className="mt-5 flex flex-wrap gap-2">
-              {t.hero.facts.map(f => <li key={f.en} className="chip chip-teal">{f[lang]}</li>)}
-            </ul>
+            <HeroStories
+              copy={((L as unknown as Record<string, { hero: { stories: unknown } }>)[lang] ?? (L as unknown as Record<string, { hero: { stories: unknown } }>).en).hero.stories}
+              dir={dir}
+              headline={<TwoLine text={t.hero.headline[lang]} />}
+              about={t.hero.sub[lang]}
+            >
+              <div className="flex flex-wrap items-center gap-4">
+                <a href="#pricing" onClick={() => cta('hero')} className="cta"><span>{ctaLabel}</span><span className="cta-arrow">{arrow}</span></a>
+                <DemoReportsButton locale={locale} source="parents_hero" track="parents_hero_sample_report" className="cta cta-outline cta-sm">{t.closing.sample[lang]}</DemoReportsButton>
+              </div>
+              <p className="mt-3 text-sm text-charcoal/80">{t.hero.note[lang]}</p>
+              <ul className="mt-4 flex flex-wrap gap-2">
+                {t.hero.facts.map(f => <li key={f.en} className="chip chip-teal">{f[lang]}</li>)}
+              </ul>
+            </HeroStories>
           </Reveal>
-          <Reveal className="relative" style={{ transitionDelay: '120ms' }}>
-            <div className="card p-6 sm:p-8 max-w-md mx-auto">
-              <LinkPicture lang={lang} parent={t.how.cols[0].head[lang]} child={t.how.cols[1].head[lang]} together={t.how.cols[2].head[lang]} />
-            </div>
-          </Reveal>
+          {/* previous right-hand side: the parent / child thread picture. Replaced by the reviews above (not rendered).
+          <LinkPicture lang={lang} parent={t.how.cols[0].head[lang]} child={t.how.cols[1].head[lang]} together={t.how.cols[2].head[lang]} /> */}
         </div>
       </header>
 

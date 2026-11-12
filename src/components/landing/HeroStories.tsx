@@ -23,7 +23,7 @@ interface Story {
 interface Props {
   copy: any
   dir: 'ltr' | 'rtl'
-  eyebrow: string
+  eyebrow?: string   // optional: the parents page has no eyebrow line
   headline: ReactNode
   about: string
   children: ReactNode // CTAs + microcopy, rendered under the intro
@@ -74,7 +74,7 @@ export default function HeroStories({ copy, dir, eyebrow, headline, about, child
 
   return (
     <div className="hx-grid">
-      <p className="eyebrow landing-eyebrow hx-eyebrow">{eyebrow}</p>
+      {eyebrow ? <p className="eyebrow landing-eyebrow hx-eyebrow">{eyebrow}</p> : <span className="hx-eyebrow" />}
       <h1 className="hx-headline">{headline}</h1>
       <p className="hx-about">{about}</p>
 
