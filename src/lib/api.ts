@@ -178,6 +178,14 @@ export const getFriendInvite = (token: string) => apiGet<{ inviter_first_name: s
 export const joinFriendInvite = (token: string, consent: boolean) => apiAuthPost<{ joined: boolean }>(`/friend/invite/${token}/join`, { consent })
 export const getMyFriendInvites = () => apiAuthGet<{ invites: FriendInvite[]; match_enabled: boolean }>('/friend/mine')
 
+export type FriendCompare = {
+  status: 'off' | 'waiting_friend' | 'need_my_report' | 'need_my_consent' | 'waiting_friend_consent' | 'waiting_friend_report' | 'ready'
+  friend_first_name?: string | null
+  comparison?: { same_major: 'same' | 'partly' | 'different'; shared_careers: string[]; shared_types: string[]; lead: 'a' | 'b' | 'shared' | null; complement: { dimension: string; stronger: 'a' | 'b' }[] | null }
+}
+export const getFriendCompare = (token: string) => apiAuthGet<FriendCompare>(`/friend/invite/${token}/compare`)
+export const agreeFriendFull = (token: string) => apiAuthPost<{ agreed: boolean }>(`/friend/invite/${token}/full-consent`, { consent: true })
+
 export async function apiAuthDelete<T>(path: string): Promise<T> {
     const res = await requestWithRetry(path, { method: 'DELETE' }, authHeader)
     return asJson<T>(res)

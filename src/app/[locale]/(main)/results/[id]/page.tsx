@@ -26,6 +26,7 @@ import { useUpgradeHref } from '@/components/useUpgradeHref'
 import FreeSnapshot from '@/components/FreeSnapshot'
 import { useCoachRoam, useCoachHidden, useCoachDock } from '@/components/useCoachRoam'
 import BetaFeedbackResultStage from '@/components/beta-feedback/BetaFeedbackResultStage'
+import FriendComparison from '@/components/FriendComparison'
 
 const levelToWidth: Record<string, string> = {
   low: '20%',
@@ -2594,6 +2595,8 @@ export default function ResultsPage() {
           {reassessError && <p className="text-xs text-rose-500">{reassessError}</p>}
         </div>
         */}
+
+        {tier !== 'free' && loggedIn && <FriendComparison locale={locale} />}
 
         {/* Share */}
         <div className="flex flex-col items-center gap-2 pt-2 pb-4">
