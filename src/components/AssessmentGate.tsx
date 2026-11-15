@@ -574,6 +574,13 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     return () => window.removeEventListener('etijahi:gate-action', onAction)
   }, [])
 
+  // The invite needs an account: someone still on the account form gets theirs made first, exactly as the parent button does.
+  async function ensureAccountForFriend(): Promise<boolean> {
+    if (step !== 'account') return true
+    if (!accountReady()) { setError(s.fillAccount); return false }
+    return createAccount()
+  }
+
   async function askParent() {
     track('parent_button_click', { from: 'assessment_gate', plan_code: plan })   // brief event list
     if (step === 'account' && !accountReady()) { setError(s.fillAccount); return }
@@ -995,7 +1002,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                     </div>
                   )}
 
-                  {!gift && friendOn && step === 'pay' && !confirming && <FriendInvitePanel locale={locale} />}
+                  {!gift && friendOn && (step === 'pay' || step === 'account') && !confirming && <FriendInvitePanel locale={locale} signedIn={step === 'pay'} ensureAccount={ensureAccountForFriend} />}
 
                   {!gift && <div className="rounded-xl bg-[var(--surface-2,#f5f7f8)] p-3">{exitChips}</div>}
                 </>

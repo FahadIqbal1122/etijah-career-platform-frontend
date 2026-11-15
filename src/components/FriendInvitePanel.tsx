@@ -10,7 +10,7 @@ const T = {
     explain: 'Your friend answers the same free questions. Then you both see one number: how well your interests match. Nobody sees anyone’s answers.',
     consent: 'I agree that my friend will see our match percentage and my first name.', consentNeeded: 'Please tick the box first.',
     make: 'Create my invite link', share: 'Share', copy: 'Copy link', copied: 'Copied', whatsapp: 'WhatsApp',
-    shareText: 'Let’s see if we’re a good study match on Etijahi:', error: 'Something went wrong. Please try again.',
+    shareText: 'Let’s see if we’re a good study match on Etijahi:', error: 'Something went wrong. Please try again.', needAccount: 'Fill in your name and email above first.',
     waiting: 'Waiting for your friend to finish the free questions.', joined: (n: string | null) => `${n ?? 'Your friend'} finished the free part.`,
     match: (n: string | null, p: number) => `Study match with ${n ?? 'your friend'}: ${p}%`, soon: 'Your match will show here soon.',
   },
@@ -19,13 +19,13 @@ const T = {
     explain: 'يجيب صديقك عن الأسئلة المجانية نفسها. بعدها يظهر لكما رقم واحد: مدى توافق اهتماماتكما. لا يرى أحد إجابات الآخر.',
     consent: 'أوافق أن يرى صديقي نسبة التوافق بيننا واسمي الأول.', consentNeeded: 'يرجى تحديد المربع أولاً.',
     make: 'أنشئ رابط الدعوة', share: 'مشاركة', copy: 'نسخ الرابط', copied: 'تم النسخ', whatsapp: 'واتساب',
-    shareText: 'لنرَ هل نتوافق في الدراسة على إتجاهي:', error: 'حدث خطأ. حاول مرة أخرى.',
+    shareText: 'لنرَ هل نتوافق في الدراسة على إتجاهي:', error: 'حدث خطأ. حاول مرة أخرى.', needAccount: 'أدخل اسمك وبريدك الإلكتروني في الأعلى أولاً.',
     waiting: 'بانتظار أن ينهي صديقك الأسئلة المجانية.', joined: (n: string | null) => `${n ?? 'صديقك'} أنهى الجزء المجاني.`,
     match: (n: string | null, p: number) => `التوافق الدراسي مع ${n ?? 'صديقك'}: ${p}٪`, soon: 'ستظهر نسبة التوافق هنا قريباً.',
   },
 }
 
-export default function FriendInvitePanel({ locale }: { locale: string }) {
+export default function FriendInvitePanel({ locale, signedIn = true, ensureAccount }: { locale: string; signedIn?: boolean; ensureAccount?: () => Promise<boolean> }) {
   const s = T[locale === 'ar' ? 'ar' : 'en']
   const [open, setOpen] = useState(false)
   const [agreed, setAgreed] = useState(false)
@@ -39,12 +39,13 @@ export default function FriendInvitePanel({ locale }: { locale: string }) {
 
   // The invites this student sent or accepted: checked now and every 30 seconds, so a friend finishing shows up while the gate is open.
   useEffect(() => {
+    if (!signedIn) return
     alive.current = true
     const load = () => getMyFriendInvites().then(r => { if (alive.current) { setInvites(r.invites); setMatchOn(r.match_enabled) } }).catch(() => {})
     load()
     const id = window.setInterval(load, 30000)
     return () => { alive.current = false; window.clearInterval(id) }
-  }, [])
+  }, [signedIn])
 
   useEffect(() => {
     invites.forEach(i => { if (i.match_pct != null) trackOnce(`friend_match_shown:${i.token}`, 'friend_match_shown', { lang: locale, role: i.role }) })
@@ -54,6 +55,7 @@ export default function FriendInvitePanel({ locale }: { locale: string }) {
     if (!agreed) { setError(s.consentNeeded); return }
     setBusy(true); setError('')
     try {
+      if (ensureAccount && !(await ensureAccount())) { setError(s.needAccount); return }
       const r = await createFriendInvite(true, locale === 'ar' ? 'ar' : 'en')
       setLink(r.url)
       track('friend_invite_sent', { lang: locale })
