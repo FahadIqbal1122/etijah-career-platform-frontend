@@ -171,6 +171,13 @@ export const getGift = (token: string) => apiGet<GiftInfo>(`/parent/gift/${token
 export const redeemGift = (token: string, consent: boolean) => apiAuthPost<{ redeemed: boolean }>(`/parent/gift/${token}/redeem`, { consent })
 export const getParentStatus = (token: string) => apiGet<ParentStatus>(`/parent/status/${token}`)
 
+// Friend comparison: a student at the pay gate invites a friend; both see a study-match teaser (only the percentage is shared)
+export type FriendInvite = { token: string; role: 'inviter' | 'friend'; status: 'waiting' | 'joined'; other_first_name: string | null; match_pct: number | null }
+export const createFriendInvite = (consent: boolean, locale: string) => apiAuthPost<{ token: string; url: string }>('/friend/invite', { consent, locale })
+export const getFriendInvite = (token: string) => apiGet<{ inviter_first_name: string | null; status: 'open' | 'used'; locale: string }>(`/friend/invite/${token}`)
+export const joinFriendInvite = (token: string, consent: boolean) => apiAuthPost<{ joined: boolean }>(`/friend/invite/${token}/join`, { consent })
+export const getMyFriendInvites = () => apiAuthGet<{ invites: FriendInvite[]; match_enabled: boolean }>('/friend/mine')
+
 export async function apiAuthDelete<T>(path: string): Promise<T> {
     const res = await requestWithRetry(path, { method: 'DELETE' }, authHeader)
     return asJson<T>(res)

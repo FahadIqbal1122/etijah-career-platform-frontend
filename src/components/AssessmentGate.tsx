@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
-  apiGet, apiAuthGet, apiAuthPost, startCheckout, previewDiscount, getGift, redeemGift, getParentLinkEligibility, createParentLink,
+  apiGet, apiAuthGet, apiAuthPost, startCheckout, previewDiscount, getGift, redeemGift, joinFriendInvite, getParentLinkEligibility, createParentLink,
   type DiscountPreview, type PlanCode,
 } from '@/lib/api'
 import { track, trackOnce } from '@/lib/analytics'
@@ -22,6 +22,8 @@ import { useLaunchActive } from '@/lib/launchPricing'
 import { buildReveal, computeRanked } from '@/data/revealScoring'
 import { gateHeadline, loadScriptOverrides, type GateCoachEvent } from '@/data/coachScript'
 import Logomark from '@/components/brand/Logomark'
+import FriendInvitePanel from '@/components/FriendInvitePanel'
+import { friendInviteOn, FRIEND_KEY, FRIEND_CONSENT_KEY } from '@/lib/friendInvite'
 import GoogleButton from '@/components/GoogleButton'
 
 type GateStatus = {
@@ -266,6 +268,9 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   const [gift, setGift] = useState<string | null>(null)
   const [giftConsent, setGiftConsent] = useState(false)
   // 'pending' = consent given on the link page, waiting for the gate to be ready; 'running' = hiding the gate while it works; 'off' = show the normal screen.
+  const [friendOn, setFriendOn] = useState(false)
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the switch and the URL once on the client
+  useEffect(() => { setFriendOn(friendInviteOn()) }, [])
   const [giftAuto, setGiftAuto] = useState<'off' | 'pending' | 'running'>('off')
   useEffect(() => {
     let token: string | null = null
@@ -332,6 +337,14 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   const afterSignedIn = useCallback(async (): Promise<boolean> => {
     setError('')
     const a = answersRef.current
+    // A friend who opened an invite and agreed on its page joins it now that they have an account (best-effort, never blocks the gate).
+    try {
+      const ft = window.localStorage.getItem(FRIEND_KEY)
+      if (ft && window.localStorage.getItem(FRIEND_CONSENT_KEY) === ft) {
+        joinFriendInvite(ft, true).then(() => track('friend_completed', { lang: locale })).catch(() => {})
+        window.localStorage.removeItem(FRIEND_KEY); window.localStorage.removeItem(FRIEND_CONSENT_KEY)
+      }
+    } catch { /* storage unavailable: no comparison */ }
     try {
       // Ask first: someone who can already go on (paid, company seat, admin) needs nothing saved here.
       const status = await checkAccess()
@@ -981,6 +994,8 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                       )}
                     </div>
                   )}
+
+                  {!gift && friendOn && step === 'pay' && !confirming && <FriendInvitePanel locale={locale} />}
 
                   {!gift && <div className="rounded-xl bg-[var(--surface-2,#f5f7f8)] p-3">{exitChips}</div>}
                 </>
