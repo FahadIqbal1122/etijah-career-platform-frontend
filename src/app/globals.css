@@ -1460,3 +1460,40 @@ html { scroll-behavior: smooth; }
 .pcard-paid::after { content: ''; position: absolute; inset: -4px; border-radius: 30px; border: 2px solid rgba(0, 201, 167, .6); opacity: 0; pointer-events: none; animation: pRing 3.4s ease-out 1.2s infinite; }
 @keyframes pRing { 0% { opacity: .75; transform: scale(1); } 100% { opacity: 0; transform: scale(1.045); } }
 @media (prefers-reduced-motion: reduce) { .pcard-paid::after { animation: none; } }
+
+/* assessment question 1: rotating testimonials + moving client-logo bar */
+.intro-proof { width: 100%; max-width: 460px; display: flex; flex-direction: column; gap: 22px; padding: 24px 20px; color: #fff; }
+.intro-proof-eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .7; margin: 0 0 8px; }
+[dir="rtl"] .intro-proof-eyebrow { letter-spacing: 0; text-transform: none; font-size: 13px; }
+.intro-proof-card { margin: 0; animation: introFade .6s ease; }
+.intro-proof-quote .intro-proof-card { min-height: 130px; }
+.intro-proof-card blockquote { margin: 0 0 10px; font-size: 18px; line-height: 1.5; }
+.intro-proof-card figcaption { font-size: 13px; opacity: .75; }
+.intro-proof-marquee { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.intro-proof-track { display: flex; gap: 10px; width: max-content; animation: introMarquee 22s linear infinite; }
+.intro-proof-tile { flex: 0 0 auto; width: 96px; height: 52px; background: #fff; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.intro-proof-tile img { width: 100%; height: 100%; object-fit: contain; display: block; }
+/* Coursera cropped out of the 460x101 "Supported by" banner (right-hand logo) */
+.intro-proof-coursera { display: block; width: 100%; height: 100%; background: url('/clients/coursera-banner.png') no-repeat; background-size: 260% auto; background-position: -153px -9px; }
+.intro-proof-bottom { display: none; }
+@keyframes introFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes introMarquee { from { transform: translateX(0); } to { transform: translateX(calc(-50% - 5px)); } }
+@media (prefers-reduced-motion: reduce) {
+  .intro-proof-track { animation: none; flex-wrap: wrap; width: auto; justify-content: center; }
+  .intro-proof-marquee { -webkit-mask-image: none; mask-image: none; }
+  .intro-proof-track .intro-proof-tile:nth-child(n+6) { display: none; }
+}
+/* phone: logo bar at the top, small testimonial box at the bottom, the start box stays the main thing */
+@media (max-width: 899px) {
+  .intro-proof { padding: 6px 16px 0; gap: 0; max-width: none; }
+  .intro-proof-quote { display: none; }
+  .intro-proof-worked .intro-proof-eyebrow { text-align: center; margin-bottom: 6px; font-size: 11px; }
+  .intro-proof-tile { width: 78px; height: 40px; }
+  .intro-proof-coursera { background-size: 203px auto; background-position: -125px -8px; }
+  .intro-proof-bottom { display: block; width: 100%; padding: 8px 16px 16px; color: #fff; box-sizing: border-box; }
+  .intro-proof-bottom .intro-proof-card { background: rgba(255,255,255,.08); border-radius: 12px; padding: 12px 14px; }
+  .intro-proof-bottom .intro-proof-card blockquote { font-size: 14px; margin-bottom: 6px; }
+  .intro-proof-bottom .intro-proof-card figcaption { font-size: 12px; }
+}
+/* first question: Sarah stays on screen but can't be clicked until the assessment starts */
+body.intro-quiet .coach-widget > * { pointer-events: none; }

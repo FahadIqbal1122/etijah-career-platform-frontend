@@ -21,6 +21,7 @@ import BreakPanel from '@/components/BreakPanel'
 import AssessmentGate from '@/components/AssessmentGate'
 // import CoachBubble from '@/components/CoachBubble'   // replaced by CoachWidget (two-way chat)
 import CoachWidget from '@/components/CoachWidget'
+import IntroProof from '@/components/assessment/IntroProof'
 import { useCoachSwitches } from '@/lib/useCoachEnabled'
 import { fillScript, firstName, welcomeId, goalQuestionKey, goalReplyId, segmentGroup, gateBubbles, gateEventLine, gateReturningLine, hintProfile, gateOpeningLine, gatePersonalSummary, GATE_ACTION_LABEL, loadScriptOverrides, type GateCoachEvent } from '@/data/coachScript'
 import { formatPrice } from '@/lib/pricing'
@@ -739,7 +740,7 @@ export default function AssessmentForm() {
 
   // "No rush": if a question sits unanswered for 45 seconds, Sarah says so (once per chapter).
   useEffect(() => {
-    if (!coachEnabled || phase !== 'question' || !q) return
+    if (!coachEnabled || phase !== 'question' || !q || maxIndex === 0) return   // silent on the first question
     const key = `idle:${curChapter}`
     if (scriptedFired.current.has(key)) return
     const qid = q.id
@@ -1203,6 +1204,14 @@ export default function AssessmentForm() {
   const arrow = dir === 'rtl' ? '←' : '→'
   const sel = picked !== null ? picked : q ? answers[q.id] : undefined
 
+  // Question 1 only: testimonials + client logos instead of the constellation and text
+  const showIntroProof = phase === 'question' && maxIndex === 0
+  // first question: Sarah is on screen but can't be opened (opening her takes up the space the testimonials use)
+  useEffect(() => {
+    document.body.classList.toggle('intro-quiet', showIntroProof)
+    return () => document.body.classList.remove('intro-quiet')
+  }, [showIntroProof])
+
   return (
     <div className={`assess-screen ${phase === 'reveal' ? 'is-reveal' : ''} ${leaving ? 'leaving' : ''}`} dir={dir} lang={locale}>
       <div className="assess-topbar">
@@ -1225,16 +1234,19 @@ export default function AssessmentForm() {
 
       {phase === 'question' && (
         <>
-          <div className="assess-progress-label">{progressMsg}</div>
-          <div className="assess-break-mobile-slot">
+          {!showIntroProof && <div className="assess-progress-label">{progressMsg}</div>}
+          {!showIntroProof && <div className="assess-break-mobile-slot">
             <BreakPanel locale={locale as 'en' | 'ar'} eyebrow={chrome.asideEyebrow} progressMsg={progressMsg} questionIndex={index} compact hideTrigger={coachEnabled || !gamesEnabled} />
-          </div>
+          </div>}
         </>
       )}
 
       {/* ── main: ambient panel (left on desktop) + question column (right) ── */}
       <div className="assess-main">
         <aside className="assess-aside">
+          {showIntroProof ? (
+            <IntroProof locale={locale as 'en' | 'ar'} />
+          ) : (<>
           <div className="cst-wrap">
             {/* <Constellation geometry={CHAPTER_CONSTELLATION} litCount={litCount} theme={phase === 'reveal' ? 'teal' : 'dark'} rippleKey={rippleKey} accent="#00C9A7" /> */}
             <ChapterStars
@@ -1257,7 +1269,6 @@ export default function AssessmentForm() {
             )}
           </div>
           {/* Sarah's home on desktop: between the stars and the writing */}
-          {coachEnabled && <div className="coach-slot" ref={setCoachSlot} />}
           {/* desktop-only progress context beneath the constellation */}
           <div className="assess-aside-context">
             {phase === 'question' ? (
@@ -1266,6 +1277,9 @@ export default function AssessmentForm() {
               <div className="assess-aside-eyebrow">{percentLabel}</div>
             )}
           </div>
+          </>)}
+          {/* Sarah's home on desktop: between the stars (or, on the first question, the logos) and the writing */}
+          {coachEnabled && <div className="coach-slot" ref={setCoachSlot} />}
         </aside>
 
         {/* ── question ──────────────────────────────────────────────────── */}
@@ -1534,6 +1548,9 @@ export default function AssessmentForm() {
         </div>
       </div>
 
+      {/* phone, first question only: a small testimonial box at the bottom */}
+      {showIntroProof && <IntroProof locale={locale as 'en' | 'ar'} variant="bottom" />}
+
       {/* ── create an account and pay to continue (full-screen overlay) ──── */}
       {phase === 'gate' && (
         <AssessmentGate locale={locale} answers={answers} confirming={returningPaid} paymentFailed={paymentFailed} onUnlocked={onGateUnlocked} onCoachEvent={onGateCoachEvent} />
@@ -1693,7 +1710,7 @@ export default function AssessmentForm() {
         spots={phase === 'question' ? { wide: [coachSlot, coachQuestionSlot], narrow: [] } : undefined}
         spotIndex={coachSpot}
         games={gamesEnabled} tipOffersGame={gamesEnabled && phase === 'question' && coachTipGame}
-        tip={phase === 'question' ? coachMsg : phase === 'reveal' ? revealTip : null}
+        tip={phase === 'question' ? (maxIndex === 0 ? null : coachMsg) : phase === 'reveal' ? revealTip : null}   // maxIndex 0 = first question: she stays silent
         tipAutoHideMs={phase === 'reveal' ? 0 : 20000} onTipDismiss={dismissCoach}
       />}
     </div>
