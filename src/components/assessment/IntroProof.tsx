@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { L } from '@/data/landing'
+import { Wordmark } from '@/components/brand/Logomark'
 
 // Shown on the very first assessment question only (see AssessmentForm showIntroProof).
 //  variant 'side'   : testimonial (desktop only) + "who we've worked with" moving logo bar
@@ -27,6 +28,12 @@ const SHORT: Record<string, { en: string; ar: string }> = {
     en: 'It made me see my strengths and weaknesses, and I will work on strengthening them.',
     ar: 'جعلني أرى نقاط قوتي وضعفي، وسأعمل على تعزيزها.',
   },
+}
+
+// One line about the assessment and its goal, shown under the logo.
+const ONE_LINER = {
+  en: 'A 15-minute assessment to help you find a career direction that truly fits you.',
+  ar: 'تقييم في ١٥ دقيقة لمساعدتك على اكتشاف اتجاه مهني يناسبك فعلاً.',
 }
 
 function Logo({ l, hidden }: { l: { name: string; src?: string }; hidden?: boolean }) {
@@ -59,6 +66,10 @@ export default function IntroProof({ locale, variant = 'side' }: { locale: 'en' 
 
   return (
     <div className="intro-proof">
+      <div className="intro-proof-head">
+        <span className="intro-proof-logo"><Wordmark tone="dark" size={44} /></span>
+        <p className="intro-proof-line">{ONE_LINER[locale]}</p>
+      </div>
       <div className="intro-proof-quote">
         <p className="intro-proof-eyebrow">{hero.eyebrow}</p>
         {card}
