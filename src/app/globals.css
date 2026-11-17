@@ -210,7 +210,7 @@ html { scroll-behavior: smooth; }
 }
 @media (prefers-reduced-motion: reduce) { .assess-break-trigger { animation: none; box-shadow: 0 0 14px 2px rgba(0, 201, 167, 0.7); } }
 
-.assess-break-mobile-slot { position: relative; z-index: 5; text-align: center; padding: 10px 20px 0; }
+.assess-break-mobile-slot { position: relative; z-index: 5; text-align: center; padding: 10px 20px 130px; }   /* bottom room for the 112px coach so enlarged text never runs under her */
 @media (min-width: 900px) { .assess-break-mobile-slot { display: none; } }
 
 .assess-break {

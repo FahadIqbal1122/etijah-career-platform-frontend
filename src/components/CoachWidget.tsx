@@ -149,7 +149,8 @@ export default function CoachWidget({
   // peeks in from the side edge, halfway down, so the question stays clear; she slides fully into view when she
   // has a tip or the chat is open. The green reveal screen keeps her centred.
   const dock = dockProp ?? (mode === 'assessment' && !wide && place !== 'center' && inBrowser
-    ? { side: (isAr ? 'l' : 'r') as 'l' | 'r', y: window.innerHeight / 2, peek: true }
+    // ? { side: (isAr ? 'l' : 'r') as 'l' | 'r', y: window.innerHeight / 2, peek: true }   // mid-screen: covered the progress text when it wrapped to more lines
+    ? { side: (isAr ? 'l' : 'r') as 'l' | 'r', y: window.innerHeight * 0.72, peek: true }
     : null)
   // Dragging: she follows the pointer, and on release snaps to the nearest side of the screen.
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null)
