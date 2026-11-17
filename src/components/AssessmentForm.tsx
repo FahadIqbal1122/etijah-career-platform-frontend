@@ -7,7 +7,8 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
-import { useRouter, usePathname } from '@/i18n/navigation'
+// import { useRouter, usePathname } from '@/i18n/navigation'
+import { useRouter, usePathname, Link } from '@/i18n/navigation'
 import { questions, BEHAVIORAL_SCALE, Question } from '@/data/questions'
 import { SPECIALISMS } from '@/data/specialisms'
 import PhoneInput from 'react-phone-input-2'
@@ -372,6 +373,14 @@ export default function AssessmentForm() {
   const [showClaimedModal, setShowClaimedModal] = useState(false)
   const [draft, setDraft] = useState<Draft | null>(null)
   const [ageTyping, setAgeTyping] = useState(false) // age question: typed box instead of the wheel
+  // Logged-in visitors get a Dashboard button in the header so it is clear how to leave the assessment
+  const [loggedIn, setLoggedIn] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    supabase.auth.getSession().then(({ data: { session } }) => { if (!cancelled) setLoggedIn(!!session) })
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => setLoggedIn(!!session))
+    return () => { cancelled = true; sub.subscription.unsubscribe() }
+  }, [])
   // Pay-to-continue: whether this visitor is asked to create an account and pay after chapter 2, and whether this page
   // load is the buyer coming back from the payment page (?paid=1), which waits for the payment to be confirmed.
   const [gateRequired, setGateRequired] = useState(false)
@@ -1215,8 +1224,16 @@ export default function AssessmentForm() {
   return (
     <div className={`assess-screen ${phase === 'reveal' ? 'is-reveal' : ''} ${leaving ? 'leaving' : ''}`} dir={dir} lang={locale}>
       <div className="assess-topbar">
-        <Logomark size={30} tone="dark" />
+        {/* <Logomark size={30} tone="dark" /> */}
+        <Link href="/" aria-label={locale === 'ar' ? 'الصفحة الرئيسية' : 'Home'} style={{ display: 'inline-flex' }}>
+          <Logomark size={30} tone="dark" />
+        </Link>
         <div className="assess-topbar-actions">
+          {loggedIn && (
+            <Link href="/dashboard" className="assess-lang">
+              {locale === 'ar' ? 'لوحة التحكم' : 'Dashboard'}
+            </Link>
+          )}
           <DemoReportsButton
             locale={locale}
             source="assessment_header"
