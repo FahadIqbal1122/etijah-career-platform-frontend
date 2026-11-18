@@ -70,7 +70,7 @@ const STR = {
     signupTab: 'Create account', loginTab: 'Sign in',
     name: 'Full name', email: 'Email', password: 'Password (8+ characters)',
     createBtn: 'Create account and continue', loginBtn: 'Sign in and continue',
-    existing: 'This email may already have an account. Try signing in.',
+    existing: 'You already have an account with this email. Enter your password below to log in.',
     autoHead: 'Save your progress',
     autoBody: 'We will create your free account with this email, so your answers are kept safe. After you pay we email you a link to set a password, so you can log in later.',
     autoBtn: 'Continue to payment', haveAccount: 'I already have an account', google: 'Continue with Google', or: 'or',
@@ -129,7 +129,7 @@ const STR = {
     signupTab: 'إنشاء حساب', loginTab: 'تسجيل الدخول',
     name: 'الاسم الكامل', email: 'البريد الإلكتروني', password: 'كلمة المرور (8 أحرف أو أكثر)',
     createBtn: 'أنشئ الحساب وتابع', loginBtn: 'سجّل الدخول وتابع',
-    existing: 'ربما يوجد حساب بهذا البريد. جرّب تسجيل الدخول.',
+    existing: 'لديك حساب بهذا البريد. أدخل كلمة المرور لتسجيل الدخول.',
     autoHead: 'احفظ تقدّمك',
     autoBody: 'سننشئ لك حساباً مجانياً بهذا البريد لنحفظ إجاباتك. بعد الدفع نرسل لك رابطاً لتعيين كلمة مرور لتسجّل الدخول لاحقاً.',
     autoBtn: 'تابع إلى الدفع', haveAccount: 'لدي حساب بالفعل', google: 'المتابعة عبر Google', or: 'أو',
@@ -472,6 +472,14 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
         email: email.trim(), password,
         options: { data: { full_name: name.trim() }, emailRedirectTo: `https://myetijahi.com/${locale}/assessment` },
       })
+      // The email already has an account: sign in with the password typed instead of refusing.
+      const exists = (err && /already|registered|exists/i.test(err.message)) || (!err && !data.session && data.user?.identities?.length === 0)
+      if (exists) {
+        const { error: inErr } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+        if (inErr) { setError(s.existing); setMode('login'); return false }
+        await apiAuthPost('/assessment/link-by-email', {}).catch(() => {})
+        return afterSignedIn()
+      }
       if (err) { setError(err.message); return false }
       // No session back means the address already has an account: send them to sign in instead.
       if (!data.session) { setError(s.existing); setMode('login'); return false }

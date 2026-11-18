@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { supabase } from '@/lib/supabase'
+import { apiAuthPost } from '@/lib/api'
 import Logomark from '@/components/brand/Logomark'
 
 const field =
@@ -51,6 +52,19 @@ export default function SignupPage() {
       // otherwise bake that dead domain into the verification email itself.
       options: { data: { full_name: fullName, ...(claimId ? { claim: { response_id: claimId, token: readClaimToken(claimId) } } : {}) }, emailRedirectTo: `https://myetijahi.com/${locale}/dashboard?verified=1${wantsPlans ? '&plans=1' : ''}` },
     })
+    // The email already has an account: just sign them in with what they typed instead of showing "already registered".
+    const exists = (error && /already|registered|exists/i.test(error.message)) || (!error && !data.session && data.user?.identities?.length === 0)
+    if (exists) {
+      const { error: inErr } = await supabase.auth.signInWithPassword({ email, password })
+      if (!inErr) {
+        await apiAuthPost('/assessment/link-by-email', {}).catch(() => {})
+        window.location.href = `/${locale}/dashboard${wantsPlans ? '?plans=1' : ''}`
+        return
+      }
+      setError('You already have an account with this email. Enter your existing password, or use the Log in page.')
+      setLoading(false)
+      return
+    }
     if (error) {
       setError(error.message)
       setLoading(false)
