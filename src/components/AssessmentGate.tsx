@@ -93,6 +93,7 @@ const STR = {
     pathfinder: 'Pathfinder', pathfinderLine: 'Full report, yours for life',
     launchpad: 'Launchpad', launchpadLine: 'Full report + a 1:1 coaching session',
     code: 'Discount code', apply: 'Apply', codeOk: 'Code applied',
+    codeSaved: 'Code saved. Your discount is applied when you continue to payment.',
     codeErrors: {
       discount_invalid: "This code isn't valid.", discount_expired: 'This code has expired.', discount_not_started: "This code isn't active yet.",
       discount_used_up: 'This code has reached its limit.', discount_already_used: "You've already used this code.",
@@ -151,6 +152,7 @@ const STR = {
     pathfinder: 'مرشد المسار', pathfinderLine: 'التقرير الكامل، يبقى لك دائماً',
     launchpad: 'منصة الانطلاق', launchpadLine: 'التقرير الكامل + جلسة تدريب فردية معك',
     code: 'كود الخصم', apply: 'تفعيل', codeOk: 'تم تفعيل الكود',
+    codeSaved: 'تم حفظ الكود. سيتم تطبيق الخصم عند المتابعة إلى الدفع.',
     codeErrors: {
       discount_invalid: 'هذا الكود غير صالح.', discount_expired: 'انتهت صلاحية هذا الكود.', discount_not_started: 'هذا الكود غير مفعّل بعد.',
       discount_used_up: 'تم استنفاد عدد مرات استخدام هذا الكود.', discount_already_used: 'لقد استخدمت هذا الكود من قبل.',
@@ -255,6 +257,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   const [codeInput, setCodeInput] = useState('')
   const [applied, setApplied] = useState<{ code: string; preview: DiscountPreview } | null>(null)
   const [codeError, setCodeError] = useState('')
+  const [codeSaved, setCodeSaved] = useState(false)   // guest typed a code: it is checked after the account is made, in pay()
   // Terms are now accepted by continuing (notice under the button), so the pay button is active from the start.
   const [agreed] = useState(true)
   // const [agreed, setAgreed] = useState(false)
@@ -498,7 +501,9 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
 
   async function applyCode() {
     if (!codeInput.trim()) return
-    setBusy(true); setCodeError('')
+    // Not signed in yet: the preview needs a login, so don't call it (that used to show 'isn't valid'). pay() checks the code after account creation.
+    if (step === 'account') { setApplied(null); setCodeError(''); setCodeSaved(true); return }
+    setBusy(true); setCodeError(''); setCodeSaved(false)
     try {
       const code = codeInput.trim().toUpperCase()
       setApplied({ code, preview: await previewDiscount(plan, code) })
@@ -909,11 +914,12 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
 
                   <div>
                     <div className="flex gap-2">
-                      <input className={inputCls} placeholder={s.code} value={codeInput} onChange={e => { setCodeInput(e.target.value); setApplied(null); setCodeError('') }} dir="ltr" />
+                      <input className={inputCls} placeholder={s.code} value={codeInput} onChange={e => { setCodeInput(e.target.value); setApplied(null); setCodeError(''); setCodeSaved(false) }} dir="ltr" />
                       <button type="button" onClick={applyCode} disabled={busy || !codeInput.trim()}
                         className="shrink-0 min-h-[44px] px-4 rounded-xl border border-[var(--line-strong)] text-sm font-medium disabled:opacity-40">{s.apply}</button>
                     </div>
                     {applied && <p className="mt-1 text-xs text-green-700">{s.codeOk}</p>}
+                    {codeSaved && !applied && !codeError && <p className="mt-1 text-xs text-green-700">{s.codeSaved}</p>}
                     {codeError && <p className="mt-1 text-xs text-red-600">{codeError}</p>}
                   </div>
                   </div>
