@@ -41,6 +41,17 @@
     "Entrepreneurship": "Entrepreneurship"
   },
   "questions": {
+    "QWARM": {
+      "text": "What do you enjoy doing?",
+      "options": {
+        "solve": "Solving problems",
+        "create": "Creating things",
+        "help": "Helping people",
+        "lead": "Leading a team",
+        "build": "Building things",
+        "organise": "Organising"
+      }
+    },
     "QD1": {
       "text": "What is your full name?"
     },

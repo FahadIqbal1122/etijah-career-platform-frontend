@@ -995,7 +995,29 @@ const careerStructure = allQuestions.find(q => q.id === 'QO7')!
 const BEFORE_DETAILS = ['QO4', 'QO1', 'QO3']
 const staying = allQuestions.filter(q => !MOVED_TO_END.includes(q.id) && !BEFORE_DETAILS.includes(q.id) && q.id !== 'QOFIELD' && q.id !== 'QO7')
 const before69 = staying.findIndex(q => q.id === 'Q69')
+// Fun warm-up at the very start: "What do you enjoy doing?" as picture cards. It is NOT scored (the backend only scores the ids
+// in its QUESTION_MAP, so it is ignored there); it just gives the form a friendly first tap before the real questions.
+// Not part of allQuestions, so it never lands in the "staying" group below.
+const WARM_UP: Question = {
+  id: 'QWARM',
+  section: 'Onboarding',
+  framework: 'Onboarding',
+  text: 'What do you enjoy doing?',
+  type: 'multi_select',
+  maxSelect: 3,
+  options: [
+    { value: 'solve', label: 'Solving problems' },
+    { value: 'create', label: 'Creating things' },
+    { value: 'help', label: 'Helping people' },
+    { value: 'lead', label: 'Leading a team' },
+    { value: 'build', label: 'Building things' },
+    { value: 'organise', label: 'Organising' },
+  ],
+}
+export const WARM_UP_ID = WARM_UP.id
+
 export const questions: Question[] = [
+  WARM_UP,
   ...BEFORE_DETAILS.map(id => allQuestions.find(q => q.id === id)!),
   ...staying.slice(0, before69),
   careerStructure,

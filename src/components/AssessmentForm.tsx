@@ -46,6 +46,8 @@ import FieldOfStudyInfo from '@/components/FieldOfStudyInfo'
 import LanguageSelect from '@/components/LanguageSelect'
 import FieldOfStudySelect from '@/components/FieldOfStudySelect'
 import IconTiles from '@/components/IconTiles'
+import PictureChoices, { hasPictures } from '@/components/PictureChoices'
+import ScaleRow from '@/components/ScaleRow'
 import AgeWheel from '@/components/AgeWheel'
 import { buildReveal, computeRanked } from '@/data/revealScoring'
 import { CHAPTERS, CHAPTER_COUNT, chapterIndexOf } from '@/data/chapters'
@@ -127,13 +129,20 @@ function saveDraft(answers: Record<string, any>, index: number, revealedFramewor
   }
 }
 
+// Is a saved draft (browser copy or the emailed-link copy on the server) still usable with the current question list?
+// The warm-up question (QWARM) was added as the very first question, so a draft saved before that has exactly one
+// question fewer and no QWARM answer. It is still valid: resumeDraft moves its position one place along.
+function sameShape(total: number, answers: Record<string, unknown> | null | undefined): boolean {
+  return total === questions.length || (total === questions.length - 1 && !!answers && answers['QWARM'] === undefined)
+}
+
 function loadDraft(): Draft | null {
   try {
     const raw = window.localStorage.getItem(DRAFT_KEY)
     if (!raw) return null
     const draft = JSON.parse(raw) as Draft
     if (draft.version !== DRAFT_VERSION) return null
-    if (draft.totalQuestions !== questions.length) return null
+    if (!sameShape(draft.totalQuestions, draft.answers)) return null
     if (Date.now() - draft.savedAt > DRAFT_MAX_AGE_MS) return null
     if (!draft.answers || Object.keys(draft.answers).length === 0) return null
     return draft
@@ -491,7 +500,7 @@ export default function AssessmentForm() {
     )
       .then(s => {
         if (cancelled) return
-        if (s.total_questions !== questions.length || !s.answers || Object.keys(s.answers).length === 0) throw new Error('stale')
+        if (!sameShape(s.total_questions, s.answers) || !s.answers || Object.keys(s.answers).length === 0) throw new Error('stale')
         setDraftToken(token) // later autosaves update this same server row
         setDraft({
           version: DRAFT_VERSION, savedAt: Date.now(), totalQuestions: s.total_questions,
@@ -650,8 +659,11 @@ export default function AssessmentForm() {
     // questions moved to the end), so never resume past a question the draft has no answer for: stop at the first gap.
     const skippedIds = new Set(Object.keys(getAutoFills(draft.answers)))
     const unanswered = (v: unknown) => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)
-    const firstGap = questions.filter(x => !skippedIds.has(x.id)).findIndex(x => !x.optional && unanswered(draft.answers[x.id]))
-    const resumeAt = firstGap === -1 ? draft.index : Math.min(draft.index, firstGap)
+    // The "what do you enjoy doing?" warm-up (QWARM) was added as the very first question. A draft saved before that never saw it:
+    // do not send that person back to it (it is not a gap), and move their saved position one place along for the new question.
+    const draftIndex = draft.answers['QWARM'] === undefined && draft.index > 0 ? draft.index + 1 : draft.index
+    const firstGap = questions.filter(x => !skippedIds.has(x.id)).findIndex(x => !x.optional && x.id !== 'QWARM' && unanswered(draft.answers[x.id]))
+    const resumeAt = firstGap === -1 ? draftIndex : Math.min(draftIndex, firstGap)
     setIndex(resumeAt)
     setMaxIndex(resumeAt)
     setPhase('question')
@@ -1321,6 +1333,7 @@ export default function AssessmentForm() {
             {q.type === 'behavioral_scale' && (
               <>
                 <div className="qcard"><p className="qtext">{qTextStr}</p></div>
+                {/* Old version: a vertical list of six text pills.
                 <div className="pills">
                   {BEHAVIORAL_SCALE.map(opt => (
                     <button key={opt.value} className={`pill ${sel === opt.value ? 'sel' : ''}`} onClick={() => pick(opt.value)}>
@@ -1328,11 +1341,31 @@ export default function AssessmentForm() {
                       <span className="pill-label">{tScale(String(opt.value))}</span>
                     </button>
                   ))}
-                </div>
+                </div> */}
+                {/* One colour-graded row, lowest to highest (BEHAVIORAL_SCALE is listed highest first) */}
+                <ScaleRow
+                  values={[...BEHAVIORAL_SCALE].map(o => o.value).sort((a, b) => a - b)}
+                  selected={sel}
+                  onPick={pick}
+                  label={v => tScale(String(v))}
+                />
               </>
             )}
 
-            {q.type === 'forced_choice' && (
+            {q.type === 'forced_choice' && hasPictures(q.id) && (
+              <div className="choice-wrap">
+                <p className="choice-prompt">{qTextStr}</p>
+                <PictureChoices
+                  qid={q.id}
+                  locale={locale}
+                  options={(q.options || []).map(opt => ({ value: opt.value, label: tQ(`${mid}.options.${opt.value}`) }))}
+                  selected={sel ? [String(sel)] : []}
+                  onPick={pick}
+                />
+              </div>
+            )}
+
+            {q.type === 'forced_choice' && !hasPictures(q.id) && (
               <div className="choice-wrap">
                 <p className="choice-prompt">{qTextStr}</p>
                 {/* "this or that" cards: big centred cards, with an "or" chip between the two sides of an A/B pair */}
@@ -1356,6 +1389,15 @@ export default function AssessmentForm() {
             {q.type === 'single_select' && (
               <>
                 <div className="qcard"><p className="qtext">{qTextStr}</p></div>
+                {hasPictures(q.id) ? (
+                  <PictureChoices
+                    qid={q.id}
+                    locale={locale}
+                    options={(q.options || []).map(opt => ({ value: opt.value, label: tQ(`${mid}.options.${opt.value}`) }))}
+                    selected={sel ? [String(sel)] : []}
+                    onPick={pick}
+                  />
+                ) : (
                 <div className="pills">
                   {q.options?.map(opt => (
                     <button key={opt.value} className={`pill ${sel === opt.value ? 'sel' : ''}`} onClick={() => pick(opt.value)}>
@@ -1363,6 +1405,7 @@ export default function AssessmentForm() {
                     </button>
                   ))}
                 </div>
+                )}
                 {sel === 'other' && (
                   <input
                     className="qinput"
@@ -1387,7 +1430,16 @@ export default function AssessmentForm() {
                     optionLabels={(q.options || []).map(opt => ({ value: opt.value, label: tQ(`${mid}.options.${opt.value}`) }))}
                   />
                 )}
-                {q.id === 'QOFS' ? (
+                {q.id === 'QWARM' ? (
+                  <PictureChoices
+                    qid={q.id}
+                    locale={locale}
+                    multi
+                    options={(q.options || []).map(opt => ({ value: opt.value, label: tQ(`${mid}.options.${opt.value}`) }))}
+                    selected={answers[q.id] || []}
+                    onPick={v => toggleMulti(v, q.maxSelect)}
+                  />
+                ) : q.id === 'QOFS' ? (
                   <FieldOfStudySelect
                     groups={Object.entries(SPECIALISMS).map(([field, areas]) => ({
                       field,

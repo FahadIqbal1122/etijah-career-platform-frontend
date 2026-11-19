@@ -521,6 +521,95 @@ html { scroll-behavior: smooth; }
   .tile-ic { font-size: 23px; }
 }
 
+/* ── picture cards (simple choice questions) ─────────────────────────────── */
+.pchoice { display: flex; flex-direction: column; gap: 12px; }
+.pcards { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); }
+.pcards-3 { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pcard {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+  background: var(--lightblue); border: 1.5px solid var(--line); border-radius: 18px; padding: 12px 8px 12px; cursor: pointer;
+  color: var(--charcoal); font-family: var(--font-tajawal), sans-serif;
+  transition: transform .18s cubic-bezier(.2, .7, .3, 1), border-color .18s, box-shadow .2s, background .2s, opacity .25s;
+  -webkit-tap-highlight-color: transparent;
+}
+.pcard-art { display: block; width: 100%; max-width: 150px; }
+.art-svg { display: block; width: 100%; height: auto; transition: transform .25s cubic-bezier(.2, .7, .3, 1); }
+.pcard-title { font-size: 15.5px; font-weight: 800; line-height: 1.2; text-wrap: balance; }
+.pcard-sub { font-size: 12px; line-height: 1.3; color: var(--ink-dim); text-wrap: balance; }
+.pcards-3 .pcard { padding: 10px 5px; }
+.pcards-3 .pcard-title { font-size: 14px; }
+.pcards-3 .pcard-sub { font-size: 11px; }
+.pcard:hover { border-color: var(--accent); box-shadow: 0 10px 26px -14px color-mix(in srgb, var(--accent) 70%, transparent); }
+.pcard:hover .art-svg { transform: scale(1.05) rotate(-1deg); }
+.pcard:active { transform: scale(.96); }
+.pcard.sel {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, var(--surface)), color-mix(in srgb, var(--accent) 7%, var(--surface)));
+  box-shadow: 0 0 0 1px var(--accent), 0 10px 34px -10px color-mix(in srgb, var(--accent) calc(var(--glow) * 80%), transparent);
+}
+.pcard.sel .art-svg { transform: scale(1.08); }
+.pcard.dim { opacity: .45; filter: saturate(.75); }
+.pcard-check {
+  position: absolute; top: 8px; inset-inline-end: 8px; width: 22px; height: 22px; border-radius: 50%;
+  border: 1.5px solid var(--line-strong); background: #fff; color: var(--charcoal);
+  display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; line-height: 1;
+}
+.pcard.sel .pcard-check { background: var(--accent); border-color: var(--accent); }
+.pextras { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.pextra {
+  background: var(--lightblue); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; cursor: pointer;
+  font-family: var(--font-tajawal), sans-serif; font-size: 13.5px; font-weight: 600; color: var(--charcoal);
+  transition: border-color .18s, background .18s;
+}
+.pextra:hover { border-color: var(--line-strong); }
+.pextra.sel { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); box-shadow: 0 0 0 1px var(--accent); }
+/* six cards on a phone: smaller pictures so nearly all of them show without scrolling */
+.pcards-6 .pcard-art { max-width: 92px; }
+.pcards-6 .pcard { padding: 10px 8px; }
+@media (min-width: 900px) {
+  .pcards-6 { grid-template-columns: repeat(3, 1fr); }
+  .pcards-6 .pcard-art { max-width: 150px; }
+  .pcards-6 .pcard { padding: 12px 8px; }
+  .pcards-2 { gap: 14px; }
+  .pcard-title { font-size: 16.5px; }
+  .pcard-sub { font-size: 12.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pcard, .art-svg { transition: none; }
+  .pcard:hover .art-svg, .pcard.sel .art-svg { transform: none; }
+}
+
+/* ── rating scale: one colour-graded row ("nothing like me" -> "exactly me") ─ */
+.scale { display: flex; flex-direction: column; gap: 10px; }
+.scale-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.scale-tile {
+  --t: #F1F3F5; --tb: #DDE3E8; --ts: #C9D1D8;
+  height: 62px; border-radius: 14px; border: 1.5px solid var(--tb); background: var(--t); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .16s cubic-bezier(.2, .7, .3, 1), background .18s, border-color .18s, box-shadow .18s;
+  -webkit-tap-highlight-color: transparent;
+}
+.scale-tile.s1 { --t: #FDE6E6; --tb: #F6C3C3; --ts: #F29A9A; }
+.scale-tile.s2 { --t: #FEEEE0; --tb: #F8D5B8; --ts: #F5B987; }
+.scale-tile.s3 { --t: #F3F4F6; --tb: #DFE3E8; --ts: #C3CAD2; }
+.scale-tile.s4 { --t: #E6F5EF; --tb: #C2E6D8; --ts: #8ED6BB; }
+.scale-tile.s5 { --t: #D8F2E8; --tb: #A9E0CB; --ts: #5FCDA6; }
+.scale-tile.s6 { --t: #C4EEDF; --tb: #8CD8BC; --ts: #2FBF94; }
+.scale-dot {
+  width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--tb); background: rgba(255, 255, 255, .75);
+  display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: var(--charcoal);
+  transition: transform .18s, background .18s, border-color .18s;
+}
+.scale-tile:hover { border-color: var(--ts); transform: translateY(-2px); }
+.scale-tile:active { transform: scale(.94); }
+.scale-tile.sel { background: var(--ts); border-color: var(--charcoal); transform: translateY(-2px) scale(1.05); box-shadow: 0 8px 20px -8px var(--ts); }
+.scale-tile.sel .scale-dot { background: #fff; border-color: var(--charcoal); transform: scale(1.1); }
+.scale-ends { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; font-weight: 600; color: var(--ink-dim); }
+.scale-ends span { max-width: 46%; text-wrap: balance; }
+.scale-chosen { min-height: 20px; margin: 0; text-align: center; font-size: 14px; font-weight: 700; color: var(--charcoal); }
+@media (min-width: 900px) { .scale-tile { height: 68px; } .scale-row { gap: 8px; } }
+@media (prefers-reduced-motion: reduce) { .scale-tile, .scale-dot { transition: none; } }
+
 /* age wheel */
 .age-wheel-box { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .age-hint { margin: 0; font-size: 13px; opacity: .65; text-align: center; }
