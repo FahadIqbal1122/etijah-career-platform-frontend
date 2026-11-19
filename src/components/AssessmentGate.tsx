@@ -695,14 +695,12 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   const inputCls = 'w-full min-w-0 rounded-xl border border-[var(--line-strong)] px-3 py-3 text-base text-charcoal bg-white'
 
   if (showProfile && !gift && giftAuto === 'off' && step !== 'existing') {
-    const personalityTrait = traits[0] ? TRAIT_INFO[traits[0].dimension][lang] : null
     return (
       <ProfileSoFar
         locale={locale}
         name={firstName(answers['QD1'])}
-        answers={answers}
-        interestNames={topTypes.slice(0, 2).map(t => TYPE_INFO[t.dimension][lang][0])}
-        personality={personalityTrait}
+        interests={topTypes.slice(0, 2).map(t => TYPE_INFO[t.dimension][lang] as [string, string])}
+        personality={traits.slice(0, 1).map(t => TRAIT_INFO[t.dimension][lang] as [string, string])}
         onContinue={() => { track('profile_so_far_continue', { lang: locale }); setShowProfile(false) }}
       />
     )
