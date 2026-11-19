@@ -48,6 +48,8 @@ import FieldOfStudySelect from '@/components/FieldOfStudySelect'
 import IconTiles from '@/components/IconTiles'
 import PictureChoices, { hasPictures } from '@/components/PictureChoices'
 import ScaleRow from '@/components/ScaleRow'
+import FlagChoices from '@/components/FlagChoices'
+import { FLAG_FILES, optionEmoji } from '@/data/optionIcons'
 import AgeWheel from '@/components/AgeWheel'
 import { buildReveal, computeRanked } from '@/data/revealScoring'
 import { CHAPTERS, CHAPTER_COUNT, chapterIndexOf } from '@/data/chapters'
@@ -1398,10 +1400,18 @@ export default function AssessmentForm() {
                     selected={sel ? [String(sel)] : []}
                     onPick={pick}
                   />
+                ) : q.id in FLAG_FILES ? (
+                  <FlagChoices
+                    qid={q.id}
+                    options={(q.options || []).map(opt => ({ value: opt.value, label: tQ(`${mid}.options.${opt.value}`) }))}
+                    selected={sel ? String(sel) : undefined}
+                    onPick={pick}
+                  />
                 ) : (
                 <div className="pills">
                   {q.options?.map(opt => (
                     <button key={opt.value} className={`pill ${sel === opt.value ? 'sel' : ''}`} onClick={() => pick(opt.value)}>
+                      {optionEmoji(q.id, opt.value) && <span className="pill-ico" aria-hidden="true">{optionEmoji(q.id, opt.value)}</span>}
                       <span className="pill-label">{tQ(`${mid}.options.${opt.value}`)}</span>
                     </button>
                   ))}
@@ -1477,6 +1487,7 @@ export default function AssessmentForm() {
                     return (
                       <button key={opt.value} className={`pill ${on ? 'sel' : ''}`} onClick={() => toggleMulti(opt.value, q.maxSelect)}>
                         <span className="pill-check">{on && '✓'}</span>
+                        {optionEmoji(q.id, opt.value) && <span className="pill-ico" aria-hidden="true">{optionEmoji(q.id, opt.value)}</span>}
                         <span className="pill-label">{tQ(`${mid}.options.${opt.value}`)}</span>
                       </button>
                     )

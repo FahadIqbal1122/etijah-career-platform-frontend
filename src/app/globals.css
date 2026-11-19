@@ -579,6 +579,32 @@ html { scroll-behavior: smooth; }
   .pcard:hover .art-svg, .pcard.sel .art-svg { transform: none; }
 }
 
+/* small icon in front of an option's text */
+.pill-ico { flex: 0 0 auto; width: 28px; text-align: center; font-size: 20px; line-height: 1; }
+
+/* ── flag tiles (country, nationality) ───────────────────────────────────── */
+.ftiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ftile {
+  display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; cursor: pointer;
+  background: var(--lightblue); border: 1.5px solid var(--line); border-radius: 16px; padding: 12px 6px 10px;
+  color: var(--charcoal); font-family: var(--font-tajawal), sans-serif; font-size: 13px; font-weight: 700; line-height: 1.25;
+  transition: transform .16s cubic-bezier(.2, .7, .3, 1), border-color .18s, box-shadow .2s, background .2s, opacity .25s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ftile-pic { display: flex; align-items: center; justify-content: center; width: 64px; height: 48px; }
+.ftile-pic img { width: 64px; height: 48px; border-radius: 6px; object-fit: cover; box-shadow: 0 1px 4px rgba(0, 40, 100, .25), 0 0 0 1px rgba(0, 40, 100, .12); }
+.ftile-globe { font-size: 36px; line-height: 1; }
+.ftile-label { text-wrap: balance; }
+.ftile:hover { border-color: var(--accent); box-shadow: 0 10px 26px -14px color-mix(in srgb, var(--accent) 70%, transparent); }
+.ftile:active { transform: scale(.95); }
+.ftile.sel {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, var(--surface)), color-mix(in srgb, var(--accent) 7%, var(--surface)));
+  box-shadow: 0 0 0 1px var(--accent), 0 10px 34px -10px color-mix(in srgb, var(--accent) calc(var(--glow) * 80%), transparent);
+}
+.ftile.dim { opacity: .45; filter: saturate(.75); }
+@media (prefers-reduced-motion: reduce) { .ftile { transition: none; } }
+
 /* ── rating scale: one colour-graded row ("nothing like me" -> "exactly me") ─ */
 .scale { display: flex; flex-direction: column; gap: 10px; }
 .scale-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
