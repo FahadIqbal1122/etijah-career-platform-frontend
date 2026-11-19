@@ -130,10 +130,12 @@ function saveDraft(answers: Record<string, any>, index: number, revealedFramewor
 }
 
 // Is a saved draft (browser copy or the emailed-link copy on the server) still usable with the current question list?
-// The warm-up question (QWARM) was added as the very first question, so a draft saved before that has exactly one
-// question fewer and no QWARM answer. It is still valid: resumeDraft moves its position one place along.
+// A "What do you enjoy doing?" warm-up (QWARM) was live as the first question for a short while and has been removed again.
+// A draft saved in that window has exactly one question more and a QWARM answer. It is still valid: resumeDraft moves its
+// position one place back.
 function sameShape(total: number, answers: Record<string, unknown> | null | undefined): boolean {
-  return total === questions.length || (total === questions.length - 1 && !!answers && answers['QWARM'] === undefined)
+  if (total === questions.length) return true
+  return total === questions.length + 1 && !!answers && answers['QWARM'] !== undefined
 }
 
 function loadDraft(): Draft | null {
@@ -659,10 +661,9 @@ export default function AssessmentForm() {
     // questions moved to the end), so never resume past a question the draft has no answer for: stop at the first gap.
     const skippedIds = new Set(Object.keys(getAutoFills(draft.answers)))
     const unanswered = (v: unknown) => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0)
-    // The "what do you enjoy doing?" warm-up (QWARM) was added as the very first question. A draft saved before that never saw it:
-    // do not send that person back to it (it is not a gap), and move their saved position one place along for the new question.
-    const draftIndex = draft.answers['QWARM'] === undefined && draft.index > 0 ? draft.index + 1 : draft.index
-    const firstGap = questions.filter(x => !skippedIds.has(x.id)).findIndex(x => !x.optional && x.id !== 'QWARM' && unanswered(draft.answers[x.id]))
+    // A draft saved while the removed warm-up (QWARM) was the first question counts one place further along: move it back one.
+    const draftIndex = draft.answers['QWARM'] !== undefined && draft.index > 0 ? draft.index - 1 : draft.index
+    const firstGap = questions.filter(x => !skippedIds.has(x.id)).findIndex(x => !x.optional && unanswered(draft.answers[x.id]))
     const resumeAt = firstGap === -1 ? draftIndex : Math.min(draftIndex, firstGap)
     setIndex(resumeAt)
     setMaxIndex(resumeAt)

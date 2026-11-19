@@ -1017,7 +1017,7 @@ const WARM_UP: Question = {
 export const WARM_UP_ID = WARM_UP.id
 
 export const questions: Question[] = [
-  WARM_UP,
+  // WARM_UP,   // "What do you enjoy doing?" warm-up: removed from the flow (it was only meant as a look-and-feel example)
   ...BEFORE_DETAILS.map(id => allQuestions.find(q => q.id === id)!),
   ...staying.slice(0, before69),
   careerStructure,
