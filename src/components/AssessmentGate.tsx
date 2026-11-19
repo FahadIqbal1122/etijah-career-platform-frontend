@@ -20,7 +20,8 @@ import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
 import { useLaunchActive } from '@/lib/launchPricing'
 import { buildReveal, computeRanked } from '@/data/revealScoring'
-import { gateHeadline, loadScriptOverrides, type GateCoachEvent } from '@/data/coachScript'
+import { gateHeadline, loadScriptOverrides, firstName, type GateCoachEvent } from '@/data/coachScript'
+import ProfileSoFar from '@/components/ProfileSoFar'
 import Logomark from '@/components/brand/Logomark'
 import FriendInvitePanel from '@/components/FriendInvitePanel'
 import { friendInviteOn, FRIEND_KEY, FRIEND_CONSENT_KEY } from '@/lib/friendInvite'
@@ -252,6 +253,8 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [orgUnverified, setOrgUnverified] = useState(false)
+  // "Your profile so far" shows once before the pay screen (not when coming back from the payment page).
+  const [showProfile, setShowProfile] = useState(!confirming)
 
   const [plan, setPlan] = useState<GatePlan>('pathfinder')
   const [codeInput, setCodeInput] = useState('')
@@ -690,6 +693,20 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
 
   // 16px text: below that iPhones zoom the page in when a field is tapped.
   const inputCls = 'w-full min-w-0 rounded-xl border border-[var(--line-strong)] px-3 py-3 text-base text-charcoal bg-white'
+
+  if (showProfile && !gift && giftAuto === 'off' && step !== 'existing') {
+    const personalityTrait = traits[0] ? TRAIT_INFO[traits[0].dimension][lang] : null
+    return (
+      <ProfileSoFar
+        locale={locale}
+        name={firstName(answers['QD1'])}
+        answers={answers}
+        interestNames={topTypes.slice(0, 2).map(t => TYPE_INFO[t.dimension][lang][0])}
+        personality={personalityTrait}
+        onContinue={() => { track('profile_so_far_continue', { lang: locale }); setShowProfile(false) }}
+      />
+    )
+  }
 
   return (
     <div ref={scrollRef} className="fixed inset-0 z-50 brand-surface overflow-y-auto overscroll-contain" dir={dir} lang={locale}>
