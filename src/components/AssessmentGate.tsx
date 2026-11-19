@@ -19,7 +19,7 @@ import { pushTelemetry, flush as flushTelemetry } from '@/lib/telemetry'
 import { formatPrice } from '@/lib/pricing'
 import { useDisplayCurrency } from '@/lib/useDisplayCurrency'
 import { useLaunchActive } from '@/lib/launchPricing'
-import { buildReveal, computeRanked } from '@/data/revealScoring'
+import { computeRanked } from '@/data/revealScoring'   // buildReveal no longer used here (old teaser replaced by ProfileSoFar)
 import { gateHeadline, loadScriptOverrides, firstName, type GateCoachEvent } from '@/data/coachScript'
 import ProfileSoFar from '@/components/ProfileSoFar'
 import Logomark from '@/components/brand/Logomark'
@@ -253,8 +253,6 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [orgUnverified, setOrgUnverified] = useState(false)
-  // "Your profile so far" shows once before the pay screen (not when coming back from the payment page).
-  const [showProfile, setShowProfile] = useState(!confirming)
 
   const [plan, setPlan] = useState<GatePlan>('pathfinder')
   const [codeInput, setCodeInput] = useState('')
@@ -620,7 +618,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
     try { await checkAccess(); if (!unlockedRef.current) setSlow(true) } catch { setSlow(true) }
   }
 
-  const reveal = buildReveal(answers, 'riasec', locale)
+  // const reveal = buildReveal(answers, 'riasec', locale)   // was used by the old teaser
   // The three strongest interest types from chapter 1 (scores run 1 to 6), shown as bars.
   const topTypes = computeRanked(answers, 'riasec').filter(r => TYPE_INFO[r.dimension]).slice(0, 3)
   const traits = computeRanked(answers, 'big_five').filter(r => TRAIT_INFO[r.dimension]).slice(0, 2)
@@ -694,22 +692,14 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
   // 16px text: below that iPhones zoom the page in when a field is tapped.
   const inputCls = 'w-full min-w-0 rounded-xl border border-[var(--line-strong)] px-3 py-3 text-base text-charcoal bg-white'
 
-  if (showProfile && !gift && giftAuto === 'off' && step !== 'existing') {
-    return (
-      <ProfileSoFar
-        locale={locale}
-        name={firstName(answers['QD1'])}
-        interests={topTypes.slice(0, 2).map(t => TYPE_INFO[t.dimension][lang] as [string, string])}
-        personality={traits.slice(0, 1).map(t => TRAIT_INFO[t.dimension][lang] as [string, string])}
-        onContinue={() => { track('profile_so_far_continue', { lang: locale }); setShowProfile(false) }}
-      />
-    )
-  }
+  // The pay screen uses the whole width on a laptop (profile on one side, payment on the other) and stacks on a phone.
+  // The other steps (sign-in, "already have a result", waiting for payment) stay as a narrow centred card.
+  const wide = giftAuto === 'off' && (step === 'pay' || (step === 'account' && !confirming))
 
   return (
     <div ref={scrollRef} className="fixed inset-0 z-50 brand-surface overflow-y-auto overscroll-contain" dir={dir} lang={locale}>
-      <div className="min-h-full flex items-center justify-center px-4 pt-8 pb-[max(2rem,env(safe-area-inset-bottom))]">
-        <div className="card p-5 sm:p-6 w-full max-w-md">
+      <div className={`min-h-full flex justify-center px-4 pt-8 pb-[max(2rem,env(safe-area-inset-bottom))] ${wide ? 'items-start lg:px-10 lg:pt-10' : 'items-center'}`}>
+        <div className={`card p-5 sm:p-6 w-full max-w-md ${wide ? 'lg:max-w-6xl lg:p-8' : ''}`}>
           <div className="mb-5 flex items-center gap-3">
             <Logomark size={34} />
             <p className="text-xs text-charcoal/40">Etijahi · إتجاهي</p>
@@ -810,7 +800,16 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
           )}
 
           {giftAuto === 'off' && (step === 'pay' || (step === 'account' && !confirming)) && (
-            <div className="space-y-4">
+            <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-10 lg:items-start">
+              <div className="lg:sticky lg:top-6">
+              <ProfileSoFar
+                locale={locale}
+                name={firstName(answers['QD1'])}
+                interests={topTypes.slice(0, 2).map(t => TYPE_INFO[t.dimension][lang] as [string, string])}
+                personality={traits.slice(0, 1).map(t => TRAIT_INFO[t.dimension][lang] as [string, string])}
+              />
+              </div>
+              <div className="space-y-4 min-w-0">
               <div>
                 <h2 className="text-xl font-extrabold text-charcoal">{headline}</h2>
                 <p className="mt-1 text-sm text-charcoal/60">{s.payBody}</p>
@@ -837,6 +836,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                 </ul>
               </div>
 
+              {/* Old "Your first result" teaser, replaced by the "Your profile so far" section at the top of this page:
               <div className="rounded-2xl border border-primary/30 bg-white px-4 py-4 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-wide text-charcoal/50">{s.teaser}</p>
                 <p className="mt-1 text-lg font-extrabold text-charcoal">{reveal.head}</p>
@@ -882,6 +882,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                   </div>
                 )}
               </div>
+              */}
 
 
               {confirming ? (
@@ -1036,6 +1037,7 @@ export default function AssessmentGate({ locale, answers, confirming = false, pa
                   {!gift && <div className="rounded-xl bg-[var(--surface-2,#f5f7f8)] p-3">{exitChips}</div>}
                 </>
               )}
+              </div>
             </div>
           )}
         </div>
